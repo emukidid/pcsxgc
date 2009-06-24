@@ -1,0 +1,146 @@
+diff -urN PeopsSoftGpu114.orig\src\gpuPeopsSoft.rc PeopsSoftGpu114\src\gpuPeopsSoft.rc
+--- PeopsSoftGpu114.orig\src\gpuPeopsSoft.rc	Mon Jun 09 22:35:52 2003
++++ PeopsSoftGpu114\src\gpuPeopsSoft.rc	Tue Jun 24 17:49:22 2003
+@@ -70,7 +70,9 @@
+     "#pragma code_page(1252)\r\n"
+     "#endif\r\n"
+     "#include ""res\\gpuPeopsSoft.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
++#ifndef __MINGW32__
+     "#include ""afxres.rc""         // Standard components\r\n"
++#endif
+     "#endif\0"
+ END
+ 
+@@ -544,7 +546,9 @@
+ #pragma code_page(1252)
+ #endif
+ #include "res\gpuPeopsSoft.rc2"  // non-Microsoft Visual C++ edited resources
++#ifndef __MINGW32__
+ #include "afxres.rc"         // Standard components
++#endif
+ #endif
+ /////////////////////////////////////////////////////////////////////////////
+ #endif    // not APSTUDIO_INVOKED
+diff -urN PeopsSoftGpu114.orig\src\Makefile PeopsSoftGpu114\src\Makefile
+--- PeopsSoftGpu114.orig\src\Makefile	Mon Jun 09 23:35:14 2003
++++ PeopsSoftGpu114\src\Makefile	Tue Jun 24 17:53:06 2003
+@@ -2,9 +2,11 @@
+ # Makefile for Peops soft gpu
+ #
+ 
+-include ./makes/plg.mk
+-include ./makes/mk.x11
++#include ./makes/plg.mk
++include ./makes/plgmgw.mk
++#include ./makes/mk.x11
+ #include ./makes/mk.fpse
++include ./makes/mk.mgw
+ 
+ # Dependencies
+ 
+diff -urN PeopsSoftGpu114.orig\src\makes\mk.mgw PeopsSoftGpu114\src\makes\mk.mgw
+--- PeopsSoftGpu114.orig\src\makes\mk.mgw	Thu Jan 01 09:00:00 1970
++++ PeopsSoftGpu114\src\makes\mk.mgw	Tue Jun 24 17:54:08 2003
+@@ -0,0 +1,59 @@
++#
++# Makefile for Peops Windows plugin
++#
++
++CPU = i386
++
++CC = gcc
++LD = dllwrap
++STRIP = strip
++NASM = nasmw
++RM = rm -f
++RC1 = brcc32
++RC2 = windres
++
++CFLAGS += -c -D__i386__ -D_WINDOWS -DNDEBUG -DWIN32 -D__MINGW32__ -mwindows
++ASMFLAGS += -f win32 -D__WIN32__ -D__i386__
++LDFLAGS = -mwindows -Wl,--enable-stdcall-fixup
++LIBS += -lddraw -lwinmm -ld3dim -ldxguid -ladvapi32 -lmsacm32
++#LIBS += -lvfw32
++LIBS += -lvfw_cap32 -lvfw_ms32 -lvfw_avi32
++
++ifeq ($(CPU), i386)
++	OBJECTS += i386.o
++endif
++RESOBJ = res.o
++OBJECTS += gpupeopssoft.o record.o fpsewp.o
++OBJECTS += $(RESOBJ)
++
++TARGETDIR = ./release/
++vpath %.o $(TARGETDIR)
++
++all:${OBJECTS}
++	cd $(TARGETDIR) ; \
++	$(LD) -dllname $(PLUGIN).dll -def ../gpupeopssoft.def $(OBJECTS) $(LDFLAGS) $(LIBS)
++ifndef DEBUG
++	cd $(TARGETDIR) ; \
++	$(STRIP) $(PLUGIN).dll
++endif
++
++$(RESOBJ):gpuPeopsSoft.rc
++	$(RC1) $< $(RC1FLAGS) -fo$(TARGETDIR)$*.res -d__MINGW32__ -dNDEBUG
++	$(RC2) $(RC2FLAGS) -o $(TARGETDIR)$@ -i $(TARGETDIR)$*.res 
++
++%.o:%.asm
++	$(NASM) $(ASMFLAGS) $< -o $(TARGETDIR)$@
++
++%.o:%.c
++	$(CC) $(CFLAGS) $< -o $(TARGETDIR)$@
++
++release: all
++	cd $(TARGETDIR) ; \
++	strip $(PLUGIN).dll
++	cp $(TARGETDIR)$(PLUGIN).dll ../$(PLUGIN).dll
++
++clean:
++	$(RM) $(TARGETDIR)*.o ; $(RM) $(TARGETDIR)*.dll ; $(RM) $(TARGETDIR)*.res
++
++# Dependencies
++
+diff -urN PeopsSoftGpu114.orig\src\makes\plgmgw.mk PeopsSoftGpu114\src\makes\plgmgw.mk
+--- PeopsSoftGpu114.orig\src\makes\plgmgw.mk	Thu Jan 01 09:00:00 1970
++++ PeopsSoftGpu114\src\makes\plgmgw.mk	Tue Jun 24 17:49:22 2003
+@@ -0,0 +1,17 @@
++#
++# plugin specific makefile
++#
++
++PLUGIN = gpuPeopsSoft
++#PLUGINTYPE = libgpu.so
++ifndef CPUTYPE
++	CPUOPT = -mcpu=pentiumpro
++else
++	CPUOPT = -march=$(CPUTYPE)
++endif
++CFLAGS = -g -Wall -O4 $(CPUOPT) -fomit-frame-pointer -ffast-math 
++#CFLAGS = -g -Wall -O3 -mpentium -fomit-frame-pointer -ffast-math
++#INCLUDE = -I/usr/local/include
++# brcc32.exe uses INCLUDE enviroment variable.
++OBJECTS = gpu.o cfg.o draw.o fps.o key.o menu.o prim.o soft.o
++LIBS =
+diff -urN PeopsSoftGpu114.orig\src\stdafx.h PeopsSoftGpu114\src\stdafx.h
+--- PeopsSoftGpu114.orig\src\stdafx.h	Tue May 21 12:40:40 2002
++++ PeopsSoftGpu114\src\stdafx.h	Tue Jun 24 17:49:22 2003
+@@ -44,6 +44,18 @@
+ //#include <dbgout.h>
+ //void auxprintf (LPCTSTR pFormat, ...);
+ 
++#ifdef __MINGW32__
++#ifndef _MINGW_FIX_DEFINED
++#define _MINGW_FIX_DEFINED
++#ifndef ES_SYSTEM_REQUIRED
++#define ES_SYSTEM_REQUIRED 0x00000001
++#define ES_DISPLAY_REQUIRED 0x00000002
++#define ES_USER_PRESENT 0x00000004
++#define ES_CONTINUOUS 0x80000000
++#endif
++typedef DWORD EXECUTION_STATE;
++#endif
++#endif
+ #else
+ 
+ #ifndef _SDL
