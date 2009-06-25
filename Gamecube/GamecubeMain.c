@@ -47,10 +47,17 @@ u32* xfb[2] = { NULL, NULL };	/*** Framebuffers ***/
 int whichfb = 0;        /*** Frame buffer toggle ***/
 GXRModeObj *vmode;				/*** Graphics Mode Object ***/
 #define DEFAULT_FIFO_SIZE ( 256 * 1024 )
+extern int controllerType;
+
+
 //static u8 gp_fifo[DEFAULT_FIFO_SIZE] ATTRIBUTE_ALIGN(32); /*** 3D GX FIFO ***/
 
 
-void ScanPADSandReset() { PAD_ScanPads(); }
+void ScanPADSandReset() { 
+  PAD_ScanPads(); 
+  if(!((*(u32*)0xCC003000)>>16)) 
+    *(int*)0=0xbeef;  //kill program, exit(); doesn't work here.
+}
 static void Initialise (void){
   whichfb = 0;        /*** Frame buffer toggle ***/
   VIDEO_Init();
@@ -130,13 +137,31 @@ int main(int argc, char *argv[]) {
 	fatInitDefault();
     draw_splash();
 	
+  printf("\n\nWiiSX\n\n");  
+  
+  u16 butns=0;
+  printf("Select Controller Type:\n(A) Standard : (B) Analog\n");
+  do{butns = PAD_ButtonsDown(0);}while(!((butns & PAD_BUTTON_A) || (butns & PAD_BUTTON_B)));
+  if(butns & PAD_BUTTON_A)  controllerType=0;
+  else  controllerType=1;
+  printf("%s selected\n",controllerType ? "Analog":"Standard");
+    
+  do{butns = PAD_ButtonsDown(0);}while(((butns & PAD_BUTTON_A) || (butns & PAD_BUTTON_B)));
+  
+  printf("Select Core Type:\n(X) Dynarec : (Y) Interpreter\n");
+  do{butns = PAD_ButtonsDown(0);}while(!((butns & PAD_BUTTON_X) || (butns & PAD_BUTTON_Y)));
+  if(butns & PAD_BUTTON_X)  Config.Cpu=0;
+  else  Config.Cpu=1;
+  printf("%s selected\n",Config.Cpu ? "Interpreter":"Dynarec");
+  
+  do{butns = PAD_ButtonsDown(0);}while(((butns & PAD_BUTTON_X) || (butns & PAD_BUTTON_Y)));
+  
+  
 	/* Configure pcsx */
 	memset(&Config, 0, sizeof(PcsxConfig));
 	strcpy(Config.Bios, "SCPH1001.BIN"); // Use actual BIOS
 	strcpy(Config.BiosDir, "/PSXISOS/");
 	strcpy(Config.Net,"Disabled");
-
-	Config.Cpu = 0;	//interpreter = 1, dynarec = 0
 	Config.PsxOut = 1;
 	Config.HLE = 1;
 	Config.Xa = 1;  //XA enabled
