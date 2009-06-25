@@ -59,15 +59,24 @@ void ScanPADSandReset() {
     *(int*)0=0xbeef;  //kill program, exit(); doesn't work here.
 }
 static void Initialise (void){
-  whichfb = 0;        /*** Frame buffer toggle ***/
   VIDEO_Init();
   PAD_Init();
   PAD_Reset(0xf0000000);
+#ifdef HW_RVL
+  CONF_Init();
+#endif
 
-  
+  whichfb = 0;        /*** Frame buffer toggle ***/
   vmode = VIDEO_GetPreferredMode(NULL);
-    
+#ifdef HW_RVL    
+  if(VIDEO_HaveComponentCable() && CONF_GetProgressiveScan())
+    	vmode = &TVNtsc480Prog;
+#else
+  if(VIDEO_HaveComponentCable())
+	  vmode = &TVNtsc480Prog;
+#endif
   VIDEO_Configure (vmode);
+ 
   xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode)); //assume PAL largest
   xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));	//fixme for progressive?
   console_init (xfb[0], 20, 64, vmode->fbWidth, vmode->xfbHeight,
@@ -100,7 +109,7 @@ static void Initialise (void){
   GX_CopyDisp (xfb[0], GX_TRUE); // This clears the efb
 //  GX_CopyDisp (xfb[0], GX_TRUE); // This clears the xfb
 
-  printf("Initialize - whichfb = %d; xfb = %x, %x\n",(u32)whichfb,(u32)xfb[0],(u32)xfb[1]);
+  printf("\n\nInitialize - whichfb = %d; xfb = %x, %x\n",(u32)whichfb,(u32)xfb[0],(u32)xfb[1]);
 
 }
 
@@ -155,13 +164,14 @@ int main(int argc, char *argv[]) {
   printf("%s selected\n",Config.Cpu ? "Interpreter":"Dynarec");
   
   do{butns = PAD_ButtonsDown(0);}while(((butns & PAD_BUTTON_X) || (butns & PAD_BUTTON_Y)));
-  
-  
+   
 	/* Configure pcsx */
 	memset(&Config, 0, sizeof(PcsxConfig));
 	strcpy(Config.Bios, "SCPH1001.BIN"); // Use actual BIOS
 	strcpy(Config.BiosDir, "/PSXISOS/");
 	strcpy(Config.Net,"Disabled");
+	strcpy(Config.Mcd1,"/PSXISOS/Memcard1.mcd");
+  strcpy(Config.Mcd2,"/PSXISOS/Memcard2.mcd");
 	Config.PsxOut = 1;
 	Config.HLE = 1;
 	Config.Xa = 1;  //XA enabled
