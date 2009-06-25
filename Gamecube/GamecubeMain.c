@@ -136,16 +136,14 @@ void draw_splash(void)
 long LoadCdBios;
 
 int main(int argc, char *argv[]) {
-/*	char *file = NULL;
-	int runcd = 0;
-	int loadst = 0;
-	int i;
-*/
 
 	Initialise();
 	fatInitDefault();
     draw_splash();
 	
+  /* Configure pcsx */
+	memset(&Config, 0, sizeof(PcsxConfig));
+    
   printf("\n\nWiiSX\n\n");  
   
   u16 butns=0;
@@ -164,9 +162,12 @@ int main(int argc, char *argv[]) {
   printf("%s selected\n",Config.Cpu ? "Interpreter":"Dynarec");
   
   do{butns = PAD_ButtonsDown(0);}while(((butns & PAD_BUTTON_X) || (butns & PAD_BUTTON_Y)));
+  
+  printf("Press A\n");
+  while(!(PAD_ButtonsDown(0) & PAD_BUTTON_A));
+  while((PAD_ButtonsDown(0) & PAD_BUTTON_A));
    
-	/* Configure pcsx */
-	memset(&Config, 0, sizeof(PcsxConfig));
+
 	strcpy(Config.Bios, "SCPH1001.BIN"); // Use actual BIOS
 	strcpy(Config.BiosDir, "/PSXISOS/");
 	strcpy(Config.Net,"Disabled");
