@@ -279,7 +279,7 @@ static int _nextPsxRegUse(u32 pc, int psxreg, int numInstr)
 
     for (i=0; i<numInstr; ) {
         // load current instruction
-		  ptr = PSXM(pc);
+		  ptr = (u32*)PSXM(pc);
 		  if (ptr==NULL) {
 				// going nowhere... might as well assume a write, since we will hopefully never reach here
 				reguse = REGUSE_WRITE;

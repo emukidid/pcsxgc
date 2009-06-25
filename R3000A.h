@@ -38,7 +38,7 @@ typedef struct {
 R3000Acpu *psxCpu;
 extern R3000Acpu psxInt;
 extern R3000Acpu psxIntDbg;
-#if defined(__x86_64__) || defined(__i386__) || defined(__sh__) || defined(__ppc__) || defined(HW_RVL)
+#if defined(__x86_64__) || defined(__i386__) || defined(__sh__) || defined(__ppc__) || defined(HW_RVL) || defined(HW_DOL)
 extern R3000Acpu psxRec;
 #define PSXREC
 #endif
@@ -139,7 +139,7 @@ typedef struct {
 
 extern psxRegisters psxRegs;
 
-#if defined(__BIGENDIAN__) || defined(HW_RVL)
+#if defined(HW_RVL) || defined(HW_DOL) || defined(BIG_ENDIAN)
 
 #define _i32(x) *(s32 *)&x
 #define _u32(x) x

@@ -23,7 +23,7 @@
 
 #include "psxcommon.h"
 
-#if defined(__BIGENDIAN__) || defined(HW_RVL)
+#if defined(HW_RVL) || defined(HW_DOL) || defined(BIG_ENDIAN)
 
 #define _SWAP16(b) ((((unsigned char*)&(b))[0]&0xff) | (((unsigned char*)&(b))[1]&0xff)<<8)
 #define _SWAP32(b) ((((unsigned char*)&(b))[0]&0xff) | ((((unsigned char*)&(b))[1]&0xff)<<8) | ((((unsigned char*)&(b))[2]&0xff)<<16) | (((unsigned char*)&(b))[3]<<24))
@@ -120,7 +120,7 @@ u8** psxMemRLUT;
 #define PSXMu32ref(mem)	(*(u32*)PSXM(mem))
 
 
-#if !defined PSXREC && (defined(__x86_64__) || defined(__i386__) || defined(__sh__) || defined(__ppc__) || defined(HW_RVL))
+#if !defined PSXREC && (defined(__x86_64__) || defined(__i386__) || defined(__sh__) || defined(__ppc__) || defined(HW_RVL)) || defined(HW_DOL)
 #define PSXREC
 #endif
 

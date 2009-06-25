@@ -23,6 +23,10 @@
 */
 
 #include "r3000a.h"
+#include "PsxHw.h"
+#include "PsxDma.h"
+#include "CdRom.h"
+#include "Mdec.h"
 
 psxRegisters psxRegs;
 
@@ -32,7 +36,7 @@ int psxInit() {
 		if(Config.Dbg) psxCpu = &psxIntDbg;
 		else 	psxCpu = &psxInt;
 	}
-#if defined(__x86_64__) || defined(__i386__) || defined(__sh__) || defined(__ppc__) || defined(HW_RVL)
+#if defined(__x86_64__) || defined(__i386__) || defined(__sh__) || defined(__ppc__) || defined(HW_RVL) || defined(HW_DOL)
 	if (!Config.Cpu) psxCpu = &psxRec;
 #endif
 	Log=0;

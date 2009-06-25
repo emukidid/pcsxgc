@@ -18,15 +18,6 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-/*
-* PSX memory functions.
-*/
-
-/* Ryan TODO: I'd rather not use GLib in here */
-
-#include "psxmem.h"
-#include "r3000a.h"
-
 /*  Playstation Memory Map (from Playstation doc by Joshua Walker)
 0x0000_0000-0x0000_ffff		Kernel (64K)	
 0x0001_0000-0x001f_ffff		User Memory (1.9 Meg)	
@@ -43,6 +34,21 @@
 		
 0xbfc0_0000-0xbfc7_ffff		BIOS (512K)
 */
+ 
+/*
+* PSX memory functions.
+*/
+
+/* Ryan TODO: I'd rather not use GLib in here */
+
+#include <malloc.h>
+#include <gccore.h>
+#include <stdlib.h>
+#include "psxmem.h"
+#include "r3000a.h"
+#include "PsxHw.h"
+
+extern void SysMessage(char *fmt, ...);
 
 int psxMemInit() {
 	int i;
@@ -54,7 +60,7 @@ int psxMemInit() {
 	psxM = memalign(32,0x00220000);
 	psxP = &psxM[0x200000];
 	psxH = &psxM[0x210000];
-	psxR = (char*)memalign(32,0x00080000);
+	psxR = (s8*)memalign(32,0x00080000);
 	if (psxMemRLUT == NULL || psxMemWLUT == NULL || 
 		psxM == NULL || psxP == NULL || psxH == NULL) {
 		SysMessage(_("Error allocating memory!")); return -1;

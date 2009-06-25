@@ -24,7 +24,7 @@
 
 #include "decode_xa.h"
 
-#define FIXED
+#define _FIXED
 
 #define NOT(_X_)				(!(_X_))
 #define XACLAMP(_X_,_MI_,_MA_)	{if(_X_<_MI_)_X_=_MI_;if(_X_>_MA_)_X_=_MA_;}
@@ -36,7 +36,7 @@
 //===  ADPCM DECODING ROUTINES
 //============================================
 
-#ifndef FIXED
+#ifndef _FIXED
 static double K0[4] = {
     0.0,
     0.9375,
@@ -75,7 +75,7 @@ void ADPCM_InitDecode(ADPCM_Decode_t *decp) {
 }
 
 //===========================================
-#ifndef FIXED
+#ifndef _FIXED
 #define IK0(fid)	((int)((-K0[fid]) * (1<<SHC)))
 #define IK1(fid)	((int)((-K1[fid]) * (1<<SHC)))
 #else

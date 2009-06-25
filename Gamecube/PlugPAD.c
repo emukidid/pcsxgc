@@ -20,6 +20,8 @@
 #include "PsxCommon.h"
 #include "PSEmu_Plugin_Defs.h"
 
+extern void SysPrintf(char *fmt, ...);
+
 /* Button Bits */
 #define PSX_BUTTON_TRIANGLE ~(1 << 12)
 #define PSX_BUTTON_SQUARE 	~(1 << 15)

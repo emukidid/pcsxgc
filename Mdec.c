@@ -24,7 +24,7 @@
 
 #include "mdec.h"
 
-#define FIXED
+#define _FIXED
 
 #define CONST_BITS  8
 #define PASS1_BITS  2
@@ -380,7 +380,7 @@ unsigned short* rl2blk(int *blk,unsigned short *mdec_rl) {
 	return mdec_rl;
 }
 
-#ifdef FIXED
+#ifdef _FIXED
 #define	MULR(a)		((((int)0x0000059B) * (a)) >> 10)
 #define	MULG(a)		((((int)0xFFFFFEA1) * (a)) >> 10)
 #define	MULG2(a)	((((int)0xFFFFFD25) * (a)) >> 10)

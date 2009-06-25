@@ -531,7 +531,7 @@ void ConvertMcd(char *mcd, char *data) {
 }
 
 void GetMcdBlockInfo(int mcd, int block, McdBlock *Info) {
-	unsigned char *data = NULL, *ptr, *str;
+	char *data = NULL, *ptr, *str;
 	unsigned short clut[16];
 	unsigned short c;
 	int i, x;

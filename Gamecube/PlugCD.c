@@ -17,6 +17,9 @@
 #include "plugins.h"
 #include "PlugCD.h"
 #include "PsxCommon.h"
+
+extern void SysPrintf(char *fmt, ...);
+
 // gets track 
 long getTN(unsigned char* buffer)
 {

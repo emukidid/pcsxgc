@@ -18,8 +18,7 @@
 #define GETLEs16(X) ((short)GETLE16((unsigned short *)X))
 #define GETLEs32(X) ((short)GETLE32((unsigned short *)X))
 
-#define BIG_ENDIAN 
-#ifdef BIG_ENDIAN
+#if defined(HW_RVL) || defined(HW_DOL) || defined(BIG_ENDIAN)
 #if 0
 // Metrowerks styles
 #if 1

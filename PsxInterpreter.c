@@ -254,7 +254,7 @@ void psxDelayTest(int reg, u32 bpc) {
 	u32 *code;
 	u32 tmp;
 
-	code = PSXM(bpc);
+	code = (u32*)PSXM(bpc);
 	tmp = code == NULL ? 0 : SWAP32(*code);
 	branch = 1;
 
@@ -281,7 +281,7 @@ __inline void doBranch(u32 tar) {
 	branch2 = branch = 1;
 	branchPC = tar;
 
-	code = PSXM(psxRegs.pc);
+	code = (u32*)PSXM(psxRegs.pc);
 	psxRegs.code = code == NULL ? 0 : SWAP32(*code);
 
 	debugI();
@@ -770,8 +770,8 @@ static void intExecute() {
 }
 
 static void intExecuteDbg() {
-	for (;;) 
-		execIDbg();
+	/*for (;;) 
+		execIDbg();*/
 }
 
 static void intExecuteBlock() {
@@ -780,8 +780,8 @@ static void intExecuteBlock() {
 }
 
 static void intExecuteBlockDbg() {
-	branch2 = 0;
-	while (!branch2) execIDbg();
+	/*branch2 = 0;
+	while (!branch2) execIDbg();*/
 }
 
 static void intClear(u32 Addr, u32 Size) {
@@ -792,7 +792,7 @@ static void intShutdown() {
 
 // interpreter execution
 inline void execI() { 
-	u32 *code = PSXM(psxRegs.pc); 
+	u32 *code = (u32*)PSXM(psxRegs.pc); 
 	psxRegs.code = code == NULL ? 0 : SWAP32(*code);	
  
 	debugI();

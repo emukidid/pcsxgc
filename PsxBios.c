@@ -23,7 +23,7 @@
 */
 
 #include "psxbios.h"
-
+#include "PsxHw.h"
 //We try to emulate bios :) HELP US :P
 
 char *biosA0n[256] = {
@@ -167,12 +167,13 @@ char *biosC0n[256] = {
 #define ra (psxRegs.GPR.n.ra)
 #define pc0 (psxRegs.pc)
 
-#define Ra0 ((char*)PSXM(a0))
-#define Ra1 ((char*)PSXM(a1))
-#define Ra2 ((char*)PSXM(a2))
-#define Ra3 ((char*)PSXM(a3))
-#define Rv0 ((char*)PSXM(v0))
-#define Rsp ((char*)PSXM(sp))
+#define SANE_PSXM(mem) ((u8*)(psxMemRLUT[(mem) >> 16] + ((mem) & 0xffff)))
+#define Ra0 ((char*)SANE_PSXM(a0))
+#define Ra1 ((char*)SANE_PSXM(a1))
+#define Ra2 ((char*)SANE_PSXM(a2))
+#define Ra3 ((char*)SANE_PSXM(a3))
+#define Rv0 ((char*)SANE_PSXM(v0))
+#define Rsp ((char*)SANE_PSXM(sp))
 
 
 typedef struct {
@@ -481,8 +482,8 @@ void psxBios_malloc() { // 33
 #ifdef PSXBIOS_LOG
 	PSXBIOS_LOG("psxBios_%s\n", biosA0n[0x33]);
 #endif
-	unsigned int *chunk, *newchunk;
-	unsigned int dsize, csize, cstat;
+	unsigned int *chunk, *newchunk = 0;
+	unsigned int dsize = 0, csize, cstat;
 	int colflag;
 	
 	// scan through heap and combine free chunks of space
@@ -544,7 +545,7 @@ void psxBios_malloc() { // 33
 		// split free chunk
 		*chunk = SWAP32(dsize);
 		newchunk = (u32*)((u32)chunk + dsize + 4);
-		*newchunk = SWAP32((csize - dsize - 4) & 0xfffffffc | 1);
+		*newchunk = SWAP32((((csize - dsize - 4) & 0xfffffffc) | 1));
 	}
 
 	// return pointer to allocated memory
@@ -623,7 +624,7 @@ void psxBios_printf() { // 3f
 	char *ptmp = tmp;
 	int n=1, i=0, j;
 
-	memcpy(save, (char*)PSXM(sp), 4*4);
+	memcpy(save, (char*)SANE_PSXM(sp), 4*4);
 	psxMu32ref(sp) = SWAP32((u32)a0);
 	psxMu32ref(sp + 4) = SWAP32((u32)a1);
 	psxMu32ref(sp + 8) = SWAP32((u32)a2);
@@ -677,7 +678,7 @@ _start:
 	}
 	*ptmp = 0;
 
-	memcpy((char*)PSXM(sp), save, 4*4);
+	memcpy((char*)SANE_PSXM(sp), save, 4*4);
 
 	SysPrintf(tmp);
 
@@ -2130,7 +2131,7 @@ void psxBiosInit() {
 	psxMu32ref(0x0150) = SWAPu32(0x160);
 	psxMu32ref(0x0154) = SWAPu32(0x320);
 	psxMu32ref(0x0160) = SWAPu32(0x248);
-	strcpy(&psxM[0x248], "bu");
+	strcpy((char*)&psxM[0x248], "bu");
 /*	psxMu32ref(0x0ca8) = SWAPu32(0x1f410004);
 	psxMu32ref(0x0cf0) = SWAPu32(0x3c020000);
 	psxMu32ref(0x0cf4) = SWAPu32(0x2442641c);

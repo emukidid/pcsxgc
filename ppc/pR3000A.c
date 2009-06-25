@@ -16,21 +16,25 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef _MSC_VER_
-#pragma warning(disable:4244)
-#pragma warning(disable:4761)
-#endif
+#include <gccore.h>
+#include <malloc.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <sys/types.h>
-#include <sys/mman.h>
 
 #include "../psxcommon.h"
 #include "ppc.h"
 #include "reguse.h"
 #include "../r3000a.h"
 #include "../psxhle.h"
+
+extern void SysRunGui();
+extern void SysMessage(char *fmt, ...);
+extern void SysReset();
+extern void SysPrintf(char *fmt, ...);
 
 //#define NO_CONSTANT
 
@@ -178,7 +182,7 @@ static int PutHWRegSpecial(int which);
 static void recRecompile();
 static void recError();
 
-#pragma mark --- Generic register mapping ---
+/* --- Generic register mapping --- */
 
 static int GetFreeHWReg()
 {
@@ -316,7 +320,7 @@ static void InvalidateCPURegs()
 	FlushCPURegRange(0,12);
 }
 
-#pragma mark --- Mapping utility functions ---
+/* --- Mapping utility functions --- */
 
 static void MoveHWRegToCPUReg(int cpureg, int hwreg)
 {
@@ -401,7 +405,7 @@ static void ReleaseArgs()
 	}
 }
 
-#pragma mark --- Psx register mapping ---
+/* --- Psx register mapping --- */
 
 static void MapPsxReg32(int reg)
 {
@@ -507,7 +511,7 @@ static int PutHWReg32(int reg)
 	return UpdateHWRegUsage(iRegs[reg].reg, usage);
 }
 
-#pragma mark --- Special register mapping ---
+/* --- Special register mapping --- */
 
 static int GetSpecialIndexFromHWRegs(int which)
 {
@@ -675,8 +679,6 @@ static int PutHWRegSpecial(int which)
 
 	return UpdateHWRegUsage(index, usage);
 }
-
-#pragma mark --- ---
 
 static void MapConst(int reg, u32 _const) {
 	if (reg == 0)
@@ -985,13 +987,13 @@ static void iBranch(u32 branchPC, int savectx) {
 }
 
 
-static void iDumpRegs() {
+void iDumpRegs() {
 	int i, j;
 
-	printf("%lx %lx\n", psxRegs.pc, psxRegs.cycle);
+	printf("%08x %08x\n", psxRegs.pc, psxRegs.cycle);
 	for (i=0; i<4; i++) {
 		for (j=0; j<8; j++)
-			printf("%lx ", psxRegs.GPR.r[j*i]);
+			printf("%08x ", psxRegs.GPR.r[j*i]);
 		printf("\n");
 	}
 }
@@ -1177,7 +1179,7 @@ static void recBASIC() {
 
 //end of Tables opcodes...
 
-#pragma mark - Arithmetic with immediate operand -
+/* - Arithmetic with immediate operand - */
 /*********************************************************
 * Arithmetic with immediate operand                      *
 * Format:  OP rt, rs, immediate                          *
@@ -1305,7 +1307,7 @@ static void recLUI()  {
 //#endif
 //End of Load Higher .....
 
-#pragma mark - Register arithmetic -
+/* - Register arithmetic - */
 /*********************************************************
 * Register arithmetic                                    *
 * Format:  OP rd, rs, rt                                 *
@@ -1510,7 +1512,7 @@ static void recSLTU() {
 #endif
 //End of * Register arithmetic
 
-#pragma mark - mult/div & Register trap logic -
+/* - mult/div & Register trap logic - */
 /*********************************************************
 * Register mult/div & Register trap logic                *
 * Format:  OP rs, rt                                     *
@@ -1691,7 +1693,7 @@ static void recDIV() {
 			SRAWI(PutHWReg32(REG_LO), GetHWReg32(_Rs_), shift);
 			ADDZE(PutHWReg32(REG_LO), GetHWReg32(REG_LO));
 			if (usehi) {
-				RLWINM(PutHWReg32(REG_HI), GetHWReg32(_Rs_), 0, 31-shift, 31);
+				RLWINM(PutHWReg32(REG_HI), GetHWReg32(_Rs_), 0, (31-shift), 31);
 			}
 		} else if (iRegs[_Rt_].k == 3) {
 			// http://the.wall.riscom.net/books/proc/ppc/cwg/code2.html
@@ -1746,7 +1748,7 @@ static void recDIVU() {
 		if (shift != -1) {
 			SRWI(PutHWReg32(REG_LO), GetHWReg32(_Rs_), shift);
 			if (usehi) {
-				RLWINM(PutHWReg32(REG_HI), GetHWReg32(_Rs_), 0, 31-shift, 31);
+				RLWINM(PutHWReg32(REG_HI), GetHWReg32(_Rs_), 0, (31-shift), 31);
 			}
 		} else {
 			DIVWU(PutHWReg32(REG_LO), GetHWReg32(_Rs_), GetHWReg32(_Rt_));
@@ -1766,7 +1768,7 @@ static void recDIVU() {
 #endif
 //End of * Register mult/div & Register trap logic  
 
-#pragma mark - memory access -
+/* - memory access - */
 
 #if 0
 REC_FUNC(LB);
@@ -2420,7 +2422,7 @@ static void recSH() {
 
 static void recSW() {
 // mem[Rs + Im] = Rt
-	u32 *b1, *b2;
+	//u32 *b1, *b2;
 #if 0
 	if (IsConst(_Rs_)) {
 		u32 addr = iRegs[_Rs_].k + _Imm_;
@@ -2760,7 +2762,7 @@ static void recSRA() {
 }
 #endif
 
-#pragma mark - shift ops -
+/* - shift ops - */
 #if 0
 /*REC_FUNC(SLLV);
 REC_FUNC(SRLV);
@@ -2879,7 +2881,7 @@ static void recMTLO() {
 }
 #endif
 
-#pragma mark - branch ops -
+/* - branch ops - */
 #if 0
 /*REC_BRANCH(J);
 REC_BRANCH(JR);

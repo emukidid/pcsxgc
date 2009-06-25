@@ -23,6 +23,9 @@
 */
 
 #include "misc.h"
+#include "CdRom.h"
+#include "PsxHw.h"
+#include "Mdec.h"
 
 int Log = 0;
 
@@ -54,7 +57,7 @@ struct iso_directory_record {
 void mmssdd( char *b, char *p )
  {
 	int m, s, d;
-#if defined(__BIGENDIAN__) || defined(HW_RVL)
+#if defined(HW_RVL) || defined(HW_DOL) || defined(BIG_ENDIAN)
 	int block = (b[0]&0xff) | ((b[1]&0xff)<<8) | ((b[2]&0xff)<<16) | (b[3]<<24);
 #else
 	int block = *((int*)b);
@@ -100,14 +103,14 @@ void mmssdd( char *b, char *p )
 	READTRACK(); \
 	memcpy(_dir+2048, buf+12, 2048);
 
-int GetCdromFile(u8 *mdir, u8 *time, s8 *filename) {
+int GetCdromFile(u8 *mdir, u8 *time, char *filename) {
 	struct iso_directory_record *dir;
 	char ddir[4096];
 	u8 *buf;
 	int i;
 
 	// only try to scan if a filename is given
-	if(!strlen(filename)) return -1;
+	if(!strlen((char*)filename)) return -1;
 	
 	i = 0;
 	while (i < 4096) {
@@ -118,7 +121,7 @@ int GetCdromFile(u8 *mdir, u8 *time, s8 *filename) {
 		i += dir->length[0];
 
 		if (dir->flags[0] & 0x2) { // it's a dir
-			if (!strnicmp((char*)&dir->name[0], filename, dir->name_len[0])) {
+			if (!strnicmp((char*)&dir->name[0], (char*)filename, dir->name_len[0])) {
 				if (filename[dir->name_len[0]] != '\\') continue;
 				
 				filename+= dir->name_len[0] + 1;
@@ -128,7 +131,7 @@ int GetCdromFile(u8 *mdir, u8 *time, s8 *filename) {
 				i = 0;
 			}
 		} else {
-			if (!strnicmp((char*)&dir->name[0], filename, strlen(filename))) {
+			if (!strnicmp((char*)&dir->name[0], (char*)filename, strlen((char*)filename))) {
 				mmssdd(dir->extent, (char*)time);
 				break;
 			}
@@ -142,8 +145,8 @@ int LoadCdrom() {
 	struct iso_directory_record *dir;
 	u8 time[4],*buf;
 	u8 mdir[4096];
-	s8 exename[256];
-	int i;
+	char exename[256];
+
 
 	if (!Config.HLE) {
 		psxRegs.pc = psxRegs.GPR.n.ra;
@@ -176,7 +179,7 @@ int LoadCdrom() {
 		if (GetCdromFile(mdir, time, exename) == -1) {
 			sscanf((char*)buf+12, "BOOT = cdrom:%256s", exename);
 			if (GetCdromFile(mdir, time, exename) == -1) {
-				char *ptr = strstr(buf+12, "cdrom:");
+				char *ptr = strstr((char*)buf+12, "cdrom:");
 				if(ptr) {
 					strncpy(exename, ptr, 256);
 					if (GetCdromFile(mdir, time, exename) == -1)
@@ -235,7 +238,7 @@ int LoadCdromFile(char *filename, EXE_HEADER *head) {
 
 	READDIR(mdir);
 
-	if (GetCdromFile(mdir, time, exename) == -1) return -1;
+	if (GetCdromFile(mdir, time, (char*)exename) == -1) return -1;
 
 	READTRACK();
 
@@ -247,7 +250,7 @@ int LoadCdromFile(char *filename, EXE_HEADER *head) {
 		incTime();
 		READTRACK();
 
-		memcpy((void *)PSXM(addr), buf+12, 2048);
+		memcpy((u8*)(psxMemRLUT[(addr) >> 16] + ((addr) & 0xffff)), (char*)buf+12, 2048);
 
 		size -= 2048;
 		addr += 2048;
@@ -270,7 +273,7 @@ int CheckCdrom() {
 	CdromLabel[32]=0;
 	CdromId[9]=0;
 
-	strncpy(CdromLabel, buf+52, 32);
+	strncpy(CdromLabel, (char*)buf+52, 32);
 
 	// skip head and sub, and go to the root directory record
 	dir = (struct iso_directory_record*) &buf[12+156]; 
@@ -286,7 +289,7 @@ int CheckCdrom() {
 		if (GetCdromFile(mdir, time, exename) == -1) {
 			sscanf((char*)buf+12, "BOOT = cdrom:%256s", exename);
 			if (GetCdromFile(mdir, time, exename) == -1) {
-				char *ptr = strstr(buf+12, "cdrom:");			// possibly the executable is in some subdir
+				char *ptr = strstr((char*)buf+12, "cdrom:");			// possibly the executable is in some subdir
 				for (i=0; i<32; i++) {
 					if (ptr[i] == ' ') continue;
 					if (ptr[i] == '\\') continue;
@@ -344,7 +347,7 @@ static int PSXGetFileType(FILE *f) {
     if (mybuf[0]=='C' && mybuf[1]=='P' && mybuf[2]=='E')
         return CPE_EXE;
 
-    coff_hdr = (FILHDR *)mybuf;
+    coff_hdr = (FILHDR*)mybuf;
     if (coff_hdr->f_magic == 0x0162)
         return COFF_EXE;
 

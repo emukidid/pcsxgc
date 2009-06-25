@@ -40,7 +40,7 @@
 
 #define SUM_FLAG if(gteFLAG & 0x7F87E000) gteFLAG |= 0x80000000;
 
-#if defined(__BIGENDIAN__) || defined(HW_RVL)
+#if defined(HW_RVL) || defined(HW_DOL) || defined(BIG_ENDIAN)
 #define SEL16(n) ((n)^1)
 #define SEL8(n) ((n)^3)
 #else
@@ -418,28 +418,28 @@ __inline double NC_OVERFLOW4(double x) {
 }
 
 __inline s32 FNC_OVERFLOW1(s64 x) {
-	if (x< (s64)0xffffffff80000000) {gteFLAG |= 1<<29;}	
+	if (x< (s64)0xffffffff80000000LL) {gteFLAG |= 1<<29;}	
 	else if (x> 2147483647) {gteFLAG |= 1<<26;}
 
 	return (s32)x;
 }
 
 __inline s32 FNC_OVERFLOW2(s64 x) {
-	if (x< (s64)0xffffffff80000000) {gteFLAG |= 1<<28;}	
+	if (x< (s64)0xffffffff80000000LL) {gteFLAG |= 1<<28;}	
 	else if (x> 2147483647) {gteFLAG |= 1<<25;}
 	
 	return (s32)x;
 }
 
 __inline s32 FNC_OVERFLOW3(s64 x) {
-	if (x< (s64)0xffffffff80000000) {gteFLAG |= 1<<27;}	
+	if (x< (s64)0xffffffff80000000LL) {gteFLAG |= 1<<27;}	
 	else if (x> 2147483647) {gteFLAG |= 1<<24;}
 	
 	return (s32)x;
 }
 
 __inline s32 FNC_OVERFLOW4(s64 x) {
-	if (x< (s64)0xffffffff80000000) {gteFLAG |= 1<<16;}	
+	if (x< (s64)0xffffffff80000000LL) {gteFLAG |= 1<<16;}	
 	else if (x> 2147483647) {gteFLAG |= 1<<15;}
 	
 	return (s32)x;
@@ -504,7 +504,7 @@ __inline s32 FlimE  (s32 x) { _LIMX(0, 65535, 12); }
 
 __inline s32 FlimG1(s64 x) {
 	if (x > 2147483647) { gteFLAG |= (1<<16); } else
-	if (x < (s64)0xffffffff80000000) { gteFLAG |= (1<<15); }
+	if (x < (s64)0xffffffff80000000LL) { gteFLAG |= (1<<15); }
 
 	if (x >       1023) { x =  1023; gteFLAG |= (1<<14); } else
 	if (x <      -1024) { x = -1024; gteFLAG |= (1<<14); } return (x);
@@ -512,7 +512,7 @@ __inline s32 FlimG1(s64 x) {
 
 __inline s32 FlimG2(s64 x) {
 	if (x > 2147483647) { gteFLAG |= (1<<16); } else
-	if (x < (s64)0xffffffff80000000) { gteFLAG |= (1<<15); }
+	if (x < (s64)0xffffffff80000000LL) { gteFLAG |= (1<<15); }
 
 	if (x >       1023) { x =  1023; gteFLAG |= (1<<13); } else
 	if (x <      -1024) { x = -1024; gteFLAG |= (1<<13); } return (x);

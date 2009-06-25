@@ -59,7 +59,7 @@ typedef uintptr_t uptr;
 #include "debug.h"
 
 /* Ryan TODO WTF is this? */
-#if defined (__LINUX__) || defined (__MACOSX__) || defined(HW_RVL)
+#if defined (__LINUX__) || defined (__MACOSX__) || defined(HW_RVL) || defined(HW_DOL)
 #define strnicmp strncasecmp
 #endif
 #define __inline inline

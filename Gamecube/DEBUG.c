@@ -2,6 +2,7 @@
    by Mike Slegeir for Mupen64-GC
  */
 
+#include <gccore.h>
 #include <string.h>
 #include <stdio.h>
 #include <fat.h>

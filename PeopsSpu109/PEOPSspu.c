@@ -981,7 +981,6 @@ void CALLBACK PEOPS_SPUasync(unsigned long cycle)
 
 void CALLBACK PEOPS_SPUupdate(void)
 {
-  DEBUG_print("PEOPS_SPUupdate called",11);
  PEOPS_SPUasync(0);
 }
 
@@ -993,7 +992,6 @@ void CALLBACK PEOPS_SPUupdate(void)
 
 void CALLBACK PEOPS_SPUplayADPCMchannel(xa_decode_t *xap)
 {
-  DEBUG_print("PEOPS_SPUplayADPCMchannel called",11);
  if(!iUseXA)    return;                                // no XA? bye
  if(!xap)       return;
  if(!xap->freq) return;                                // no xa freq ? bye
@@ -1244,7 +1242,6 @@ void PEOPS_SPUsetConfigFile(char * pCfg)
 
 long CALLBACK PEOPS_SPUclose(void)
 {
-  DEBUG_print("PEOPS_SPUclose called",11);
  if(!bSPUIsOpen) return 0;                             // some security
 
  bSPUIsOpen=0;                                         // no more open
@@ -1320,7 +1317,6 @@ void CALLBACK PEOPS_SPUabout(void)
 
 void CALLBACK PEOPS_SPUregisterCallback(void (CALLBACK *callback)(void))
 {
-  DEBUG_print("PEOPS_SPUregisterCallback called",10);
  irqCallback = callback;
 }
 
