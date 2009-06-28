@@ -75,7 +75,11 @@ u32 *psxRecLUT;
 
 #define OFFSET(X,Y) ((u32)(Y)-(u32)(X))
 
-#define RECMEM_SIZE		(32*1024*1024)
+#ifdef HW_DOL
+#define RECMEM_SIZE		(7*1024*1024)
+#elif HW_RVL
+#define RECMEM_SIZE		(9*1024*1024)
+#endif
 
 static char *recMem;	/* the recompiled blocks will be here */
 static char *recRAM;	/* and the ptr to the blocks here */
@@ -1057,7 +1061,7 @@ static void rec##f() { \
 
 static void freeMem(int all)
 {
-    //if (recMem) free(recMem);
+    if (recMem) free(recMem);
     if (recRAM) free(recRAM);
     if (recROM) free(recROM);
     recMem = recRAM = recROM = 0;
@@ -1075,8 +1079,8 @@ static int allocMem() {
 	if (psxRecLUT==NULL)
 		psxRecLUT = (u32*) memalign(32,0x010000 * 4);
 
-	//recMem = (char*) memalign(32,RECMEM_SIZE);
-  recMem = (char*) 0x90080000;
+	recMem = (char*) memalign(32,RECMEM_SIZE);
+  //recMem = (char*) 0x90080000;
 	recRAM = (char*) memalign(32,0x200000);
 	recROM = (char*) memalign(32,0x080000);
 	if (recRAM == NULL || recROM == NULL || recMem == NULL/*(void *)-1*/ || psxRecLUT == NULL) {

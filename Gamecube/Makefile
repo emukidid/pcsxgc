@@ -17,7 +17,7 @@ include $(DEVKITPPC)/gamecube_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	CubeSX
 BUILD		:=	build
-SOURCES		:=	source . .. ../ppc/ ../PeopsSoftGPU/ ../PeopsSpu109/
+SOURCES		:=	. .. ../ppc/ ../PeopsSoftGPU/ ../PeopsSpu109/
 DATA		:=	data  
 INCLUDES	:=	.. ../ppc/ ../PeopsSpu109/
 
@@ -26,7 +26,8 @@ INCLUDES	:=	.. ../ppc/ ../PeopsSpu109/
 #---------------------------------------------------------------------------------
 
 CFLAGS	= -g -O2 -Wall $(MACHDEP) $(INCLUDE) -D__GAMECUBE__ -D__ppc__ \
-		  -D__GX__ -D_SDL -DSHOW_DEBUG -DEMBEDDED_FONTS -DNOTHREADLIB
+		  -D__GX__ -DHW_DOL -D_SDL -DSHOW_DEBUG -DEMBEDDED_FONTS -DNOTHREADLIB \
+		  -DTHREADED_AUDIO
 		  
 CXXFLAGS	=	$(CFLAGS)
 
@@ -35,7 +36,7 @@ LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-lm -lfat -logc 
+LIBS	:=	-lm -lfat -logc
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

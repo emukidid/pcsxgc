@@ -56,7 +56,13 @@ extern unsigned short ModeReg;
 extern unsigned short CtrlReg;
 extern unsigned short BaudReg;
 
+#ifdef HW_RVL
+#include "Gamecube/MEM2.h"
+extern char *Mcd1Data;
+extern char *Mcd2Data;
+#else
 extern char Mcd1Data[MCD_SIZE], Mcd2Data[MCD_SIZE];
+#endif
 
 unsigned char sioRead8();
 void sioWrite8(unsigned char value);

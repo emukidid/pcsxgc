@@ -22,7 +22,7 @@ long long texttimes[DEBUG_TEXT_HEIGHT];
 extern long long gettime();
 extern unsigned int diff_sec(long long start,long long end);
 static void check_heap_space(void){
-	sprintf(txtbuffer,"%dKB MEM1 %dKB MEM2 available", SYS_GetArena1Size()/1024,SYS_GetArena2Size()/1024);
+	sprintf(txtbuffer,"%dKB MEM1 available", SYS_GetArena1Size()/1024);
 	DEBUG_print(txtbuffer,DBG_MEMFREEINFO);
 
 }
