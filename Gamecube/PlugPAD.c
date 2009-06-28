@@ -105,6 +105,18 @@ long PAD__readPort1(PadDataS* pad) {
 	if ((!(b & PAD_TRIGGER_Z)) && (b & PAD_TRIGGER_L))
 		pad_status &= PSX_BUTTON_L1;
 					
+  if(!controllerType) {
+    //allow GC analog pad to be used for digital
+    if(PAD_StickX(0) < -50)
+      pad_status &= PSX_BUTTON_DLEFT;
+    else if(PAD_StickX(0) > 50)
+      pad_status &= PSX_BUTTON_DRIGHT;
+    if(PAD_StickY(0) < -50)
+      pad_status &= PSX_BUTTON_DDOWN;
+    else if(PAD_StickY(0) > 50)
+      pad_status &= PSX_BUTTON_DUP;
+  }
+		
   if(controllerType==1) {
   	//adjust values by 128 cause psx values in range 0-255 where 128 is center position
   	pad->leftJoyX  = (u8)(PAD_StickX(0)+127) & 0xFF;				//analog stick
@@ -155,6 +167,18 @@ long PAD__readPort2(PadDataS* pad) {
 	if ((!(b & PAD_TRIGGER_Z)) && (b & PAD_TRIGGER_L))
 		pad_status &= PSX_BUTTON_L1;
 					
+	if(!controllerType) {
+    //allow GC analog pad to be used for digital
+    if(PAD_StickX(1) < -50)
+      pad_status &= PSX_BUTTON_DLEFT;
+    else if(PAD_StickX(1) > 50)
+      pad_status &= PSX_BUTTON_DRIGHT;
+    if(PAD_StickY(1) < -50)
+      pad_status &= PSX_BUTTON_DDOWN;
+    else if(PAD_StickY(1) > 50)
+      pad_status &= PSX_BUTTON_DUP;
+  }
+		
   if(controllerType==1) {
   	//adjust values by 128 cause psx values in range 0-255 where 128 is center position
   	pad->leftJoyX  = (u8)(PAD_StickX(1)+127) & 0xFF;				//analog stick

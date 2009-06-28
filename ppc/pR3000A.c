@@ -1838,14 +1838,14 @@ static void recLBU() {
         if ((t & 0x1fe0) == 0 && (t & 0x1fff) != 0) {
             if (!_Rt_) return;
                 
-            LIW(PutHWReg32(_Rt_), (u32)&psxM[addr & 0x1fffff]); // FIXME: is this correct?
+            LIW(PutHWReg32(_Rt_), (u32)&psxM[addr & 0x1fffff]);
             LBZ(PutHWReg32(_Rt_), 0, GetHWReg32(_Rt_));
             return;
         }
         if (t == 0x1f80 && addr < 0x1f801000) {
             if (!_Rt_) return;
     
-            LIW(PutHWReg32(_Rt_), (u32)&psxH[addr & 0xfff]); // FIXME: is this correct?
+            LIW(PutHWReg32(_Rt_), (u32)&psxH[addr & 0xfff]);
             LBZ(PutHWReg32(_Rt_), 0, GetHWReg32(_Rt_));
             return;
         }

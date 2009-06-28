@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
 	strcpy(Config.Net,"Disabled");
 	strcpy(Config.Mcd1,"/PSXISOS/Memcard1.mcd");
   strcpy(Config.Mcd2,"/PSXISOS/Memcard2.mcd");
-	Config.PsxOut = 1;
+	Config.PsxOut = 0;
 	Config.HLE = 1;
 	Config.Xa = 1;  //XA enabled
 	Config.Cdda = 1;
@@ -273,9 +273,6 @@ void SysCloseLibrary(void *lib) {
 
 int framesdone = 0;
 void SysUpdate() {
-	sprintf(txtbuffer,"Executed %i SysUpdates",framesdone);
-	DEBUG_print(txtbuffer,DBG_CORE1);
-	//printf("Executed %i frames\n",framesdone);
 	framesdone++;
 //	PADhandleKey(PAD1_keypressed());
 //	PADhandleKey(PAD2_keypressed());
