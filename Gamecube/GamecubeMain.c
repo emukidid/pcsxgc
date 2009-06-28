@@ -49,15 +49,14 @@ GXRModeObj *vmode;				/*** Graphics Mode Object ***/
 #define DEFAULT_FIFO_SIZE ( 256 * 1024 )
 extern int controllerType;
 
-
-//static u8 gp_fifo[DEFAULT_FIFO_SIZE] ATTRIBUTE_ALIGN(32); /*** 3D GX FIFO ***/
-
+int stop = 0;
 
 void ScanPADSandReset() { 
   PAD_ScanPads(); 
   if(!((*(u32*)0xCC003000)>>16)) 
-    *(int*)0=0xbeef;  //kill program, exit(); doesn't work here.
+    stop=1;  //exit will be called
 }
+
 static void Initialise (void){
   VIDEO_Init();
   PAD_Init();

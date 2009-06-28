@@ -31,6 +31,8 @@ static int branch = 0;
 static int branch2 = 0;
 static u32 branchPC;
 
+extern int stop;
+
 // These macros are used to assemble the repassembler functions
 
 #ifdef PSXCPU_LOG
@@ -799,6 +801,7 @@ inline void execI() {
  
 	psxRegs.pc+= 4; psxRegs.cycle++; 
 	psxBSC[psxRegs.code >> 26](); 
+	if(stop) exit(0);
 }
 
 /* debugger version */

@@ -36,6 +36,8 @@ extern void SysMessage(char *fmt, ...);
 extern void SysReset();
 extern void SysPrintf(char *fmt, ...);
 
+extern int stop;
+
 //#define NO_CONSTANT
 
 u32 *psxRecLUT;
@@ -1132,6 +1134,7 @@ __inline static void execute() {
 		recRecompile();
 	}
 	recRun(*recFunc, (u32)&psxRegs, (u32)&psxM);
+	if(stop) exit(0);
 }
 
 static void recExecute() {

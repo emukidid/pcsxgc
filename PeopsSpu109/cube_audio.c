@@ -29,14 +29,14 @@
 
 
 #define NUM_BUFFERS 8
-#define BUFFER_SIZE 3840/2
+#define BUFFER_SIZE 3840
 static char buffer[NUM_BUFFERS][BUFFER_SIZE] __attribute__((aligned(32)));
 static int which_buffer = 0;
 static unsigned int buffer_offset = 0;
 #define NEXT(x) (x=(x+1)%NUM_BUFFERS)
 static const float freq_ratio = 44100.0f / 48000.0f;
 static const float inv_freq_ratio = 48000.0f / 44100.0f;
-static enum { BUFFER_SIZE_48_60 = 3200/2, BUFFER_SIZE_48_50 = 3840/2 } buffer_size;
+static enum { BUFFER_SIZE_48_60 = 3200, BUFFER_SIZE_48_50 = 3840 } buffer_size;
 
 #ifdef THREADED_AUDIO
 static lwp_t audio_thread;
@@ -80,7 +80,7 @@ void SetupSound(void)
 	buffer_size = Config.PsxType ? BUFFER_SIZE_48_50 : BUFFER_SIZE_48_60;
 	AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
 	copy_to_buffer = iDisStereo ? copy_to_buffer_mono : copy_to_buffer_stereo;
-	printf("SetupSound\n");
+	//printf("SetupSound\n");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -109,9 +109,9 @@ void RemoveSound(void)
 
 unsigned long SoundGetBytesBuffered(void)
 {
- 	sprintf(txtbuffer,"SoundGetBytesBuffered returns approx: %d bytes",
+ 	/*sprintf(txtbuffer,"SoundGetBytesBuffered returns approx: %d bytes",
  	        buffer_size - AUDIO_GetDMABytesLeft());
- 	DEBUG_print(txtbuffer,12);
+ 	DEBUG_print(txtbuffer,12);*/
   return buffer_size - AUDIO_GetDMABytesLeft();
 }
 
