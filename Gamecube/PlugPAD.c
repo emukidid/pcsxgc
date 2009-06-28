@@ -1,7 +1,7 @@
-/* 	
+/*
 	Basic Analog PAD plugin for PCSX Gamecube
 	by emu_kidid based on the DC/MacOSX HID plugin
-	
+
 	TODO: Rumble?
 */
 
@@ -52,7 +52,7 @@ long PAD__init(long flags) {
 	/* Read Configuration here */
 
 	SysPrintf("end PAD_init()\r\n");
-	
+
 	return PSE_PAD_ERR_SUCCESS;
 }
 
@@ -73,7 +73,7 @@ long PAD__readPort1(PadDataS* pad) {
 
 	int b = PAD_ButtonsHeld(0);
 	uint16_t pad_status = 0xFFFF;	//bit pointless why is this done this way?
-	
+
 	/* PAD Buttons, Start = Start, Select = Start+Z, Cross = A, Square = B, Triangle = Y, Circle = X */
 	if ((b & PAD_BUTTON_START) && (!(b & PAD_TRIGGER_Z)))
 		pad_status &= PSX_BUTTON_START;
@@ -104,7 +104,7 @@ long PAD__readPort1(PadDataS* pad) {
 		pad_status &= PSX_BUTTON_R1;
 	if ((!(b & PAD_TRIGGER_Z)) && (b & PAD_TRIGGER_L))
 		pad_status &= PSX_BUTTON_L1;
-					
+
   if(!controllerType) {
     //allow GC analog pad to be used for digital
     if(PAD_StickX(0) < -50)
@@ -116,13 +116,13 @@ long PAD__readPort1(PadDataS* pad) {
     else if(PAD_StickY(0) > 50)
       pad_status &= PSX_BUTTON_DUP;
   }
-		
+
   if(controllerType==1) {
   	//adjust values by 128 cause psx values in range 0-255 where 128 is center position
   	pad->leftJoyX  = (u8)(PAD_StickX(0)+127) & 0xFF;				//analog stick
-  	pad->leftJoyY  = (u8)(PAD_StickY(0)+127) & 0xFF;		
+  	pad->leftJoyY  = (u8)(-PAD_StickY(0)+127) & 0xFF;
   	pad->rightJoyX = (u8)(PAD_SubStickX(0)+127) & 0xFF;			//C-stick (Left JoyStick)
-  	pad->rightJoyY = (u8)(PAD_SubStickY(0)+127) & 0xFF;	
+  	pad->rightJoyY = (u8)(PAD_SubStickY(0)+127) & 0xFF;
   	pad->controllerType = PSE_PAD_TYPE_ANALOGPAD; 	// Analog Pad  (Right JoyStick)
 	}
   else if(!controllerType)
@@ -135,7 +135,7 @@ long PAD__readPort2(PadDataS* pad) {
 
 	int b = PAD_ButtonsHeld(1);
 	uint16_t pad_status = 0xFFFF;	//bit pointless why is this done this way?
-	
+
 	/* PAD Buttons, Start = Start, Select = Start+Z, Cross = A, Square = B, Triangle = Y, Circle = X */
 	if ((b & PAD_BUTTON_START) && (!(b & PAD_TRIGGER_Z)))
 		pad_status &= PSX_BUTTON_START;
@@ -166,7 +166,7 @@ long PAD__readPort2(PadDataS* pad) {
 		pad_status &= PSX_BUTTON_R1;
 	if ((!(b & PAD_TRIGGER_Z)) && (b & PAD_TRIGGER_L))
 		pad_status &= PSX_BUTTON_L1;
-					
+
 	if(!controllerType) {
     //allow GC analog pad to be used for digital
     if(PAD_StickX(1) < -50)
@@ -178,13 +178,13 @@ long PAD__readPort2(PadDataS* pad) {
     else if(PAD_StickY(1) > 50)
       pad_status &= PSX_BUTTON_DUP;
   }
-		
+
   if(controllerType==1) {
   	//adjust values by 128 cause psx values in range 0-255 where 128 is center position
   	pad->leftJoyX  = (u8)(PAD_StickX(1)+127) & 0xFF;				//analog stick
-  	pad->leftJoyY  = (u8)(PAD_StickY(1)+127) & 0xFF;		
+  	pad->leftJoyY  = (u8)(PAD_StickY(1)+127) & 0xFF;
   	pad->rightJoyX = (u8)(PAD_SubStickX(1)+127) & 0xFF;			//C-stick (Left JoyStick)
-  	pad->rightJoyY = (u8)(PAD_SubStickY(1)+127) & 0xFF;	
+  	pad->rightJoyY = (u8)(PAD_SubStickY(1)+127) & 0xFF;
   	pad->controllerType = PSE_PAD_TYPE_ANALOGPAD; 	// Analog Pad  (Right JoyStick)
 	}
   else if(!controllerType)
