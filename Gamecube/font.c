@@ -157,7 +157,11 @@ extern void __SYS_ReadROM(void *buf,u32 len,u32 offset);
 
 void init_font(void)
 {
-	unsigned char *fontWork = (unsigned char*)memalign(32,0x20000);
+#ifdef HW_RVL  
+	unsigned char *fontWork = (unsigned char*)FONTWORK_LO;
+#else
+  unsigned char *fontWork = (unsigned char*)memalign(32,131072);
+#endif
 	//because we can't SYS_ReadROM straight to MEM2 on Wii, we must use a MEM1 buffer
 	unsigned char *fontCompressed = (unsigned char*)memalign(32,0x3000);
 	int i;
@@ -175,7 +179,6 @@ void init_font(void)
 	TF_I2toI4((unsigned char*)&fontFont[0], (unsigned char*)&fontWork[fnt->offset_tile], fnt->texture_width, fnt->texture_height);
 	DCFlushRange((unsigned char*)&fontFont[0], 512*256);
 	
-  free(fontWork);
 	for (i=0; i<256; ++i)
 	{
 		int c = i;

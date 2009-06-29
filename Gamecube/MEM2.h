@@ -29,5 +29,10 @@
 #define FONT_LO   (MCD2_HI)
 #define FONT_HI   (FONT_LO + FONT_SIZE)
 
+// We want 256KB for fontFont
+#define FONTWORK_SIZE (128*KB)
+#define FONTWORK_LO   (FONT_HI)
+#define FONTWORK_HI   (FONTWORK_LO + FONTWORK_SIZE)
+
 
 #endif

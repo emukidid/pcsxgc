@@ -7,7 +7,7 @@
 #define CHAR_LEN 256
 
 // 2352 is a sector size, so cache is 50 sectors
-#define BUFFER_SECTORS 8
+#define BUFFER_SECTORS 32
 #define BUFFER_SIZE BUFFER_SECTORS*2352
 #define BZIP_BUFFER_SECTORS 10
 

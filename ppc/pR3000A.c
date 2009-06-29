@@ -78,7 +78,7 @@ u32 *psxRecLUT;
 #ifdef HW_DOL
 #define RECMEM_SIZE		(7*1024*1024)
 #elif HW_RVL
-#define RECMEM_SIZE		(9*1024*1024)
+#define RECMEM_SIZE		(8*1024*1024)
 #endif
 
 static char *recMem;	/* the recompiled blocks will be here */
