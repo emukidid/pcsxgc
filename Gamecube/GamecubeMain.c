@@ -172,9 +172,9 @@ int main(int argc, char *argv[]) {
 	strcpy(Config.Net,"Disabled");
 	strcpy(Config.Mcd1,"/PSXISOS/Memcard1.mcd");
   strcpy(Config.Mcd2,"/PSXISOS/Memcard2.mcd");
-	Config.PsxOut = 0;
+	Config.PsxOut = 1;
 	Config.HLE = 1;
-	Config.Xa = 1;  //XA enabled
+	Config.Xa = 0;  //XA enabled
 	Config.Cdda = 1;
 	Config.PsxAuto = 1; //Autodetect
     SysPrintf("start main()\r\n");
@@ -185,18 +185,16 @@ int main(int argc, char *argv[]) {
 		while(1);
 	}
 	OpenPlugins();
-
-	/* Start gui */
-//	menu_start();
-
 	
 	SysReset();
 	
-    SysPrintf("CheckCdrom()\r\n");
+  SysPrintf("CheckCdrom\r\n");
 	CheckCdrom();
 	LoadCdrom();
 
-    SysPrintf("Execute()\r\n");
+	
+  SysPrintf("Execute\r\n");
+  Config.PsxOut = 0;
 	psxCpu->Execute();
 
 	return 0;

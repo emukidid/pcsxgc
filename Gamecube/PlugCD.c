@@ -370,6 +370,10 @@ long CDR__init(void) {
 	char* filename = textFileBrowser("/PSXISOS");
 	char* last_slash = strrchr(filename, '/');
 	*last_slash = 0; // Separate the strings
+	if(!filename) {
+	  SysPrintf("/PSXISOS directory doesn't exist!\n");
+	  while(1);
+  }
 	strcpy(CDConfiguration.dn, filename);
 	strcpy(CDConfiguration.fn, last_slash+1);
 	free(filename);
