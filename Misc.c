@@ -22,7 +22,7 @@
 * Miscellaneous functions, including savesates and CD-ROM loading.
 */
 
-#include "misc.h"
+#include "Misc.h"
 #include "CdRom.h"
 #include "PsxHw.h"
 #include "Mdec.h"

@@ -22,7 +22,7 @@
 * Internal PSX counters.
 */
 
-#include "psxcounters.h"
+#include "PsxCounters.h"
 
 static int cnts = 4;
 psxCounter psxCounters[5];

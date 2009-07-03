@@ -22,7 +22,7 @@
 * Internal PSX HLE functions.
 */
 
-#include "psxhle.h"
+#include "PsxHLE.h"
 
 static void hleDummy() {
 	psxRegs.pc = psxRegs.GPR.n.ra;

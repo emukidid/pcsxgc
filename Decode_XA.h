@@ -21,7 +21,7 @@
 #ifndef __DECODE_XA_H__
 #define __DECODE_XA_H__
 
-#include "psxcommon.h"
+#include "PsxCommon.h"
 
 typedef struct {
 	s32	y0, y1;

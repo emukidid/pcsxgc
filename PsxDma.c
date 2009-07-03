@@ -22,7 +22,7 @@
 * Handles PSX DMA functions.
 */
 
-#include "psxdma.h"
+#include "PsxDma.h"
 
 // Dma0/1 in Mdec.c
 // Dma3   in CdRom.c

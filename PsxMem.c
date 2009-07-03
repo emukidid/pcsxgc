@@ -44,8 +44,8 @@
 #include <malloc.h>
 #include <gccore.h>
 #include <stdlib.h>
-#include "psxmem.h"
-#include "r3000a.h"
+#include "PsxMem.h"
+#include "R3000A.h"
 #include "PsxHw.h"
 
 extern void SysMessage(char *fmt, ...);

@@ -22,7 +22,7 @@
 * Handles all CD-ROM registers and functions.
 */
 
-#include "cdrom.h"
+#include "CdRom.h"
 
 /* CD-ROM magic numbers */
 #define CdlSync         0

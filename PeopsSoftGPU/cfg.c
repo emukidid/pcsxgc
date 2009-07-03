@@ -25,7 +25,7 @@
 // 2005/04/15 - Pete
 // - changed user frame limit to floating point value
 //
-// 2004/02/08 - Pete  
+// 2004/02/08 - Pete
 // - added Windows zn config file handling (no need to change it for Linux version)
 //
 // 2002/11/06 - Pete
@@ -61,8 +61,8 @@
 // - support refresh rate change
 // - modified key configuration (added toggle wait VSYNC key)
 //   (Pete: fixed key buffers and added "- default"
-//    refresh rate (=0) for cards not supporting setting the 
-//    refresh rate) 
+//    refresh rate (=0) for cards not supporting setting the
+//    refresh rate)
 //
 // 2001/12/18 - Darko Matesic
 // - added recording configuration
@@ -120,7 +120,7 @@
 #include "gpu.h"
 
 #endif
-                
+
 /////////////////////////////////////////////////////////////////////////////
 // CONFIG FILE helpers.... used in (non-fpse) Linux and ZN Windows
 /////////////////////////////////////////////////////////////////////////////
@@ -288,11 +288,11 @@ char szDevName[128];
 ////////////////////////////////////////////////////////////////////////
 // prototypes
 
-BOOL OnInitCfgDialog(HWND hW);     
-void OnCfgOK(HWND hW); 
+BOOL OnInitCfgDialog(HWND hW);
+void OnCfgOK(HWND hW);
 BOOL OnInitSoftDialog(HWND hW);
-void OnSoftOK(HWND hW); 
-void OnCfgCancel(HWND hW); 
+void OnSoftOK(HWND hW);
+void OnCfgCancel(HWND hW);
 void OnCfgDef1(HWND hW);
 void OnCfgDef2(HWND hW);
 void OnBugFixes(HWND hW);
@@ -321,12 +321,12 @@ BOOL CALLBACK SoftDlgProc(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
      switch(LOWORD(wParam))
       {
-       case IDC_DISPMODE1: 
+       case IDC_DISPMODE1:
         {
          CheckDlgButton(hW,IDC_DISPMODE2,FALSE);
          return TRUE;
         }
-       case IDC_DISPMODE2: 
+       case IDC_DISPMODE2:
         {
          CheckDlgButton(hW,IDC_DISPMODE1,FALSE);
          return TRUE;
@@ -358,7 +358,7 @@ void ComboBoxAddRes(HWND hWC,char * cs)
  ComboBox_AddString(hWC,cs);
 }
 
-BOOL OnInitSoftDialog(HWND hW) 
+BOOL OnInitSoftDialog(HWND hW)
 {
  HWND hWC;char cs[256];int i;DEVMODE dv;
 
@@ -469,12 +469,12 @@ BOOL OnInitSoftDialog(HWND hW)
 
  return TRUE;
 }
-                         
+
 ////////////////////////////////////////////////////////////////////////
 // on ok: take vals
 ////////////////////////////////////////////////////////////////////////
 
-void GetSettings(HWND hW) 
+void GetSettings(HWND hW)
 {
  HWND hWC;char cs[256];int i,j;char * p;
 
@@ -552,7 +552,7 @@ void GetSettings(HWND hW)
  if(fFrameRate>1000.0f) fFrameRate=1000.0f;
 }
 
-void OnSoftOK(HWND hW)                                 
+void OnSoftOK(HWND hW)
 {
  GetSettings(hW);
 
@@ -592,7 +592,7 @@ void OnClipboard(HWND hW)
 // Cancel
 ////////////////////////////////////////////////////////////////////////
 
-void OnCfgCancel(HWND hW) 
+void OnCfgCancel(HWND hW)
 {
  EndDialog(hW,FALSE);
 }
@@ -622,7 +622,7 @@ BOOL CALLBACK BugFixesDlgProc(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam)
       {
        case IDCANCEL: EndDialog(hW,FALSE);return TRUE;
 
-       case IDOK:     
+       case IDOK:
         {
          int i;
          dwCfgFixes=0;
@@ -767,7 +767,7 @@ BOOL CALLBACK RecordingDlgProc(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		}
        case IDCANCEL: EndDialog(hW,FALSE);return TRUE;
 
-       case IDOK:     
+       case IDOK:
         {
 		HWND hWC;
 		if(IsDlgButtonChecked(hW,IDC_REC_MODE1))	RECORD_RECORDING_MODE = 0;
@@ -801,10 +801,10 @@ void OnRecording(HWND hW)
 // default 1: fast
 ////////////////////////////////////////////////////////////////////////
 
-void OnCfgDef1(HWND hW) 
+void OnCfgDef1(HWND hW)
 {
  HWND hWC;
- 
+
  hWC=GetDlgItem(hW,IDC_RESOLUTION);
  ComboBox_SetCurSel(hWC,1);
  hWC=GetDlgItem(hW,IDC_COLDEPTH);
@@ -827,16 +827,16 @@ void OnCfgDef1(HWND hW)
  CheckDlgButton(hW,IDC_VSYNC,FALSE);
  CheckDlgButton(hW,IDC_TRANSPARENT,TRUE);
  CheckDlgButton(hW,IDC_DEBUGMODE,FALSE);
-}                
+}
 
 ////////////////////////////////////////////////////////////////////////
 // default 2: nice
 ////////////////////////////////////////////////////////////////////////
-                
-void OnCfgDef2(HWND hW) 
+
+void OnCfgDef2(HWND hW)
 {
  HWND hWC;
- 
+
  hWC=GetDlgItem(hW,IDC_RESOLUTION);
  ComboBox_SetCurSel(hWC,2);
  hWC=GetDlgItem(hW,IDC_COLDEPTH);
@@ -861,7 +861,7 @@ void OnCfgDef2(HWND hW)
  SetDlgItemInt(hW,IDC_WINX,640,FALSE);
  SetDlgItemInt(hW,IDC_WINY,480,FALSE);
 }
-                
+
 ////////////////////////////////////////////////////////////////////////
 // read registry
 ////////////////////////////////////////////////////////////////////////
@@ -870,7 +870,7 @@ void ReadConfig(void)
 {
  HKEY myKey;
  DWORD temp;
- DWORD type;               
+ DWORD type;
  DWORD size;
 
  // predefines
@@ -932,7 +932,7 @@ void ReadConfig(void)
      size = 4;
      if(RegQueryValueEx(myKey,"UseFrameSkip",0,&type,(LPBYTE)&temp,&size)==ERROR_SUCCESS)
       UseFrameSkip=(int)temp;
-     size = 4;                     
+     size = 4;
      if(RegQueryValueEx(myKey,"FrameLimit",0,&type,(LPBYTE)&temp,&size)==ERROR_SUCCESS)
       iFrameLimit=(int)temp;
      size = 4;
@@ -1001,7 +1001,7 @@ void ReadConfig(void)
 //
 #define GetDWORD(xa,xb) size=4;if(RegQueryValueEx(myKey,xa,0,&type,(LPBYTE)&temp,&size)==ERROR_SUCCESS) xb=(unsigned long)temp;
 #define GetBINARY(xa,xb) size=sizeof(xb);RegQueryValueEx(myKey,xa,0,&type,(LPBYTE)&xb,&size);
-	
+
      GetDWORD("RecordingMode",				    RECORD_RECORDING_MODE);
      GetDWORD("RecordingVideoSize",			    RECORD_VIDEO_SIZE);
      GetDWORD("RecordingWidth",				    RECORD_RECORDING_WIDTH);
@@ -1051,7 +1051,7 @@ void ReadWinSizeConfig(void)
 {
  HKEY myKey;
  DWORD temp;
- DWORD type;               
+ DWORD type;
  DWORD size;
 
  if(pConfigFile) return;                               // no need to read stuff in ZN config file mode
@@ -1084,7 +1084,7 @@ void WriteConfig(void)
  HKEY myKey;
  DWORD myDisp;
  DWORD temp;
-  
+
  RegCreateKeyEx(HKEY_CURRENT_USER,"Software\\Vision Thing\\PSEmu Pro\\GPU\\PeteSoft",0,NULL,REG_OPTION_NON_VOLATILE,KEY_ALL_ACCESS,NULL,&myKey,&myDisp);
  temp=iResX;
  RegSetValueEx(myKey,"ResX",0,REG_DWORD,(LPBYTE) &temp,sizeof(temp));
@@ -1135,7 +1135,7 @@ void WriteConfig(void)
  temp=iDebugMode;
  RegSetValueEx(myKey,"DebugMode",0,REG_DWORD,(LPBYTE) &temp,sizeof(temp));
  RegSetValueEx(myKey,"GPUKeys",0,REG_BINARY,(LPBYTE)szGPUKeys,11);
- RegSetValueEx(myKey,"DeviceName",0,REG_BINARY,(LPBYTE)szDevName,128);  
+ RegSetValueEx(myKey,"DeviceName",0,REG_BINARY,(LPBYTE)szDevName,128);
  RegSetValueEx(myKey,"GuiDev",0,REG_BINARY,(LPBYTE)&guiDev,sizeof(GUID));
 
 //
@@ -1180,7 +1180,7 @@ SetBINARY("RecordingCompressionState2",	RECORD_COMPRESSION_STATE2);
 HWND gHWND;
 
 static HRESULT WINAPI Enum3DDevicesCallback( GUID* pGUID, LPSTR strDesc,
-                                LPSTR strName, LPD3DDEVICEDESC pHALDesc, 
+                                LPSTR strName, LPD3DDEVICEDESC pHALDesc,
                                 LPD3DDEVICEDESC pHELDesc, LPVOID pvContext )
 {
  BOOL IsHardware;
@@ -1195,7 +1195,7 @@ static HRESULT WINAPI Enum3DDevicesCallback( GUID* pGUID, LPSTR strDesc,
 
  IsHardware = ( 0 != pHALDesc->dwFlags );
  if(!IsHardware) return D3DENUMRET_OK;
- 
+
  bDeviceOK=TRUE;
 
  return D3DENUMRET_OK;
@@ -1270,7 +1270,7 @@ void DoDevEnum(HWND hW)
  HMODULE hDDrawDLL = GetModuleHandle("DDRAW.DLL");
  if(NULL == hDDrawDLL) return;
 
- gHWND=hW;   
+ gHWND=hW;
 
  pDDrawEnumFn = (LPDIRECTDRAWENUMERATEEX)
    GetProcAddress( hDDrawDLL, "DirectDrawEnumerateExA" );
@@ -1327,19 +1327,19 @@ BOOL CALLBACK DeviceDlgProc(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam)
      int pos=ScrollBar_GetPos(hWC);
      switch(LOWORD(wParam))
       {
-       case SB_THUMBPOSITION:    
-        pos=HIWORD(wParam);break; 
+       case SB_THUMBPOSITION:
+        pos=HIWORD(wParam);break;
        case SB_LEFT:
         pos=0;break;
-       case SB_RIGHT:  
+       case SB_RIGHT:
         pos=1024;break;
        case SB_LINELEFT:
         pos-=16;break;
        case SB_LINERIGHT:
         pos+=16;break;
-       case SB_PAGELEFT:  
+       case SB_PAGELEFT:
         pos-=128;break;
-       case SB_PAGERIGHT: 
+       case SB_PAGERIGHT:
         pos+=128;break;
 
       }
@@ -1353,7 +1353,7 @@ BOOL CALLBACK DeviceDlgProc(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam)
       {
        case IDCANCEL: FreeGui(hW);
                       EndDialog(hW,FALSE);return TRUE;
-       case IDOK:     
+       case IDOK:
         {
          HWND hWC=GetDlgItem(hW,IDC_DEVICE);
          int i=ComboBox_GetCurSel(hWC);
@@ -1374,7 +1374,7 @@ BOOL CALLBACK DeviceDlgProc(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam)
     }
   }
  return FALSE;
-}                             
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -1394,7 +1394,7 @@ static HRESULT WINAPI EnumDisplayModesCallback( DDSURFACEDESC2* pddsd,
                                                 VOID* pvContext )
 {
  if(NULL==pddsd) return DDENUMRET_CANCEL;
-       
+
  if(pddsd->ddpfPixelFormat.dwRGBBitCount==(unsigned int)iColDepth &&
     pddsd->dwWidth==(unsigned int)iResX &&
     pddsd->dwHeight==(unsigned int)iResY)
@@ -1497,7 +1497,7 @@ void SetGPUKey(HWND hWC,char szKey)
    if(ComboBox_GetItemData(hWC,i)==szKey) break;
   }
  if(i!=iCnt) ComboBox_SetCurSel(hWC,i);
-}                                 
+}
 
 BOOL CALLBACK KeyDlgProc(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -1526,7 +1526,7 @@ BOOL CALLBACK KeyDlgProc(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam)
          wsprintf(szB,"%c",j);
          k=ComboBox_AddString(hWC,szB);
          ComboBox_SetItemData(hWC,k,j);
-        }                              
+        }
        SetGPUKey(GetDlgItem(hW,i),szGPUKeys[i-IDC_KEY1]);
       }
     }return TRUE;
@@ -1535,7 +1535,7 @@ BOOL CALLBACK KeyDlgProc(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
      switch(LOWORD(wParam))
       {
-       case IDC_DEFAULT:                 
+       case IDC_DEFAULT:
         {
          int i;
          for(i=IDC_KEY1;i<=IDC_KEY10;i++)
@@ -1552,7 +1552,7 @@ BOOL CALLBACK KeyDlgProc(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam)
            szGPUKeys[i-IDC_KEY1]=(char)ComboBox_GetItemData(hWC,ComboBox_GetCurSel(hWC));
            if(szGPUKeys[i-IDC_KEY1]<0x20) szGPUKeys[i-IDC_KEY1]=0x20;
           }
-         EndDialog(hW,TRUE);  
+         EndDialog(hW,TRUE);
          return TRUE;
         }
       }
@@ -1561,7 +1561,7 @@ BOOL CALLBACK KeyDlgProc(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam)
  return FALSE;
 }
 
-void OnKeyConfig(HWND hW) 
+void OnKeyConfig(HWND hW)
 {
  DialogBox(hInst,MAKEINTRESOURCE(IDD_KEYS),
            hW,(DLGPROC)KeyDlgProc);
@@ -1635,10 +1635,10 @@ void ReadConfig(void)
  iColDepth=16;
  iWindowMode=1;
  iUseScanLines=0;
- UseFrameLimit=0;
+ UseFrameLimit=1;
  UseFrameSkip=0;
  iFrameLimit=2;
- fFrameRate=200.0f;
+ fFrameRate=60.0f;
  dwCfgFixes=0;
  iUseFixes=0;
  iUseNoStretchBlt=1;
@@ -1661,13 +1661,13 @@ void WriteConfig(void) {
  FILE *out;char t[256];int len, size;
  char * pB, * p; char t1[8];
 
- if(pConfigFile) 
+ if(pConfigFile)
       strcpy(t,pConfigFile);
- else 
+ else
   {
    strcpy(t,"cfg/gpuPeopsSoftX.cfg");
    out = fopen(t,"rb");
-   if (!out) 
+   if (!out)
     {
      strcpy(t,"gpuPeopsSoftX.cfg");
      out = fopen(t,"rb");

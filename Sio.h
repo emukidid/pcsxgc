@@ -22,11 +22,11 @@
 #ifndef _SIO_H_
 #define _SIO_H_
 
-#include "psxcommon.h"
-#include "r3000a.h"
-#include "psxmem.h"
+#include "PsxCommon.h"
+#include "R3000A.h"
+#include "PsxMem.h"
 #include "plugins.h"
-#include "psemu_plugin_defs.h"
+#include "PSEmu_Plugin_Defs.h"
 
 #define MCD_SIZE	(1024 * 8 * 16)
 

@@ -22,7 +22,7 @@
 * Movie decoder. Based on the FPSE v0.08 Mdec decoder.
 */
 
-#include "mdec.h"
+#include "Mdec.h"
 
 #define _FIXED
 

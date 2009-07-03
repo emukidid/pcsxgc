@@ -21,10 +21,10 @@
 #ifndef __PSXDMA_H__
 #define __PSXDMA_H__
 
-#include "psxcommon.h"
-#include "r3000a.h"
-#include "psxhw.h"
-#include "psxmem.h"
+#include "PsxCommon.h"
+#include "R3000A.h"
+#include "PsxHw.h"
+#include "PsxMem.h"
 
 #define GPUDMA_INT(eCycle) { \
 	psxRegs.interrupt |= 0x01000000; \

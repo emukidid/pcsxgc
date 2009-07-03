@@ -18,8 +18,8 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-/* 
-* This file contains common definitions and includes for all parts of the 
+/*
+* This file contains common definitions and includes for all parts of the
 * emulator core.
 */
 
@@ -55,8 +55,8 @@ typedef uint64_t u64;
 typedef uintptr_t uptr;
 */
 /* Local includes */
-#include "system.h"
-#include "debug.h"
+#include "System.h"
+#include "DEBUG.h"
 
 /* Ryan TODO WTF is this? */
 #if defined (__LINUX__) || defined (__MACOSX__) || defined(HW_RVL) || defined(HW_DOL)

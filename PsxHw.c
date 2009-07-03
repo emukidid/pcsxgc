@@ -22,7 +22,7 @@
 * Functions for PSX hardware control.
 */
 
-#include "psxhw.h"
+#include "PsxHw.h"
 #include "Mdec.h"
 #include "CdRom.h"
 

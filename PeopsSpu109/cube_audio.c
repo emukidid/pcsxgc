@@ -109,10 +109,11 @@ void RemoveSound(void)
 
 unsigned long SoundGetBytesBuffered(void)
 {
- 	/*sprintf(txtbuffer,"SoundGetBytesBuffered returns approx: %d bytes",
- 	        buffer_size - AUDIO_GetDMABytesLeft());
- 	DEBUG_print(txtbuffer,12);*/
-  return buffer_size - AUDIO_GetDMABytesLeft();
+	unsigned int size = AUDIO_GetDMABytesLeft() +
+		((which_buffer - thread_buffer + NUM_BUFFERS) % NUM_BUFFERS) * buffer_size;
+	sprintf(txtbuffer,"Sound: %d bytes buffered", size);
+ 	DEBUG_print(txtbuffer,DBG_SPU1);
+	return size;
 }
 
 #ifdef THREADED_AUDIO

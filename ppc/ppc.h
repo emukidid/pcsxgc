@@ -8,7 +8,7 @@
 #define __PPC_H__
 
 // include basic types
-#include "../psxcommon.h"
+#include "../PsxCommon.h"
 #include "ppc_mnemonics.h"
 
 #define NUM_HW_REGISTERS 28

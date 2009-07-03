@@ -22,7 +22,7 @@
 * GTE functions.
 */
 
-#include "gte.h"
+#include "Gte.h"
 
 #ifdef GTE_DUMP
 #define G_OP(name,delay) fprintf(gteLog, "* : %08X : %02d : %s\n", psxRegs.code, delay, name);

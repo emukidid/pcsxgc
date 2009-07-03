@@ -21,10 +21,10 @@
 #ifndef __SPU_H__
 #define __SPU_H__
 
-#include "psxcommon.h"
+#include "PsxCommon.h"
 #include "plugins.h"
-#include "r3000a.h"
-#include "psxmem.h"
+#include "R3000A.h"
+#include "PsxMem.h"
 
 #define CALLBACK  
 

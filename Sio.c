@@ -22,7 +22,7 @@
 * SIO functions.
 */
 
-#include "sio.h"
+#include "Sio.h"
 #include <sys/stat.h>
 
 // *** FOR WORKS ON PADS AND MEMORY CARDS *****

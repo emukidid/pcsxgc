@@ -22,7 +22,7 @@
 * XA audio decoding functions (Kazzuya).
 */
 
-#include "decode_xa.h"
+#include "Decode_XA.h"
 
 #define _FIXED
 

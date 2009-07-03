@@ -25,11 +25,11 @@
 #include <time.h>
 #include <sys/types.h>
 
-#include "../psxcommon.h"
+#include "../PsxCommon.h"
 #include "ppc.h"
 #include "reguse.h"
-#include "../r3000a.h"
-#include "../psxhle.h"
+#include "../R3000A.h"
+#include "../PsxHLE.h"
 
 extern void SysRunGui();
 extern void SysMessage(char *fmt, ...);

@@ -21,10 +21,10 @@
 #ifndef __MDEC_H__
 #define __MDEC_H__
 
-#include "psxcommon.h"
-#include "r3000a.h"
-#include "psxhw.h"
-#include "psxdma.h"
+#include "PsxCommon.h"
+#include "R3000A.h"
+#include "PsxHw.h"
+#include "PsxDma.h"
 
 void mdecInit();
 void mdecWrite0(u32 data);

@@ -22,7 +22,7 @@
 * Internal emulated HLE BIOS.
 */
 
-#include "psxbios.h"
+#include "PsxBios.h"
 #include "PsxHw.h"
 //We try to emulate bios :) HELP US :P
 

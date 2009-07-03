@@ -21,8 +21,8 @@
 #ifndef __PSXHLE_H__
 #define __PSXHLE_H__
 
-#include "psxcommon.h"
-#include "r3000a.h"
+#include "PsxCommon.h"
+#include "R3000A.h"
 #include "plugins.h"
 
 extern void (*psxHLEt[256])();

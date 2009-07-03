@@ -3,7 +3,7 @@
 #define __REGUSE_H__
 
 // include basic types
-#include "../psxcommon.h"
+#include "../PsxCommon.h"
 
 #define REGUSE_NONE    0x0000
 #define REGUSE_UNKNOWN 0x0001

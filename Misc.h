@@ -21,11 +21,11 @@
 #ifndef __MISC_H__
 #define __MISC_H__
 
-#include "psxcommon.h"
-#include "coff.h"
+#include "PsxCommon.h"
+#include "Coff.h"
 #include "plugins.h"
-#include "r3000a.h"
-#include "psxmem.h"
+#include "R3000A.h"
+#include "PsxMem.h"
 
 #undef s_addr
 

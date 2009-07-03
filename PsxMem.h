@@ -21,7 +21,7 @@
 #ifndef __PSXMEMORY_H__
 #define __PSXMEMORY_H__
 
-#include "psxcommon.h"
+#include "PsxCommon.h"
 
 #if defined(HW_RVL) || defined(HW_DOL) || defined(BIG_ENDIAN)
 

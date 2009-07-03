@@ -22,7 +22,7 @@
 * R3000A CPU functions.
 */
 
-#include "r3000a.h"
+#include "R3000A.h"
 #include "PsxHw.h"
 #include "PsxDma.h"
 #include "CdRom.h"

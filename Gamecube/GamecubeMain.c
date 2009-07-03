@@ -51,9 +51,9 @@ extern int controllerType;
 
 int stop = 0;
 
-void ScanPADSandReset() { 
-  PAD_ScanPads(); 
-  if(!((*(u32*)0xCC003000)>>16)) 
+void ScanPADSandReset() {
+  PAD_ScanPads();
+  if(!((*(u32*)0xCC003000)>>16))
     stop=1;  //exit will be called
 }
 
@@ -67,7 +67,7 @@ static void Initialise (void){
 
   whichfb = 0;        /*** Frame buffer toggle ***/
   vmode = VIDEO_GetPreferredMode(NULL);
-#ifdef HW_RVL    
+#ifdef HW_RVL
   if(VIDEO_HaveComponentCable() && CONF_GetProgressiveScan())
     	vmode = &TVNtsc480Prog;
 #else
@@ -75,7 +75,7 @@ static void Initialise (void){
 	  vmode = &TVNtsc480Prog;
 #endif
   VIDEO_Configure (vmode);
- 
+
   xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode)); //assume PAL largest
   xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));	//fixme for progressive?
   console_init (xfb[0], 20, 64, vmode->fbWidth, vmode->xfbHeight,
@@ -94,17 +94,17 @@ static void Initialise (void){
   void *gp_fifo = NULL;
   gp_fifo = MEM_K0_TO_K1 (memalign (32, DEFAULT_FIFO_SIZE));
   memset (gp_fifo, 0, DEFAULT_FIFO_SIZE);
- 
+
   GX_Init (gp_fifo, DEFAULT_FIFO_SIZE);
- 
+
   // clears the bg to color and clears the z buffer
   GX_SetCopyClear ((GXColor){0,0,0,255}, 0x00000000);
   // init viewport
   GX_SetViewport (0, 0, vmode->fbWidth, vmode->efbHeight, 0, 1);
   // Set the correct y scaling for efb->xfb copy operation
   GX_SetDispCopyYScale ((f32) vmode->xfbHeight / (f32) vmode->efbHeight);
-  GX_SetDispCopyDst (vmode->fbWidth, vmode->xfbHeight); 
-  GX_SetCullMode (GX_CULL_NONE); 
+  GX_SetDispCopyDst (vmode->fbWidth, vmode->xfbHeight);
+  GX_SetCullMode (GX_CULL_NONE);
   GX_CopyDisp (xfb[0], GX_TRUE); // This clears the efb
 //  GX_CopyDisp (xfb[0], GX_TRUE); // This clears the xfb
 
@@ -122,7 +122,7 @@ PluginTable plugins[] =
 	  PLUGIN_SLOT_4,
 	  PLUGIN_SLOT_5,
 	  PLUGIN_SLOT_6,
-	  PLUGIN_SLOT_7 
+	  PLUGIN_SLOT_7
 };
 
 
@@ -139,33 +139,33 @@ int main(int argc, char *argv[]) {
 	Initialise();
 	fatInitDefault();
     draw_splash();
-	
+
   /* Configure pcsx */
 	memset(&Config, 0, sizeof(PcsxConfig));
-    
-  printf("\n\nWiiSX\n\n");  
-  
+
+  printf("\n\nWiiSX\n\n");
+
   u16 butns=0;
   printf("Select Controller Type:\n(A) Standard : (B) Analog\n");
   do{butns = PAD_ButtonsDown(0);}while(!((butns & PAD_BUTTON_A) || (butns & PAD_BUTTON_B)));
   if(butns & PAD_BUTTON_A)  controllerType=0;
   else  controllerType=1;
   printf("%s selected\n",controllerType ? "Analog":"Standard");
-    
+
   do{butns = PAD_ButtonsDown(0);}while(((butns & PAD_BUTTON_A) || (butns & PAD_BUTTON_B)));
-  
+
   printf("Select Core Type:\n(X) Dynarec : (Y) Interpreter\n");
   do{butns = PAD_ButtonsDown(0);}while(!((butns & PAD_BUTTON_X) || (butns & PAD_BUTTON_Y)));
   if(butns & PAD_BUTTON_X)  Config.Cpu=0;
   else  Config.Cpu=1;
   printf("%s selected\n",Config.Cpu ? "Interpreter":"Dynarec");
-  
+
   do{butns = PAD_ButtonsDown(0);}while(((butns & PAD_BUTTON_X) || (butns & PAD_BUTTON_Y)));
-  
+
   printf("Press A\n");
   while(!(PAD_ButtonsDown(0) & PAD_BUTTON_A));
   while((PAD_ButtonsDown(0) & PAD_BUTTON_A));
-   
+
 
 	strcpy(Config.Bios, "SCPH1001.BIN"); // Use actual BIOS
 	strcpy(Config.BiosDir, "/PSXISOS/");
@@ -179,15 +179,15 @@ int main(int argc, char *argv[]) {
 	Config.PsxAuto = 1; //Autodetect
     SysPrintf("start main()\r\n");
 
-	if (SysInit() == -1) 
+	if (SysInit() == -1)
 	{
 		printf("SysInit() Error!\n");
 		while(1);
 	}
 	OpenPlugins();
-	
+
 	SysReset();
-	
+
   SysPrintf("CheckCdrom\r\n");
 	CheckCdrom();
 	LoadCdrom();
@@ -201,6 +201,11 @@ int main(int argc, char *argv[]) {
 }
 
 int SysInit() {
+#if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
+	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
+	emuLog = fopen("/PSXISOS/emu.log", "w");
+#endif
+
     SysPrintf("start SysInit()\r\n");
 
     SysPrintf("psxInit()\r\n");
@@ -281,5 +286,5 @@ void SysRunGui() {
 }
 
 void SysMessage(char *fmt, ...) {
-	
+
 }
