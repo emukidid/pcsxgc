@@ -42,7 +42,7 @@
 #define KEY_BADTEXTURES   128
 #define KEY_CHECKTHISOUT  256
 
-#ifdef LITTLE_ENDIAN
+#ifndef _BIG_ENDIAN
 #ifndef _FPSE
 #define RED(x) (x & 0xff)
 #define BLUE(x) ((x>>16) & 0xff)
@@ -54,12 +54,12 @@
 #define GREEN(x) ((x>>8) & 0xff)
 #define COLOR(x) (x & 0xffffff)
 #endif
-#else
+#else //!_BIG_ENDIAN
 #define RED(x) ((x>>24) & 0xff)
 #define BLUE(x) ((x>>8) & 0xff)
 #define GREEN(x) ((x>>16) & 0xff)
 #define COLOR(x) SWAP32(x & 0xffffff)
-#endif
+#endif //_BIG_ENDIAN
 
 /////////////////////////////////////////////////////////////////////////////
 

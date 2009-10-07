@@ -18,7 +18,7 @@
 #define GETLEs16(X) ((short)GETLE16((unsigned short *)X))
 #define GETLEs32(X) ((short)GETLE32((unsigned short *)X))
 
-#if defined(HW_RVL) || defined(HW_DOL) || defined(BIG_ENDIAN)
+#ifdef _BIG_ENDIAN
 #if 0
 // Metrowerks styles
 #if 1
@@ -86,10 +86,10 @@ extern __inline__ void PUTLE32(unsigned long *ptr, unsigned long val) {
     __asm__ ("stwbrx %0, 0, %1" : : "r" (val), "r" (ptr) : "memory");
 }
 #endif
-#else
+#else // _BIG_ENDIAN
 #define GETLE16(X) ((unsigned short *)X)
 #define GETLE32(X) ((unsigned long *)X)
 #define GETLE16D(X) ({unsigned long val = GETLE32(X); (val<<16 | val >> 16)})
 #define PUTLE16(X, Y) {((unsigned short *)X)=(unsigned short)X}
 #define PUTLE32(X, Y) {((unsigned long *)X)=(unsigned long)X}
-#endif
+#endif //!_BIG_ENDIAN
