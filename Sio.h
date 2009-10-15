@@ -27,6 +27,7 @@
 #include "PsxMem.h"
 #include "plugins.h"
 #include "PSEmu_Plugin_Defs.h"
+#include "Gamecube/fileBrowser/fileBrowser.h"
 
 #define MCD_SIZE	(1024 * 8 * 16)
 
@@ -70,10 +71,10 @@ void sioWriteCtrl16(unsigned short value);
 void sioInterrupt();
 int sioFreeze(gzFile f, int Mode);
 
-void LoadMcd(int mcd, char *str);
-void LoadMcds(char *mcd1, char *mcd2);
-void SaveMcd(char *mcd, char *data, uint32_t adr, int size);
-void CreateMcd(char *mcd);
+void LoadMcd(int mcd, fileBrowser_file *file);
+void LoadMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2);
+void SaveMcd(fileBrowser_file *file, char *data, uint32_t adr, int size);
+void CreateMcd(int slot, fileBrowser_file *mcd);
 void ConvertMcd(char *mcd, char *data);
 
 typedef struct {

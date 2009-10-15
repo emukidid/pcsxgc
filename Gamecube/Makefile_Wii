@@ -17,9 +17,9 @@ include $(DEVKITPPC)/wii_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	WiiSX
 BUILD		:=	build
-SOURCES		:=	. .. ../ppc/ ../PeopsSoftGPU/ ../PeopsSpu109/
+SOURCES		:=	. .. ../ppc/ ../PeopsSoftGPU/ ../PeopsSpu109/ ./fileBrowser/
 DATA		:=	data  
-INCLUDES	:=	.. ../ppc/ ../PeopsSpu109/
+INCLUDES	:=	.. ../ppc/ ../PeopsSpu109/ ./fileBrowser/
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -27,7 +27,7 @@ INCLUDES	:=	.. ../ppc/ ../PeopsSpu109/
 
 CFLAGS	= -g -O2 -Wall $(MACHDEP) $(INCLUDE) -D__GAMECUBE__ -D__ppc__ \
 		  -D__GX__ -D_SDL -DSHOW_DEBUG -DEMBEDDED_FONTS -DNOTHREADLIB \
-		  -DTHREADED_AUDIO
+		  -DTHREADED_AUDIO -DWII
 		  
 CXXFLAGS	=	$(CFLAGS)
 
@@ -36,7 +36,7 @@ LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-lm -lfat -logc
+LIBS	:=	-lm -lfat -logc -ldi
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

@@ -21,6 +21,7 @@
 #include <string.h>
 #include <zlib.h>
 #include "PsxCommon.h"
+#include "fileBrowser/fileBrowser.h"
 
 #include "plugins.h"
 #include "Spu.h"
@@ -249,7 +250,7 @@ int OpenPlugins() {
 
 	while ((ret = _OpenPlugins()) == -2) {
 		ReleasePlugins();
-		LoadMcds(Config.Mcd1, Config.Mcd2);
+		LoadMcds(memCardA, memCardB);
 		if (LoadPlugins() == -1) return -1;
 	}
 	return ret;	

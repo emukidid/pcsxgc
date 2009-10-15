@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <gccore.h>
-
+#include "fileBrowser/fileBrowser.h"
 #define CHAR_LEN 256
 
 // 2352 is a sector size, so cache is 50 sectors
@@ -22,8 +22,6 @@ typedef struct {
 } cd_conf;
 
 cd_conf CDConfiguration;
-
-int rc;
 
 enum TrackType
 {
@@ -44,9 +42,9 @@ typedef struct
 } Track;
 
 struct
-{   
-   FILE* cd;
-   FILE* cdda;
+{
+   fileBrowser_file* cd;
+   fileBrowser_file* cdda;
    int numtracks;
    long bufferPos;
    long sector;
@@ -58,13 +56,13 @@ struct
 void CDDAclose(void);
 
 // function headers for cdreader.c
-void openCue(const char* filename);
-void openBin(const char* filename);
-void openIso(const char* filename);
+void openCue(fileBrowser_file* file);
+void openBin(fileBrowser_file* file);
+void openIso(fileBrowser_file* filename);
 char getNumTracks();
 void seekSector(const unsigned char m, const unsigned char s, const unsigned char f);
 unsigned char* getSector();
-void newCD(const char * filename);
+void newCD(fileBrowser_file* filename);
 void readit(const unsigned char m, const unsigned char s, const unsigned char f);
 
 

@@ -47,6 +47,10 @@
 #include "PsxMem.h"
 #include "R3000A.h"
 #include "PsxHw.h"
+#include "Gamecube/fileBrowser/fileBrowser.h"
+#include "Gamecube/fileBrowser/fileBrowser-libfat.h"
+#include "Gamecube/fileBrowser/fileBrowser-CARD.h"
+#include "Gamecube/fileBrowser/fileBrowser-DVD.h"
 
 extern void SysMessage(char *fmt, ...);
 
@@ -91,27 +95,26 @@ int psxMemInit() {
 }
 
 void psxMemReset() {
-	FILE *f = NULL;
-	char bios[256];
-
+  printf("BIOS file %s\n",biosFile->name);
+  int temp;
 	memset(psxM, 0, 0x00200000);
 	memset(psxP, 0, 0x00010000);
-
-	if (strcmp(Config.Bios, "HLE")) {
-		sprintf (bios,"%s%s",Config.BiosDir, Config.Bios);
-		f = fopen(bios, "rb");
-
-		if (f == NULL) {
-			SysMessage (_("Could not open BIOS:\"%s\". Enabling HLE Bios!\n"), bios);
-			memset(psxR, 0, 0x80000);
-			Config.HLE = BIOS_HLE;
-		}
+  memset(psxR, 0, 0x80000);
+  
+	if(biosFile_readFile(biosFile, &temp, 4) == 4) {  //bios file exists
+	  biosFile->offset = 0;
+		if(biosFile_readFile(biosFile, psxR, 0x80000) != 0x80000) { //failed size
+		  printf("Using HLE\n");
+		  Config.HLE = BIOS_HLE;
+	  }
 		else {
-			fread(psxR, 1, 0x80000, f);
-			fclose(f);
-			Config.HLE = BIOS_USER_DEFINED;
-		}
-	} else Config.HLE = BIOS_HLE;
+  		printf("Using BIOS file %s\n",biosFile->name);
+		  Config.HLE = BIOS_USER_DEFINED;
+	  }
+	}
+	else {  //bios fails to open
+  	Config.HLE = BIOS_HLE;
+	}
 }
 
 void psxMemShutdown() {

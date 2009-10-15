@@ -29,6 +29,9 @@
 #include "PsxCommon.h"
 #include "PlugCD.h"
 #include "DEBUG.h"
+#include "fileBrowser/fileBrowser.h"
+#include "fileBrowser/fileBrowser-libfat.h"
+#include "fileBrowser/fileBrowser-DVD.h"
 
 /* function prototypes */
 int SysInit();
@@ -48,8 +51,13 @@ int whichfb = 0;        /*** Frame buffer toggle ***/
 GXRModeObj *vmode;				/*** Graphics Mode Object ***/
 #define DEFAULT_FIFO_SIZE ( 256 * 1024 )
 extern int controllerType;
-
+unsigned int MALLOC_MEM2 = 0;
 int stop = 0;
+static int hasLoadedISO = 0;
+fileBrowser_file *isoFile  = NULL;  //the ISO file
+fileBrowser_file *memCardA = NULL;  //Slot 1 memory card
+fileBrowser_file *memCardB = NULL;  //Slot 2 memory card
+fileBrowser_file *biosFile = NULL;  //BIOS file
 
 void ScanPADSandReset() {
   PAD_ScanPads();
@@ -57,10 +65,31 @@ void ScanPADSandReset() {
     stop=1;  //exit will be called
 }
 
+void loadISO() {
+  if(hasLoadedISO) {
+    //free stuff here
+  }
+  if (SysInit() == -1)
+	{
+		printf("SysInit() Error!\n");
+		while(1);
+	}
+	OpenPlugins();
+
+	SysReset();
+
+  SysPrintf("CheckCdrom\r\n");
+	CheckCdrom();
+	LoadCdrom();
+  hasLoadedISO = 1;
+
+  SysPrintf("Execute\r\n");
+}
+
 static void Initialise (void){
   VIDEO_Init();
   PAD_Init();
-  PAD_Reset(0xf0000000);
+
 #ifdef HW_RVL
   CONF_Init();
 #endif
@@ -78,12 +107,11 @@ static void Initialise (void){
 
   xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode)); //assume PAL largest
   xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));	//fixme for progressive?
-  console_init (xfb[0], 20, 64, vmode->fbWidth, vmode->xfbHeight,
-        vmode->fbWidth * 2);
+  console_init (xfb[0], 20, 64, vmode->fbWidth, vmode->xfbHeight, vmode->fbWidth * 2);
   VIDEO_ClearFrameBuffer (vmode, xfb[0], COLOR_BLACK);
   VIDEO_ClearFrameBuffer (vmode, xfb[1], COLOR_BLACK);
   VIDEO_SetNextFramebuffer (xfb[0]);
-  VIDEO_SetPostRetraceCallback (ScanPADSandReset);
+  VIDEO_SetPreRetraceCallback (ScanPADSandReset);
   VIDEO_SetBlack (0);
   VIDEO_Flush ();
   VIDEO_WaitVSync ();        /*** Wait for VBL ***/
@@ -137,14 +165,15 @@ long LoadCdBios;
 int main(int argc, char *argv[]) {
 
 	Initialise();
-	fatInitDefault();
-    draw_splash();
+	//fatInitDefault();
+  draw_splash();
 
   /* Configure pcsx */
 	memset(&Config, 0, sizeof(PcsxConfig));
 
   printf("\n\nWiiSX\n\n");
 
+  //move from this point on to the menu configuration page
   u16 butns=0;
   printf("Select Controller Type:\n(A) Standard : (B) Analog\n");
   do{butns = PAD_ButtonsDown(0);}while(!((butns & PAD_BUTTON_A) || (butns & PAD_BUTTON_B)));
@@ -167,35 +196,108 @@ int main(int argc, char *argv[]) {
   while((PAD_ButtonsDown(0) & PAD_BUTTON_A));
 
 
-	strcpy(Config.Bios, "SCPH1001.BIN"); // Use actual BIOS
-	strcpy(Config.BiosDir, "/PSXISOS/");
 	strcpy(Config.Net,"Disabled");
-	strcpy(Config.Mcd1,"/PSXISOS/Memcard1.mcd");
-  strcpy(Config.Mcd2,"/PSXISOS/Memcard2.mcd");
 	Config.PsxOut = 1;
 	Config.HLE = 1;
 	Config.Xa = 0;  //XA enabled
 	Config.Cdda = 1;
 	Config.PsxAuto = 1; //Autodetect
-    SysPrintf("start main()\r\n");
+  //end of "move to menu" section
 
-	if (SysInit() == -1)
-	{
-		printf("SysInit() Error!\n");
-		while(1);
+  //call menu
+
+  //setup based on iso load device
+  if(1) { //SD
+    // Deinit any existing romFile state
+  	if(isoFile_deinit) isoFile_deinit( isoFile_topLevel );
+  	// Change all the romFile pointers
+  	isoFile_topLevel = &topLevel_libfat_Default;
+  	isoFile_readDir  = fileBrowser_libfat_readDir;
+  	isoFile_readFile = fileBrowser_libfatROM_readFile;
+  	isoFile_seekFile = fileBrowser_libfat_seekFile;
+  	isoFile_init     = fileBrowser_libfat_init;
+  	isoFile_deinit   = fileBrowser_libfatROM_deinit;
+  	// Make sure the romFile system is ready before we browse the filesystem
+  	isoFile_deinit( isoFile_topLevel );
+  	isoFile_init( isoFile_topLevel );
 	}
-	OpenPlugins();
+	if(0) { //DVD
+	  // Deinit any existing romFile state
+  	if(isoFile_deinit) isoFile_deinit( isoFile_topLevel );
+  	// Change all the romFile pointers
+  	isoFile_topLevel = &topLevel_DVD;
+  	isoFile_readDir  = fileBrowser_DVD_readDir;
+  	isoFile_readFile = fileBrowser_DVD_readFile;
+  	isoFile_seekFile = fileBrowser_DVD_seekFile;
+  	isoFile_init     = fileBrowser_DVD_init;
+  	isoFile_deinit   = fileBrowser_DVD_deinit;
+  	// Make sure the romFile system is ready before we browse the filesystem
+  	isoFile_init( isoFile_topLevel );
+  }
+  if(0) { //USB
+#ifdef WII
+  	// Deinit any existing romFile state
+  	if(isoFile_deinit) isoFile_deinit( isoFile_topLevel );
+  	// Change all the romFile pointers
+  	isoFile_topLevel = &topLevel_libfat_USB;
+  	isoFile_readDir  = fileBrowser_libfat_readDir;
+  	isoFile_readFile = fileBrowser_libfatROM_readFile;
+  	isoFile_seekFile = fileBrowser_libfat_seekFile;
+  	isoFile_init     = fileBrowser_libfat_init;
+  	isoFile_deinit   = fileBrowser_libfatROM_deinit;
+  	// Make sure the romFile system is ready before we browse the filesystem
+  	isoFile_deinit( isoFile_topLevel );
+  	isoFile_init( isoFile_topLevel );
+#endif
+}
+  //do the same as above but for memory card slots
+  if(1) { //SD
+   	saveFile_dir = &saveDir_libfat_Default;
+  	saveFile_readFile  = fileBrowser_libfat_readFile;
+  	saveFile_writeFile = fileBrowser_libfat_writeFile;
+  	saveFile_init      = fileBrowser_libfat_init;
+  	saveFile_deinit    = fileBrowser_libfat_deinit;
+  	saveFile_init(saveFile_dir);
+  } //fixme: code for the rest of the devices
+  
+  //do the same as above but for the bios(s)
+  if(1) { //SD
+   	biosFile_dir = &biosDir_libfat_Default;
+  	biosFile_readFile  = fileBrowser_libfat_readFile;
+  	biosFile_init      = fileBrowser_libfat_init;
+  	biosFile_deinit    = fileBrowser_libfat_deinit;
+  	biosFile_init(saveFile_dir);
+  } //fixme: code for the rest of the devices
+  
+  biosFile = (fileBrowser_file*)memalign(32,sizeof(fileBrowser_file)); //also hardcoded for SD.
+  memcpy(biosFile,&biosDir_libfat_Default,sizeof(fileBrowser_file));
+  strcat(biosFile->name, "/SCPH1001.BIN");          // Use actual BIOS
+  biosFile_init(biosFile);  //initialize this device
+  
+  //hardcoded for SD .. do this properly too in the menu
+  memCardA = (fileBrowser_file*)memalign(32,sizeof(fileBrowser_file));
+  memCardB = (fileBrowser_file*)memalign(32,sizeof(fileBrowser_file));
+  memcpy(memCardA,&saveDir_libfat_Default,sizeof(fileBrowser_file));  
+  strcat(memCardA->name,"/memcard1.mcd");
+  memcpy(memCardB,&saveDir_libfat_Default,sizeof(fileBrowser_file));
+  strcat(memCardB->name,"/memcard2.mcd");
+  
+  printf("Devices are alive .. Press A\n");
+  while(!(PAD_ButtonsDown(0) & PAD_BUTTON_A));
+  while((PAD_ButtonsDown(0) & PAD_BUTTON_A));
+  
+  //call a proper menu fileBrowser, not this garbage i'm doing here :p
+  isoFile = textFileBrowser(isoFile_topLevel);  //the = isn't really needed here, but yeah.
+  if(!isoFile) {
+    printf("Failed to load ISO returning to hbc in 5 sec\n");
+    sleep(5);
+    exit(0);
+  }
 
-	SysReset();
-
-  SysPrintf("CheckCdrom\r\n");
-	CheckCdrom();
-	LoadCdrom();
-
-	
-  SysPrintf("Execute\r\n");
-  Config.PsxOut = 0;
-	psxCpu->Execute();
+  //load ISO
+  loadISO();          //equivalent of loadROM in wii64
+  //Config.PsxOut = 0;  //disables all printfs
+	psxCpu->Execute();  //equivalent to go(); in wii64
 
 	return 0;
 }
@@ -215,7 +317,7 @@ int SysInit() {
 	if(LoadPlugins()==-1)
 		SysPrintf("ErrorLoadingPlugins()\r\n");
     SysPrintf("LoadMcds()\r\n");
-	LoadMcds(Config.Mcd1, Config.Mcd2);
+	LoadMcds(memCardA, memCardB);
 
 	SysPrintf("end SysInit()\r\n");
 	return 0;

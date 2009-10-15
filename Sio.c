@@ -23,6 +23,8 @@
 */
 
 #include "Sio.h"
+#include "Gamecube/fileBrowser/fileBrowser.h"
+#include "Gamecube/fileBrowser/fileBrowser-libfat.h"
 #include <sys/stat.h>
 
 // *** FOR WORKS ON PADS AND MEMORY CARDS *****
@@ -77,11 +79,11 @@ unsigned char sioRead8() {
 					switch (CtrlReg&0x2002) {
 						case 0x0002:
 							memcpy(Mcd1Data + (adrL | (adrH << 8)) * 128, &buf[1], 128);
-							SaveMcd(Config.Mcd1, Mcd1Data, (adrL | (adrH << 8)) * 128, 128);
+							SaveMcd(memCardA, Mcd1Data, (adrL | (adrH << 8)) * 128, 128);
 							break;
 						case 0x2002:
 							memcpy(Mcd2Data + (adrL | (adrH << 8)) * 128, &buf[1], 128);
-							SaveMcd(Config.Mcd2, Mcd2Data, (adrL | (adrH << 8)) * 128, 128);
+							SaveMcd(memCardB, Mcd2Data, (adrL | (adrH << 8)) * 128, 128);
 							break;
 					}
 				}
@@ -316,158 +318,96 @@ void sioInterrupt() {
 	psxRegs.interrupt|= 0x80000000;
 }
 
-void LoadMcd(int mcd, char *str) {
-	FILE *f;
+void LoadMcd(int mcd, fileBrowser_file *file) {
+	int temp = 0;
 	char *data = NULL;
 
 	if (mcd == 1) data = Mcd1Data;
 	if (mcd == 2) data = Mcd2Data;
 
-	if (*str == 0) {
-		sprintf(str, "memcards/card%d.mcd", mcd);
-		printf ("No memory card value was specified - creating a default card %s\n", str);
+	if (!file) {
+  	printf("Unable to load memory card\n"); //should never happen
+		/*sprintf(str, "memcards/card%d.mcd", mcd);
+		printf ("No memory card value was specified - creating a default card %s\n", str);*/
 	}
-	f = fopen(str, "rb");
-	if (f == NULL) {
-		printf ("The memory card %s doesn't exist - creating it\n", str);
-		CreateMcd(str);
-		f = fopen(str, "rb");
-		if (f != NULL) {
-			struct stat buf;
-
+	if(saveFile_readFile(file, &temp, 4) == 4) {  //file exists
+		file->offset = 0;
+		printf ("Loading memory card %s\n", file->name);
+		/*//hacks for memory cards from other emulators/versions -- deal with in saveswapper
+		struct stat buf;
+		if (stat(str, &buf) != -1) {  
+			if (buf.st_size == MCD_SIZE + 64) 
+				fseek(f, 64, SEEK_SET);
+			else if(buf.st_size == MCD_SIZE + 3904)
+				fseek(f, 3904, SEEK_SET);
+		}*/
+		saveFile_readFile(file, data, MCD_SIZE);
+	}
+	else {
+		printf ("The memory card %s doesn't exist - creating it\n", file->name);
+		CreateMcd(mcd, file);
+		if(saveFile_readFile(file, &temp, 4) == 4) {  //file exists
+		  file->offset = 0;
+			/*//hacks for memory cards from other emulators/versions -- deal with in saveswapper
+  		struct stat buf;
 			if (stat(str, &buf) != -1) {
 				if (buf.st_size == MCD_SIZE + 64) 
 					fseek(f, 64, SEEK_SET);
 				else if(buf.st_size == MCD_SIZE + 3904)
 					fseek(f, 3904, SEEK_SET);
-			}			
-			fread(data, 1, MCD_SIZE, f);
-			fclose(f);
+			}	*/
+			if(saveFile_readFile(file, data, MCD_SIZE)!=MCD_SIZE)
+			  SysMessage(_("Memory card failed to create %s\n"),file->name);
 		}
-		else SysMessage(_("Memory card %s failed to load!\n"), str);
-	}
-	else {
-		struct stat buf;
-		printf ("Loading memory card %s\n", str);
-		if (stat(str, &buf) != -1) {
-			if (buf.st_size == MCD_SIZE + 64) 
-				fseek(f, 64, SEEK_SET);
-			else if(buf.st_size == MCD_SIZE + 3904)
-				fseek(f, 3904, SEEK_SET);
-		}
-		fread(data, 1, MCD_SIZE, f);
-		fclose(f);
+		else SysMessage(_("Memory card %s failed to load!\n"), file->name);
 	}
 }
 
-void LoadMcds(char *mcd1, char *mcd2) {
+void LoadMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2) {
 	LoadMcd(1, mcd1);
 	LoadMcd(2, mcd2);
 }
 
-void SaveMcd(char *mcd, char *data, uint32_t adr, int size) {
-	FILE *f;
-	
-	f = fopen(mcd, "r+b");
-	if (f != NULL) {
-		struct stat buf;
-
-		if (stat(mcd, &buf) != -1) {
-			if (buf.st_size == MCD_SIZE + 64)
-				fseek(f, adr + 64, SEEK_SET);
-			else if (buf.st_size == MCD_SIZE + 3904)
-				fseek(f, adr + 3904, SEEK_SET);
-			else
-				fseek(f, adr, SEEK_SET);
-		} else 	fseek(f, adr, SEEK_SET);
-
-		fwrite(data + adr, 1, size, f);
-		fclose(f);
-		return;
+void SaveMcd(fileBrowser_file *file, char *data, uint32_t adr, int size) {
+	if(saveFile_writeFile(file, data + adr, size)==size) {
+  	return; //good
+  }
+	else {
+  	//set bad write flag
 	}
-
-	// try to create it again if we can't open it
-	/*f = fopen(mcd, "wb");
-	if (f != NULL) {
-		fwrite(data, 1, MCD_SIZE, f);
-		fclose(f);
-	}*/
-	ConvertMcd(mcd, data);
 }
 
-void CreateMcd(char *mcd) {
-	FILE *f;	
-	struct stat buf;
-	int s = MCD_SIZE;
-	int i=0, j;
+void CreateMcd(int slot, fileBrowser_file *mcd) {
+	char *cardData = NULL;
+	if (slot == 1) cardData = Mcd1Data;
+	if (slot == 2) cardData = Mcd2Data;
 
-	f = fopen(mcd, "wb");
-	if (f == NULL) return;
+	int i=0, j=0, curPos =0;
 
-	if(stat(mcd, &buf)!=-1) {		
-		if ((buf.st_size == MCD_SIZE + 3904) || strstr(mcd, ".gme")) {			
-			s = s + 3904;
-			fputc('1', f); s--;
-			fputc('2', f); s--;
-			fputc('3', f); s--;
-			fputc('-', f); s--;
-			fputc('4', f); s--;
-			fputc('5', f); s--;
-			fputc('6', f); s--;
-			fputc('-', f); s--;
-			fputc('S', f); s--;
-			fputc('T', f); s--;
-			fputc('D', f); s--;
-			for(i=0;i<7;i++) {
-				fputc(0, f); s--;
-			}
-			fputc(1, f); s--;
-			fputc(0, f); s--;
-			fputc(1, f); s--;
-			fputc('M', f); s--; 
-			fputc('Q', f); s--; 
-			for(i=0;i<14;i++) {
-				fputc(0xa0, f); s--;
-			}
-			fputc(0, f); s--;
-			fputc(0xff, f);
-			while (s-- > (MCD_SIZE+1)) fputc(0, f);
-		} else if ((buf.st_size == MCD_SIZE + 64) || strstr(mcd, ".mem") || strstr(mcd, ".vgs")) {
-			s = s + 64;				
-			fputc('V', f); s--;
-			fputc('g', f); s--;
-			fputc('s', f); s--;
-			fputc('M', f); s--;
-			for(i=0;i<3;i++) {
-				fputc(1, f); s--;
-				fputc(0, f); s--;
-				fputc(0, f); s--;
-				fputc(0, f); s--;
-			}
-			fputc(0, f); s--;
-			fputc(2, f);
-			while (s-- > (MCD_SIZE+1)) fputc(0, f);
-		}
-	}
-	fputc('M', f); s--;
-	fputc('C', f); s--;
-	while (s-- > (MCD_SIZE-127)) fputc(0, f);
-	fputc(0xe, f); s--;
+	// setup header
+	cardData[curPos++] = 'M';
+	cardData[curPos++] = 'C';
+	for(i=0; i<125; i++)
+	  cardData[curPos++] = 0;
+	cardData[curPos++] = 0x0E;
 
-	for(i=0;i<15;i++) { // 15 blocks
-		fputc(0xa0, f); s--;
+	// 15 blocks
+	for(i=0;i<15;i++) {
+		cardData[curPos++] = 0xA0;
 		for(j=0;j<126;j++) {
-			fputc(0x00, f); s--;
+			cardData[curPos++] = 0;
 		}
-		fputc(0xa0, f); s--;
+		cardData[curPos++] = 0xA0;
 	}
 
-	while ((s--)>=0) fputc(0, f);		
-	fclose(f);
+	//blank out the rest
+	for(i = 0; i < MCD_SIZE-curPos; i++)
+	  cardData[i] = 0;
+	saveFile_writeFile(mcd, cardData, MCD_SIZE);
 }
 
 void ConvertMcd(char *mcd, char *data) {
-	FILE *f;
+	/*FILE *f;
 	int i=0;
 	int s = MCD_SIZE;
 	
@@ -533,7 +473,7 @@ void ConvertMcd(char *mcd, char *data) {
 			fwrite(data, 1, MCD_SIZE, f);
 			fclose(f);
 		}
-	}
+	}*/
 }
 
 void GetMcdBlockInfo(int mcd, int block, McdBlock *Info) {

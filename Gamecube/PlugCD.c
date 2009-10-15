@@ -1,6 +1,6 @@
 /* 	super basic CD plugin for PCSX Gamecube
 	by emu_kidid based on the DC port
-	
+
 	TODO: Fix Missing CDDA support(?)
 */
 #include <gccore.h>
@@ -20,85 +20,69 @@
 
 extern void SysPrintf(char *fmt, ...);
 
-// gets track 
+// Gets track number
 long getTN(unsigned char* buffer)
 {
 	int numtracks = getNumTracks();
 
-	//SysPrintf("start getTn()\r\n");
-
- 	if (-1 == numtracks)
- 	{
+ 	if (-1 == numtracks) {
 		buffer[0]=buffer[1]=1;
-    	return -1;
+    return -1;
  	}
 
  	buffer[0]=CD.tl[0].num;
  	buffer[1]=numtracks;
-
-	//printf("getnumtracks %d %d\n", (int)buffer[0], (int)buffer[1]);
-	//SysPrintf("end getTn()\r\n");
-   return 0;
+  return 0;
 }
 
 // if track==0 -> return total length of cd
 // otherwise return start in bcd time format
 long getTD(int track, unsigned char* buffer)
 {
-	// SysPrintf("start getTD()\r\n");
-
-	if (track > CD.numtracks)
-	{
-	// printf("getTD bad %2d\n", track);
-		return -1;
+	if (track > CD.numtracks) {
+		return -1;  //bad
 	}
 
-   if (track == 0)
-   {
-      buffer[0] = CD.tl[CD.numtracks-1].end[0];
-      buffer[1] = CD.tl[CD.numtracks-1].end[1];
-      buffer[2] = CD.tl[CD.numtracks-1].end[2];
-   }
-	else
-	{
+  if (track == 0) {
+    buffer[0] = CD.tl[CD.numtracks-1].end[0];
+    buffer[1] = CD.tl[CD.numtracks-1].end[1];
+    buffer[2] = CD.tl[CD.numtracks-1].end[2];
+  }
+	else {
 		buffer[0] = CD.tl[track-1].start[0];
 		buffer[1] = CD.tl[track-1].start[1];
 		buffer[2] = CD.tl[track-1].start[2];
 	}
-	// printf("getTD %2d %02d:%02d:%02d\n", track, (int)buffer[0],
-	//       (int)buffer[1], (int)buffer[2]);
 
 	// bcd encode it
 	buffer[0] = intToBCD(buffer[0]);
 	buffer[1] = intToBCD(buffer[1]);
 	buffer[2] = intToBCD(buffer[2]);
-	// SysPrintf("end getTD()\r\n");
 	return 0;
 }
 
-// opens a binary cd image and calculates its length
-void openBin(const char* filename)
+void addBinTrackInfo()
 {
-	long size, blocks;
-	struct stat fileInfo;
-	CD.cd = fopen(filename, "rb");
-		
-	if (CD.cd == 0)
-	{
-		SysPrintf("Error opening cd\n");
-		while(1);
-		return;
-	}
-	stat(filename, &fileInfo);
-	size = fileInfo.st_size;
-	SysPrintf("size of CD in MB = %d\r\n",size/1048576);
-	
-	rc = fseek(CD.cd, 0, SEEK_SET);
-	blocks = size / 2352;
-	
+	CD.tl = realloc(CD.tl, (CD.numtracks + 1) * sizeof(Track));
+	CD.tl[CD.numtracks].end[0] = CD.tl[0].end[0];
+	CD.tl[CD.numtracks].end[1] = CD.tl[0].end[1];
+	CD.tl[CD.numtracks].end[2] = CD.tl[0].end[2];
+	CD.tl[CD.numtracks].start[0] = CD.tl[0].start[0];
+	CD.tl[CD.numtracks].start[1] = CD.tl[0].start[1];
+	CD.tl[CD.numtracks].start[2] = CD.tl[0].start[2];
+}
+
+// opens a binary cd image and calculates its length
+void openBin(fileBrowser_file* file)
+{
+	long blocks;
+
+	isoFile_seekFile(file,0,SEEK_SET);
+	blocks = file->size / 2352;
+
 	// put the track length info in the track list
 	CD.tl = (Track*) malloc(sizeof(Track));
-	
+
 	CD.tl[0].type = Mode2;
 	CD.tl[0].num = 1;
 	CD.tl[0].start[0] = 0;
@@ -107,57 +91,37 @@ void openBin(const char* filename)
 	CD.tl[0].end[2] = blocks % 75;
 	CD.tl[0].end[1] = ((blocks - CD.tl[0].end[2]) / 75) % 60;
 	CD.tl[0].end[0] = (((blocks - CD.tl[0].end[2]) / 75) - CD.tl[0].end[1]) / 60;
-	
+
 	CD.tl[0].start[1] += 2;
 	CD.tl[0].end[1] += 2;
-	
+
 	normalizeTime(CD.tl[0].end);
-	
+
 	CD.numtracks = 1;
-	
-	//CD.bufferSize = 0;
-    CD.bufferPos = 0x7FFFFFFF;
-  //  CD.status = 0x00;
+  CD.bufferPos = 0x7FFFFFFF;
 }
 
-void addBinTrackInfo()
-{	
-	CD.tl = realloc(CD.tl, (CD.numtracks + 1) * sizeof(Track));
-	CD.tl[CD.numtracks].end[0] = CD.tl[0].end[0];
-	CD.tl[CD.numtracks].end[1] = CD.tl[0].end[1];
-	CD.tl[CD.numtracks].end[2] = CD.tl[0].end[2];
-	CD.tl[CD.numtracks].start[0] = CD.tl[0].start[0];
-	CD.tl[CD.numtracks].start[1] = CD.tl[0].start[1];
-	CD.tl[CD.numtracks].start[2] = CD.tl[0].start[2];
-
-}
-
-// Given the name of a cue sheet, parse its track info
-void openCue(const char* filename)
+// Given a cue sheet fileBrowser_file pointer, parse its track info
+void openCue(fileBrowser_file* cueFile)
 {
-	// Get the filesize and open the file
-	struct stat cueInfo;
-	stat(filename, &cueInfo);
-	FILE* cue = fopen(filename, "r");
-	if(!cue){ SysPrintf("Failed to open %s\n", filename); while(1); }
-	
+
 	// Create a buffer large enough to hold the text and a terminating null
-	char* cueText = malloc(cueInfo.st_size+1);
-	if(!cueText){
-		SysPrintf("Failed to malloc %dB\n", cueInfo.st_size+1);
-		fclose(cue); while(1);
+	char* cueText = malloc(cueFile->size +1);
+	if(!cueText) {
+		SysPrintf("Failed to malloc %dB\n", cueFile->size +1);
+		while(1);
 	}
-	
+
 	// Read in the text and end the string with a null
-	fread(cueText, 1, cueInfo.st_size, cue);
-	cueText[cueInfo.st_size] = 0;
-	fclose(cue);
-	
+	isoFile_readFile(cueFile,cueText,cueFile->size);
+	cueText[cueFile->size] = 0;
+	isoFile_deinit(cueFile);
+
 	// FIXME: Make sure we don't have an old tl we're leaking
 	CD.tl = malloc(sizeof(Track));
 	CD.numtracks = 1;
 	int num_tracks_seen = 0;
-	char bin_filename[80];
+	char bin_filename[256];
 	// Get the first token
 	char* token = strtok(cueText, " \t\n\r");
 	// nxttok() is just shorthand for using strtok to get the next
@@ -182,12 +146,12 @@ void openCue(const char* filename)
 			}
 			// FIXME: Byteswap based on BINARY vs MOTOROLA?
 			/* file_type = */ nxttok();
-			
+
 		} else if( !strcmp(token, "TRACK") ){
 			if(++num_tracks_seen > CD.numtracks)
 				CD.tl = realloc(CD.tl, ++CD.numtracks * sizeof(Track));
 			/* track_num = */ nxttok();
-			
+
 			char* track_type = nxttok();
 			if( !strcmp(track_type, "AUDIO") )
 				CD.tl[CD.numtracks-1].type = Audio;
@@ -197,7 +161,7 @@ void openCue(const char* filename)
 				CD.tl[CD.numtracks-1].type = Mode2;
 			else
 				CD.tl[CD.numtracks-1].type = unknown;
-			
+
 		} else if( !strcmp(token, "INDEX") ){
 			nxttok(); // Read and discard the "01"
 			char* track_start = nxttok(); // mm:ss:ff format
@@ -213,7 +177,7 @@ void openCue(const char* filename)
 				CD.tl[CD.numtracks-2].end[1] = CD.tl[CD.numtracks-1].start[1];
 				CD.tl[CD.numtracks-2].end[2] = CD.tl[CD.numtracks-1].start[2];
 			}
-			
+
 		}
 		// Get the next token
 		token = nxttok();
@@ -221,10 +185,10 @@ void openCue(const char* filename)
 	#undef nxttok
 	// Free the buffer
 	free(cueText);
-	
+
 	// Create a string with the bin filename based on the cue's path
-	char relative[80];
-	sprintf(relative, "%s/%s", CDConfiguration.dn, bin_filename);
+	char relative[256];
+	sprintf(relative, "%s/%s", isoFile_topLevel->name, bin_filename);
 	// Determine relative vs absolute path and get the stat
 	struct stat binInfo;
 	if( stat(relative, &binInfo) ){
@@ -242,35 +206,35 @@ void openCue(const char* filename)
 	CD.tl[CD.numtracks-1].end[0] = (((blocks - CD.tl[CD.numtracks-1].end[2]) / 75)
 	                             - CD.tl[CD.numtracks-1].end[1]) / 60;
 	normalizeTime(CD.tl[CD.numtracks-1].end);
-	
-	// Actually open the data for reading
-	// FIXME: Make sure I'm not leaving an old cd open
-	CD.cd = fopen(bin_filename, "rb");
-	if(!CD.cd){
-		SysPrintf("Failed to open %s for reading\n", bin_filename);
-		while(1);
-	}
+
+	// setup the isoFile to now point to the .iso
+	if(isoFile) free(isoFile);
+	isoFile = malloc(sizeof(fileBrowser_file));
+	strcpy(isoFile->name,bin_filename);
+	isoFile->offset = 0;
+	isoFile->size   = binInfo.st_size;
+	printf("Loaded bin from cue: %s size: %d\n", isoFile->name, isoFile->size);
+
 }
 
 // new file types should be added here and in the CDOpen function
-void newCD(const char * filename)
+void newCD(fileBrowser_file *file)
 {
-	const char* ext = filename + strlen(filename) - 4;
-	SysPrintf("Opening file with extension %s\n", ext);
+	const char* ext = file->name + strlen(file->name) - 4;
+	SysPrintf("Opening file with extension %s size: %d\n", ext, file->size);
 	
-	if( !strcmp(ext, ".cue") ){ // FIXME: Play nicely with case
+	if(( !strcmp(ext, ".cue") ) || ( !strcmp(ext, ".CUE") )){
 		CD.type = Cue;
-		openCue(filename);
+		openCue(file);  //if we open a .cue, the isoFile global will be redirected
 	} else {
 		CD.type = Bin;
-		openBin(filename);
+		openBin(file);  //setup tracks
 		addBinTrackInfo();
 	}
-	
+
 	CD.bufferPos = 0x7FFFFFFF;
 	seekSector(0,2,0);
 }
-
 
 // return the sector address - the buffer address + 12 bytes for offset.
 unsigned char* getSector(int subchannel)
@@ -281,7 +245,7 @@ unsigned char* getSector(int subchannel)
 // returns the number of tracks
 char getNumTracks()
 {
-	if (CD.cd == 0) {
+	if (!isoFile) {
 	    return -1;
 	}
 	return CD.numtracks;
@@ -289,7 +253,7 @@ char getNumTracks()
 
 void readit(const unsigned char m, const unsigned char s, const unsigned char f)
 {
-	
+
 	// fakie ISO support.  iso is just cd-xa data without the ecc and header.
 	// read in the same number of sectors then space it out to look like cd-xa
 	/* if (CD.type == Iso)
@@ -298,18 +262,18 @@ void readit(const unsigned char m, const unsigned char s, const unsigned char f)
 		long tempsector = (( (m * 60) + (s - 2)) * 75 + f) * 2048;
 		fs_seek(CD.cd, tempsector, SEEK_SET);
 		fs_read(CD.buffer, sizeof(unsigned char), 2048*BUFFER_SECTORS, CD.cd);
-		
+
 		// spacing out the data here...
 		for(tempsector = BUFFER_SECTORS - 1; tempsector >= 0; tempsector--)
 		{
 			memcpy(&CD.buffer[tempsector*2352 + 24],&CD.buffer[tempsector*2048], 2048);
-			
+
 			// two things - add the m/s/f flags in case anyone is looking
 			// and change the xa mode to 1
 			temptime[0] = m;
 			temptime[1] = s;
 			temptime[2] = f + (unsigned char)tempsector;
-			
+
 			normalizeTime(temptime);
 			CD.buffer[tempsector*2352+12] = intToBCD(temptime[0]);
 			CD.buffer[tempsector*2352+12+1] = intToBCD(temptime[1]);
@@ -319,10 +283,10 @@ void readit(const unsigned char m, const unsigned char s, const unsigned char f)
 	}
 	else */
 	{
-		rc = fseek(CD.cd, CD.sector, SEEK_SET);
-		rc = fread(CD.buffer, BUFFER_SIZE, 1, CD.cd);
+	  isoFile_seekFile(isoFile,CD.sector, FILE_BROWSER_SEEK_SET);
+    isoFile_readFile(isoFile,CD.buffer,BUFFER_SIZE);
 	}
-	
+
 	CD.bufferPos = CD.sector;
 }
 
@@ -347,37 +311,11 @@ void seekSector(const unsigned char m, const unsigned char s, const unsigned cha
 
 long CDR__open(void)
 {
-	char str[256];
-	
-	SysPrintf("start CDR_open()\r\n");
-	
-	// newCD("/cd/cd.bin");
-	strcpy(str, CDConfiguration.dn);
-	strcat(str, "/");
-	strcat(str, CDConfiguration.fn);
-	
-	newCD(str);
-	
-	SysPrintf("end CDR_open()\r\n");
+	newCD(isoFile);
 	return 0;
 }
 
-char* textFileBrowser(char*);
 long CDR__init(void) {
-	SysPrintf("start CDR_init()\r\n");
-	//strcpy(CDConfiguration.dn, "/PSXISOS");
-	//strcpy(CDConfiguration.fn, "GAME.ISO");
-	char* filename = textFileBrowser("/PSXISOS");
-	char* last_slash = strrchr(filename, '/');
-	*last_slash = 0; // Separate the strings
-	if(!filename) {
-	  SysPrintf("/PSXISOS directory doesn't exist!\n");
-	  while(1);
-  }
-	strcpy(CDConfiguration.dn, filename);
-	strcpy(CDConfiguration.fn, last_slash+1);
-	free(filename);
-	SysPrintf("end CDR_init()\r\n");
 	return 0;
 }
 
@@ -386,24 +324,21 @@ long CDR__shutdown(void) {
 }
 
 long CDR__close(void) {
-	SysPrintf("start CDR_close()\r\n");
-	fclose(CD.cd);
 	free(CD.tl);
-	SysPrintf("end CDR_close()\r\n");
 	return 0;
 }
 
 long CDR__getTN(unsigned char *buffer) {
-    return getTN(buffer);
+  return getTN(buffer);
 }
 
 long CDR__getTD(unsigned char track, unsigned char *buffer) {
-	
+
 	unsigned char temp[3];
 	int result = getTD((int)track, temp);
-	
+
 	if (result == -1) return -1;
-	
+
 	buffer[1] = temp[1];
 	buffer[2] = temp[0];
 	return 0;
@@ -411,20 +346,24 @@ long CDR__getTD(unsigned char track, unsigned char *buffer) {
 
 /* called when the psx requests a read */
 long CDR__readTrack(unsigned char *time) {
-	if (CD.cd != 0)
+	if (isoFile) {
 		seekSector(BCDToInt(time[0]), BCDToInt(time[1]), BCDToInt(time[2]));
-	return PSE_CDR_ERR_SUCCESS;
+		return PSE_CDR_ERR_SUCCESS;
+	}
+	else
+	  return PSE_CDR_ERR_FAILURE;
 }
 
 /* called after the read should be finished, and the data is needed */
 unsigned char *CDR__getBuffer(void) {
-	if (CD.cd == 0)
+	if (!isoFile)
 		return NULL;
+	else
     return getSector(0);
 }
 
 unsigned char *CDR__getBufferSub(void) {
-    return getSector(1);
+  return getSector(1);
 }
 
 /*
