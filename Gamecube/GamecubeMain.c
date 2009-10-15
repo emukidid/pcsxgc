@@ -58,9 +58,10 @@ fileBrowser_file *isoFile  = NULL;  //the ISO file
 fileBrowser_file *memCardA = NULL;  //Slot 1 memory card
 fileBrowser_file *memCardB = NULL;  //Slot 2 memory card
 fileBrowser_file *biosFile = NULL;  //BIOS file
+char wpadNeedScan = 1, padNeedScan = 1;
 
 void ScanPADSandReset() {
-  PAD_ScanPads();
+  PAD_ScanPads(); //get rid of me when the menu has proper reliance on the NeedScan variables
   if(!((*(u32*)0xCC003000)>>16))
     stop=1;  //exit will be called
 }
@@ -378,7 +379,10 @@ void SysCloseLibrary(void *lib) {
 
 int framesdone = 0;
 void SysUpdate() {
+  wpadNeedScan = 1; //move me later ?
+  padNeedScan = 1;  //move me later ?
 	framesdone++;
+	
 //	PADhandleKey(PAD1_keypressed());
 //	PADhandleKey(PAD2_keypressed());
 }
