@@ -115,7 +115,7 @@ typedef struct {
 	long VSyncWA;
 } PcsxConfig;
 
-PcsxConfig Config;
+extern PcsxConfig Config;
 
 extern long LoadCdBios;
 extern int StatesC;

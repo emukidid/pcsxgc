@@ -14,9 +14,9 @@
 #include <gccore.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "plugins.h"
+#include "../plugins.h"
 #include "PlugCD.h"
-#include "PsxCommon.h"
+#include "../PsxCommon.h"
 
 extern void SysPrintf(char *fmt, ...);
 

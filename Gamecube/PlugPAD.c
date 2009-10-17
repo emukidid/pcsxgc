@@ -16,9 +16,9 @@
 #include <string.h>
 #include <sys/types.h>
 #include <ogc/pad.h>
-#include "plugins.h"
-#include "PsxCommon.h"
-#include "PSEmu_Plugin_Defs.h"
+#include "../plugins.h"
+#include "../PsxCommon.h"
+#include "../PSEmu_Plugin_Defs.h"
 #include "gc_input/controller.h"
 
 char padAutoAssign;

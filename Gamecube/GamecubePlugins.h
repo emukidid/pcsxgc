@@ -22,8 +22,8 @@
 #ifndef NULL
 #define NULL ((void*)0)
 #endif
-#include "Decode_XA.h"
-#include "PSEmu_Plugin_Defs.h"
+#include "../Decode_XA.h"
+#include "../PSEmu_Plugin_Defs.h"
 #include "../plugins.h"
 
 #define SYMS_PER_LIB 32
@@ -144,191 +144,191 @@ long PEOPS_GPUfreeze(unsigned long,GPUFreeze_t *);
 	{ "PAD1",      \
 	  5,         \
 	  { { "PADinit",  \
-	      PAD__init }, \
+	      (void*)PAD__init }, \
 	    { "PADshutdown",	\
-	      PAD__shutdown}, \
+	      (void*)PAD__shutdown}, \
 	    { "PADopen", \
-	      PAD__open}, \
+	      (void*)PAD__open}, \
 	    { "PADclose", \
-	      PAD__close}, \
+	      (void*)PAD__close}, \
 	    { "PADreadPort1", \
-	      PAD__readPort1} \
+	      (void*)PAD__readPort1} \
 	       } } 
 	    
 #define PAD2_PLUGIN \
 	{ "PAD2",      \
 	  5,         \
 	  { { "PADinit",  \
-	      PAD__init }, \
+	      (void*)PAD__init }, \
 	    { "PADshutdown",	\
-	      PAD__shutdown}, \
+	      (void*)PAD__shutdown}, \
 	    { "PADopen", \
-	      PAD__open}, \
+	      (void*)PAD__open}, \
 	    { "PADclose", \
-	      PAD__close}, \
+	      (void*)PAD__close}, \
 	    { "PADreadPort2", \
-	      PAD__readPort2} \
+	      (void*)PAD__readPort2} \
 	       } }
 
 #define CDR_PLUGIN \
 	{ "CDR",      \
 	  9,         \
 	  { { "CDRinit",  \
-	      CDR__init }, \
+	      (void*)CDR__init }, \
 	    { "CDRshutdown",	\
-	      CDR__shutdown}, \
+	      (void*)CDR__shutdown}, \
 	    { "CDRopen", \
-	      CDR__open}, \
+	      (void*)CDR__open}, \
 	    { "CDRclose", \
-	      CDR__close}, \
+	      (void*)CDR__close}, \
 	    { "CDRgetTN", \
-	      CDR__getTN}, \
+	      (void*)CDR__getTN}, \
 	    { "CDRgetTD", \
-	      CDR__getTD}, \
+	      (void*)CDR__getTD}, \
 	    { "CDRreadTrack", \
-	      CDR__readTrack}, \
+	      (void*)CDR__readTrack}, \
 	    { "CDRgetBuffer", \
-	      CDR__getBuffer}, \
+	      (void*)CDR__getBuffer}, \
 	    { "CDRgetBufferSub", \
-	      CDR__getBufferSub} \
+	      (void*)CDR__getBufferSub} \
 	       } }
 
 #define SPU_NULL_PLUGIN \
 	{ "SPU",      \
 	  17,         \
 	  { { "SPUinit",  \
-	      NULL_SPUinit }, \
+	      (void*)NULL_SPUinit }, \
 	    { "SPUshutdown",	\
-	      NULL_SPUshutdown}, \
+	      (void*)NULL_SPUshutdown}, \
 	    { "SPUopen", \
-	      NULL_SPUopen}, \
+	      (void*)NULL_SPUopen}, \
 	    { "SPUclose", \
-	      NULL_SPUclose}, \
+	      (void*)NULL_SPUclose}, \
 	    { "SPUconfigure", \
-	      NULL_SPUsetConfigFile}, \
+	      (void*)NULL_SPUsetConfigFile}, \
 	    { "SPUabout", \
-	      NULL_SPUabout}, \
+	      (void*)NULL_SPUabout}, \
 	    { "SPUtest", \
-	      NULL_SPUtest}, \
+	      (void*)NULL_SPUtest}, \
 	    { "SPUwriteRegister", \
-	      NULL_SPUwriteRegister}, \
+	      (void*)NULL_SPUwriteRegister}, \
 	    { "SPUreadRegister", \
-	      NULL_SPUreadRegister}, \
+	      (void*)NULL_SPUreadRegister}, \
 	    { "SPUwriteDMA", \
-	      NULL_SPUwriteDMA}, \
+	      (void*)NULL_SPUwriteDMA}, \
 	    { "SPUreadDMA", \
-	      NULL_SPUreadDMA}, \
+	      (void*)NULL_SPUreadDMA}, \
 	    { "SPUwriteDMAMem", \
-	      NULL_SPUwriteDMAMem}, \
+	      (void*)NULL_SPUwriteDMAMem}, \
 	    { "SPUreadDMAMem", \
-	      NULL_SPUreadDMAMem}, \
+	      (void*)NULL_SPUreadDMAMem}, \
 	    { "SPUplayADPCMchannel", \
-	      NULL_SPUplayADPCMchannel}, \
+	      (void*)NULL_SPUplayADPCMchannel}, \
 	    { "SPUfreeze", \
-	      NULL_SPUfreeze}, \
+	      (void*)NULL_SPUfreeze}, \
 	    { "SPUregisterCallback", \
-	      NULL_SPUregisterCallback}, \
+	      (void*)NULL_SPUregisterCallback}, \
 	    { "SPUregisterCDDAVolume", \
-	      NULL_SPUregisterCDDAVolume} \
+	      (void*)NULL_SPUregisterCDDAVolume} \
 	       } }
 
 #define SPU_PEOPS_PLUGIN \
 	{ "SPU",      \
 	  18,         \
 	  { { "SPUinit",  \
-	      PEOPS_SPUinit }, \
+	      (void*)PEOPS_SPUinit }, \
 	    { "SPUshutdown",	\
-	      PEOPS_SPUshutdown}, \
+	      (void*)PEOPS_SPUshutdown}, \
 	    { "SPUopen", \
-	      PEOPS_SPUopen}, \
+	      (void*)PEOPS_SPUopen}, \
 	    { "SPUclose", \
-	      PEOPS_SPUclose}, \
+	      (void*)PEOPS_SPUclose}, \
 	    { "SPUconfigure", \
-	      PEOPS_SPUsetConfigFile}, \
+	      (void*)PEOPS_SPUsetConfigFile}, \
 	    { "SPUabout", \
-	      PEOPS_SPUabout}, \
+	      (void*)PEOPS_SPUabout}, \
 	    { "SPUtest", \
-	      PEOPS_SPUtest}, \
+	      (void*)PEOPS_SPUtest}, \
 	    { "SPUwriteRegister", \
-	      PEOPS_SPUwriteRegister}, \
+	      (void*)PEOPS_SPUwriteRegister}, \
 	    { "SPUreadRegister", \
-	      PEOPS_SPUreadRegister}, \
+	      (void*)PEOPS_SPUreadRegister}, \
 	    { "SPUwriteDMA", \
-	      PEOPS_SPUwriteDMA}, \
+	      (void*)PEOPS_SPUwriteDMA}, \
 	    { "SPUreadDMA", \
-	      PEOPS_SPUreadDMA}, \
+	      (void*)PEOPS_SPUreadDMA}, \
 	    { "SPUwriteDMAMem", \
-	      PEOPS_SPUwriteDMAMem}, \
+	      (void*)PEOPS_SPUwriteDMAMem}, \
 	    { "SPUreadDMAMem", \
-	      PEOPS_SPUreadDMAMem}, \
+	      (void*)PEOPS_SPUreadDMAMem}, \
 	    { "SPUplayADPCMchannel", \
-	      PEOPS_SPUplayADPCMchannel}, \
+	      (void*)PEOPS_SPUplayADPCMchannel}, \
 	    { "SPUfreeze", \
-	      PEOPS_SPUfreeze}, \
+	      (void*)PEOPS_SPUfreeze}, \
 	    { "SPUregisterCallback", \
-	      PEOPS_SPUregisterCallback}, \
+	      (void*)PEOPS_SPUregisterCallback}, \
 	    { "SPUregisterCDDAVolume", \
-	      PEOPS_SPUregisterCDDAVolume}, \
+	      (void*)PEOPS_SPUregisterCDDAVolume}, \
 	    { "SPUasync", \
-	      PEOPS_SPUasync} \
+	      (void*)PEOPS_SPUasync} \
 	       } }
       
 #define GPU_NULL_PLUGIN \
 	{ "GPU",      \
 	  10,         \
 	  { { "GPUinit",  \
-	      GPU__init }, \
+	      (void*)GPU__init }, \
 	    { "GPUshutdown",	\
-	      GPU__shutdown}, \
+	      (void*)GPU__shutdown}, \
 	    { "GPUopen", \
-	      GPU__open}, \
+	      (void*)GPU__open}, \
 	    { "GPUclose", \
-	      GPU__close}, \
+	      (void*)GPU__close}, \
 	    { "GPUwriteStatus", \
-	      GPU__writeStatus}, \
+	      (void*)GPU__writeStatus}, \
 	    { "GPUwriteData", \
-	      GPU__writeData}, \
+	      (void*)GPU__writeData}, \
 	    { "GPUreadStatus", \
-	      GPU__readStatus}, \
+	      (void*)GPU__readStatus}, \
 	    { "GPUreadData", \
-	      GPU__readData}, \
+	      (void*)GPU__readData}, \
 	    { "GPUdmaChain", \
-	      GPU__dmaChain}, \
+	      (void*)GPU__dmaChain}, \
 	    { "GPUupdateLace", \
-	      GPU__updateLace} \
+	      (void*)GPU__updateLace} \
 	       } }
 
 #define GPU_PEOPS_PLUGIN \
 	{ "GPU",      \
 	  14,         \
 	  { { "GPUinit",  \
-	      PEOPS_GPUinit }, \
+	      (void*)PEOPS_GPUinit }, \
 	    { "GPUshutdown",	\
-	      PEOPS_GPUshutdown}, \
+	      (void*)PEOPS_GPUshutdown}, \
 	    { "GPUopen", \
-	      PEOPS_GPUopen}, \
+	      (void*)PEOPS_GPUopen}, \
 	    { "GPUclose", \
-	      PEOPS_GPUclose}, \
+	      (void*)PEOPS_GPUclose}, \
 	    { "GPUwriteStatus", \
-	      PEOPS_GPUwriteStatus}, \
+	      (void*)PEOPS_GPUwriteStatus}, \
 	    { "GPUwriteData", \
-	      PEOPS_GPUwriteData}, \
+	      (void*)PEOPS_GPUwriteData}, \
 	    { "GPUwriteDataMem", \
-	      PEOPS_GPUwriteDataMem}, \
+	      (void*)PEOPS_GPUwriteDataMem}, \
 	    { "GPUreadStatus", \
-	      PEOPS_GPUreadStatus}, \
+	      (void*)PEOPS_GPUreadStatus}, \
 	    { "GPUreadData", \
-	      PEOPS_GPUreadData}, \
+	      (void*)PEOPS_GPUreadData}, \
 	    { "GPUreadDataMem", \
-	      PEOPS_GPUreadDataMem}, \
+	      (void*)PEOPS_GPUreadDataMem}, \
 	    { "GPUdmaChain", \
-	      PEOPS_GPUdmaChain}, \
+	      (void*)PEOPS_GPUdmaChain}, \
 	    { "GPUdisplayText", \
-	      PEOPS_GPUdisplayText}, \
+	      (void*)PEOPS_GPUdisplayText}, \
 	    { "GPUfreeze", \
-	      PEOPS_GPUfreeze}, \
+	      (void*)PEOPS_GPUfreeze}, \
 	    { "GPUupdateLace", \
-	      PEOPS_GPUupdateLace} \
+	      (void*)PEOPS_GPUupdateLace} \
 	       } }
 
 #define PLUGIN_SLOT_0 EMPTY_PLUGIN

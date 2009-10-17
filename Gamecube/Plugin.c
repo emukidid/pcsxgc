@@ -20,11 +20,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
-#include "PsxCommon.h"
+#include "../PsxCommon.h"
 #include "fileBrowser/fileBrowser.h"
 
-#include "plugins.h"
-#include "Spu.h"
+#include "../plugins.h"
+#include "../Spu.h"
 #ifndef __GX__
 #include "NoPic.h"
 #endif //!__GX__

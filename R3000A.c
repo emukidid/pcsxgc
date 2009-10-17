@@ -28,6 +28,7 @@
 #include "CdRom.h"
 #include "Mdec.h"
 
+R3000Acpu *psxCpu;
 psxRegisters psxRegs;
 
 int psxInit() {

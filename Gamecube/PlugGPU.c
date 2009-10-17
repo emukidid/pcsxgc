@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <ogc/pad.h>
-#include "plugins.h"
+#include "../plugins.h"
 
 long GPU__open(void) { return 0; }
 long GPU__init(void) { return 0; }
