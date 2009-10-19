@@ -76,7 +76,7 @@ FILE *emuLog;
 #endif
 
 PcsxConfig Config;
-char audioEnabled;
+extern char audioEnabled;
 char showFPSonScreen;
 char printToScreen;
 char menuActive;
@@ -212,7 +212,7 @@ int main(int argc, char *argv[])
 	if(argv[0][0] == 'u') {  //assume USB
 		configFile_file = &saveDir_libfat_USB;
 		if(configFile_init(configFile_file)) {                //only if device initialized ok
-			FILE* f = fopen( "usb:/wii64/settings.cfg", "r" );  //attempt to open file
+			FILE* f = fopen( "usb:/wiisx/settings.cfg", "r" );  //attempt to open file
 			if(f) {        //open ok, read it
 				readConfig(f);
 				fclose(f);
@@ -224,7 +224,7 @@ int main(int argc, char *argv[])
 	{ //assume SD
 		configFile_file = &saveDir_libfat_Default;
 		if(configFile_init(configFile_file)) {                //only if device initialized ok
-			FILE* f = fopen( "sd:/wii64/settings.cfg", "r" );  //attempt to open file
+			FILE* f = fopen( "sd:/wiisx/settings.cfg", "r" );  //attempt to open file
 			if(f) {        //open ok, read it
 				readConfig(f);
 				fclose(f);

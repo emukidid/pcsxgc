@@ -43,11 +43,13 @@ static lwp_t audio_thread;
 static sem_t buffer_full;
 static sem_t buffer_empty;
 static sem_t audio_free;
-static int   thread_running;
+static sem_t first_audio;
+static int   thread_running = 0;
 #define AUDIO_STACK_SIZE 1024 // MEM: I could get away with a smaller stack
 static char  audio_stack[AUDIO_STACK_SIZE];
 #define AUDIO_PRIORITY 120
 static int   thread_buffer = 0;
+static int   audio_paused = 0;
 #else // !THREADED_AUDIO
 #define thread_buffer which_buffer
 #endif
@@ -57,6 +59,8 @@ static void done_playing(void);
 static void copy_to_buffer_mono(void* out, void* in, unsigned int samples);
 static void copy_to_buffer_stereo(void* out, void* in, unsigned int samples);
 static void (*copy_to_buffer)(void* out, void* in, unsigned int samples);
+
+char audioEnabled;
 
 ////////////////////////////////////////////////////////////////////////
 // SETUP SOUND
@@ -71,7 +75,8 @@ void SetupSound(void)
 	LWP_SemInit(&buffer_full, 0, NUM_BUFFERS);
 	LWP_SemInit(&buffer_empty, NUM_BUFFERS, NUM_BUFFERS);
 	LWP_SemInit(&audio_free, 1, 1);
-	thread_running = 1;
+	LWP_SemInit(&first_audio, 0, 1);
+	thread_running = 0;
 	LWP_CreateThread(&audio_thread, (void*)play_buffer, NULL, audio_stack, AUDIO_STACK_SIZE, AUDIO_PRIORITY);
 	AUDIO_RegisterDMACallback(done_playing);
 	thread_buffer = which_buffer = 0;
@@ -93,10 +98,12 @@ void RemoveSound(void)
 
 #ifdef THREADED_AUDIO
 	// Destroy semaphores and suspend the thread so audio can't play
+	if(!thread_running) LWP_SemPost(first_audio);
 	thread_running = 0;
 	LWP_SemDestroy(buffer_full);
 	LWP_SemDestroy(buffer_empty);
 	LWP_SemDestroy(audio_free);
+	LWP_SemDestroy(first_audio);
 	LWP_JoinThread(audio_thread, NULL);
 #endif
 
@@ -131,6 +138,9 @@ static void inline play_buffer(void){
 	AUDIO_StopDMA();
 
 #else // THREADED_AUDIO
+	// Wait for a sample to actually be played to work around a deadlock
+	LWP_SemWait(first_audio);
+	
 	// This thread will keep giving buffers to the audio as they come
 	while(thread_running){
 
@@ -232,6 +242,11 @@ static void inline add_to_buffer(void* stream, unsigned int length){
 		rlengthLeft   -= rlengthi;
 
 #ifdef THREADED_AUDIO
+		// Start the thread if this is the first sample
+		if(!thread_running){
+			thread_running = 1;
+			LWP_SemPost(first_audio);
+		}
 		// Let the audio thread know that we've filled a new buffer
 		LWP_SemPost(buffer_full);
 #else
@@ -248,5 +263,28 @@ static void inline add_to_buffer(void* stream, unsigned int length){
 ////////////////////////////////////////////////////////////////////////
 void SoundFeedStreamData(unsigned char* pSound,long lBytes)
 {
+  if(!audioEnabled) return;
 	add_to_buffer(pSound, lBytes);
+}
+
+void pauseAudio(void){
+#ifdef THREADED_AUDIO
+	// We just grab the audio_free 'lock' and don't let go
+	//   when we have this lock, audio_thread must be waiting
+	if(audioEnabled){
+		LWP_SemWait(audio_free);
+		audio_paused = 1;
+	}
+#endif
+	AUDIO_StopDMA();
+}
+
+void resumeAudio(void){
+#ifdef THREADED_AUDIO
+	if(audio_paused && audioEnabled){
+		// When we're want the audio to resume, release the 'lock'
+		LWP_SemPost(audio_free);
+		audio_paused = 0;
+	}
+#endif
 }
