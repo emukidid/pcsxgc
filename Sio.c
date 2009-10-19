@@ -79,11 +79,11 @@ unsigned char sioRead8() {
 					switch (CtrlReg&0x2002) {
 						case 0x0002:
 							memcpy(Mcd1Data + (adrL | (adrH << 8)) * 128, &buf[1], 128);
-							SaveMcd(memCardA, Mcd1Data, (adrL | (adrH << 8)) * 128, 128);
+							//SaveMcd(memCardA, Mcd1Data, (adrL | (adrH << 8)) * 128, 128);
 							break;
 						case 0x2002:
 							memcpy(Mcd2Data + (adrL | (adrH << 8)) * 128, &buf[1], 128);
-							SaveMcd(memCardB, Mcd2Data, (adrL | (adrH << 8)) * 128, 128);
+							//SaveMcd(memCardB, Mcd2Data, (adrL | (adrH << 8)) * 128, 128);
 							break;
 					}
 				}
@@ -318,17 +318,17 @@ void sioInterrupt() {
 	psxRegs.interrupt|= 0x80000000;
 }
 
-void LoadMcd(int mcd, fileBrowser_file *file) {
+//call me from menu
+bool LoadMcd(int mcd, fileBrowser_file *file) {
 	int temp = 0;
+	bool ret = false;
 	char *data = NULL;
 
-	if (mcd == 1) data = Mcd1Data;
-	if (mcd == 2) data = Mcd2Data;
+	if (mcd == 1) data = &Mcd1Data[0];
+	if (mcd == 2) data = &Mcd2Data[0];
 
 	if (!file) {
   	printf("Unable to load memory card\n"); //should never happen
-		/*sprintf(str, "memcards/card%d.mcd", mcd);
-		printf ("No memory card value was specified - creating a default card %s\n", str);*/
 	}
 	if(saveFile_readFile(file, &temp, 4) == 4) {  //file exists
 		file->offset = 0;
@@ -341,12 +341,12 @@ void LoadMcd(int mcd, fileBrowser_file *file) {
 			else if(buf.st_size == MCD_SIZE + 3904)
 				fseek(f, 3904, SEEK_SET);
 		}*/
-		saveFile_readFile(file, data, MCD_SIZE);
+		if(saveFile_readFile(file, data, MCD_SIZE)==MCD_SIZE)
+		  ret = true;
 	}
 	else {
 		printf ("The memory card %s doesn't exist - creating it\n", file->name);
-		CreateMcd(mcd, file);
-		if(saveFile_readFile(file, &temp, 4) == 4) {  //file exists
+		if(CreateMcd(mcd, file)) {  //created ok
 		  file->offset = 0;
 			/*//hacks for memory cards from other emulators/versions -- deal with in saveswapper
   		struct stat buf;
@@ -356,28 +356,42 @@ void LoadMcd(int mcd, fileBrowser_file *file) {
 				else if(buf.st_size == MCD_SIZE + 3904)
 					fseek(f, 3904, SEEK_SET);
 			}	*/
-			if(saveFile_readFile(file, data, MCD_SIZE)!=MCD_SIZE)
-			  SysMessage(_("Memory card failed to create %s\n"),file->name);
+			if(saveFile_readFile(file, data, MCD_SIZE)==MCD_SIZE)
+			  ret = true;
 		}
-		else SysMessage(_("Memory card %s failed to load!\n"), file->name);
 	}
+	return ret;
 }
 
-void LoadMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2) {
-	LoadMcd(1, mcd1);
-	LoadMcd(2, mcd2);
+//we need to get rid of this joint function and start using the individual versions
+bool LoadMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2) {
+  if((LoadMcd(1, mcd1)) && (LoadMcd(2, mcd2)))
+    return true;
+  return false;
 }
 
-void SaveMcd(fileBrowser_file *file, char *data, uint32_t adr, int size) {
-	if(saveFile_writeFile(file, data + adr, size)==size) {
-  	return; //good
-  }
-	else {
-  	//set bad write flag
-	}
+//call me from menu
+bool SaveMcd(int mcd, fileBrowser_file *file) {
+  bool ret = false;
+  char *data = NULL;
+
+	if (mcd == 1) data = &Mcd1Data[0];
+	if (mcd == 2) data = &Mcd2Data[0];
+	
+  if(saveFile_writeFile(file, data, MCD_SIZE)==MCD_SIZE)
+    ret = true;
+  
+  return ret;
 }
 
-void CreateMcd(int slot, fileBrowser_file *mcd) {
+//we need to get rid of this joint function and start using the individual versions
+bool SaveMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2) {
+  if((SaveMcd(1, mcd1)) && (SaveMcd(2, mcd2)))
+    return true;
+  return false;
+}
+
+bool CreateMcd(int slot, fileBrowser_file *mcd) {
 	char *cardData = NULL;
 	if (slot == 1) cardData = Mcd1Data;
 	if (slot == 2) cardData = Mcd2Data;
@@ -401,9 +415,11 @@ void CreateMcd(int slot, fileBrowser_file *mcd) {
 	}
 
 	//blank out the rest
-	for(i = 0; i < MCD_SIZE-curPos; i++)
+	for(i = curPos; i < MCD_SIZE; i++)
 	  cardData[i] = 0;
-	saveFile_writeFile(mcd, cardData, MCD_SIZE);
+	if(saveFile_writeFile(mcd, cardData, MCD_SIZE)==MCD_SIZE)
+	  return true;
+	return false;
 }
 
 void ConvertMcd(char *mcd, char *data) {

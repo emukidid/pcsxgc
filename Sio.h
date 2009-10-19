@@ -71,10 +71,11 @@ void sioWriteCtrl16(unsigned short value);
 void sioInterrupt();
 int sioFreeze(gzFile f, int Mode);
 
-void LoadMcd(int mcd, fileBrowser_file *file);
-void LoadMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2);
-void SaveMcd(fileBrowser_file *file, char *data, uint32_t adr, int size);
-void CreateMcd(int slot, fileBrowser_file *mcd);
+bool LoadMcd(int mcd, fileBrowser_file *file);
+bool LoadMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2);
+bool SaveMcd(int mcd, fileBrowser_file *file);
+bool SaveMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2);
+bool CreateMcd(int slot, fileBrowser_file *mcd);
 void ConvertMcd(char *mcd, char *data);
 
 typedef struct {

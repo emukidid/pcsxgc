@@ -1336,7 +1336,6 @@ void psxBios_UnDeliverEvent() { // 0x20
 			FDesc[1 + mcd].mcfile = i; \
 			SysPrintf("openC %s\n", ptr); \
 			v0 = 1 + mcd; \
-			SaveMcd(Config.Mcd##mcd, Mcd##mcd##Data, 128 * i, 128); \
 			break; \
 		} \
 	} \
@@ -1429,7 +1428,6 @@ void psxBios_read() { // 0x34
 	SysPrintf("write %d: %x,%x\n", FDesc[1 + mcd].mcfile, FDesc[1 + mcd].offset, a2); \
 	ptr = Mcd##mcd##Data + offset; \
 	memcpy(ptr, Ra1, a2); \
-	SaveMcd(Config.Mcd##mcd, Mcd##mcd##Data, offset, a2); \
 	if (FDesc[1 + mcd].mode & 0x8000) v0 = 0; \
 	else v0 = a2; \
 	DeliverEvent(0x11, 0x2); /* 0xf0000011, 0x0004 */ \
@@ -1658,10 +1656,10 @@ void psxBios__card_write() { // 0x4e
 
 	if (port == 0) {
 		memcpy(Mcd1Data + a1 * 128, Ra2, 128);
-		SaveMcd(Config.Mcd1, Mcd1Data, a1 * 128, 128);
+		//SaveMcd(Config.Mcd1, Mcd1Data, a1 * 128, 128);
 	} else {
 		memcpy(Mcd2Data + a1 * 128, Ra2, 128);
-		SaveMcd(Config.Mcd2, Mcd2Data, a1 * 128, 128);
+		//SaveMcd(Config.Mcd2, Mcd2Data, a1 * 128, 128);
 	}
 
 	DeliverEvent(0x11, 0x2); // 0xf0000011, 0x0004
