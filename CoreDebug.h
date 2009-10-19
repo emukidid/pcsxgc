@@ -23,8 +23,8 @@
 * Ryan TODO: These should ALL be definable with configure flags.
 */
 
-#ifndef __DEBUG_H__
-#define __DEBUG_H__
+#ifndef __CORE_DEBUG_H__
+#define __CORE_DEBUG_H__
 
 #include <gctypes.h>
 #include <stdint.h>
@@ -33,7 +33,10 @@ extern char *disRNameCP0[];
 
 char* disR3000AF(u32 code, u32 pc);
 
-FILE *emuLog;
+#if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
+	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
+extern FILE *emuLog;
+#endif
 
 //#define GTE_DUMP
 

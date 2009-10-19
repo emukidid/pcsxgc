@@ -32,11 +32,13 @@ extern "C" {
 #include "../gc_memory/Saves.h"
 #include "../main/rom.h"
 #include "../main/plugin.h"
-#include "../main/savestates.h"
+#include "../main/savestates.h"*/
+#include "../../PsxCommon.h"
 #include "../fileBrowser/fileBrowser.h"
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
-*/}
+
+}
 
 void Func_ShowRomInfo();
 void Func_ResetROM();
@@ -124,26 +126,24 @@ CurrentRomFrame::~CurrentRomFrame()
 }
 
 extern MenuContext *pMenuContext;
-extern int rom_length;
+extern char CdromId[10];
+extern char CdromLabel[33];
 
 void Func_ShowRomInfo()
 {
-/*	char RomInfo[256] = "";
+	char RomInfo[256] = "";
 	char buffer [50];
-	char buffer2 [50];
-	sprintf(buffer,"Rom name: %s\n",ROM_SETTINGS.goodname);
+	
+	sprintf(buffer,"CD-ROM Label: %s\n",CdromLabel);
 	strcat(RomInfo,buffer);
-	sprintf(buffer,"Rom size: %d Mb\n",rom_length/1024/1024);
+	sprintf(buffer,"CD-ROM ID: %s\n", CdromId);
 	strcat(RomInfo,buffer);
-	if(ROM_HEADER->Manufacturer_ID == 'N') sprintf(buffer,"Manufacturer: Nintendo\n");
-	else sprintf(buffer,"Manufacturer: %x\n", (unsigned int)(ROM_HEADER->Manufacturer_ID));
+	sprintf(buffer,"ISO Size: %d Mb\n",isoFile->size/1024/1024);
 	strcat(RomInfo,buffer);
-    countrycodestring(ROM_HEADER->Country_code&0xFF, buffer2);
-	sprintf(buffer,"Country: %s\n",buffer2);
+	sprintf(buffer,"Country: %s\n",(!Config.PsxType) ? "NTSC":"PAL");
 	strcat(RomInfo,buffer);
 
-	menu::MessageBox::getInstance().setMessage(RomInfo);*/
-	menu::MessageBox::getInstance().setMessage("RomInfo Not Implemented");
+	menu::MessageBox::getInstance().setMessage(RomInfo);
 }
 
 extern BOOL hasLoadedROM;

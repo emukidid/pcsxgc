@@ -321,6 +321,7 @@ int CheckCdrom() {
 	}
 	psxUpdateVSyncRate();
 	if (CdromLabel[0] == ' ') {
+  	memset(CdromLabel, 0, 32);
 		strncpy(CdromLabel, CdromId, 9);
 	}
 	SysPrintf("CD-ROM Label: %.32s\n", CdromLabel);
@@ -594,7 +595,10 @@ void __Log(char *fmt, ...) {
 
 	va_start(list, fmt);
 #ifndef LOG_STDOUT
+#if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
+	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
 	vfprintf(emuLog, fmt, list);
+#endif
 #else
 	vsprintf(tmp, fmt, list);
 	SysPrintf(tmp);

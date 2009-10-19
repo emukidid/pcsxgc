@@ -163,9 +163,9 @@ void Func_Credits()
 {
 	char CreditsInfo[512] = "";
 #ifdef HW_RVL
-	strcat(CreditsInfo,"Wii64 Beta 1 - www.emulatemii.com\n");
+	strcat(CreditsInfo,"WiiSX Beta 2 - www.emulatemii.com\n");
 #else
-	strcat(CreditsInfo,"Cube64 Beta 1 - www.emulatemii.com\n");
+	strcat(CreditsInfo,"CubeSX Beta 2 - www.emulatemii.com\n");
 #endif
 	strcat(CreditsInfo,"\n");
 	strcat(CreditsInfo,"Wii64 Team:\n");
@@ -175,7 +175,7 @@ void Func_Credits()
 	strcat(CreditsInfo,"\n");
 	strcat(CreditsInfo,"Special Thanks To:\n");
 	strcat(CreditsInfo,"       drmr - for menu graphics\n");
-	strcat(CreditsInfo,"Hacktarux - for Mupen64\n");
+	strcat(CreditsInfo,"PCSX/PCSX-df Teams\n");
 	strcat(CreditsInfo,"Wintermute/Shagkur - devkitPro/libOGC\n");
 #ifdef HW_RVL
 	strcat(CreditsInfo,"Team Twiizers - for Wii homebrew\n");

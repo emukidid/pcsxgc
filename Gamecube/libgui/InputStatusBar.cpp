@@ -30,6 +30,7 @@
 extern "C" {
 //#include "../gc_input/controller.h"
 //#include "../main/rom.h"
+#include "../../PsxCommon.h"
 }
 
 namespace menu {
@@ -66,6 +67,8 @@ InputStatusBar::~InputStatusBar()
 
 extern "C" BOOL hasLoadedISO;
 extern "C" char autoSave;
+extern "C" char CdromId[10];
+extern "C" char CdromLabel[33];
 //extern "C" BOOL sramWritten;
 //extern "C" BOOL eepromWritten;
 //extern "C" BOOL mempakWritten;
@@ -104,10 +107,10 @@ void InputStatusBar::drawComponent(Graphics& gfx)
 	else
 	{
 		IplFont::getInstance().drawInit(activeColor);
-//*		sprintf(buffer,"%s",ROM_SETTINGS.goodname);
-//		IplFont::getInstance().drawString((int) box_x + 15, (int) text_y, buffer, 0.8, false);
+		sprintf(buffer,"%s",CdromId);
+		IplFont::getInstance().drawString((int) box_x + 15, (int) text_y, buffer, 0.8, false);
 		text_y += 20*IplFont::getInstance().drawStringWrap((int) box_x + 15, (int) text_y, buffer, 0.8, false, width - 2*15, 20);
-//*	    countrycodestring(ROM_HEADER->Country_code&0xFF, buffer);
+    sprintf(buffer,"%s",(!Config.PsxType) ? "NTSC":"PAL");
 		text_y += 13;
 		IplFont::getInstance().drawString((int) box_x + 15, (int) text_y, buffer, 0.7, false);
 		if (autoSave)

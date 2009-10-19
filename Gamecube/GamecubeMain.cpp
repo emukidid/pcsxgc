@@ -70,6 +70,11 @@ fileBrowser_file *memCardA = NULL;  //Slot 1 memory card
 fileBrowser_file *memCardB = NULL;  //Slot 2 memory card
 fileBrowser_file *biosFile = NULL;  //BIOS file
 
+#if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
+	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
+FILE *emuLog;
+#endif
+
 PcsxConfig Config;
 char audioEnabled;
 char showFPSonScreen;
@@ -302,6 +307,7 @@ int loadISO(fileBrowser_file* file)
 	hasLoadedISO = 1;
 
 	SysPrintf("Execute\r\n");
+	return 0;
 }
 
 #if 0
@@ -406,8 +412,10 @@ void SysClose()
 {
 	psxShutdown();
 	ReleasePlugins();
-
+#if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
+	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
 	if (emuLog != NULL) fclose(emuLog);
+#endif
 }
 
 void SysPrintf(char *fmt, ...) 

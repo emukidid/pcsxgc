@@ -33,6 +33,7 @@ extern "C" {
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-DVD.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
+#include "../../PsxCommon.h"
 /*#include "../main/rom.h"
 #include "../main/ROM-Cache.h"
 #include "../main/wii64config.h"*/
@@ -304,7 +305,8 @@ void fileBrowserFrame_FillPage()
 }
 
 extern BOOL hasLoadedISO;
-extern int rom_length;
+extern char CdromId[10];
+extern char CdromLabel[33];
 extern char autoSaveLoaded;
 void Func_SetPlayGame();
 
@@ -331,16 +333,15 @@ void fileBrowserFrame_LoadFile(int i)
 			char buffer [50];
 			char buffer2 [50];
 			strcat(RomInfo,feedback_string);
-/*			sprintf(buffer,"\n\nRom name: %s\n",ROM_SETTINGS.goodname);
-			strcat(RomInfo,buffer);
-			sprintf(buffer,"Rom size: %d Mb\n",rom_length/1024/1024);
-			strcat(RomInfo,buffer);
-			if(ROM_HEADER->Manufacturer_ID == 'N') sprintf(buffer,"Manufacturer: Nintendo\n");
-			else sprintf(buffer,"Manufacturer: %x\n", (unsigned int)(ROM_HEADER->Manufacturer_ID));
-			strcat(RomInfo,buffer);
-		    countrycodestring(ROM_HEADER->Country_code&0xFF, buffer2);
-			sprintf(buffer,"Country: %s\n",buffer2);
-			strcat(RomInfo,buffer);
+			sprintf(buffer,"\nCD-ROM Label: %s\n",CdromLabel);
+    	strcat(RomInfo,buffer);
+    	sprintf(buffer,"CD-ROM ID: %s\n", CdromId);
+    	strcat(RomInfo,buffer);
+    	sprintf(buffer,"ISO Size: %d Mb\n",isoFile->size/1024/1024);
+    	strcat(RomInfo,buffer);
+    	sprintf(buffer,"Country: %s\n",(!Config.PsxType) ? "NTSC":"PAL");
+    	strcat(RomInfo,buffer);
+/*			
 			switch (autoSaveLoaded)
 			{
 			case NATIVESAVEDEVICE_NONE:
