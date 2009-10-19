@@ -284,7 +284,10 @@ void readit(const unsigned char m, const unsigned char s, const unsigned char f)
 	else */
 	{
 	  isoFile_seekFile(isoFile,CD.sector, FILE_BROWSER_SEEK_SET);
-    isoFile_readFile(isoFile,CD.buffer,BUFFER_SIZE);
+	  if(CD.sector + BUFFER_SIZE > isoFile->size)
+      isoFile_readFile(isoFile,CD.buffer,isoFile->size-CD.sector); //read till the end
+    else
+      isoFile_readFile(isoFile,CD.buffer,BUFFER_SIZE);            //read buffer size
 	}
 
 	CD.bufferPos = CD.sector;
