@@ -321,12 +321,20 @@ int CheckCdrom() {
 	}
 	psxUpdateVSyncRate();
 	if (CdromLabel[0] == ' ') {
-  	memset(CdromLabel, 0, 32);
 		strncpy(CdromLabel, CdromId, 9);
 	}
 	SysPrintf("CD-ROM Label: %.32s\n", CdromLabel);
 	SysPrintf("CD-ROM ID: %.9s\n", CdromId);
-
+  for(i = 32; i>0; i--) {
+    if(CdromLabel[i]==' ') {
+      CdromLabel[i]=0;
+    }
+  }
+  for(i = 9; i>0; i--) {
+    if(CdromId[i]==' ') {
+      CdromId[i]=0;
+    }
+  }
 	return 0;
 }
 
