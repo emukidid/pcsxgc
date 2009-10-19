@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
 	Config.Xa = 0;  //XA enabled
 	Config.Cdda = 1;
 	Config.PsxAuto = 1; //Autodetect
-
+  
 #if 0
 	//config stuff
 	fileBrowser_file* configFile_file;
@@ -289,17 +289,14 @@ int loadISO(fileBrowser_file* file)
 	isoFile = (fileBrowser_file*) memalign(32,sizeof(fileBrowser_file));
 	memcpy( isoFile, file, sizeof(fileBrowser_file) );
 
+	if(!hasLoadedISO)
+	  SysInit();        //Call me early to avoid fragmentation
 	if(hasLoadedISO) {
 		//free stuff here
 	}
-	if (SysInit() == -1)
-	{
-		printf("SysInit() Error!\n");
-		while(1);
-	}
 	OpenPlugins();
 
-	SysReset();
+	SysReset();         //this is causing multiple roms to fail
 
 	SysPrintf("CheckCdrom\r\n");
 	CheckCdrom();
@@ -411,7 +408,7 @@ void SysReset()
 void SysClose() 
 {
 	psxShutdown();
-	ReleasePlugins();
+	//ReleasePlugins();
 #if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
 	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
 	if (emuLog != NULL) fclose(emuLog);

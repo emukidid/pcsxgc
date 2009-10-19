@@ -81,9 +81,9 @@ u32 *psxRecLUT;
 #define RECMEM_SIZE		(8*1024*1024)
 #endif
 
-static char *recMem;	/* the recompiled blocks will be here */
-static char *recRAM;	/* and the ptr to the blocks here */
-static char *recROM;	/* and here */
+static char *recMem = NULL;	/* the recompiled blocks will be here */
+static char *recRAM = NULL;	/* and the ptr to the blocks here */
+static char *recROM = NULL;	/* and here */
 
 static u32 pc;			/* recompiler pc */
 static u32 pcold;		/* recompiler oldpc */
@@ -1061,30 +1061,32 @@ static void rec##f() { \
 
 static void freeMem(int all)
 {
-    if (recMem) free(recMem);
+  //only set this up once
+    /*if (recMem) free(recMem);
     if (recRAM) free(recRAM);
     if (recROM) free(recROM);
-    recMem = recRAM = recROM = 0;
+    recMem = recRAM = recROM = NULL;
     
     if (all && psxRecLUT) {
         free(psxRecLUT); psxRecLUT = NULL;
-    }
+    }*/
 }
 
 static int allocMem() {
 	int i;
 
 	freeMem(0);
-        
-	if (psxRecLUT==NULL)
+  //only set this up once
+	if (!psxRecLUT)
 		psxRecLUT = (u32*) memalign(32,0x010000 * 4);
 
-	recMem = (char*) memalign(32,RECMEM_SIZE);
-  //recMem = (char*) 0x90080000;
-	recRAM = (char*) memalign(32,0x200000);
-	recROM = (char*) memalign(32,0x080000);
+  if(!recMem)
+	  recMem = (char*) memalign(32,RECMEM_SIZE);
+  if(!recRAM)
+	  recRAM = (char*) memalign(32,0x200000);
+	if(!recROM)  
+	  recROM = (char*) memalign(32,0x080000);
 	if (recRAM == NULL || recROM == NULL || recMem == NULL/*(void *)-1*/ || psxRecLUT == NULL) {
-                freeMem(1);
 		SysMessage("Error allocating memory"); return -1;
 	}
 

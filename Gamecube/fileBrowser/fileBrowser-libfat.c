@@ -362,7 +362,7 @@ int fileBrowser_libfat_deinit(fileBrowser_file* f){
 
 
 /* Special for ROM loading only */
-static FILE* fd;
+static FILE* fd = NULL;
 
 int fileBrowser_libfatROM_deinit(fileBrowser_file* f){
   pauseRemovalThread();
