@@ -68,10 +68,8 @@ InputStatusBar::~InputStatusBar()
 extern "C" BOOL hasLoadedISO;
 extern "C" char autoSave;
 extern "C" char CdromLabel[33];
-//extern "C" BOOL sramWritten;
-//extern "C" BOOL eepromWritten;
-//extern "C" BOOL mempakWritten;
-//extern "C" BOOL flashramWritten;
+extern "C" bool mcd1Written;
+extern "C" bool mcd2Written;
 
 void InputStatusBar::drawComponent(Graphics& gfx)
 {
@@ -114,8 +112,8 @@ void InputStatusBar::drawComponent(Graphics& gfx)
 		IplFont::getInstance().drawString((int) box_x + 15, (int) text_y, buffer, 0.7, false);
 		if (autoSave)
 			sprintf(buffer,"AutoSave Enabled");
-//		else if (!flashramWritten && !sramWritten && !eepromWritten && !mempakWritten)
-//			sprintf(buffer,"Nothing to Save");
+		else if (!mcd1Written && !mcd2Written)
+			sprintf(buffer,"Nothing to Save");
 		else
 			sprintf(buffer,"Game Needs Saving");
 		text_y += 25;

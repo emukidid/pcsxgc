@@ -22,6 +22,10 @@
 * Internal emulated HLE BIOS.
 */
 
+#include <gccore.h>
+extern bool mcd1Written;
+extern bool mcd2Written;
+
 #include "PsxBios.h"
 #include "PsxHw.h"
 //We try to emulate bios :) HELP US :P
@@ -1656,9 +1660,11 @@ void psxBios__card_write() { // 0x4e
 
 	if (port == 0) {
 		memcpy(Mcd1Data + a1 * 128, Ra2, 128);
+		mcd1Written = true;
 		//SaveMcd(Config.Mcd1, Mcd1Data, a1 * 128, 128);
 	} else {
 		memcpy(Mcd2Data + a1 * 128, Ra2, 128);
+		mcd2Written = true;
 		//SaveMcd(Config.Mcd2, Mcd2Data, a1 * 128, 128);
 	}
 
@@ -1679,8 +1685,10 @@ void psxBios__card_read() { // 0x4f
 
 	if (port == 0) {
 		memcpy(Ra2, Mcd1Data + a1 * 128, 128);
+		mcd1Written = true;
 	} else {
 		memcpy(Ra2, Mcd2Data + a1 * 128, 128);
+		mcd2Written = true;
 	}
 
 	DeliverEvent(0x11, 0x2); // 0xf0000011, 0x0004
