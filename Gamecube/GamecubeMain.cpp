@@ -240,21 +240,6 @@ int main(int argc, char *argv[])
 #endif
 #endif //0
 
-	//Init biosFile. TODO: perform this in menu
-	//do the same as above but for the bios(s)
-	if(1) { //SD
-		biosFile_dir = &biosDir_libfat_Default;
-		biosFile_readFile  = fileBrowser_libfat_readFile;
-		biosFile_init      = fileBrowser_libfat_init;
-		biosFile_deinit    = fileBrowser_libfat_deinit;
-		biosFile_init(saveFile_dir);
-	} //fixme: code for the rest of the devices
-
-	biosFile = (fileBrowser_file*)memalign(32,sizeof(fileBrowser_file)); //also hardcoded for SD.
-	memcpy(biosFile,&biosDir_libfat_Default,sizeof(fileBrowser_file));
-	strcat(biosFile->name, "/SCPH1001.BIN");          // Use actual BIOS
-	biosFile_init(biosFile);  //initialize this device
-
 	while (menu->isRunning()) {}
 
 	delete menu;
@@ -268,19 +253,38 @@ int loadISO(fileBrowser_file* file)
 	isoFile = (fileBrowser_file*) memalign(32,sizeof(fileBrowser_file));
 	memcpy( isoFile, file, sizeof(fileBrowser_file) );
 
-	if(!hasLoadedISO)
+	if(!hasLoadedISO) {
+  	
+  	//Init biosFile. TODO: perform this in menu
+  	//do the same as above but for the bios(s)
+  	if(1) { //SD
+  		biosFile_dir = &biosDir_libfat_Default;
+  		biosFile_readFile  = fileBrowser_libfat_readFile;
+  		biosFile_init      = fileBrowser_libfat_init;
+  		biosFile_deinit    = fileBrowser_libfat_deinit;
+  		//biosFile_init(saveFile_dir);
+  	} //fixme: code for the rest of the devices
+	
+
+  	biosFile = (fileBrowser_file*)memalign(32,sizeof(fileBrowser_file)); //also hardcoded for SD.
+  	memcpy(biosFile,&biosDir_libfat_Default,sizeof(fileBrowser_file));
+  	strcat(biosFile->name, "/SCPH1001.BIN");          // Use actual BIOS
+  	//biosFile_init(biosFile);  //initialize this device
+
 	  SysInit();        //Call me early to avoid fragmentation
+	  OpenPlugins();
+  }
 	if(hasLoadedISO) {
+  	SysReset();         //this is causing multiple roms to fail
+  	psxShutdown();
+  	SysInit();        //Call me early to avoid fragmentation
 		//free stuff here
 	}
-	OpenPlugins();
-
-	SysReset();         //this is causing multiple roms to fail
-
+	SysReset();
+	hasLoadedISO = 1;
 	CheckCdrom();
 	LoadCdrom();
-	hasLoadedISO = 1;
-
+	
 	if(autoSave==AUTOSAVE_ENABLE) {
     switch (nativeSaveDevice)
     {

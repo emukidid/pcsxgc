@@ -83,12 +83,10 @@ unsigned char sioRead8() {
 						case 0x0002:
 							memcpy(Mcd1Data + (adrL | (adrH << 8)) * 128, &buf[1], 128);
 							mcd1Written = 1;
-							//SaveMcd(memCardA, Mcd1Data, (adrL | (adrH << 8)) * 128, 128);
 							break;
 						case 0x2002:
 							memcpy(Mcd2Data + (adrL | (adrH << 8)) * 128, &buf[1], 128);
 							mcd2Written = 1;
-							//SaveMcd(memCardB, Mcd2Data, (adrL | (adrH << 8)) * 128, 128);
 							break;
 					}
 				}
