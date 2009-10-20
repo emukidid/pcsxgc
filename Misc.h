@@ -58,9 +58,9 @@ int LoadCdromFile(char *filename, EXE_HEADER *head);
 int CheckCdrom();
 int Load(char *ExePath);
 
-int SaveState(char *file);
-int LoadState(char *file);
-int CheckState(char *file);
+int SaveState();
+int LoadState();
+int CheckState();
 
 int SendPcsxInfo();
 int RecvPcsxInfo();

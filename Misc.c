@@ -26,6 +26,8 @@
 #include "CdRom.h"
 #include "PsxHw.h"
 #include "Mdec.h"
+#include "Gamecube/wiiSXconfig.h"
+#include "Gamecube/fileBrowser/fileBrowser-libfat.h"
 
 int Log = 0;
 
@@ -412,17 +414,45 @@ int Load(char *ExePath) {
 // STATES
 
 const char PcsxHeader[32] = "STv3 PCSX v";
+char* statespath = "/wiisx/saves/";
+static unsigned int savestates_slot = 0;
 
-int SaveState(char *file) {
-	gzFile f;
-	GPUFreeze_t *gpufP;
+void savestates_select_slot(unsigned int s)
+{
+   if (s > 9) return;
+   savestates_slot = s;
+}
+
+int SaveState() {
+  gzFile f;
+  GPUFreeze_t *gpufP;
 	SPUFreeze_t *spufP;
 	int Size;
 	unsigned char *pMem;
+	char *filename, buf[1024];
+	
+  /* fix the filename to %s.st%d format */
+	filename = malloc(256);
+#ifdef HW_RVL
+  if(saveStateDevice==SAVESTATEDEVICE_USB)
+    strcpy(filename,"usb:");
+#endif
+  if(saveStateDevice==SAVESTATEDEVICE_SD)
+    strcpy(filename,"sd:"); //"sd:/" is any currently mounted SD on GC or Wii
+	strcat(filename, statespath);
+  strcat(filename, CdromId);
+	strcat(filename, ".st");
+	sprintf(buf, "%d", savestates_slot);
+	strcat(filename, buf);
 
-	f = gzopen(file, "wb");
-	if (f == NULL) return -1;
+	f = gzopen(filename, "wb");
+  free(filename);
+   	
+  if(!f)
+  	return 0;
 
+  pauseRemovalThread(); 
+    
 	gzwrite(f, (void*)PcsxHeader, 32);
 
 	pMem = (unsigned char *) malloc(128*96*3);
@@ -463,20 +493,41 @@ int SaveState(char *file) {
 	mdecFreeze(f, 1);
 
 	gzclose(f);
+	continueRemovalThread();
 
-	return 0;
+	return 1; //ok
 }
 
-int LoadState(char *file) {
+int LoadState() {
 	gzFile f;
 	GPUFreeze_t *gpufP;
 	SPUFreeze_t *spufP;
 	int Size;
 	char header[32];
+	char *filename, buf[1024];
+	
+  /* fix the filename to %s.st%d format */
+	filename = malloc(256);
+#ifdef HW_RVL
+  if(saveStateDevice==SAVESTATEDEVICE_USB)
+    strcpy(filename,"usb:");
+#endif
+  if(saveStateDevice==SAVESTATEDEVICE_SD)
+    strcpy(filename,"sd:"); //"sd:/" is any currently mounted SD on GC or Wii
+	strcat(filename, statespath);
+  strcat(filename, CdromId);
+	strcat(filename, ".st");
+	sprintf(buf, "%d", savestates_slot);
+	strcat(filename, buf);
 
-	f = gzopen(file, "rb");
-	if (f == NULL) return -1;
+	f = gzopen(filename, "rb");
+  free(filename);
+   	
+  if(!f)
+  	return 0;
 
+	pauseRemovalThread();
+	
 	psxCpu->Reset();
 
 	gzread(f, header, 32);
@@ -513,8 +564,9 @@ int LoadState(char *file) {
 	mdecFreeze(f, 0);
 
 	gzclose(f);
-
-	return 0;
+  continueRemovalThread();
+  
+	return 1;
 }
 
 int CheckState(char *file) {

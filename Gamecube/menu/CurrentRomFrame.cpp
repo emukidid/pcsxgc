@@ -182,8 +182,11 @@ void Func_ResetROM()
 	menu::MessageBox::getInstance().setMessage("Reset ROM Not Implemented");
 }
 
-extern BOOL mcd1Written;
-extern BOOL mcd2Written;
+extern "C" BOOL mcd1Written;
+extern "C" BOOL mcd2Written;
+extern "C" int LoadState();
+extern "C" int SaveState();
+extern "C" void savestates_select_slot(unsigned int s);
 
 void Func_LoadSave()
 {
@@ -304,35 +307,31 @@ void Func_SaveGame()
 
 void Func_LoadState()
 {
-/*  if(!savestates_exists())
+  if(LoadState()) {
+    menu::MessageBox::getInstance().setMessage("Save State Loaded Successfully");
+  } else {
     menu::MessageBox::getInstance().setMessage("Save doesn't exist");
-  else {
-    savestates_job = LOADSTATE;
-    menu::MessageBox::getInstance().setMessage("Gameplay will resume from the savestate");
   }
-*/
-	menu::MessageBox::getInstance().setMessage("Save State Not Implemented");
 }
 
 void Func_SaveState()
 {
-/*  savestates_job = SAVESTATE;
-	menu::MessageBox::getInstance().setMessage("Gameplay will be saved once resumed");
-*/
-
-	menu::MessageBox::getInstance().setMessage("Save State Not Implemented");
+  if(SaveState()) {
+    menu::MessageBox::getInstance().setMessage("Save State Saved Successfully");
+  } else {
+    menu::MessageBox::getInstance().setMessage("Error Saving State");
+  }
 }
 
 static unsigned int which_slot = 0;
 
 void Func_StateCycle()
 {
-	/*
+	
 	which_slot = (which_slot+1) %10;
 	savestates_select_slot(which_slot);
-	FRAME_STRINGS[6][5] = which_slot + '0';*/
+	FRAME_STRINGS[6][5] = which_slot + '0';
 
-	menu::MessageBox::getInstance().setMessage("Save State Not Implemented");
 }
 
 void Func_ReturnFromCurrentRomFrame()
