@@ -65,18 +65,18 @@ extern char *Mcd2Data;
 extern char Mcd1Data[MCD_SIZE], Mcd2Data[MCD_SIZE];
 #endif
 
-unsigned char sioRead8();
-void sioWrite8(unsigned char value);
-void sioWriteCtrl16(unsigned short value);
-void sioInterrupt();
-int sioFreeze(gzFile f, int Mode);
+extern unsigned char sioRead8();
+extern void sioWrite8(unsigned char value);
+extern void sioWriteCtrl16(unsigned short value);
+extern void sioInterrupt();
+extern int sioFreeze(gzFile f, int Mode);
 
-bool LoadMcd(int mcd, fileBrowser_file *file);
-bool LoadMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2);
-bool SaveMcd(int mcd, fileBrowser_file *file);
-bool SaveMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2);
-bool CreateMcd(int slot, fileBrowser_file *mcd);
-void ConvertMcd(char *mcd, char *data);
+extern int LoadMcd(int mcd, fileBrowser_file *savepath);
+extern int LoadMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2);
+extern int SaveMcd(int mcd, fileBrowser_file *savepath);
+extern int SaveMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2);
+extern bool CreateMcd(int slot, fileBrowser_file *mcd);
+extern void ConvertMcd(char *mcd, char *data);
 
 typedef struct {
 	char Title[48];
@@ -88,6 +88,6 @@ typedef struct {
 	unsigned char Flags;
 } McdBlock;
 
-void GetMcdBlockInfo(int mcd, int block, McdBlock *info);
+extern void GetMcdBlockInfo(int mcd, int block, McdBlock *info);
 
 #endif

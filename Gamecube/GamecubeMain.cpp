@@ -35,6 +35,7 @@ extern "C" {
 #include "fileBrowser/fileBrowser.h"
 #include "fileBrowser/fileBrowser-libfat.h"
 #include "fileBrowser/fileBrowser-DVD.h"
+#include "fileBrowser/fileBrowser-CARD.h"
 }
 
 #ifdef WII
@@ -88,6 +89,7 @@ char shutdown = 0;
 char nativeSaveDevice;
 char saveStateDevice;
 char autoSave;
+char autoSaveLoaded = 0;
 char screenMode = 0;
 char padAutoAssign;
 char padType[4];
@@ -298,12 +300,56 @@ int loadISO(fileBrowser_file* file)
 
 	SysReset();         //this is causing multiple roms to fail
 
-	SysPrintf("CheckCdrom\r\n");
 	CheckCdrom();
 	LoadCdrom();
 	hasLoadedISO = 1;
 
-	SysPrintf("Execute\r\n");
+	if(autoSave==AUTOSAVE_ENABLE) {
+    switch (nativeSaveDevice)
+    {
+    	case NATIVESAVEDEVICE_SD:
+    	case NATIVESAVEDEVICE_USB:
+    		// Adjust saveFile pointers
+    		saveFile_dir = (nativeSaveDevice==NATIVESAVEDEVICE_SD) ? &saveDir_libfat_Default:&saveDir_libfat_USB;
+    		saveFile_readFile  = fileBrowser_libfat_readFile;
+    		saveFile_writeFile = fileBrowser_libfat_writeFile;
+    		saveFile_init      = fileBrowser_libfat_init;
+    		saveFile_deinit    = fileBrowser_libfat_deinit;
+    		break;
+    	case NATIVESAVEDEVICE_CARDA:
+    	case NATIVESAVEDEVICE_CARDB:
+    		// Adjust saveFile pointers
+    		saveFile_dir       = (nativeSaveDevice==NATIVESAVEDEVICE_CARDA) ? &saveDir_CARD_SlotA:&saveDir_CARD_SlotB;
+    		saveFile_readFile  = fileBrowser_CARD_readFile;
+    		saveFile_writeFile = fileBrowser_CARD_writeFile;
+    		saveFile_init      = fileBrowser_CARD_init;
+    		saveFile_deinit    = fileBrowser_CARD_deinit;
+    		break;
+    }
+    // Try loading everything
+  	int result = 0;
+  	saveFile_init(saveFile_dir);
+  	result += LoadMcd(1,saveFile_dir);
+  	result += LoadMcd(2,saveFile_dir);
+  	saveFile_deinit(saveFile_dir);
+
+  	switch (nativeSaveDevice)
+  	{
+  		case NATIVESAVEDEVICE_SD:
+  			if (result) autoSaveLoaded = NATIVESAVEDEVICE_SD;
+  			break;
+  		case NATIVESAVEDEVICE_USB:
+  			if (result) autoSaveLoaded = NATIVESAVEDEVICE_USB;
+  			break;
+  		case NATIVESAVEDEVICE_CARDA:
+  			if (result) autoSaveLoaded = NATIVESAVEDEVICE_CARDA;
+  			break;
+  		case NATIVESAVEDEVICE_CARDB:
+  			if (result) autoSaveLoaded = NATIVESAVEDEVICE_CARDB;
+  			break;
+  	}
+  }	
+	
 	return 0;
 }
 
@@ -390,10 +436,7 @@ int SysInit()
 	SysPrintf("LoadPlugins()\r\n");
 	if(LoadPlugins()==-1)
 		SysPrintf("ErrorLoadingPlugins()\r\n");
-	SysPrintf("LoadMcds()\r\n");
-//	LoadMcds(Config.Mcd1, Config.Mcd2);
-	LoadMcds(memCardA, memCardB);
-
+	
 	SysPrintf("end SysInit()\r\n");
 	return 0;
 }

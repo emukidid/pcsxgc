@@ -203,6 +203,7 @@ void cpu_deinit();
 }
 
 extern "C" {
+extern int SaveMcd(int mcd, fileBrowser_file *savepath);
 void pauseAudio(void);  void pauseInput(void);
 void resumeAudio(void); void resumeInput(void);
 void go(void); 
@@ -212,10 +213,8 @@ void go(void);
 
 extern char menuActive;
 extern char autoSave;
-extern BOOL sramWritten;
-extern BOOL eepromWritten;
-extern BOOL mempakWritten;
-extern BOOL flashramWritten;
+extern "C" BOOL mcd1Written;
+extern "C" BOOL mcd2Written;
 extern "C" unsigned int usleep(unsigned int us);
 
 void Func_PlayGame()
@@ -266,12 +265,12 @@ void Func_PlayGame()
 	_break();
 #endif
 	menuActive = 1;
-	pauseInput();
+	pauseInput();*/
 	pauseAudio();
   continueRemovalThread();
 	
   if(autoSave==AUTOSAVE_ENABLE) {
-    if(flashramWritten || sramWritten || eepromWritten || mempakWritten) {  //something needs saving
+    if(mcd1Written || mcd2Written) {  //something needs saving
       switch (nativeSaveDevice)
     	{
     		case NATIVESAVEDEVICE_SD:
@@ -293,15 +292,13 @@ void Func_PlayGame()
     			saveFile_deinit    = fileBrowser_CARD_deinit;
     			break;
     	}
-    	// Try saving everything
-    	int amountSaves = flashramWritten + sramWritten + eepromWritten + mempakWritten;
+      // Try saving everything
+    	int amountSaves = mcd1Written + mcd2Written;
     	int result = 0;
-    	saveFile_init(saveFile_dir);
-    	result += saveEeprom(saveFile_dir);
-    	result += saveSram(saveFile_dir);
-    	result += saveMempak(saveFile_dir);
-    	result += saveFlashram(saveFile_dir);
-    	saveFile_deinit(saveFile_dir);
+      saveFile_init(saveFile_dir);
+      result += SaveMcd(1,saveFile_dir);
+      result += SaveMcd(2,saveFile_dir);
+      saveFile_deinit(saveFile_dir);
     	if (result==amountSaves) {  //saved all of them ok	
     		switch (nativeSaveDevice)
     		{
@@ -318,13 +315,13 @@ void Func_PlayGame()
     				menu::MessageBox::getInstance().fadeMessage("Automatically saved to memcard in Slot B");
     				break;
     		}
-    		flashramWritten = sramWritten = eepromWritten = mempakWritten = 0;  //nothing new written since save
+    		mcd1Written = mcd2Written = 0;  //nothing new written since save
   		}
   	  else		
   	    menu::MessageBox::getInstance().setMessage("Failed to Save"); //one or more failed to save
       
     }
-  }*/
+  }
 	FRAME_BUTTONS[5].buttonString = FRAME_STRINGS[6];
 	menu::Cursor::getInstance().clearCursorFocus();
 }

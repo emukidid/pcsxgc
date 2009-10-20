@@ -341,7 +341,7 @@ void fileBrowserFrame_LoadFile(int i)
     	strcat(RomInfo,buffer);
     	sprintf(buffer,"Country: %s\n",(!Config.PsxType) ? "NTSC":"PAL");
     	strcat(RomInfo,buffer);
-/*			
+			
 			switch (autoSaveLoaded)
 			{
 			case NATIVESAVEDEVICE_NONE:
@@ -360,7 +360,7 @@ void fileBrowserFrame_LoadFile(int i)
 				break;
 			}
 			autoSaveLoaded = NATIVESAVEDEVICE_NONE;
-*/
+
 			menu::MessageBox::getInstance().setMessage(RomInfo);
 		}
 		else		// If not.

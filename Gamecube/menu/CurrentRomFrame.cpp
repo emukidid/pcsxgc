@@ -37,7 +37,8 @@ extern "C" {
 #include "../fileBrowser/fileBrowser.h"
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
-
+extern int LoadMcd(int mcd, fileBrowser_file *savepath);
+extern int SaveMcd(int mcd, fileBrowser_file *savepath);
 }
 
 void Func_ShowRomInfo();
@@ -146,7 +147,7 @@ void Func_ShowRomInfo()
 	menu::MessageBox::getInstance().setMessage(RomInfo);
 }
 
-extern BOOL hasLoadedROM;
+extern BOOL hasLoadedISO;
 
 extern "C" {
 void cpu_init();
@@ -181,16 +182,14 @@ void Func_ResetROM()
 	menu::MessageBox::getInstance().setMessage("Reset ROM Not Implemented");
 }
 
-extern BOOL sramWritten;
-extern BOOL eepromWritten;
-extern BOOL mempakWritten;
-extern BOOL flashramWritten;
+extern BOOL mcd1Written;
+extern BOOL mcd2Written;
 
 void Func_LoadSave()
 {
-/*	if(!hasLoadedROM)
+	if(!hasLoadedISO)
 	{
-		menu::MessageBox::getInstance().setMessage("Please load a ROM first");
+		menu::MessageBox::getInstance().setMessage("Please load a ISO first");
 		return;
 	}
 
@@ -216,14 +215,12 @@ void Func_LoadSave()
   		break;
   }
 
-	// Try loading everything
-	int result = 0;
-	saveFile_init(saveFile_dir);
-	result += loadEeprom(saveFile_dir);
-	result += loadSram(saveFile_dir);
-	result += loadMempak(saveFile_dir);
-	result += loadFlashram(saveFile_dir);
-	saveFile_deinit(saveFile_dir);
+  // Try loading everything
+  int result = 0;
+  saveFile_init(saveFile_dir);
+  result += LoadMcd(1,saveFile_dir);
+  result += LoadMcd(2,saveFile_dir);
+  saveFile_deinit(saveFile_dir);
 
 	switch (nativeSaveDevice)
 	{
@@ -244,14 +241,12 @@ void Func_LoadSave()
 			else		menu::MessageBox::getInstance().setMessage("No saves found on memcard B");
 			break;
 	}
-	sramWritten = eepromWritten = mempakWritten = flashramWritten = false;
-*/
-	menu::MessageBox::getInstance().setMessage("Load Save Not Implemented");
+	mcd1Written = mcd2Written = false;
 }
 
 void Func_SaveGame()
 {
-/*  if(!flashramWritten && !sramWritten && !eepromWritten && !mempakWritten) {
+  if(!mcd1Written && !mcd2Written) {
     menu::MessageBox::getInstance().setMessage("Nothing to save");
     return;
   }
@@ -278,14 +273,12 @@ void Func_SaveGame()
   }
 
 	// Try saving everything
-	int amountSaves = flashramWritten + sramWritten + eepromWritten + mempakWritten;
+	int amountSaves = mcd1Written + mcd2Written;
 	int result = 0;
-	saveFile_init(saveFile_dir);
-	result += saveEeprom(saveFile_dir);
-	result += saveSram(saveFile_dir);
-	result += saveMempak(saveFile_dir);
-	result += saveFlashram(saveFile_dir);
-	saveFile_deinit(saveFile_dir);
+  saveFile_init(saveFile_dir);
+  result += SaveMcd(1,saveFile_dir);
+  result += SaveMcd(2,saveFile_dir);
+  saveFile_deinit(saveFile_dir);
 
 	if (result==amountSaves) {	
 		switch (nativeSaveDevice)
@@ -303,11 +296,10 @@ void Func_SaveGame()
 				menu::MessageBox::getInstance().setMessage("Saved game to memcard in Slot B");
 				break;
 		}
-		sramWritten = eepromWritten = mempakWritten = flashramWritten = false;
+		mcd1Written = mcd2Written = false;
 	}
 	else		menu::MessageBox::getInstance().setMessage("Failed to Save");
-*/
-	menu::MessageBox::getInstance().setMessage("Save Game Not Implemented");
+
 }
 
 void Func_LoadState()

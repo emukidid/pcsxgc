@@ -325,77 +325,75 @@ void sioInterrupt() {
 	psxRegs.interrupt|= 0x80000000;
 }
 
-//call me from menu
-bool LoadMcd(int mcd, fileBrowser_file *file) {
+//call me from menu, takes slot and save path as args
+int LoadMcd(int mcd, fileBrowser_file *savepath) {
 	int temp = 0;
-	bool ret = false;
+	bool ret = 0;
 	char *data = NULL;
-
-	if (mcd == 1) data = &Mcd1Data[0];
-	if (mcd == 2) data = &Mcd2Data[0];
-
-	if (!file) {
-  	printf("Unable to load memory card\n"); //should never happen
+  fileBrowser_file saveFile;
+	memcpy(&saveFile, savepath, sizeof(fileBrowser_file));
+	memset(&saveFile.name[0],0,FILE_BROWSER_MAX_PATH_LEN);
+	
+	if(mcd == 1) {
+	  sprintf((char*)saveFile.name,"%s/%s.mcd",savepath->name,CdromId);
+	  data = &Mcd1Data[0];
+  }
+	if (mcd == 2) {
+  	sprintf((char*)saveFile.name,"%s/slot2.mcd",savepath->name);
+  	data = &Mcd2Data[0];
 	}
-	if(saveFile_readFile(file, &temp, 4) == 4) {  //file exists
-		file->offset = 0;
-		printf ("Loading memory card %s\n", file->name);
-		/*//hacks for memory cards from other emulators/versions -- deal with in saveswapper
-		struct stat buf;
-		if (stat(str, &buf) != -1) {  
-			if (buf.st_size == MCD_SIZE + 64) 
-				fseek(f, 64, SEEK_SET);
-			else if(buf.st_size == MCD_SIZE + 3904)
-				fseek(f, 3904, SEEK_SET);
-		}*/
-		if(saveFile_readFile(file, data, MCD_SIZE)==MCD_SIZE)
-		  ret = true;
+
+	if(saveFile_readFile(&saveFile, &temp, 4) == 4) {  //file exists
+		saveFile.offset = 0;
+		if(saveFile_readFile(&saveFile, data, MCD_SIZE)==MCD_SIZE)
+		  ret = 1;
 	}
 	else {
-		printf ("The memory card %s doesn't exist - creating it\n", file->name);
-		if(CreateMcd(mcd, file)) {  //created ok
-		  file->offset = 0;
-			/*//hacks for memory cards from other emulators/versions -- deal with in saveswapper
-  		struct stat buf;
-			if (stat(str, &buf) != -1) {
-				if (buf.st_size == MCD_SIZE + 64) 
-					fseek(f, 64, SEEK_SET);
-				else if(buf.st_size == MCD_SIZE + 3904)
-					fseek(f, 3904, SEEK_SET);
-			}	*/
-			if(saveFile_readFile(file, data, MCD_SIZE)==MCD_SIZE)
-			  ret = true;
+		if(CreateMcd(mcd, &saveFile)) {  //created ok
+		  saveFile.offset = 0;
+			if(saveFile_readFile(&saveFile, data, MCD_SIZE)==MCD_SIZE)
+			  ret = 1;
 		}
 	}
 	return ret;
 }
 
 //we need to get rid of this joint function and start using the individual versions
-bool LoadMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2) {
+int LoadMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2) {
   if((LoadMcd(1, mcd1)) && (LoadMcd(2, mcd2)))
-    return true;
-  return false;
+    return 1;
+  return 0;
 }
 
-//call me from menu
-bool SaveMcd(int mcd, fileBrowser_file *file) {
-  bool ret = false;
+//call me from menu, takes slot and save path as args
+int SaveMcd(int mcd, fileBrowser_file *savepath) {
+  bool ret = 0;
   char *data = NULL;
-
-	if (mcd == 1) data = &Mcd1Data[0];
-	if (mcd == 2) data = &Mcd2Data[0];
+  fileBrowser_file saveFile;
+  
+	memcpy(&saveFile, savepath, sizeof(fileBrowser_file));
+	memset(&saveFile.name[0],0,FILE_BROWSER_MAX_PATH_LEN);
 	
-  if(saveFile_writeFile(file, data, MCD_SIZE)==MCD_SIZE)
-    ret = true;
+	if(mcd == 1) {
+	  sprintf((char*)saveFile.name,"%s/%s.mcd",savepath->name,CdromId);
+	  data = &Mcd1Data[0];
+  }
+	if (mcd == 2) {
+  	sprintf((char*)saveFile.name,"%s/slot2.mcd",savepath->name);
+  	data = &Mcd2Data[0];
+	}
+	
+  if(saveFile_writeFile(&saveFile, data, MCD_SIZE)==MCD_SIZE)
+    ret = 1;
   
   return ret;
 }
 
 //we need to get rid of this joint function and start using the individual versions
-bool SaveMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2) {
+int SaveMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2) {
   if((SaveMcd(1, mcd1)) && (SaveMcd(2, mcd2)))
-    return true;
-  return false;
+    return 1;
+  return 0;
 }
 
 bool CreateMcd(int slot, fileBrowser_file *mcd) {
@@ -425,8 +423,8 @@ bool CreateMcd(int slot, fileBrowser_file *mcd) {
 	for(i = curPos; i < MCD_SIZE; i++)
 	  cardData[i] = 0;
 	if(saveFile_writeFile(mcd, cardData, MCD_SIZE)==MCD_SIZE)
-	  return true;
-	return false;
+	  return 1;
+	return 0;
 }
 
 void ConvertMcd(char *mcd, char *data) {
