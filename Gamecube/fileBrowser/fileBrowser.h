@@ -57,10 +57,6 @@ extern fileBrowser_file* biosFile_dir;
 
 // This is the currently loaded CD image
 extern fileBrowser_file* isoFile;
-// This is the currently selected memory card slot 1 file
-extern fileBrowser_file* memCardA;
-// This is the currently selected memory card slot 2 file
-extern fileBrowser_file* memCardB;
 // This is the currently selected bios file
 extern fileBrowser_file* biosFile;
 

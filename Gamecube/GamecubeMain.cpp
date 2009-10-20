@@ -67,8 +67,6 @@ GXRModeObj *vmode;				/*** Graphics Mode Object ***/
 extern int controllerType;
 BOOL hasLoadedISO = FALSE;
 fileBrowser_file *isoFile  = NULL;  //the ISO file
-fileBrowser_file *memCardA = NULL;  //Slot 1 memory card
-fileBrowser_file *memCardB = NULL;  //Slot 2 memory card
 fileBrowser_file *biosFile = NULL;  //BIOS file
 
 #if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
@@ -242,17 +240,7 @@ int main(int argc, char *argv[])
 #endif
 #endif //0
 
-	//Init saveFile and biosFile. TODO: perform this in menu
-	//do the same as above but for memory card slots
-	if(1) { //SD
-		saveFile_dir = &saveDir_libfat_Default;
-		saveFile_readFile  = fileBrowser_libfat_readFile;
-		saveFile_writeFile = fileBrowser_libfat_writeFile;
-		saveFile_init      = fileBrowser_libfat_init;
-		saveFile_deinit    = fileBrowser_libfat_deinit;
-		saveFile_init(saveFile_dir);
-	} //fixme: code for the rest of the devices
-
+	//Init biosFile. TODO: perform this in menu
 	//do the same as above but for the bios(s)
 	if(1) { //SD
 		biosFile_dir = &biosDir_libfat_Default;
@@ -267,18 +255,7 @@ int main(int argc, char *argv[])
 	strcat(biosFile->name, "/SCPH1001.BIN");          // Use actual BIOS
 	biosFile_init(biosFile);  //initialize this device
 
-	//hardcoded for SD .. do this properly too in the menu
-	memCardA = (fileBrowser_file*)memalign(32,sizeof(fileBrowser_file));
-	memCardB = (fileBrowser_file*)memalign(32,sizeof(fileBrowser_file));
-	memcpy(memCardA,&saveDir_libfat_Default,sizeof(fileBrowser_file));  
-	strcat(memCardA->name,"/memcard1.mcd");
-	memcpy(memCardB,&saveDir_libfat_Default,sizeof(fileBrowser_file));
-	strcat(memCardB->name,"/memcard2.mcd");
-
 	while (menu->isRunning()) {}
-	SysPrintf("Execute\r\n");
-	Config.PsxOut = 0;
-	psxCpu->Execute();
 
 	delete menu;
 
@@ -392,8 +369,6 @@ int loadISO(void)
 	Config.Xa = 0;  //XA enabled
 	Config.Cdda = 1;
 	Config.PsxAuto = 1; //Autodetect
-	SysPrintf("start main()\r\n");
-
 	if (SysInit() == -1)
 	{
 		printf("SysInit() Error!\n");
@@ -402,8 +377,6 @@ int loadISO(void)
 	OpenPlugins();
 
 	SysReset();
-
-	SysPrintf("CheckCdrom\r\n");
 	CheckCdrom();
 	LoadCdrom();
 
@@ -428,24 +401,14 @@ int SysInit()
 	emuLog = fopen("/PSXISOS/emu.log", "w");
 #endif
 
-	SysPrintf("start SysInit()\r\n");
-
-	SysPrintf("psxInit()\r\n");
 	psxInit();
-
-	SysPrintf("LoadPlugins()\r\n");
-	if(LoadPlugins()==-1)
-		SysPrintf("ErrorLoadingPlugins()\r\n");
-	
-	SysPrintf("end SysInit()\r\n");
+	LoadPlugins();
 	return 0;
 }
 
 void SysReset() 
 {
-	SysPrintf("start SysReset()\r\n");
 	psxReset();
-	SysPrintf("end SysReset()\r\n");
 }
 
 void SysClose() 
