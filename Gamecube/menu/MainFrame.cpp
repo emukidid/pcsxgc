@@ -247,15 +247,9 @@ void Func_PlayGame()
 
 	menu::Gui::getInstance().gfx->clearEFB((GXColor){0, 0, 0, 0xFF}, 0x000000);
 
-	//TODO: Move other plugin/reset to here
-	go();
-
-//	usleep(1000);			//This sleep prevents the PAD_Init() from failing
-//	control_info_init();	//TODO: This controller re-poll might need rethinking when we implement reconfigurable input
-/*
 	pauseRemovalThread();
 	resumeAudio();
-	resumeInput();
+	//resumeInput();
 	menuActive = 0;
 #ifdef DEBUGON
 	_break();
@@ -265,7 +259,7 @@ void Func_PlayGame()
 	_break();
 #endif
 	menuActive = 1;
-	pauseInput();*/
+	//pauseInput();
 	pauseAudio();
   continueRemovalThread();
 	

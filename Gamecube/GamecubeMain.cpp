@@ -416,8 +416,8 @@ extern "C" {
 //System Functions
 void go(void)
 {
-	SysPrintf("Execute\r\n");
 	Config.PsxOut = 0;
+	stop = 0;
 	psxCpu->Execute();
 }
 

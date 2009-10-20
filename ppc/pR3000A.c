@@ -1140,11 +1140,10 @@ __inline static void execute() {
 		recRecompile();
 	}
 	recRun(*recFunc, (u32)&psxRegs, (u32)&psxM);
-	if(stop) exit(0);
 }
 
 static void recExecute() {
-	for (;;) execute();
+	while(!stop) execute();
 }
 
 static void recExecuteBlock() {

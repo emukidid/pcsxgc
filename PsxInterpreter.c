@@ -767,7 +767,7 @@ static void intReset() {
 }
 
 static void intExecute() {
-	for (;;) 
+	while(!stop)
 		execI();
 }
 
@@ -801,7 +801,7 @@ inline void execI() {
  
 	psxRegs.pc+= 4; psxRegs.cycle++; 
 	psxBSC[psxRegs.code >> 26](); 
-	if(stop) exit(0);
+
 }
 
 /* debugger version */

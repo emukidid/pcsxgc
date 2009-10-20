@@ -150,36 +150,16 @@ void Func_ShowRomInfo()
 extern BOOL hasLoadedISO;
 
 extern "C" {
-void cpu_init();
-void cpu_deinit();
+void SysReset();
 }
 
 void Func_SetPlayGame();
 
 void Func_ResetROM()
 {
-/*	if(hasLoadedROM)
-	{
-		cpu_deinit();
-		romClosed_RSP();
-		romClosed_input();
-		romClosed_audio();
-		romClosed_gfx();
-		free_memory();
-		
-		init_memory();
-		romOpen_gfx();
-		romOpen_audio();
-		romOpen_input();
-		cpu_init();
-		menu::MessageBox::getInstance().setMessage("Game restarted");
-		Func_SetPlayGame();
-	}
-	else	
-	{
-		menu::MessageBox::getInstance().setMessage("Please load a ROM first");
-	}*/
-	menu::MessageBox::getInstance().setMessage("Reset ROM Not Implemented");
+	SysReset();
+	menu::MessageBox::getInstance().setMessage("Game restarted");
+	Func_SetPlayGame();
 }
 
 extern "C" BOOL mcd1Written;
