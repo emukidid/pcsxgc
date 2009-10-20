@@ -23,8 +23,8 @@
 */
 
 #include <gccore.h>
-extern bool mcd1Written;
-extern bool mcd2Written;
+extern char mcd1Written;
+extern char mcd2Written;
 
 #include "PsxBios.h"
 #include "PsxHw.h"
@@ -1660,11 +1660,11 @@ void psxBios__card_write() { // 0x4e
 
 	if (port == 0) {
 		memcpy(Mcd1Data + a1 * 128, Ra2, 128);
-		mcd1Written = true;
+		mcd1Written = 1;
 		//SaveMcd(Config.Mcd1, Mcd1Data, a1 * 128, 128);
 	} else {
 		memcpy(Mcd2Data + a1 * 128, Ra2, 128);
-		mcd2Written = true;
+		mcd2Written = 1;
 		//SaveMcd(Config.Mcd2, Mcd2Data, a1 * 128, 128);
 	}
 

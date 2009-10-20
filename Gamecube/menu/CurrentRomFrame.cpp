@@ -162,8 +162,8 @@ void Func_ResetROM()
 	Func_SetPlayGame();
 }
 
-extern "C" BOOL mcd1Written;
-extern "C" BOOL mcd2Written;
+extern "C" char mcd1Written;
+extern "C" char mcd2Written;
 extern "C" int LoadState();
 extern "C" int SaveState();
 extern "C" void savestates_select_slot(unsigned int s);

@@ -213,8 +213,8 @@ void go(void);
 
 extern char menuActive;
 extern char autoSave;
-extern "C" BOOL mcd1Written;
-extern "C" BOOL mcd2Written;
+extern "C" char mcd1Written;
+extern "C" char mcd2Written;
 extern "C" unsigned int usleep(unsigned int us);
 
 void Func_PlayGame()
@@ -261,8 +261,7 @@ void Func_PlayGame()
 	menuActive = 1;
 	//pauseInput();
 	pauseAudio();
-  continueRemovalThread();
-	
+
   if(autoSave==AUTOSAVE_ENABLE) {
     if(mcd1Written || mcd2Written) {  //something needs saving
       switch (nativeSaveDevice)
@@ -311,11 +310,13 @@ void Func_PlayGame()
     		}
     		mcd1Written = mcd2Written = 0;  //nothing new written since save
   		}
-  	  else		
-  	    menu::MessageBox::getInstance().setMessage("Failed to Save"); //one or more failed to save
+  	  else		{
+  	    menu::MessageBox::getInstance().setMessage("Failed to save game"); //one or more failed to save
+	    }
       
     }
   }
+  continueRemovalThread();
 	FRAME_BUTTONS[5].buttonString = FRAME_STRINGS[6];
 	menu::Cursor::getInstance().clearCursorFocus();
 }

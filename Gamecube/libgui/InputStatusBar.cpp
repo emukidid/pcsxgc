@@ -68,8 +68,8 @@ InputStatusBar::~InputStatusBar()
 extern "C" BOOL hasLoadedISO;
 extern "C" char autoSave;
 extern "C" char CdromLabel[33];
-extern "C" bool mcd1Written;
-extern "C" bool mcd2Written;
+extern "C" char mcd1Written;
+extern "C" char mcd2Written;
 
 void InputStatusBar::drawComponent(Graphics& gfx)
 {

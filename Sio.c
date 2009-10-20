@@ -45,8 +45,8 @@ static unsigned int mcdst,rdwr;
 static unsigned char adrH,adrL;
 static unsigned int padst;
 
-bool mcd1Written = false;
-bool mcd2Written = false;
+char mcd1Written = 0;
+char mcd2Written = 0;
 
 PadDataS pad;
 
@@ -82,12 +82,12 @@ unsigned char sioRead8() {
 					switch (CtrlReg&0x2002) {
 						case 0x0002:
 							memcpy(Mcd1Data + (adrL | (adrH << 8)) * 128, &buf[1], 128);
-							mcd1Written = true;
+							mcd1Written = 1;
 							//SaveMcd(memCardA, Mcd1Data, (adrL | (adrH << 8)) * 128, 128);
 							break;
 						case 0x2002:
 							memcpy(Mcd2Data + (adrL | (adrH << 8)) * 128, &buf[1], 128);
-							mcd2Written = true;
+							mcd2Written = 1;
 							//SaveMcd(memCardB, Mcd2Data, (adrL | (adrH << 8)) * 128, 128);
 							break;
 					}
@@ -210,11 +210,11 @@ void sioWrite8(unsigned char value) {
 					switch (CtrlReg&0x2002) {
 						case 0x0002:
 							memcpy(&buf[4], Mcd1Data + (adrL | (adrH << 8)) * 128, 128);
-							mcd1Written = true;
+							mcd1Written = 1;
 							break;
 						case 0x2002:
 							memcpy(&buf[4], Mcd2Data + (adrL | (adrH << 8)) * 128, 128);
-							mcd2Written = true;
+							mcd2Written = 1;
 							break;
 					}
 					{
