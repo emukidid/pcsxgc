@@ -56,8 +56,8 @@ unsigned short usCursorActive=0;
 //int	iResX_Max=640;	//Max FB Width
 int		iResX_Max=1024;	//Vmem width
 int		iResY_Max=512;
-char *	GXtexture;
-char *	Xpixels;
+char GXtexture[1024*512*2] __attribute__((aligned(32)));
+char Xpixels[1024*512*2] __attribute__((aligned(32)));
 char *	pCaptionText;
 
 extern u32* xfb[2];	/*** Framebuffers ***/
@@ -208,9 +208,9 @@ unsigned long ulInitDisplay(void)
 
 //	iColDepth=16;	//only needed by ShowGunCursor
 
-	Xpixels = memalign(32,iResX_Max*iResY_Max*2);	//For now these are for 16bit color.
+//	Xpixels = memalign(32,iResX_Max*iResY_Max*2);	//For now these are for 16bit color.
 	memset(Xpixels,0,iResX_Max*iResY_Max*2);
-	GXtexture = memalign(32,iResX_Max*iResY_Max*2);
+//	GXtexture = memalign(32,iResX_Max*iResY_Max*2);
 	memset(GXtexture,0,iResX_Max*iResY_Max*2);
 
 	return (unsigned long)Xpixels;		//This isn't right, but didn't want to return 0..
@@ -220,8 +220,8 @@ unsigned long ulInitDisplay(void)
 
 void CloseDisplay(void)
 {
-	free(Xpixels);
-	free(GXtexture);
+/*	free(Xpixels);
+	free(GXtexture);*/
 }
 
 ////////////////////////////////////////////////////////////////////////

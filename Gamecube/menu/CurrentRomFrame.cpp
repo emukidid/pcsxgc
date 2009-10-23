@@ -151,13 +151,21 @@ extern BOOL hasLoadedISO;
 
 extern "C" {
 void SysReset();
+void SysInit();
+void SysClose();
+void CheckCdrom();
+void LoadCdrom();
 }
 
 void Func_SetPlayGame();
 
 void Func_ResetROM()
 {
-	SysReset();
+  SysClose();
+	SysInit ();
+	CheckCdrom();
+  SysReset();
+	LoadCdrom();
 	menu::MessageBox::getInstance().setMessage("Game restarted");
 	Func_SetPlayGame();
 }

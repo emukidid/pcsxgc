@@ -270,19 +270,15 @@ int loadISO(fileBrowser_file* file)
   	memcpy(biosFile,&biosDir_libfat_Default,sizeof(fileBrowser_file));
   	strcat(biosFile->name, "/SCPH1001.BIN");          // Use actual BIOS
   	//biosFile_init(biosFile);  //initialize this device
-
 	  SysInit();        //Call me early to avoid fragmentation
-	  OpenPlugins();
   }
 	if(hasLoadedISO) {
-  	SysReset();         //this is causing multiple roms to fail
-  	psxShutdown();
+  	SysClose();	
   	SysInit();        //Call me early to avoid fragmentation
-		//free stuff here
 	}
-	SysReset();
 	hasLoadedISO = 1;
 	CheckCdrom();
+	SysReset();
 	LoadCdrom();
 	
 	if(autoSave==AUTOSAVE_ENABLE) {
@@ -407,6 +403,7 @@ int SysInit()
 
 	psxInit();
 	LoadPlugins();
+	OpenPlugins();
 	return 0;
 }
 
@@ -418,7 +415,8 @@ void SysReset()
 void SysClose() 
 {
 	psxShutdown();
-	//ReleasePlugins();
+	ClosePlugins();
+	ReleasePlugins();
 #if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
 	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
 	if (emuLog != NULL) fclose(emuLog);

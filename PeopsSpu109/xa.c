@@ -42,7 +42,7 @@ xa_decode_t   * xapGlobal=0;
 
 unsigned long * XAFeed  = NULL;
 unsigned long * XAPlay  = NULL;
-unsigned long * XAStart = NULL;
+unsigned long   XAStart[44100] __attribute__((aligned(32)));
 unsigned long * XAEnd   = NULL;
 unsigned long   XARepeat  = 0;
 unsigned long   XALastVal = 0;

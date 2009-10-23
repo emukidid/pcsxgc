@@ -317,7 +317,7 @@ extern xa_decode_t   * xapGlobal;
 
 extern unsigned long * XAFeed;
 extern unsigned long * XAPlay;
-extern unsigned long * XAStart;
+extern unsigned long   XAStart[44100] __attribute__((aligned(32)));
 extern unsigned long * XAEnd;
 
 extern unsigned long   XARepeat;
@@ -336,7 +336,7 @@ extern int           iRightXAVol;
 
 extern int *          sRVBPlay;
 extern int *          sRVBEnd;
-extern int *          sRVBStart;
+extern int           sRVBStart[NSSIZE*2] __attribute__((aligned(32)));
 extern int            iReverbOff;
 extern int            iReverbRepeat;
 extern int            iReverbNum;    

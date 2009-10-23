@@ -133,7 +133,7 @@ unsigned short  regArea[10000];
 unsigned short  spuMem[256*1024];
 unsigned char * spuMemC;
 unsigned char * pSpuIrq=0;
-unsigned char * pSpuBuffer;
+unsigned char   pSpuBuffer[32768];
 unsigned char * pMixIrq=0;
 
 
@@ -1105,18 +1105,18 @@ void SetupStreams(void)
 { 
  int i;
 
- pSpuBuffer=(unsigned char *)malloc(32768);            // alloc mixing buffer
+ //pSpuBuffer=(unsigned char *)malloc(32768);            // alloc mixing buffer
 
  if(iUseReverb==1) i=88200*2;
  else              i=NSSIZE*2;
 
- sRVBStart = (int *)malloc(i*4);                       // alloc reverb buffer
+ //sRVBStart = (int *)malloc(i*4);                       // alloc reverb buffer
  memset(sRVBStart,0,i*4);
  sRVBEnd  = sRVBStart + i;
  sRVBPlay = sRVBStart;
 
- XAStart =                                             // alloc xa buffer
-  (unsigned long *)malloc(44100*4);
+ //XAStart =                                             // alloc xa buffer
+  //(unsigned long *)malloc(44100*4);
  XAPlay  = XAStart;
  XAFeed  = XAStart;
  XAEnd   = XAStart + 44100;
@@ -1143,12 +1143,12 @@ void SetupStreams(void)
 
 void RemoveStreams(void)
 { 
- free(pSpuBuffer);                                     // free mixing buffer
+ /*free(pSpuBuffer);                                     // free mixing buffer
  pSpuBuffer=NULL;
  free(sRVBStart);                                      // free reverb buffer
  sRVBStart=0;
  free(XAStart);                                        // free XA buffer
- XAStart=0;
+ XAStart=0;*/
 
 /*
  int i;

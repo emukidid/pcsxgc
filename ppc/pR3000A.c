@@ -40,7 +40,7 @@ extern int stop;
 
 //#define NO_CONSTANT
 
-u32 *psxRecLUT;
+u32 psxRecLUT[0x010000];
 
 #undef _Op_
 #define _Op_     _fOp_(psxRegs.code)
@@ -81,9 +81,9 @@ u32 *psxRecLUT;
 #define RECMEM_SIZE		(8*1024*1024)
 #endif
 
-static char *recMem = NULL;	/* the recompiled blocks will be here */
-static char *recRAM = NULL;	/* and the ptr to the blocks here */
-static char *recROM = NULL;	/* and here */
+static char recMem[RECMEM_SIZE] __attribute__((aligned(32)));	/* the recompiled blocks will be here */
+static char recRAM[0x200000] __attribute__((aligned(32)));	/* and the ptr to the blocks here */
+static char recROM[0x080000] __attribute__((aligned(32)));	/* and here */
 
 static u32 pc;			/* recompiler pc */
 static u32 pcold;		/* recompiler oldpc */
@@ -1075,21 +1075,6 @@ static void freeMem(int all)
 static int allocMem() {
 	int i;
 
-	freeMem(0);
-  //only set this up once
-	if (!psxRecLUT)
-		psxRecLUT = (u32*) memalign(32,0x010000 * 4);
-
-  if(!recMem)
-	  recMem = (char*) memalign(32,RECMEM_SIZE);
-  if(!recRAM)
-	  recRAM = (char*) memalign(32,0x200000);
-	if(!recROM)  
-	  recROM = (char*) memalign(32,0x080000);
-	if (recRAM == NULL || recROM == NULL || recMem == NULL/*(void *)-1*/ || psxRecLUT == NULL) {
-		SysMessage("Error allocating memory"); return -1;
-	}
-
 	for (i=0; i<0x80; i++) psxRecLUT[i + 0x0000] = (u32)&recRAM[(i & 0x1f) << 16];
 	memcpy(psxRecLUT + 0x8000, psxRecLUT, 0x80 * 4);
 	memcpy(psxRecLUT + 0xa000, psxRecLUT, 0x80 * 4);
@@ -1117,7 +1102,6 @@ static void recReset() {
 }
 
 static void recShutdown() {
-        freeMem(1);
 	ppcShutdown();
 }
 

@@ -54,21 +54,26 @@
 
 extern void SysMessage(char *fmt, ...);
 
+s8 psxM[0x00220000] __attribute__((aligned(32)));
+s8 psxR[0x00080000] __attribute__((aligned(32)));
+u8* psxMemWLUT[0x10000] __attribute__((aligned(32)));
+u8* psxMemRLUT[0x10000] __attribute__((aligned(32)));
+
 int psxMemInit() {
 	int i;
 
-	psxMemRLUT = (u8**)memalign(32,0x10000 * sizeof(void*));
-	psxMemWLUT = (u8**)memalign(32,0x10000 * sizeof(void*));
+	//psxMemRLUT = (u8**)memalign(32,0x10000 * sizeof(void*));
+	//psxMemWLUT = (u8**)memalign(32,0x10000 * sizeof(void*));
 	memset(psxMemRLUT, 0, 0x10000 * sizeof(void*));
 	memset(psxMemWLUT, 0, 0x10000 * sizeof(void*));
-	psxM = memalign(32,0x00220000);
+	//psxM = memalign(32,0x00220000);
 	psxP = &psxM[0x200000];
 	psxH = &psxM[0x210000];
-	psxR = (s8*)memalign(32,0x00080000);
-	if (psxMemRLUT == NULL || psxMemWLUT == NULL || 
+	//psxR = (s8*)memalign(32,0x00080000);
+	/*if (psxMemRLUT == NULL || psxMemWLUT == NULL || 
 		psxM == NULL || psxP == NULL || psxH == NULL) {
 		SysMessage(_("Error allocating memory!")); return -1;
-	}
+	}*/
 
 // MemR
 	for (i=0; i<0x80; i++) psxMemRLUT[i + 0x0000] = (u8*)&psxM[(i & 0x1f) << 16];
@@ -95,20 +100,20 @@ int psxMemInit() {
 }
 
 void psxMemReset() {
-  printf("BIOS file %s\n",biosFile->name);
+  //printf("BIOS file %s\n",biosFile->name);
   int temp;
 	memset(psxM, 0, 0x00200000);
 	memset(psxP, 0, 0x00010000);
   memset(psxR, 0, 0x80000);
-  
+  biosFile->offset = 0; //must reset otherwise the if statement will fail!
 	if(biosFile_readFile(biosFile, &temp, 4) == 4) {  //bios file exists
 	  biosFile->offset = 0;
 		if(biosFile_readFile(biosFile, psxR, 0x80000) != 0x80000) { //failed size
-		  printf("Using HLE\n");
+		  //printf("Using HLE\n");
 		  Config.HLE = BIOS_HLE;
 	  }
 		else {
-  		printf("Using BIOS file %s\n",biosFile->name);
+  		//printf("Using BIOS file %s\n",biosFile->name);
 		  Config.HLE = BIOS_USER_DEFINED;
 	  }
 	}
@@ -118,10 +123,10 @@ void psxMemReset() {
 }
 
 void psxMemShutdown() {
-	free(psxM);
+/*	free(psxM);
 	free(psxR);
 	free(psxMemRLUT);
-	free(psxMemWLUT);
+	free(psxMemWLUT);*/
 }
 
 static int writeok=1;

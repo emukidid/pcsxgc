@@ -181,7 +181,7 @@ static char *PluginAuthor     = "Pete Bernert and the P.E.Op.S. team";
 // memory image of the PSX vram 
 ////////////////////////////////////////////////////////////////////////
 
-unsigned char  *psxVSecure;
+unsigned char  psxVSecure[(iGPUHeight*2)*1024 + (1024*1024)];
 unsigned char  *psxVub;
 signed   char  *psxVsb;
 unsigned short *psxVuw;
@@ -523,8 +523,8 @@ long PEOPS_GPUinit()                                // GPU INIT
 
  szDebugText[0]=0;                                     // init debug text buffer
 
- psxVSecure=(unsigned char *)malloc((iGPUHeight*2)*1024 + (1024*1024)); // always alloc one extra MB for soft drawing funcs security
- if(!psxVSecure) return -1;
+ //psxVSecure=(unsigned char *)malloc((iGPUHeight*2)*1024 + (1024*1024)); // always alloc one extra MB for soft drawing funcs security
+ //if(!psxVSecure) return -1;
 
  //!!! ATTENTION !!!
  psxVub=psxVSecure+512*1024;                           // security offset into double sized psx vram!
@@ -681,7 +681,7 @@ long PEOPS_GPUshutdown()
  // screensaver: release the handle for kernel32.dll
  FreeKernel32();
 
- free(psxVSecure);
+// free(psxVSecure);
  
 #ifdef _MACGL
  CGReleaseAllDisplays();

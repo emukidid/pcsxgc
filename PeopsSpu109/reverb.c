@@ -48,7 +48,7 @@
 
 int *          sRVBPlay      = 0;
 int *          sRVBEnd       = 0;
-int *          sRVBStart     = 0;
+int            sRVBStart[NSSIZE*2] __attribute__((aligned(32)));
 int            iReverbOff    = -1;                          // some delay factor for reverb
 int            iReverbRepeat = 0;
 int            iReverbNum    = 1;    
