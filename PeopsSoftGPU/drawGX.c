@@ -53,11 +53,15 @@ PSXPoint_t     ptCursorPoint[8];
 unsigned short usCursorActive=0;
 
 //Some GX specific variables
+#define RESX_MAX 1024	//Vmem width
+#define RESY_MAX 512	//Vmem height
 //int	iResX_Max=640;	//Max FB Width
-int		iResX_Max=1024;	//Vmem width
-int		iResY_Max=512;
-char GXtexture[1024*512*2] __attribute__((aligned(32)));
-char Xpixels[1024*512*2] __attribute__((aligned(32)));
+int		iResX_Max=RESX_MAX;
+int		iResY_Max=RESY_MAX;
+//char *	GXtexture;
+static unsigned char	GXtexture[RESX_MAX*RESY_MAX*2] __attribute__((aligned(32)));
+//char *	Xpixels;
+static unsigned char	Xpixels[RESX_MAX*RESY_MAX*2] __attribute__((aligned(32)));
 char *	pCaptionText;
 
 extern u32* xfb[2];	/*** Framebuffers ***/
@@ -220,8 +224,8 @@ unsigned long ulInitDisplay(void)
 
 void CloseDisplay(void)
 {
-/*	free(Xpixels);
-	free(GXtexture);*/
+//	free(Xpixels);
+//	free(GXtexture);
 }
 
 ////////////////////////////////////////////////////////////////////////
