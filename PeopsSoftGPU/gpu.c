@@ -116,6 +116,7 @@
 
 #ifdef __GX__
 #include "../Gamecube/DEBUG.h"
+#include "../Gamecube/wiiSXconfig.h"
 #endif //__GX__
 
 #ifdef _WINDOWS
@@ -2572,6 +2573,7 @@ void CALLBACK GPUsetframelimit(unsigned long option)
 {
  bInitCap = TRUE;
 
+#ifndef __GX__
  if(option==1)
   {
    UseFrameLimit=1;UseFrameSkip=0;iFrameLimit=2;
@@ -2582,6 +2584,21 @@ void CALLBACK GPUsetframelimit(unsigned long option)
   {
    UseFrameLimit=0;
   }
+#else //!__GX__
+ if (frameLimit == FRAMELIMIT_AUTO)
+ {
+	UseFrameLimit=1;
+	iFrameLimit=2;
+	SetAutoFrameCap();
+ }
+ else
+ {
+	UseFrameLimit=0;
+	iFrameLimit=0;
+ }
+ UseFrameSkip = frameSkip;
+ BuildDispMenu(0);
+#endif //__GX__
 }
 
 ////////////////////////////////////////////////////////////////////////

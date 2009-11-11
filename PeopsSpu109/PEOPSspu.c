@@ -1176,7 +1176,9 @@ long PEOPS_SPUopen(void)
  if(bSPUIsOpen) return 0;                              // security for some stupid main emus
 
  iUseXA=1;                                             // just small setup
+#ifndef __GX__
  iVolume=3;
+#endif //!__GX__
  iReverbOff=-1;   
  spuIrq=0;                       
  spuAddr=0xffffffff;

@@ -30,6 +30,7 @@
 #include "swap.h"
 #include "../Gamecube/font.h"
 #include "../Gamecube/DEBUG.h"
+#include "../Gamecube/wiiSXconfig.h"
 
 ////////////////////////////////////////////////////////////////////////////////////
 // misc globals
@@ -470,7 +471,7 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch)
 	//Write menu/debug text on screen
 	GXColor fontColor = {150,255,150,255};
 	write_font_init_GX(fontColor);
-	if(ulKeybits&KEY_SHOWFPS)
+	if((ulKeybits&KEY_SHOWFPS)&&showFPSonScreen)
 		write_font(10,35,szDispBuf, 1.0);
 
 	int i = 0;

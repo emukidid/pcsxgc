@@ -92,6 +92,10 @@
 
 #include "stdafx.h"
 
+#ifdef __GX__
+#include "../Gamecube/wiiSXconfig.h"
+#endif
+
 #define _IN_CFG
 
 //-------------------------------------------------------------------------// windows headers
@@ -1635,14 +1639,30 @@ void ReadConfig(void)
  iColDepth=16;
  iWindowMode=1;
  iUseScanLines=0;
+#ifndef __GX__
  UseFrameLimit=1;
  UseFrameSkip=0;
  iFrameLimit=2;
+#else //!__GX__
+ if (frameLimit == FRAMELIMIT_AUTO)
+ {
+	 UseFrameLimit=1;
+	 iFrameLimit=2;
+ }
+ else
+ {
+	 UseFrameLimit=0;
+	 iFrameLimit=0;
+ }
+ UseFrameSkip = frameSkip;
+#endif //__GX__
  fFrameRate=60.0f;
  dwCfgFixes=0;
  iUseFixes=0;
  iUseNoStretchBlt=1;
+#ifndef __GX__
  iUseDither=0;
+#endif //!__GX__
  iShowFPS=0;
  bSSSPSXLimit=FALSE;
 

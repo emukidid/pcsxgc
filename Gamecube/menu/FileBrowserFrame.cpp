@@ -27,13 +27,13 @@
 #include "../libgui/MessageBox.h"
 #include "../libgui/FocusManager.h"
 #include "../libgui/CursorManager.h"
+#include "../../PsxCommon.h"
 
 extern "C" {
 #include "../fileBrowser/fileBrowser.h"
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-DVD.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
-#include "../../PsxCommon.h"
 /*#include "../main/rom.h"
 #include "../main/ROM-Cache.h"
 #include "../main/wii64config.h"*/

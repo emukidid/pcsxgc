@@ -75,6 +75,10 @@ FILE *emuLog;
 #endif
 
 PcsxConfig Config;
+char dynacore;
+char biosDevice;
+char frameLimit;
+char frameSkip;
 extern char audioEnabled;
 char showFPSonScreen;
 char printToScreen;
@@ -133,7 +137,7 @@ PluginTable plugins[] =
 	  PLUGIN_SLOT_7 };
 }
 
-long LoadCdBios;
+long LoadCdBios=0;
 
 int main(int argc, char *argv[]) 
 {
@@ -164,13 +168,15 @@ int main(int argc, char *argv[])
 #endif
 	printToScreen    = 1; // Show DEBUG text on screen
 	printToSD        = 0; // Disable SD logging
-//	Timers.limitVIs  = 0; // Sync to Audio
+	frameLimit		 = 1; // Auto limit FPS
+	frameSkip		 = 0; // Disable frame skipping
+	iUseDither		 = 1; // Default dithering
 	saveEnabled      = 0; // Don't save game
 	nativeSaveDevice = 0; // SD
 	saveStateDevice	 = 0; // SD
 	autoSave         = 1; // Auto Save Game
 	creditsScrolling = 0; // Normal menu for now
-//	dynacore         = 1; // Dynarec
+	dynacore         = 0; // Dynarec
 	screenMode		 = 0; // Stretch FB horizontally
 /*	padAutoAssign	 = PADAUTOASSIGN_AUTOMATIC;
 	padType[0]		 = PADTYPE_NONE;
@@ -196,13 +202,15 @@ int main(int argc, char *argv[])
 	//PCSX-specific defaults
 	memset(&Config, 0, sizeof(PcsxConfig));
 	controllerType=0;	//Standard controller
-	Config.Cpu=0;		//Dynarec core
+	Config.Cpu=dynacore;		//Dynarec core
 	strcpy(Config.Net,"Disabled");
 	Config.PsxOut = 1;
 	Config.HLE = 1;
 	Config.Xa = 0;  //XA enabled
 	Config.Cdda = 1;
+	iVolume=3; //Volume="medium" in PEOPSspu
 	Config.PsxAuto = 1; //Autodetect
+	LoadCdBios=0;
   
 #if 0
 	//config stuff

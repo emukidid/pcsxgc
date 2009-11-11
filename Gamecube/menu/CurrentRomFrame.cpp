@@ -25,7 +25,8 @@
 #include "../libgui/FocusManager.h"
 #include "../libgui/CursorManager.h"
 #include "../libgui/MessageBox.h"
-//#include "../main/wii64config.h"
+#include "../wiiSXconfig.h"
+#include "../../PsxCommon.h"
 
 extern "C" {
 /*#include "../gc_memory/memory.h"
@@ -33,7 +34,6 @@ extern "C" {
 #include "../main/rom.h"
 #include "../main/plugin.h"
 #include "../main/savestates.h"*/
-#include "../../PsxCommon.h"
 #include "../fileBrowser/fileBrowser.h"
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-CARD.h"

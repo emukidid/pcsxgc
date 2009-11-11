@@ -1,8 +1,8 @@
 /**
- * Wii64 - MainFrame.cpp
+ * WiiSX - MainFrame.cpp
  * Copyright (C) 2009 sepp256
  *
- * Wii64 homepage: http://www.emulatemii.com
+ * WiiSX homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
  *
  *

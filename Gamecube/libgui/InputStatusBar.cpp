@@ -30,8 +30,8 @@
 extern "C" {
 //#include "../gc_input/controller.h"
 //#include "../main/rom.h"
-#include "../../PsxCommon.h"
 }
+#include "../../PsxCommon.h"
 
 namespace menu {
 

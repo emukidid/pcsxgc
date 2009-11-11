@@ -24,14 +24,33 @@
 #ifndef WIISXCONFIG_H
 #define WIISXCONFIG_H
 
-//#include "timers.h"
-
 
 extern char audioEnabled;
 enum audioEnabled
 {
 	AUDIO_DISABLE=0,
 	AUDIO_ENABLE
+};
+
+enum ConfigXa //Config.Xa
+{
+	XA_ENABLE=0,
+	XA_DISABLE
+};
+
+enum ConfigCdda //Config.Cdda
+{
+	CDDA_ENABLE=0,
+	CDDA_DISABLE
+};
+
+extern int iVolume;
+enum iVolume
+{
+	VOLUME_LOUDEST=1,
+	VOLUME_LOUD,
+	VOLUME_MEDIUM,
+	VOLUME_LOW
 };
 
 extern char showFPSonScreen;
@@ -55,13 +74,27 @@ enum printToSD
 	SDLOG_ENABLE
 };
 
-/*extern timers Timers;			//Timers.limitVIs: 
-enum limitVIs
+extern char frameLimit;
+enum frameLimit
 {
-	LIMITVIS_NONE=0,
-	LIMITVIS_WAIT_FOR_VI,
-	LIMITVIS_WAIT_FOR_FRAME
-};*/
+	FRAMELIMIT_NONE=0,
+	FRAMELIMIT_AUTO,
+};
+
+extern char frameSkip;
+enum frameSkip
+{
+	FRAMESKIP_DISABLE=0,
+	FRAMESKIP_ENABLE,
+};
+
+extern int iUseDither;
+enum iUseDither
+{
+	USEDITHER_NONE=0,
+	USEDITHER_DEFAULT,
+	USEDITHER_ALWAYS
+};
 
 extern char saveEnabled;	//???
 
@@ -82,7 +115,7 @@ enum saveStateDevice
 	SAVESTATEDEVICE_USB
 };
 
-extern char autoSave; //TODO: Use me
+extern char autoSave;
 enum autoSave
 {
 	AUTOSAVE_DISABLE=0,
@@ -91,13 +124,28 @@ enum autoSave
 
 extern char creditsScrolling;	//deprecated?
 
-/*extern unsigned long dynacore;
+extern char dynacore;
 enum dynacore
 {
-	DYNACORE_INTERPRETER=0,
-	DYNACORE_DYNAREC,
-	DYNACORE_PURE_INTERP
-};*/
+
+	DYNACORE_DYNAREC=0,
+	DYNACORE_INTERPRETER,
+};
+
+extern char biosDevice;
+enum biosDevice
+{
+	BIOSDEVICE_HLE=0,
+	BIOSDEVICE_SD,
+	BIOSDEVICE_USB
+};
+
+extern long LoadCdBios;
+enum loadCdBios
+{
+	BOOTTHRUBIOS_NO=0,
+	BOOTTHRUBIOS_YES
+};
 
 extern char screenMode;
 enum screenMode
@@ -136,29 +184,5 @@ enum pakMode
 	PAKMODE_MEMPAK=0,
 	PAKMODE_RUMBLEPAK
 };*/
-/*
-//#ifdef GLN64_GX
-extern char glN64_useFrameBufferTextures;
-enum glN64_useFrameBufferTextures
-{
-	GLN64_FBTEX_DISABLE=0,
-	GLN64_FBTEX_ENABLE
-};
-
-extern char glN64_use2xSaiTextures;
-enum glN64_use2xSaiTextures
-{
-	GLN64_2XSAI_DISABLE=0,
-	GLN64_2XSAI_ENABLE
-};
-
-extern char renderCpuFramebuffer;
-enum renderCpuFramebuffer
-{
-	CPUFRAMEBUFFER_DISABLE=0,
-	CPUFRAMEBUFFER_ENABLE
-};
-//#endif //GLN64_GX
-*/
 
 #endif //WIISXCONFIG_H

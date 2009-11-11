@@ -484,7 +484,9 @@ void ReadConfigFile(void)
 
 void ReadConfig(void)             
 {
+#ifndef __GX__
  iVolume=3; 
+#endif //!__GX__
  iUseXA=1; 
  iXAPitch=0;
  iSPUIRQWait=1;  
