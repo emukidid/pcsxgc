@@ -106,7 +106,7 @@ void psxMemReset() {
 	memset(psxM, 0, 0x00200000);
 	memset(psxP, 0, 0x00010000);
   memset(psxR, 0, 0x80000);
-  if(!biosFile || (biosDevice = BIOSDEVICE_HLE)) {
+  if(!biosFile || (biosDevice == BIOSDEVICE_HLE)) {
     Config.HLE = BIOS_HLE;
     return;
   }
