@@ -27,7 +27,7 @@ INCLUDES	:=
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS	= -g -O2 -Wall $(MACHDEP) $(INCLUDE) -D__GAMECUBE__ -DWII -DHW_RVL -D__ppc__ \
+CFLAGS	= -g -O3 -Wall $(MACHDEP) $(INCLUDE) -D__GAMECUBE__ -DWII -DHW_RVL -D__ppc__ \
 		  -D__GX__ -D_SDL -DSHOW_DEBUG -DEMBEDDED_FONTS -DNOTHREADLIB \
 		  -DTHREADED_AUDIO
 		  

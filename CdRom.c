@@ -442,20 +442,20 @@ void cdrInterrupt() {
 		case CdlID + 0x20:
 			SetResultSize(8);
         	if (CDR_getStatus(&stat) == -1) {
-        		cdr.Result[0] = 0x00; // 0x08 and cdr.Result[1]|0x10 : audio cd, enters cd player
-                cdr.Result[1] = 0x00; // 0x80 leads to the menu in the bios, else loads CD
+        		cdr.Result[0] = 0x00;         // 0x00 Game CD
+                cdr.Result[1] = 0x00;     // 0x00 loads CD
         	}
         	else {
                 if (stat.Type == 2) {
-                	cdr.Result[0] = 0x08;
-                    cdr.Result[1] = 0x10;
+                	cdr.Result[0] = 0x08;   // 0x08 audio cd
+                    cdr.Result[1] = 0x10; // 0x10 enter cd player
 	        	}
 	        	else {
-                    cdr.Result[0] = 0x00;
-                    cdr.Result[1] = 0x00;
+                    cdr.Result[0] = 0x00; // 0x00 game CD
+                    cdr.Result[1] = 0x00; // 0x00 loads CD
 	        	}
         	}
-        	if (!LoadCdBios) cdr.Result[1] |= 0x80;
+        	if (!LoadCdBios) cdr.Result[1] |= 0x80; //0x80 leads to the menu in the bios
 
         	cdr.Result[2] = 0x00;
         	cdr.Result[3] = 0x00;

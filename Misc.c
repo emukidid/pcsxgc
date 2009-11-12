@@ -151,8 +151,9 @@ int LoadCdrom() {
 
 
 	if (!Config.HLE) {
-		psxRegs.pc = psxRegs.GPR.n.ra;
-		return 0;
+		if(!LoadCdBios)
+  	  psxRegs.pc = psxRegs.GPR.n.ra;  //skips bios
+    return 0;
 	}
 
 	time[0] = itob(0); time[1] = itob(2); time[2] = itob(0x10);
