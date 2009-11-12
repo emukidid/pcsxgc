@@ -387,7 +387,10 @@ int SysInit() {
 	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
 	emuLog = fopen("/PSXISOS/emu.log", "w");
 #endif
-  Config.Cpu = dynacore;  //cpu may have changed
+  Config.Cpu = dynacore;  //cpu may have changed  
+  psxInit();
+  LoadPlugins();
+  OpenPlugins();
   
   //Init biosFile pointers and stuff
   if(biosDevice != BIOSDEVICE_HLE) {
@@ -406,9 +409,7 @@ int SysInit() {
   } else {
     Config.HLE = BIOS_HLE;
   }
-	psxInit();
-	LoadPlugins();
-	OpenPlugins();
+
 	return 0;
 }
 
@@ -443,7 +444,8 @@ void SysPrintf(char *fmt, ...)
 	vsprintf(msg, fmt, list);
 	va_end(list);
 
-	if (Config.PsxOut) printf ("%s", msg);
+	//if (Config.PsxOut) printf ("%s", msg);
+	DEBUG_print(msg, DBG_USBGECKO);
 #if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
 	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
 	fprintf(emuLog, "%s", msg);

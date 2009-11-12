@@ -51,6 +51,7 @@
 #include "Gamecube/fileBrowser/fileBrowser-libfat.h"
 #include "Gamecube/fileBrowser/fileBrowser-CARD.h"
 #include "Gamecube/fileBrowser/fileBrowser-DVD.h"
+#include "Gamecube/wiiSXconfig.h"
 
 extern void SysMessage(char *fmt, ...);
 
@@ -105,7 +106,7 @@ void psxMemReset() {
 	memset(psxM, 0, 0x00200000);
 	memset(psxP, 0, 0x00010000);
   memset(psxR, 0, 0x80000);
-  if(!biosFile) {
+  if(!biosFile || (biosDevice = BIOSDEVICE_HLE)) {
     Config.HLE = BIOS_HLE;
     return;
   }
