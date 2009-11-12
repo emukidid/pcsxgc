@@ -435,6 +435,7 @@ void SysClose()
 
 void SysPrintf(char *fmt, ...) 
 {
+#ifdef PRINTGECKO
 	va_list list;
 	char msg[512];
 
@@ -446,6 +447,7 @@ void SysPrintf(char *fmt, ...)
 #if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
 	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
 	fprintf(emuLog, "%s", msg);
+#endif
 #endif
 }
 
@@ -468,32 +470,15 @@ void *SysLoadSym(void *lib, char *sym)
 	return NULL;
 }
 
-char *SysLibError() 
-{
-	return NULL;
-}
-
-void SysCloseLibrary(void *lib) 
-{
-//	dlclose(lib);
-}
-
 int framesdone = 0;
 void SysUpdate() 
 {
 	framesdone++;
-//	PADhandleKey(PAD1_keypressed());
-//	PADhandleKey(PAD2_keypressed());
 }
 
-void SysRunGui() 
-{
-//	RunGui();
-}
-
-void SysMessage(char *fmt, ...) 
-{
-
-}
+void SysRunGui() {}
+void SysMessage(char *fmt, ...) {}
+void SysCloseLibrary(void *lib) {}
+char *SysLibError() {	return NULL; }
 
 } //extern "C"
