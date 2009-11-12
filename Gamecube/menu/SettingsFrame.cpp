@@ -35,6 +35,8 @@ extern "C" {
 #include "../fileBrowser/fileBrowser-CARD.h"
 }
 
+extern void Func_SetPlayGame();
+
 void Func_TabGeneral();
 void Func_TabVideo();
 void Func_TabInput();
@@ -523,13 +525,16 @@ void Func_CpuInterp()
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[5].button->setSelected(true);
 
-	dynacore = DYNACORE_INTERPRETER;
-	Config.Cpu = dynacore;
-/*	TODO: Init needed? Update Config.Cpu in SysInit()
 	int needInit = 0;
-	if(hasLoadedROM && dynacore != DYNACORE_PURE_INTERP){ cpu_deinit(); needInit = 1; }
-	dynacore = DYNACORE_PURE_INTERP;
-	if(hasLoadedROM && needInit) cpu_init();*/
+	if(hasLoadedISO && dynacore != DYNACORE_INTERPRETER){ SysClose(); needInit = 1; }
+	dynacore = DYNACORE_INTERPRETER;
+	if(hasLoadedISO && needInit) {
+  	SysInit();
+  	CheckCdrom();
+    SysReset();
+  	LoadCdrom();
+  	Func_SetPlayGame();
+  }
 }
 
 void Func_CpuDynarec()
@@ -538,13 +543,16 @@ void Func_CpuDynarec()
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[6].button->setSelected(true);
 
-	dynacore = DYNACORE_DYNAREC;
-	Config.Cpu = dynacore;
-/*	TODO: Init needed? Update Config.Cpu in SysInit()
 	int needInit = 0;
-	if(hasLoadedROM && dynacore != DYNACORE_DYNAREC){ cpu_deinit(); needInit = 1; }
+	if(hasLoadedISO && dynacore != DYNACORE_DYNAREC){ SysClose(); needInit = 1; }
 	dynacore = DYNACORE_DYNAREC;
-	if(hasLoadedROM && needInit) cpu_init();*/
+	if(hasLoadedISO && needInit) {
+  	SysInit ();
+  	CheckCdrom();
+    SysReset();
+  	LoadCdrom();
+  	Func_SetPlayGame();
+  }
 }
 
 void Func_BiosSelectHLE()
@@ -554,7 +562,6 @@ void Func_BiosSelectHLE()
 	FRAME_BUTTONS[7].button->setSelected(true);
 
 	biosDevice = BIOSDEVICE_HLE;
-	Config.HLE = BIOS_HLE;
 }
 
 void Func_BiosSelectSD()
@@ -564,7 +571,6 @@ void Func_BiosSelectSD()
 	FRAME_BUTTONS[8].button->setSelected(true);
 
 	biosDevice = BIOSDEVICE_SD;
-	Config.HLE = BIOS_USER_DEFINED;
 }
 
 void Func_BiosSelectUSB()
@@ -574,17 +580,20 @@ void Func_BiosSelectUSB()
 	FRAME_BUTTONS[9].button->setSelected(true);
 
 	biosDevice = BIOSDEVICE_USB;
-	Config.HLE = BIOS_USER_DEFINED;
 }
 
 void Func_BootBiosYes()
 {
-	for (int i = 10; i <= 11; i++)
+	if(biosDevice == BIOSDEVICE_HLE) {
+    menu::MessageBox::getInstance().setMessage("You must select a BIOS, not HLE");
+    return;
+  }
+  
+  for (int i = 10; i <= 11; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[10].button->setSelected(true);
-
+  
 	LoadCdBios = BOOTTHRUBIOS_YES;
-	//TODO: Init? Set BIOS file pointers?
 }
 
 void Func_BootBiosNo()
@@ -594,13 +603,12 @@ void Func_BootBiosNo()
 	FRAME_BUTTONS[11].button->setSelected(true);
 
 	LoadCdBios = BOOTTHRUBIOS_NO;
-	//TODO: Init? Set BIOS file pointers?
 }
 
 void Func_ExecuteBios()
 {
   if(biosDevice == BIOSDEVICE_HLE) {
-    menu::MessageBox::getInstance().setMessage("You must boot a real BIOS, not HLE");
+    menu::MessageBox::getInstance().setMessage("You must select a BIOS, not HLE");
     return;
   }
   if(hasLoadedISO) {

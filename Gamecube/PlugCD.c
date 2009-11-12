@@ -328,7 +328,8 @@ long CDR__shutdown(void) {
 }
 
 long CDR__close(void) {
-	free(CD.tl);
+  if(CD.tl)
+	  free(CD.tl);
 	return 0;
 }
 

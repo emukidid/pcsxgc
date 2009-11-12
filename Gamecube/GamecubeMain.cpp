@@ -387,7 +387,8 @@ int SysInit() {
 	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
 	emuLog = fopen("/PSXISOS/emu.log", "w");
 #endif
-
+  Config.Cpu = dynacore;  //cpu may have changed
+  
   //Init biosFile pointers and stuff
   if(biosDevice != BIOSDEVICE_HLE) {
    	biosFile_dir = (biosDevice == BIOSDEVICE_SD) ? &biosDir_libfat_Default : &biosDir_libfat_USB;
@@ -401,6 +402,9 @@ int SysInit() {
     memcpy(biosFile,&biosDir_libfat_Default,sizeof(fileBrowser_file));
     strcat(biosFile->name, "/SCPH1001.BIN");
     biosFile_init(biosFile);  //initialize the bios device (it might not be the same as ISO device)
+    Config.HLE = BIOS_USER_DEFINED;
+  } else {
+    Config.HLE = BIOS_HLE;
   }
 	psxInit();
 	LoadPlugins();
