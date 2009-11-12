@@ -89,6 +89,20 @@ void Func_SaveStateUSB();
 
 void Func_ReturnFromSettingsFrame();
 
+extern BOOL hasLoadedISO;
+extern int stop;
+extern char menuActive;
+
+extern "C" {
+void SysReset();
+void SysInit();
+void SysClose();
+void SysStartCPU();
+void CheckCdrom();
+void LoadCdrom();
+void pauseAudio(void);  void pauseInput(void);
+void resumeAudio(void); void resumeInput(void);
+}
 
 #define NUM_FRAME_BUTTONS 46
 #define NUM_TAB_BUTTONS 5
@@ -541,7 +555,6 @@ void Func_BiosSelectHLE()
 
 	biosDevice = BIOSDEVICE_HLE;
 	Config.HLE = BIOS_HLE;
-	//TODO: Init? Set BIOS file pointers? Set Config.HLE in SysInit()
 }
 
 void Func_BiosSelectSD()
@@ -552,7 +565,6 @@ void Func_BiosSelectSD()
 
 	biosDevice = BIOSDEVICE_SD;
 	Config.HLE = BIOS_USER_DEFINED;
-	//TODO: Init? Set BIOS file pointers? Set Config.HLE in SysInit()
 }
 
 void Func_BiosSelectUSB()
@@ -563,7 +575,6 @@ void Func_BiosSelectUSB()
 
 	biosDevice = BIOSDEVICE_USB;
 	Config.HLE = BIOS_USER_DEFINED;
-	//TODO: Init? Set BIOS file pointers? Set Config.HLE in SysInit()
 }
 
 void Func_BootBiosYes()
@@ -588,8 +599,29 @@ void Func_BootBiosNo()
 
 void Func_ExecuteBios()
 {
-      menu::MessageBox::getInstance().setMessage("Not Implemented");
-	//TODO: Implement this
+  if(biosDevice == BIOSDEVICE_HLE) {
+    menu::MessageBox::getInstance().setMessage("You must boot a real BIOS, not HLE");
+    return;
+  }
+  if(hasLoadedISO) {
+    //TODO: Implement yes/no that current game will be reset
+    SysClose();
+  }
+  if(isoFile)
+    free(isoFile);
+  //TODO: load/save memcards here
+	SysInit ();
+	CheckCdrom();
+	SysReset();
+	pauseRemovalThread();
+	resumeAudio();
+	//resumeInput();
+	menuActive = 0;
+  SysStartCPU();
+  menuActive = 1;
+	//pauseInput();
+	pauseAudio();
+	continueRemovalThread();
 }
 
 extern void writeConfig(FILE* f);

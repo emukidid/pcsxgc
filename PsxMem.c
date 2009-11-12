@@ -105,20 +105,26 @@ void psxMemReset() {
 	memset(psxM, 0, 0x00200000);
 	memset(psxP, 0, 0x00010000);
   memset(psxR, 0, 0x80000);
-  biosFile->offset = 0; //must reset otherwise the if statement will fail!
-	if(biosFile_readFile(biosFile, &temp, 4) == 4) {  //bios file exists
-	  biosFile->offset = 0;
-		if(biosFile_readFile(biosFile, psxR, 0x80000) != 0x80000) { //failed size
-		  //printf("Using HLE\n");
-		  Config.HLE = BIOS_HLE;
-	  }
-		else {
-  		//printf("Using BIOS file %s\n",biosFile->name);
-		  Config.HLE = BIOS_USER_DEFINED;
-	  }
-	}
-	else {  //bios fails to open
-  	Config.HLE = BIOS_HLE;
+  if(!biosFile) {
+    Config.HLE = BIOS_HLE;
+    return;
+  }
+  else {
+    biosFile->offset = 0; //must reset otherwise the if statement will fail!
+  	if(biosFile_readFile(biosFile, &temp, 4) == 4) {  //bios file exists
+  	  biosFile->offset = 0;
+  		if(biosFile_readFile(biosFile, psxR, 0x80000) != 0x80000) { //failed size
+  		  //printf("Using HLE\n");
+  		  Config.HLE = BIOS_HLE;
+  	  }
+  		else {
+    		//printf("Using BIOS file %s\n",biosFile->name);
+  		  Config.HLE = BIOS_USER_DEFINED;
+  	  }
+  	}
+  	else {  //bios fails to open
+    	Config.HLE = BIOS_HLE;
+  	}
 	}
 }
 

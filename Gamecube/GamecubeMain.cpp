@@ -261,29 +261,10 @@ int loadISO(fileBrowser_file* file)
 	isoFile = (fileBrowser_file*) memalign(32,sizeof(fileBrowser_file));
 	memcpy( isoFile, file, sizeof(fileBrowser_file) );
 
-	if(!hasLoadedISO) {
-  	
-  	//Init biosFile. TODO: perform this in menu
-  	//do the same as above but for the bios(s)
-  	if(1) { //SD
-  		biosFile_dir = &biosDir_libfat_Default;
-  		biosFile_readFile  = fileBrowser_libfat_readFile;
-  		biosFile_init      = fileBrowser_libfat_init;
-  		biosFile_deinit    = fileBrowser_libfat_deinit;
-  		//biosFile_init(saveFile_dir);
-  	} //fixme: code for the rest of the devices
-	
-
-  	biosFile = (fileBrowser_file*)memalign(32,sizeof(fileBrowser_file)); //also hardcoded for SD.
-  	memcpy(biosFile,&biosDir_libfat_Default,sizeof(fileBrowser_file));
-  	strcat(biosFile->name, "/SCPH1001.BIN");          // Use actual BIOS
-  	//biosFile_init(biosFile);  //initialize this device
-	  SysInit();        //Call me early to avoid fragmentation
-  }
 	if(hasLoadedISO) {
   	SysClose();	
-  	SysInit();        //Call me early to avoid fragmentation
 	}
+	SysInit();
 	hasLoadedISO = 1;
 	CheckCdrom();
 	SysReset();
@@ -395,29 +376,46 @@ int loadISO(void)
 
 extern "C" {
 //System Functions
-void go(void)
-{
+void go(void) {
 	Config.PsxOut = 0;
 	stop = 0;
 	psxCpu->Execute();
 }
 
-int SysInit() 
-{
+int SysInit() {
 #if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
 	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
 	emuLog = fopen("/PSXISOS/emu.log", "w");
 #endif
 
+  //Init biosFile pointers and stuff
+  if(biosDevice != BIOSDEVICE_HLE) {
+   	biosFile_dir = (biosDevice == BIOSDEVICE_SD) ? &biosDir_libfat_Default : &biosDir_libfat_USB;
+  	biosFile_readFile  = fileBrowser_libfat_readFile;
+  	biosFile_init      = fileBrowser_libfat_init;
+  	biosFile_deinit    = fileBrowser_libfat_deinit;
+	 	if(biosFile) {
+    	free(biosFile);
+	 	}
+  	biosFile = (fileBrowser_file*)memalign(32,sizeof(fileBrowser_file));
+    memcpy(biosFile,&biosDir_libfat_Default,sizeof(fileBrowser_file));
+    strcat(biosFile->name, "/SCPH1001.BIN");
+    biosFile_init(biosFile);  //initialize the bios device (it might not be the same as ISO device)
+  }
 	psxInit();
 	LoadPlugins();
 	OpenPlugins();
 	return 0;
 }
 
-void SysReset() 
-{
+void SysReset() {
 	psxReset();
+}
+
+void SysStartCPU() {
+  Config.PsxOut = 0;
+	stop = 0;
+  psxCpu->Execute();
 }
 
 void SysClose() 

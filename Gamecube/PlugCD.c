@@ -314,7 +314,8 @@ void seekSector(const unsigned char m, const unsigned char s, const unsigned cha
 
 long CDR__open(void)
 {
-	newCD(isoFile);
+  if(isoFile)
+	  newCD(isoFile);
 	return 0;
 }
 
