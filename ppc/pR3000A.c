@@ -30,6 +30,7 @@
 #include "reguse.h"
 #include "../R3000A.h"
 #include "../PsxHLE.h"
+#include "../Gamecube/DEBUG.h"
 
 extern void SysRunGui();
 extern void SysMessage(char *fmt, ...);
@@ -2826,21 +2827,18 @@ static void recRecompile() {
 	iRegs[0].state = ST_CONST;
 	
 	/* if ppcPtr reached the mem limit reset whole mem */
-	if (((u32)ppcPtr - (u32)recMem) >= (RECMEM_SIZE - 0x10000))
+	if (((u32)ppcPtr - (u32)recMem) >= (RECMEM_SIZE - 0x10000)) // fix me. don't just assume 0x10000
 		recReset();
 
 	ppcAlign(/*32*/4);
 	ptr = ppcPtr;
 	
-	// give us write access
-	//mprotect(recMem, RECMEM_SIZE, PROT_EXEC|PROT_READ|PROT_WRITE);
 	
 	// tell the LUT where to find us
 	PC_REC32(psxRegs.pc) = (u32)ppcPtr;
 
 	pcold = pc = psxRegs.pc;
 	
-	//SysPrintf("RecCount: %i\n", recCount++);
 	
 	for (count=0; count<500;) {
 		p = (char *)PSXM(pc);
@@ -2917,6 +2915,9 @@ done:;
 
 	sprintf((char *)ppcPtr, "PC=%08x", pcold);
 	ppcPtr += strlen((char *)ppcPtr);
+	
+	sprintf(txtbuffer,"Dynarec (KB) %04d/%04d",((u32)ppcPtr - (u32)recMem)/1024,RECMEM_SIZE/1024);
+	DEBUG_print(txtbuffer,DBG_CORE1);
 
 }
 

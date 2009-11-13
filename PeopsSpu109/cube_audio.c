@@ -118,8 +118,8 @@ unsigned long SoundGetBytesBuffered(void)
 {
 	unsigned int size = AUDIO_GetDMABytesLeft() +
 		((which_buffer - thread_buffer + NUM_BUFFERS) % NUM_BUFFERS) * buffer_size;
-	sprintf(txtbuffer,"Sound: %d bytes buffered", size);
- 	DEBUG_print(txtbuffer,DBG_SPU1);
+/*	sprintf(txtbuffer,"Sound: %d bytes buffered", size);
+ 	DEBUG_print(txtbuffer,DBG_SPU1);*/
 	return size;
 }
 
