@@ -70,6 +70,7 @@ extern int whichfb;        /*** Frame buffer toggle ***/
 extern time_t tStart;
 extern char text[DEBUG_TEXT_HEIGHT][DEBUG_TEXT_WIDTH]; /*** DEBUG textbuffer ***/
 extern char menuActive;
+extern char screenMode;
 
 // prototypes
 void BlitScreenNS_GX(unsigned char * surf,long x,long y, short dx, short dy);
@@ -106,12 +107,6 @@ void DoBufferSwap(void)                                // SWAP BUFFERS
 
 //	For now stretch only using GX
 //	printf("DoBufferSwap\n");
-
-	if(!Xpixels)
-	{
-		printf("Xpixels is NULL\n");
-		return;
-	}
 
 	if(iOldDX!=iDX || iOldDY!=iDY)
 	{
@@ -459,15 +454,18 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch)
 	GX_SetNumTexGens(1);
 	GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
 
+	float xcoord = 1.0;
+	float ycoord = 1.0;
+	if(screenMode) xcoord = 640.0/848.0;
 
 	GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-	  GX_Position2f32(-1.0, 1.0);
+	  GX_Position2f32(-xcoord, ycoord);
 	  GX_TexCoord2f32( 0.0, 0.0);
-	  GX_Position2f32( 1.0, 1.0);
+	  GX_Position2f32( xcoord, ycoord);
 	  GX_TexCoord2f32( 1.0, 0.0);
-	  GX_Position2f32( 1.0,-1.0);
+	  GX_Position2f32( xcoord,-ycoord);
 	  GX_TexCoord2f32( 1.0, 1.0);
-	  GX_Position2f32(-1.0,-1.0);
+	  GX_Position2f32(-xcoord,-ycoord);
 	  GX_TexCoord2f32( 0.0, 1.0);
 	GX_End();
 
