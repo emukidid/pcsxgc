@@ -69,6 +69,7 @@ extern u32* xfb[2];	/*** Framebuffers ***/
 extern int whichfb;        /*** Frame buffer toggle ***/
 extern time_t tStart;
 extern char text[DEBUG_TEXT_HEIGHT][DEBUG_TEXT_WIDTH]; /*** DEBUG textbuffer ***/
+extern char menuActive;
 
 // prototypes
 void BlitScreenNS_GX(unsigned char * surf,long x,long y, short dx, short dy);
@@ -83,6 +84,8 @@ void DoBufferSwap(void)                                // SWAP BUFFERS
 //	int iDX = PreviousPSXDisplay.Range.x1+PreviousPSXDisplay.Range.x0;
 	short iDX = PreviousPSXDisplay.Range.x1;
 	short iDY = PreviousPSXDisplay.DisplayMode.y;
+
+	if (menuActive) return;
 
 	//Uncomment the following line to render all of vmem on screen.
 	//Note: may break when PSX is in true color mode...
@@ -161,6 +164,8 @@ void DoClearScreenBuffer(void)                         // CLEAR DX BUFFER
 
 void DoClearFrontBuffer(void)                          // CLEAR DX BUFFER
 {
+	if (menuActive) return;
+
 	// clear the screen, and flush it
 	DEBUG_print("DoClearFrontBuffer",DBG_GPU1);
 //	printf("DoClearFrontBuffer\n");
