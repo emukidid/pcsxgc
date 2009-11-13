@@ -28,7 +28,7 @@
 #include "prim.h"
 #include "menu.h"
 #include "swap.h"
-#include "../Gamecube/font.h"
+#include "../Gamecube/libgui/IPLFontC.h"
 #include "../Gamecube/DEBUG.h"
 #include "../Gamecube/wiiSXconfig.h"
 
@@ -172,15 +172,15 @@ void DoClearFrontBuffer(void)                          // CLEAR DX BUFFER
 
 	//Write menu/debug text on screen
 	GXColor fontColor = {150,255,150,255};
-	write_font_init_GX(fontColor);
-	if(ulKeybits&KEY_SHOWFPS)
-		write_font(10,35,szDispBuf, 1.0);
+	IplFont_drawInit(fontColor);
+	if((ulKeybits&KEY_SHOWFPS)&&showFPSonScreen)
+		IplFont_drawString(10,35,szDispBuf, 1.0, false);
 
 	int i = 0;
 	DEBUG_update();
 	for (i=0;i<DEBUG_TEXT_HEIGHT;i++)
-		write_font(10,(10*i+60),text[i], 0.5); 
-		
+		IplFont_drawString(10,(10*i+60),text[i], 0.5, false);
+
    //reset swap table from GUI/DEBUG
 	GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
 	GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
@@ -201,8 +201,6 @@ void DoClearFrontBuffer(void)                          // CLEAR DX BUFFER
 unsigned long ulInitDisplay(void)
 {
 	bUsingTWin=FALSE;
-
-	init_font();
 
 	InitMenu();
 
@@ -475,14 +473,14 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch)
 
 	//Write menu/debug text on screen
 	GXColor fontColor = {150,255,150,255};
-	write_font_init_GX(fontColor);
+	IplFont_drawInit(fontColor);
 	if((ulKeybits&KEY_SHOWFPS)&&showFPSonScreen)
-		write_font(10,35,szDispBuf, 1.0);
+		IplFont_drawString(10,35,szDispBuf, 1.0, false);
 
 	int i = 0;
 	DEBUG_update();
 	for (i=0;i<DEBUG_TEXT_HEIGHT;i++)
-		write_font(10,(10*i+60),text[i], 0.5); 
+		IplFont_drawString(10,(10*i+60),text[i], 0.5, false);
 		
    //reset swap table from GUI/DEBUG
 	GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);

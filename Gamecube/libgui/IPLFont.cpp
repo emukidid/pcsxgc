@@ -452,3 +452,15 @@ int IplFont::getStringHeight(char *string, float scale)
 }
 
 } //namespace menu 
+
+extern "C" {
+void IplFont_drawInit(GXColor fontColor)
+{
+	menu::IplFont::getInstance().drawInit(fontColor);
+}
+
+void IplFont_drawString(int x, int y, char *string, float scale, bool centered)
+{
+	menu::IplFont::getInstance().drawString(x, y, string, scale, centered); 
+}
+}
