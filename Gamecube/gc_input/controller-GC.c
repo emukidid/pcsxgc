@@ -34,7 +34,8 @@ static int _GetKeys(int Control, BUTTONS * Keys )
 	if(padNeedScan){ gc_connected = PAD_ScanPads(); padNeedScan = 0; }
 	BUTTONS* c = Keys;
 	memset(c, 0, sizeof(BUTTONS));
-
+	c->Value = 0xFFFF;  //needed
+	
 	controller_GC.available[Control] = (gc_connected & (1<<Control)) ? 1 : 0;
 	if (!controller_GC.available[Control]) return 0;
 
@@ -55,18 +56,13 @@ static int _GetKeys(int Control, BUTTONS * Keys )
 	c->L1_BUTTON    = ((b & PAD_TRIGGER_L) && (!(b & PAD_TRIGGER_Z)))     ? 0 : 1;
 	c->R2_BUTTON    = ((b & PAD_TRIGGER_R) && ((b & PAD_TRIGGER_Z)))      ? 0 : 1;
 	c->L2_BUTTON    = ((b & PAD_TRIGGER_L) && ((b & PAD_TRIGGER_Z)))      ? 0 : 1;
-/*
-	// FIXME: Proper values for analog and C-Stick
-	s8 substickX = PAD_SubStickX(Control);
-	c->R_CBUTTON    = (substickX >  64)      ? 1 : 0;
-	c->L_CBUTTON    = (substickX < -64)      ? 1 : 0;
-	s8 substickY = PAD_SubStickY(Control);
-	c->D_CBUTTON    = (substickY < -64)      ? 1 : 0;
-	c->U_CBUTTON    = (substickY >  64)      ? 1 : 0;
 
-	c->X_AXIS       = PAD_StickX(Control);
-	c->Y_AXIS       = PAD_StickY(Control);
-*/
+	//adjust values by 128 cause PSX sticks range 0-255 with a 128 center pos
+	c->rightStickX  = (u8)(PAD_SubStickX(Control)+127) & 0xFF;
+	c->rightStickY  = (u8)(PAD_SubStickY(Control)+127) & 0xFF;
+	c->leftStickX   = (u8)(PAD_StickX(Control)+127)    & 0xFF;
+	c->leftStickY   = (u8)(-PAD_StickY(Control)+127)   & 0xFF;
+
 	// X+Y quits to menu
 	return (b & PAD_BUTTON_X) && (b & PAD_BUTTON_Y);
 }

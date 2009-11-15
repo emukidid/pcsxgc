@@ -51,6 +51,7 @@ static int _GetKeys(int Control, BUTTONS * Keys )
 	WPADData* wpad = WPAD_Data(Control);
 	BUTTONS* c = Keys;
 	memset(c, 0, sizeof(BUTTONS));
+	c->Value = 0xFFFF;  //needed
 
 	// Only use a connected classic controller
 	if(wpad->err == WPAD_ERR_NONE &&
@@ -66,28 +67,30 @@ static int _GetKeys(int Control, BUTTONS * Keys )
 	}
 
 	int b = wpad->exp.classic.btns;
-	/*c->R_DPAD       = (b & CLASSIC_CTRL_BUTTON_RIGHT) ? 1 : 0;
-	c->L_DPAD       = (b & CLASSIC_CTRL_BUTTON_LEFT)  ? 1 : 0;
-	c->D_DPAD       = (b & CLASSIC_CTRL_BUTTON_DOWN)  ? 1 : 0;
-	c->U_DPAD       = (b & CLASSIC_CTRL_BUTTON_UP)    ? 1 : 0;
-	c->START_BUTTON = (b & CLASSIC_CTRL_BUTTON_PLUS)  ? 1 : 0;
-	c->B_BUTTON     = (b & CLASSIC_CTRL_BUTTON_B)     ? 1 : 0;
-	c->A_BUTTON     = (b & CLASSIC_CTRL_BUTTON_A)     ? 1 : 0;
+	c->R_DPAD          = (b & CLASSIC_CTRL_BUTTON_RIGHT) ? 0 : 1;
+	c->L_DPAD          = (b & CLASSIC_CTRL_BUTTON_LEFT)  ? 0 : 1;
+	c->D_DPAD          = (b & CLASSIC_CTRL_BUTTON_DOWN)  ? 0 : 1;
+	c->U_DPAD          = (b & CLASSIC_CTRL_BUTTON_UP)    ? 0 : 1;
+	c->START_BUTTON    = (b & CLASSIC_CTRL_BUTTON_PLUS)  ? 0 : 1;
+	c->SELECT_BUTTON   = (b & CLASSIC_CTRL_BUTTON_MINUS) ? 0 : 1;
+	
+	c->SQUARE_BUTTON   = (b & CLASSIC_CTRL_BUTTON_Y)  ? 0 : 1;
+  c->CROSS_BUTTON    = (b & CLASSIC_CTRL_BUTTON_B)  ? 0 : 1;
+  c->CIRCLE_BUTTON   = (b & CLASSIC_CTRL_BUTTON_A)  ? 0 : 1;
+  c->TRIANGLE_BUTTON = (b & CLASSIC_CTRL_BUTTON_X)  ? 0 : 1;
+	
+	c->R1_BUTTON       = (b & CLASSIC_CTRL_BUTTON_ZR)  ? 0 : 1;
+  c->L1_BUTTON       = (b & CLASSIC_CTRL_BUTTON_ZL)  ? 0 : 1;
+  c->R2_BUTTON       = (b & CLASSIC_CTRL_BUTTON_FULL_R)  ? 0 : 1;
+  c->L2_BUTTON       = (b & CLASSIC_CTRL_BUTTON_FULL_L)  ? 0 : 1;
 
-	c->Z_TRIG       = (b & CLASSIC_CTRL_BUTTON_ZR)     ? 1 : 0;
-	c->R_TRIG       = (b & CLASSIC_CTRL_BUTTON_FULL_R) ? 1 : 0;
-	c->L_TRIG       = (b & CLASSIC_CTRL_BUTTON_FULL_L) ? 1 : 0;
+  s8 substickX = getStickValue(&wpad->exp.classic.rjs, STICK_X, 7);
+  s8 substickY = getStickValue(&wpad->exp.classic.rjs, STICK_Y, 7);
+  c->rightStickX  = (u8)(substickX+127) & 0xFF;
+	c->rightStickY  = (u8)(substickY+127) & 0xFF;
+	c->leftStickX   = (u8)(getStickValue(&wpad->exp.classic.ljs, STICK_X, 127)+127)    & 0xFF;
+	c->leftStickY   = (u8)(-getStickValue(&wpad->exp.classic.ljs, STICK_Y, 127)+127)   & 0xFF;
 
-	s8 substickX = getStickValue(&wpad->exp.classic.rjs, STICK_X, 7);
-	c->R_CBUTTON    = (substickX >  4)       ? 1 : 0;
-	c->L_CBUTTON    = (substickX < -4)       ? 1 : 0;
-	s8 substickY = getStickValue(&wpad->exp.classic.rjs, STICK_Y, 7);
-	c->D_CBUTTON    = (substickY < -4)       ? 1 : 0;
-	c->U_CBUTTON    = (substickY >  4)       ? 1 : 0;
-
-	c->X_AXIS       = getStickValue(&wpad->exp.classic.ljs, STICK_X, 127);
-	c->Y_AXIS       = getStickValue(&wpad->exp.classic.ljs, STICK_Y, 127);
-*/
 	// X+Y quits to menu
 	return (b & CLASSIC_CTRL_BUTTON_X) && (b & CLASSIC_CTRL_BUTTON_Y);
 }

@@ -21,6 +21,9 @@
 #include "../PSEmu_Plugin_Defs.h"
 #include "gc_input/controller.h"
 
+static BUTTONS PAD_1;
+static BUTTONS PAD_2;
+
 char padAutoAssign;
 char padType[4];
 char padAssign[4];
@@ -162,41 +165,44 @@ long PAD__close(void) {
 
 long PAD__readPort1(PadDataS* pad) {
 
-	uint16_t pad_status = 0xFFFF;	//bit pointless why is this done this way?
+  if( DO_CONTROL(0, GetKeys, (BUTTONS*)&PAD_1) ) {
+    stop = 1;
+  }
 
-  /*
   if(controllerType==1) {
-  	//adjust values by 128 cause psx values in range 0-255 where 128 is center position
-  	pad->leftJoyX  = (u8)(PAD_StickX(0)+127) & 0xFF;				//analog stick
-  	pad->leftJoyY  = (u8)(-PAD_StickY(0)+127) & 0xFF;
-  	pad->rightJoyX = (u8)(PAD_SubStickX(0)+127) & 0xFF;			//C-stick (Left JoyStick)
-  	pad->rightJoyY = (u8)(PAD_SubStickY(0)+127) & 0xFF;
   	pad->controllerType = PSE_PAD_TYPE_ANALOGPAD; 	// Analog Pad  (Right JoyStick)
+  	pad->leftJoyX  = PAD_1.leftStickX;
+    pad->leftJoyY  = PAD_1.leftStickY;
+    pad->rightJoyX = PAD_1.rightStickX;
+    pad->rightJoyY = PAD_1.rightStickY;
 	}
-  else if(!controllerType)*/
+  else if(!controllerType) {
   	pad->controllerType = PSE_PAD_TYPE_STANDARD; 	// Standard Pad
-  if( DO_CONTROL(0, GetKeys, (BUTTONS*)&pad_status) ) stop = 1;
-  pad->buttonStatus = pad_status;
+	}
+
+  pad->buttonStatus = PAD_1.Value;  //set the buttons
+  
 	return PSE_PAD_ERR_SUCCESS;
 }
 
 long PAD__readPort2(PadDataS* pad) {
 
-	/*
-	uint16_t pad_status = 0xFFFF;	//bit pointless why is this done this way?
+  if( DO_CONTROL(1, GetKeys, (BUTTONS*)&PAD_2) ) {
+    stop = 1;
+  }
 
-  
   if(controllerType==1) {
-  	//adjust values by 128 cause psx values in range 0-255 where 128 is center position
-  	pad->leftJoyX  = (u8)(PAD_StickX(0)+127) & 0xFF;				//analog stick
-  	pad->leftJoyY  = (u8)(-PAD_StickY(0)+127) & 0xFF;
-  	pad->rightJoyX = (u8)(PAD_SubStickX(0)+127) & 0xFF;			//C-stick (Left JoyStick)
-  	pad->rightJoyY = (u8)(PAD_SubStickY(0)+127) & 0xFF;
   	pad->controllerType = PSE_PAD_TYPE_ANALOGPAD; 	// Analog Pad  (Right JoyStick)
+  	pad->leftJoyX  = PAD_2.leftStickX;
+    pad->leftJoyY  = PAD_2.leftStickY;
+    pad->rightJoyX = PAD_2.rightStickX;
+    pad->rightJoyY = PAD_2.rightStickY;
 	}
-  else if(!controllerType)
+  else if(!controllerType) {
   	pad->controllerType = PSE_PAD_TYPE_STANDARD; 	// Standard Pad
-  if( DO_CONTROL(1, GetKeys, (BUTTONS*)&pad_status) ) stop = 1;
-  pad->buttonStatus = pad_status;*/
+	}
+
+  pad->buttonStatus = PAD_2.Value;  //set the buttons
+  
 	return PSE_PAD_ERR_SUCCESS;
 }

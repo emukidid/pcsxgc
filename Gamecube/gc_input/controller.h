@@ -47,9 +47,12 @@ typedef union {
   	unsigned START_BUTTON     : 1;
 		unsigned UNK_1            : 1;
 		unsigned UNK_2            : 1;
-		unsigned SELECT_BUTTON    : 1;
-		
+		unsigned SELECT_BUTTON    : 1;	
 	};
+	u8 leftStickX;
+	u8 leftStickY;
+	u8 rightStickX;
+	u8 rightStickY;
 } BUTTONS;
 
 typedef struct {
