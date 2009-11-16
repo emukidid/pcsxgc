@@ -1,13 +1,15 @@
 /**
- * Wii64 - controller-Classic.c
+ * WiiSX - controller-Classic.c
  * Copyright (C) 2007, 2008, 2009 Mike Slegeir
  * Copyright (C) 2007, 2008, 2009 sepp256
+ * Copyright (C) 2007, 2008, 2009 emu_kidid
  * 
  * Classic controller input module
  *
  * Wii64 homepage: http://www.emulatemii.com
  * email address: tehpola@gmail.com
  *                sepp256@gmail.com
+ *                emukidid@gmail.com
  *
  *
  * This program is free software; you can redistribute it and/
@@ -51,7 +53,7 @@ static int _GetKeys(int Control, BUTTONS * Keys )
 	WPADData* wpad = WPAD_Data(Control);
 	BUTTONS* c = Keys;
 	memset(c, 0, sizeof(BUTTONS));
-	c->Value = 0xFFFF;  //needed
+	c->btns.All = 0xFFFF;  //needed
 
 	// Only use a connected classic controller
 	if(wpad->err == WPAD_ERR_NONE &&
@@ -67,22 +69,22 @@ static int _GetKeys(int Control, BUTTONS * Keys )
 	}
 
 	int b = wpad->exp.classic.btns;
-	c->R_DPAD          = (b & CLASSIC_CTRL_BUTTON_RIGHT) ? 0 : 1;
-	c->L_DPAD          = (b & CLASSIC_CTRL_BUTTON_LEFT)  ? 0 : 1;
-	c->D_DPAD          = (b & CLASSIC_CTRL_BUTTON_DOWN)  ? 0 : 1;
-	c->U_DPAD          = (b & CLASSIC_CTRL_BUTTON_UP)    ? 0 : 1;
-	c->START_BUTTON    = (b & CLASSIC_CTRL_BUTTON_PLUS)  ? 0 : 1;
-	c->SELECT_BUTTON   = (b & CLASSIC_CTRL_BUTTON_MINUS) ? 0 : 1;
+	c->btns.R_DPAD          = (b & CLASSIC_CTRL_BUTTON_RIGHT) ? 0 : 1;
+	c->btns.L_DPAD          = (b & CLASSIC_CTRL_BUTTON_LEFT)  ? 0 : 1;
+	c->btns.D_DPAD          = (b & CLASSIC_CTRL_BUTTON_DOWN)  ? 0 : 1;
+	c->btns.U_DPAD          = (b & CLASSIC_CTRL_BUTTON_UP)    ? 0 : 1;
+	c->btns.START_BUTTON    = (b & CLASSIC_CTRL_BUTTON_PLUS)  ? 0 : 1;
+	c->btns.SELECT_BUTTON   = (b & CLASSIC_CTRL_BUTTON_MINUS) ? 0 : 1;
 	
-	c->SQUARE_BUTTON   = (b & CLASSIC_CTRL_BUTTON_Y)  ? 0 : 1;
-  c->CROSS_BUTTON    = (b & CLASSIC_CTRL_BUTTON_B)  ? 0 : 1;
-  c->CIRCLE_BUTTON   = (b & CLASSIC_CTRL_BUTTON_A)  ? 0 : 1;
-  c->TRIANGLE_BUTTON = (b & CLASSIC_CTRL_BUTTON_X)  ? 0 : 1;
+	c->btns.SQUARE_BUTTON   = (b & CLASSIC_CTRL_BUTTON_Y)  ? 0 : 1;
+  c->btns.CROSS_BUTTON    = (b & CLASSIC_CTRL_BUTTON_B)  ? 0 : 1;
+  c->btns.CIRCLE_BUTTON   = (b & CLASSIC_CTRL_BUTTON_A)  ? 0 : 1;
+  c->btns.TRIANGLE_BUTTON = (b & CLASSIC_CTRL_BUTTON_X)  ? 0 : 1;
 	
-	c->R1_BUTTON       = (b & CLASSIC_CTRL_BUTTON_ZR)  ? 0 : 1;
-  c->L1_BUTTON       = (b & CLASSIC_CTRL_BUTTON_ZL)  ? 0 : 1;
-  c->R2_BUTTON       = (b & CLASSIC_CTRL_BUTTON_FULL_R)  ? 0 : 1;
-  c->L2_BUTTON       = (b & CLASSIC_CTRL_BUTTON_FULL_L)  ? 0 : 1;
+	c->btns.R1_BUTTON       = (b & CLASSIC_CTRL_BUTTON_ZR)  ? 0 : 1;
+  c->btns.L1_BUTTON       = (b & CLASSIC_CTRL_BUTTON_ZL)  ? 0 : 1;
+  c->btns.R2_BUTTON       = (b & CLASSIC_CTRL_BUTTON_FULL_R)  ? 0 : 1;
+  c->btns.L2_BUTTON       = (b & CLASSIC_CTRL_BUTTON_FULL_L)  ? 0 : 1;
 
   s8 substickX = getStickValue(&wpad->exp.classic.rjs, STICK_X, 7);
   s8 substickY = getStickValue(&wpad->exp.classic.rjs, STICK_Y, 7);

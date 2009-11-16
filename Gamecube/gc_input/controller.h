@@ -1,11 +1,13 @@
 /**
- * Wii64 - controller.h
+ * WiiSX - controller.h
  * Copyright (C) 2007, 2008, 2009 Mike Slegeir
+ * Copyright (C) 2007, 2008, 2009 emu_kidid
  * 
  * Standard prototypes for accessing different controllers
  *
  * Wii64 homepage: http://www.emulatemii.com
  * email address: tehpola@gmail.com
+ *                emukidid@gmail.com
  *
  *
  * This program is free software; you can redistribute it and/
@@ -30,7 +32,7 @@ extern u32 gc_connected;
 void control_info_init(void);
 
 typedef union {
-	u16 Value;
+	u16 All;
 	struct {
   	unsigned SQUARE_BUTTON    : 1;
   	unsigned CROSS_BUTTON     : 1;
@@ -49,11 +51,16 @@ typedef union {
 		unsigned UNK_2            : 1;
 		unsigned SELECT_BUTTON    : 1;	
 	};
-	u8 leftStickX;
+} _BUTTONS;
+
+typedef struct {
+  _BUTTONS btns;
+  u8 leftStickX;
 	u8 leftStickY;
 	u8 rightStickX;
 	u8 rightStickY;
 } BUTTONS;
+  
 
 typedef struct {
 	// Call GetKeys to read in BUTTONS for a controller of this type

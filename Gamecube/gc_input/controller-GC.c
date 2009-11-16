@@ -1,13 +1,15 @@
 /**
- * Wii64 - controller-GC.c
+ * WiiSX - controller-GC.c
  * Copyright (C) 2007, 2008, 2009 Mike Slegeir
  * Copyright (C) 2007, 2008, 2009 sepp256
+ * Copyright (C) 2007, 2008, 2009 emu_kidid
  * 
  * Gamecube controller input module
  *
  * Wii64 homepage: http://www.emulatemii.com
  * email address: tehpola@gmail.com
  *                sepp256@gmail.com
+ *                emukidid@gmail.com
  *
  *
  * This program is free software; you can redistribute it and/
@@ -34,28 +36,28 @@ static int _GetKeys(int Control, BUTTONS * Keys )
 	if(padNeedScan){ gc_connected = PAD_ScanPads(); padNeedScan = 0; }
 	BUTTONS* c = Keys;
 	memset(c, 0, sizeof(BUTTONS));
-	c->Value = 0xFFFF;  //needed
+	c->btns.All = 0xFFFF;  //needed
 	
 	controller_GC.available[Control] = (gc_connected & (1<<Control)) ? 1 : 0;
 	if (!controller_GC.available[Control]) return 0;
 
 	int b = PAD_ButtonsHeld(Control);
-	c->R_DPAD       = (b & PAD_BUTTON_RIGHT) ? 0 : 1;
-	c->L_DPAD       = (b & PAD_BUTTON_LEFT)  ? 0 : 1;
-	c->D_DPAD       = (b & PAD_BUTTON_DOWN)  ? 0 : 1;
-	c->U_DPAD       = (b & PAD_BUTTON_UP)    ? 0 : 1;
+	c->btns.R_DPAD       = (b & PAD_BUTTON_RIGHT) ? 0 : 1;
+	c->btns.L_DPAD       = (b & PAD_BUTTON_LEFT)  ? 0 : 1;
+	c->btns.D_DPAD       = (b & PAD_BUTTON_DOWN)  ? 0 : 1;
+	c->btns.U_DPAD       = (b & PAD_BUTTON_UP)    ? 0 : 1;
 	
-	c->SQUARE_BUTTON    = (b & PAD_BUTTON_B)     ? 0 : 1;
-	c->CROSS_BUTTON     = (b & PAD_BUTTON_A)     ? 0 : 1;
-  c->CIRCLE_BUTTON    = (b & PAD_BUTTON_X)     ? 0 : 1;
-	c->TRIANGLE_BUTTON  = (b & PAD_BUTTON_Y)     ? 0 : 1;
+	c->btns.SQUARE_BUTTON    = (b & PAD_BUTTON_B)     ? 0 : 1;
+	c->btns.CROSS_BUTTON     = (b & PAD_BUTTON_A)     ? 0 : 1;
+  c->btns.CIRCLE_BUTTON    = (b & PAD_BUTTON_X)     ? 0 : 1;
+	c->btns.TRIANGLE_BUTTON  = (b & PAD_BUTTON_Y)     ? 0 : 1;
   
-	c->START_BUTTON  = ((b & PAD_BUTTON_START) && (!(b & PAD_TRIGGER_Z))) ? 0 : 1;
-	c->SELECT_BUTTON = ((b & PAD_BUTTON_START) && ((b & PAD_TRIGGER_Z)))  ? 0 : 1;
-	c->R1_BUTTON    = ((b & PAD_TRIGGER_R) && (!(b & PAD_TRIGGER_Z)))     ? 0 : 1;
-	c->L1_BUTTON    = ((b & PAD_TRIGGER_L) && (!(b & PAD_TRIGGER_Z)))     ? 0 : 1;
-	c->R2_BUTTON    = ((b & PAD_TRIGGER_R) && ((b & PAD_TRIGGER_Z)))      ? 0 : 1;
-	c->L2_BUTTON    = ((b & PAD_TRIGGER_L) && ((b & PAD_TRIGGER_Z)))      ? 0 : 1;
+	c->btns.START_BUTTON  = ((b & PAD_BUTTON_START) && (!(b & PAD_TRIGGER_Z))) ? 0 : 1;
+	c->btns.SELECT_BUTTON = ((b & PAD_BUTTON_START) && ((b & PAD_TRIGGER_Z)))  ? 0 : 1;
+	c->btns.R1_BUTTON    = ((b & PAD_TRIGGER_R) && (!(b & PAD_TRIGGER_Z)))     ? 0 : 1;
+	c->btns.L1_BUTTON    = ((b & PAD_TRIGGER_L) && (!(b & PAD_TRIGGER_Z)))     ? 0 : 1;
+	c->btns.R2_BUTTON    = ((b & PAD_TRIGGER_R) && ((b & PAD_TRIGGER_Z)))      ? 0 : 1;
+	c->btns.L2_BUTTON    = ((b & PAD_TRIGGER_L) && ((b & PAD_TRIGGER_Z)))      ? 0 : 1;
 
 	//adjust values by 128 cause PSX sticks range 0-255 with a 128 center pos
 	c->rightStickX  = (u8)(PAD_SubStickX(Control)+127) & 0xFF;
