@@ -55,7 +55,7 @@ void Func_ReturnFromCurrentRomFrame();
 #define FRAME_STRINGS currentRomFrameStrings
 
 static char FRAME_STRINGS[7][25] =
-	{ "Show ROM Info",
+	{ "Show ISO Info",
 	  "Restart Game",
 	  "Load Save File",
 	  "Save Game",
