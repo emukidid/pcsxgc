@@ -60,8 +60,8 @@ void Func_PlayGame();
 #define FRAME_STRINGS mainFrameStrings
 
 char FRAME_STRINGS[7][20] =
-	{ "Load ROM",
-	  "Current ROM",
+	{ "Load ISO",
+	  "Current ISO",
 	  "Settings",
 	  "Credits",
 	  "Quit",

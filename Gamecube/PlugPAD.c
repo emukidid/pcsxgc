@@ -165,7 +165,7 @@ long PAD__close(void) {
 
 long PAD__readPort1(PadDataS* pad) {
 
-  if( DO_CONTROL(0, GetKeys, (BUTTONS*)&PAD_1) ) {
+  if( virtualControllers[0].inUse && DO_CONTROL(0, GetKeys, (BUTTONS*)&PAD_1) ) {
     stop = 1;
   }
 
@@ -187,7 +187,7 @@ long PAD__readPort1(PadDataS* pad) {
 
 long PAD__readPort2(PadDataS* pad) {
 
-  if( DO_CONTROL(1, GetKeys, (BUTTONS*)&PAD_2) ) {
+  if( virtualControllers[1].inUse && DO_CONTROL(1, GetKeys, (BUTTONS*)&PAD_2) ) {
     stop = 1;
   }
 
