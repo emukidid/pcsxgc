@@ -40,7 +40,10 @@ static char * libraryName    = "Pete's Null Audio Driver";*/
 static char * libraryInfo    = "Pete's Null Audio Driver V1.1\nCoded by Pete Bernert\n"; 
 
 ////////////////////////////////////////////////////////////////////////
-
+int iVolume=0;
+char audioEnabled =0;
+void resumeAudio() {}
+void pauseAudio() {}
 unsigned short  regArea[10000];                        // psx buffer
 unsigned short  spuMem[256*1024];
 unsigned char * spuMemC;
