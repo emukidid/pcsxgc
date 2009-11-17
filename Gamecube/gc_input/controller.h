@@ -2,12 +2,14 @@
  * WiiSX - controller.h
  * Copyright (C) 2007, 2008, 2009 Mike Slegeir
  * Copyright (C) 2007, 2008, 2009 emu_kidid
+ * Copyright (C) 2007, 2008, 2009 sepp256
  * 
  * Standard prototypes for accessing different controllers
  *
  * Wii64 homepage: http://www.emulatemii.com
  * email address: tehpola@gmail.com
  *                emukidid@gmail.com
+ *                sepp256@gmail.com
  *
  *
  * This program is free software; you can redistribute it and/
@@ -101,5 +103,6 @@ extern controller_t* controller_ts[num_controller_t];
 void init_controller_ts(void);
 void assign_controller(int whichVirtual, controller_t*, int whichPhysical);
 void unassign_controller(int whichVirtual);
+void update_controller_assignment(void);
 
 #endif

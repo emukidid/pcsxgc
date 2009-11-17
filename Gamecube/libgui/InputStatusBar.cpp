@@ -28,7 +28,7 @@
 #include <gccore.h>
 
 extern "C" {
-//#include "../gc_input/controller.h"
+#include "../gc_input/controller.h"
 //#include "../main/rom.h"
 }
 #include "../../PsxCommon.h"
@@ -121,7 +121,7 @@ void InputStatusBar::drawComponent(Graphics& gfx)
 	}
 	gfx.disableScissor();
 	//Update controller availability
-/*	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < 2; i++)
 	{
 		switch (padType[i])
 		{
@@ -199,7 +199,7 @@ void InputStatusBar::drawComponent(Graphics& gfx)
 		gfx.enableBlending(true);
 		gfx.drawImage(0, base_x, base_y, 48, 64, 0, 1, 0, 1);
 	}
-*/
+
 	//draw logo
 	Resources::getInstance().getImage(Resources::IMAGE_LOGO)->activateImage(GX_TEXMAP0);
 	gfx.setTEV(GX_REPLACE);

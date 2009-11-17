@@ -36,6 +36,7 @@ extern "C" {
 #include "fileBrowser/fileBrowser-libfat.h"
 #include "fileBrowser/fileBrowser-DVD.h"
 #include "fileBrowser/fileBrowser-CARD.h"
+#include "gc_input/controller.h"
 }
 
 #ifdef WII
@@ -94,9 +95,8 @@ char autoSave;
 char autoSaveLoaded = 0;
 char screenMode = 0;
 char padAutoAssign;
-char padType[4];
-char padAssign[4];
-char pakMode[4];
+char padType[2];
+char padAssign[2];
 
 int stop = 0;
 
@@ -178,25 +178,11 @@ int main(int argc, char *argv[])
 	creditsScrolling = 0; // Normal menu for now
 	dynacore         = 0; // Dynarec
 	screenMode		 = 0; // Stretch FB horizontally
-/*	padAutoAssign	 = PADAUTOASSIGN_AUTOMATIC;
+	padAutoAssign	 = PADAUTOASSIGN_AUTOMATIC;
 	padType[0]		 = PADTYPE_NONE;
 	padType[1]		 = PADTYPE_NONE;
-	padType[2]		 = PADTYPE_NONE;
-	padType[3]		 = PADTYPE_NONE;
 	padAssign[0]	 = PADASSIGN_INPUT0;
 	padAssign[1]	 = PADASSIGN_INPUT1;
-	padAssign[2]	 = PADASSIGN_INPUT2;
-	padAssign[3]	 = PADASSIGN_INPUT3;
-	pakMode[0]		 = PAKMODE_MEMPAK; // memPak plugged into controller 1
-	pakMode[1]		 = PAKMODE_MEMPAK;
-	pakMode[2]		 = PAKMODE_MEMPAK;
-	pakMode[3]		 = PAKMODE_MEMPAK;*/
-#ifdef GLN64_GX
-// glN64 specific  settings
-// 	glN64_useFrameBufferTextures = 0; // Disable FrameBuffer textures
-//	glN64_use2xSaiTextures = 0;	// Disable 2xSai textures
-//	renderCpuFramebuffer = 0; // Disable CPU Framebuffer Rendering
-#endif //GLN64_GX
 	menuActive = 1;
 
 	//PCSX-specific defaults
@@ -212,6 +198,8 @@ int main(int argc, char *argv[])
 	Config.PsxAuto = 1; //Autodetect
 	LoadCdBios=0;
   
+	update_controller_assignment(); //Perform controller auto assignment at least once at startup.
+
 #if 0
 	//config stuff
 	fileBrowser_file* configFile_file;

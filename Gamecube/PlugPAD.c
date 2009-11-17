@@ -122,24 +122,19 @@ void unassign_controller(int wv){
 	virtualControllers[wv].number  = -1;
 }
 
-long PAD__init(long flags) {
-  int i,t,w;
-  
-  PadFlags |= flags;
+void update_controller_assignment (void)
+{
+	//TODO: Map 5 or 8 controllers if multitaps are used.
+	int i,t,w;
 
 	init_controller_ts();
-
-	// 'Initialize' the unmapped virtual controllers
-//	for(i=0; i<4; ++i){
-//		unassign_controller(i);
-//	}
 
 	int num_assigned[num_controller_t];
 	memset(num_assigned, 0, sizeof(num_assigned));
 
 	// Map controllers in the priority given
 	// Outer loop: virtual controllers
-	for(i=0; i<4; ++i){
+	for(i=0; i<2; ++i){
 		// Middle loop: controller type
 		for(t=0; t<num_controller_t; ++t){
 			controller_t* type = controller_ts[t];
@@ -161,10 +156,14 @@ long PAD__init(long flags) {
 	}
 
 	// 'Initialize' the unmapped virtual controllers
-	for(; i<4; ++i){
+	for(; i<2; ++i){
 		unassign_controller(i);
 		padType[i] = PADTYPE_NONE;
 	}
+}
+
+long PAD__init(long flags) {
+	PadFlags |= flags;
 
 	return PSE_PAD_ERR_SUCCESS;
 }

@@ -161,7 +161,7 @@ enum padAutoAssign
 	PADAUTOASSIGN_AUTOMATIC
 };
 
-extern char padType[4];
+extern char padType[2];
 enum padType
 {
 	PADTYPE_NONE=0,
@@ -169,7 +169,7 @@ enum padType
 	PADTYPE_WII
 };
 
-extern char padAssign[4];
+extern char padAssign[2];
 enum padAssign
 {
 	PADASSIGN_INPUT0=0,
@@ -177,12 +177,5 @@ enum padAssign
 	PADASSIGN_INPUT2,
 	PADASSIGN_INPUT3
 };
-
-/*extern char pakMode[4];
-enum pakMode
-{
-	PAKMODE_MEMPAK=0,
-	PAKMODE_RUMBLEPAK
-};*/
 
 #endif //WIISXCONFIG_H

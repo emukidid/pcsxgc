@@ -26,9 +26,9 @@
 #include "MessageBox.h"
 #include "LoadingBar.h"
 #include "GuiResources.h"
-//#include "../gc_input/controller.h"
 
 extern "C" {
+#include "../gc_input/controller.h"
 #ifdef WII
 #include <di/di.h>
 #endif 
@@ -74,7 +74,7 @@ void Gui::draw()
 	Input::getInstance().refreshInput();
 	Cursor::getInstance().updateCursor();
 	Focus::getInstance().updateFocus();
-//*	if(padAutoAssign) control_info_init();
+	if(padAutoAssign) update_controller_assignment();
 	//Update time??
 	//Get graphics framework and pass to Frame draw fns?
 	gfx->drawInit();
