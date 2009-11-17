@@ -413,7 +413,7 @@ int Load(char *ExePath) {
 }
 
 // STATES
-
+void LoadingBar_showBar(float percent, const char* string);
 const char PcsxHeader[32] = "STv3 PCSX v";
 char* statespath = "/wiisx/saves/";
 static unsigned int savestates_slot = 0;
@@ -455,7 +455,7 @@ int SaveState() {
    	
   if(!f)
   	return 0;
-
+  LoadingBar_showBar(0.0f, "Saving State ..");
   pauseRemovalThread(); 
   GPU_updateLace();
     
@@ -469,12 +469,14 @@ int SaveState() {
 
 	if (Config.HLE)
 		psxBiosFreeze(1);
-
+  LoadingBar_showBar(0.10f, "Saving State ..");
 	gzwrite(f, psxM, 0x00200000);
+	LoadingBar_showBar(0.40f, "Saving State ..");
 	gzwrite(f, psxR, 0x00080000);
+	LoadingBar_showBar(0.60f, "Saving State ..");
 	gzwrite(f, psxH, 0x00010000);
 	gzwrite(f, (void*)&psxRegs, sizeof(psxRegs));
-
+  LoadingBar_showBar(0.70f, "Saving State ..");
 	// gpu
 	gpufP = (GPUFreeze_t *) malloc(sizeof(GPUFreeze_t));
 	gpufP->ulFreezeVersion = 1;
@@ -483,7 +485,7 @@ int SaveState() {
 	free(gpufP);
 	// gpu VRAM save (save directly to save memory)
 	gzwrite(f, &psxVub[0], 1024*iGPUHeight*2);
-
+  LoadingBar_showBar(0.80f, "Saving State ..");
 	// spu
 	spufP = (SPUFreeze_t *) malloc(16);
 	SPU_freeze(2, spufP);
@@ -495,16 +497,18 @@ int SaveState() {
 	free(spufP);
   // spu spuMem save (save directly to save memory)
   gzwrite(f, &spuMem[0], 0x80000);
+  LoadingBar_showBar(0.90f, "Saving State ..");
   
 	sioFreeze(f, 1);
 	cdrFreeze(f, 1);
 	psxHwFreeze(f, 1);
 	psxRcntFreeze(f, 1);
 	mdecFreeze(f, 1);
-
+  LoadingBar_showBar(0.99f, "Saving State ..");
 	gzclose(f);
+	
 	continueRemovalThread();
-
+  LoadingBar_showBar(1.0f, "Saving State ..");
 	return 1; //ok
 }
 
@@ -537,10 +541,11 @@ int LoadState() {
   	return 0;
 
 	pauseRemovalThread();
-	SysReset();
+	LoadingBar_showBar(0.0f, "Loading State ..");
+	//SysReset();
 	
 	psxCpu->Reset();
-
+  LoadingBar_showBar(0.10f, "Loading State ..");
 	gzread(f, header, 32);
 
 	if (strncmp("STv3 PCSX", header, 9)) { gzclose(f); return -1; }
@@ -548,10 +553,12 @@ int LoadState() {
 	gzseek(f, 128*96*3, SEEK_CUR);
 
 	gzread(f, psxM, 0x00200000);
+	LoadingBar_showBar(0.40f, "Loading State ..");
 	gzread(f, psxR, 0x00080000);
+	LoadingBar_showBar(0.60f, "Loading State ..");
 	gzread(f, psxH, 0x00010000);
 	gzread(f, (void*)&psxRegs, sizeof(psxRegs));
-
+  LoadingBar_showBar(0.70f, "Loading State ..");
 	if (Config.HLE)
 		psxBiosFreeze(0);
 
@@ -562,6 +569,7 @@ int LoadState() {
 	free(gpufP);
 	// gpu VRAM load (load directly to save memory)
 	gzread(f, &psxVub[0], 1024*iGPUHeight*2);
+	LoadingBar_showBar(0.80f, "Loading State ..");
 	
 	// spu
 	gzread(f, &Size, 4);
@@ -571,6 +579,7 @@ int LoadState() {
 	free(spufP);
   // spu spuMem save (save directly to save memory)
   gzread(f, &spuMem[0], 0x80000);
+  LoadingBar_showBar(0.99f, "Loading State ..");
   
 	sioFreeze(f, 0);
 	cdrFreeze(f, 0);
@@ -580,6 +589,7 @@ int LoadState() {
 
 	gzclose(f);
   continueRemovalThread();
+  LoadingBar_showBar(1.0f, "Loading State ..");
   
 	return 1;
 }
