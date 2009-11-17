@@ -417,6 +417,9 @@ int Load(char *ExePath) {
 const char PcsxHeader[32] = "STv3 PCSX v";
 char* statespath = "/wiisx/saves/";
 static unsigned int savestates_slot = 0;
+extern unsigned char  *psxVub;
+extern unsigned short  spuMem[256*1024];
+#define iGPUHeight 512
 
 void savestates_select_slot(unsigned int s)
 {
@@ -425,6 +428,7 @@ void savestates_select_slot(unsigned int s)
 }
 
 int SaveState() {
+   
   gzFile f;
   GPUFreeze_t *gpufP;
 	SPUFreeze_t *spufP;
@@ -453,6 +457,7 @@ int SaveState() {
   	return 0;
 
   pauseRemovalThread(); 
+  GPU_updateLace();
     
 	gzwrite(f, (void*)PcsxHeader, 32);
 
@@ -476,17 +481,21 @@ int SaveState() {
 	GPU_freeze(1, gpufP);
 	gzwrite(f, gpufP, sizeof(GPUFreeze_t));
 	free(gpufP);
+	// gpu VRAM save (save directly to save memory)
+	gzwrite(f, &psxVub[0], 1024*iGPUHeight*2);
 
 	// spu
 	spufP = (SPUFreeze_t *) malloc(16);
 	SPU_freeze(2, spufP);
-	Size = spufP->Size; gzwrite(f, &Size, 4);
+	Size = spufP->ulFreezeSize; gzwrite(f, &Size, 4);
 	free(spufP);
 	spufP = (SPUFreeze_t *) malloc(Size);
 	SPU_freeze(1, spufP);
 	gzwrite(f, spufP, Size);
 	free(spufP);
-
+  // spu spuMem save (save directly to save memory)
+  gzwrite(f, &spuMem[0], 0x80000);
+  
 	sioFreeze(f, 1);
 	cdrFreeze(f, 1);
 	psxHwFreeze(f, 1);
@@ -528,6 +537,7 @@ int LoadState() {
   	return 0;
 
 	pauseRemovalThread();
+	SysReset();
 	
 	psxCpu->Reset();
 
@@ -550,14 +560,18 @@ int LoadState() {
 	gzread(f, gpufP, sizeof(GPUFreeze_t));
 	GPU_freeze(0, gpufP);
 	free(gpufP);
-
+	// gpu VRAM load (load directly to save memory)
+	gzread(f, &psxVub[0], 1024*iGPUHeight*2);
+	
 	// spu
 	gzread(f, &Size, 4);
 	spufP = (SPUFreeze_t *) malloc (Size);
 	gzread(f, spufP, Size);
 	SPU_freeze(0, spufP);
 	free(spufP);
-
+  // spu spuMem save (save directly to save memory)
+  gzread(f, &spuMem[0], 0x80000);
+  
 	sioFreeze(f, 0);
 	cdrFreeze(f, 0);
 	psxHwFreeze(f, 0);

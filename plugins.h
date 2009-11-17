@@ -66,11 +66,12 @@ typedef void (CALLBACK* GPUabout)(void);
 typedef void (CALLBACK* GPUmakeSnapshot)(void);
 typedef void (CALLBACK* GPUkeypressed)(int);
 typedef void (CALLBACK* GPUdisplayText)(char *);
-typedef struct {
-	uint32_t ulFreezeVersion;
-	uint32_t ulStatus;
-	uint32_t ulControl[256];
-	unsigned char psxVRam[1024*512*2];
+typedef struct GPUFREEZETAG
+{
+ unsigned long ulFreezeVersion;      // should be always 1 for now (set by main emu)
+ unsigned long ulStatus;             // current gpu status
+ unsigned long ulControl[256];       // latest control register values
+ //unsigned char psxVRam[1024*1024*2]; // current VRam image (full 2 MB for ZN)
 } GPUFreeze_t;
 typedef long (CALLBACK* GPUfreeze)(uint32_t, GPUFreeze_t *);
 typedef long (CALLBACK* GPUgetScreenPic)(unsigned char *);
@@ -183,14 +184,14 @@ typedef void (CALLBACK* SPUregisterCallback)(void (CALLBACK *callback)(void));
 typedef long (CALLBACK* SPUconfigure)(void);
 typedef long (CALLBACK* SPUtest)(void);			
 typedef void (CALLBACK* SPUabout)(void);
-typedef struct {
-	unsigned char PluginName[8];
-	uint32_t PluginVersion;
-	uint32_t Size;
-	unsigned char SPUPorts[0x200];
-	unsigned char SPURam[0x80000];
-	xa_decode_t xa;
-	unsigned char *SPUInfo;
+typedef struct
+{
+ char          szSPUName[8];
+ unsigned long ulFreezeVersion;
+ unsigned long ulFreezeSize;
+ unsigned char cSPUPort[0x200];
+ //unsigned char cSPURam[0x80000];
+ xa_decode_t   xaS;     
 } SPUFreeze_t;
 typedef long (CALLBACK* SPUfreeze)(uint32_t, SPUFreeze_t *);
 typedef void (CALLBACK* SPUasync)(uint32_t);

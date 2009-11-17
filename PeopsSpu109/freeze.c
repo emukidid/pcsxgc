@@ -52,7 +52,7 @@ typedef struct
  unsigned long ulFreezeVersion;
  unsigned long ulFreezeSize;
  unsigned char cSPUPort[0x200];
- unsigned char cSPURam[0x80000];
+ //unsigned char cSPURam[0x80000];
  xa_decode_t   xaS;     
 } SPUFreeze_t;
 
@@ -97,7 +97,7 @@ long CALLBACK PEOPS_SPUfreeze(unsigned long ulFreezeMode,SPUFreeze_t * pF)
                                                        // save mode:
    RemoveTimer();                                      // stop timer
 
-   memcpy(pF->cSPURam,spuMem,0x80000);                 // copy common infos
+   //memcpy(pF->cSPURam,spuMem,0x80000);                 // done in Misc.c
    memcpy(pF->cSPUPort,regArea,0x200);
 
    if(xapGlobal && XAPlay!=XAFeed)                     // some xa
@@ -140,7 +140,7 @@ long CALLBACK PEOPS_SPUfreeze(unsigned long ulFreezeMode,SPUFreeze_t * pF)
 
  RemoveTimer();                                        // we stop processing while doing the save!
 
- memcpy(spuMem,pF->cSPURam,0x80000);                   // get ram
+ //memcpy(spuMem,pF->cSPURam,0x80000);                   // get ram (done in Misc.c)
  memcpy(regArea,pF->cSPUPort,0x200);
 
  if(pF->xaS.nsamples<=4032)                            // start xa again
