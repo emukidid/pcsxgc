@@ -116,16 +116,9 @@ int LoadGPUplugin(char *GPUdll) {
 }
 
 void *hCDRDriver;
-long CALLBACK CDR__play(unsigned char *sector) { return 0; }
-long CALLBACK CDR__stop(void) { return 0; }
-
-long CALLBACK CDR__getStatus(struct CdrStat *stat) {
-    //TODO, fix this up, it will be needed for multi-disc games?
-    if (cdOpenCase) stat->Status = 0x10;
-    else stat->Status = 0;
-    return 0;
-}
-
+long CALLBACK CDR__play(unsigned char *sector);
+long CALLBACK CDR__stop(void);
+long CALLBACK CDR__getStatus(struct CdrStat *stat);
 char* CALLBACK CDR__getDriveLetter(void) { return NULL; }
 //unsigned char* CALLBACK CDR__getBufferSub(void) { return NULL; }
 long CALLBACK CDR__configure(void) { return 0; }
@@ -159,9 +152,9 @@ int LoadCDRplugin(char *CDRdll) {
 	LoadCdrSym1(getTD, "CDRgetTD");
 	LoadCdrSym1(readTrack, "CDRreadTrack");
 	LoadCdrSym1(getBuffer, "CDRgetBuffer");
-	LoadCdrSym0(play, "CDRplay");
-	LoadCdrSym0(stop, "CDRstop");
-	LoadCdrSym0(getStatus, "CDRgetStatus");
+	LoadCdrSym1(play, "CDRplay");
+	LoadCdrSym1(stop, "CDRstop");
+	LoadCdrSym1(getStatus, "CDRgetStatus");
 	LoadCdrSym0(getDriveLetter, "CDRgetDriveLetter");
 	LoadCdrSym0(getBufferSub, "CDRgetBufferSub");
 	LoadCdrSym0(configure, "CDRconfigure");

@@ -102,6 +102,9 @@ long CDR__close(void);
 long CDR__getTN(unsigned char *);
 long CDR__getTD(unsigned char , unsigned char *);
 long CDR__readTrack(unsigned char *);
+long CDR__play(unsigned char *sector);
+long CDR__stop(void);
+long CDR__getStatus(struct CdrStat *stat);
 unsigned char *CDR__getBuffer(void);
 unsigned char *CDR__getBufferSub(void);
 
@@ -188,7 +191,7 @@ long SSS_PADreadPort2 (PadDataS* pads);
 
 #define CDR_PLUGIN \
 	{ "CDR",      \
-	  9,         \
+	  12,         \
 	  { { "CDRinit",  \
 	      (void*)CDR__init }, \
 	    { "CDRshutdown",	\
@@ -205,6 +208,12 @@ long SSS_PADreadPort2 (PadDataS* pads);
 	      (void*)CDR__readTrack}, \
 	    { "CDRgetBuffer", \
 	      (void*)CDR__getBuffer}, \
+	    { "CDRplay", \
+	      (void*)CDR__play}, \
+	    { "CDRstop", \
+	      (void*)CDR__stop}, \
+	    { "CDRgetStatus", \
+	      (void*)CDR__getStatus}, \
 	    { "CDRgetBufferSub", \
 	      (void*)CDR__getBufferSub} \
 	       } }

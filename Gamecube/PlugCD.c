@@ -371,6 +371,20 @@ unsigned char *CDR__getBufferSub(void) {
   return getSector(1);
 }
 
+long CDR__play(unsigned char *sector) { 
+  return 0; 
+}
+long CDR__stop(void) { 
+  return 0; 
+}
+
+long CDR__getStatus(struct CdrStat *stat) {
+    //TODO, fix this up, it will be needed for multi-disc games?
+    if (cdOpenCase) stat->Status = 0x10;
+    else stat->Status = 0;
+    return 0;
+}
+
 /*
 long (CALLBACK* CDRconfigure)(void);
 long (CALLBACK* CDRtest)(void);
