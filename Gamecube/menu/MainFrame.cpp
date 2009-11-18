@@ -249,7 +249,7 @@ void Func_PlayGame()
 
 	pauseRemovalThread();
 	resumeAudio();
-	//resumeInput();
+	resumeInput();
 	menuActive = 0;
 #ifdef DEBUGON
 	_break();
@@ -259,7 +259,7 @@ void Func_PlayGame()
 	_break();
 #endif
 	menuActive = 1;
-	//pauseInput();
+	pauseInput();
 	pauseAudio();
 
   if(autoSave==AUTOSAVE_ENABLE) {

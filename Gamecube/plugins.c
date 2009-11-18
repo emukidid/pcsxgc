@@ -229,7 +229,7 @@ int LoadSPUplugin(char *SPUdll) {
 
 void *hPAD1Driver;
 void *hPAD2Driver;
-
+/*
 static unsigned char buf[256];
 unsigned char stdpar[10] = { 0x00, 0x41, 0x5a, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 unsigned char mousepar[8] = { 0x00, 0x12, 0x5a, 0xff, 0xff, 0xff, 0xff };
@@ -316,7 +316,7 @@ unsigned char CALLBACK PAD1__startPoll(int pad) {
 
 unsigned char CALLBACK PAD1__poll(unsigned char value) {
 	return _PADpoll(value);
-}
+}*/
 
 long CALLBACK PAD1__configure(void) { return 0; }
 void CALLBACK PAD1__about(void) {}
@@ -353,13 +353,13 @@ int LoadPAD1plugin(char *PAD1dll) {
 	LoadPad1Sym0(test, "PADtest");
 	LoadPad1Sym0(about, "PADabout");
 	LoadPad1Sym0(keypressed, "PADkeypressed");
-	LoadPad1Sym0(startPoll, "PADstartPoll");
-	LoadPad1Sym0(poll, "PADpoll");
+	LoadPad1Sym1(startPoll, "PADstartPoll");
+	LoadPad1Sym1(poll, "PADpoll");
 	LoadPad1SymN(setSensitive, "PADsetSensitive");
 
 	return 0;
 }
-
+/*
 unsigned char CALLBACK PAD2__startPoll(int pad) {
 	PadDataS padd;
 
@@ -371,7 +371,7 @@ unsigned char CALLBACK PAD2__startPoll(int pad) {
 unsigned char CALLBACK PAD2__poll(unsigned char value) {
 	return _PADpoll(value);
 }
-
+*/
 long CALLBACK PAD2__configure(void) { return 0; }
 void CALLBACK PAD2__about(void) {}
 long CALLBACK PAD2__test(void) { return 0; }
@@ -407,8 +407,8 @@ int LoadPAD2plugin(char *PAD2dll) {
 	LoadPad2Sym0(test, "PADtest");
 	LoadPad2Sym0(about, "PADabout");
 	LoadPad2Sym0(keypressed, "PADkeypressed");
-	LoadPad2Sym0(startPoll, "PADstartPoll");
-	LoadPad2Sym0(poll, "PADpoll");
+	LoadPad2Sym1(startPoll, "PADstartPoll");
+	LoadPad2Sym1(poll, "PADpoll");
 	LoadPad2SymN(setSensitive, "PADsetSensitive");
 
 	return 0;

@@ -134,6 +134,14 @@ void PEOPS_GPUupdateLace(void);
 void PEOPS_GPUdisplayText(char *);
 long PEOPS_GPUfreeze(unsigned long,GPUFreeze_t *);
 
+/* SSSPSX PAD Plugin */
+long SSS_PADopen (void *p);
+long SSS_PADclose (void);
+unsigned char SSS_PADstartPoll (int pad);
+unsigned char SSS_PADpoll (const unsigned char value);
+long SSS_PADreadPort1 (PadDataS* pads);
+long SSS_PADreadPort2 (PadDataS* pads);
+
 #define EMPTY_PLUGIN \
 	{ NULL,      \
 	  0,         \
@@ -142,32 +150,40 @@ long PEOPS_GPUfreeze(unsigned long,GPUFreeze_t *);
 	      
 #define PAD1_PLUGIN \
 	{ "PAD1",      \
-	  5,         \
+	  7,         \
 	  { { "PADinit",  \
 	      (void*)PAD__init }, \
 	    { "PADshutdown",	\
 	      (void*)PAD__shutdown}, \
 	    { "PADopen", \
-	      (void*)PAD__open}, \
+	      (void*)SSS_PADopen}, \
 	    { "PADclose", \
-	      (void*)PAD__close}, \
+	      (void*)SSS_PADclose}, \
+	    { "PADpoll", \
+	      (void*)SSS_PADpoll}, \
+	    { "PADstartPoll", \
+	      (void*)SSS_PADstartPoll}, \
 	    { "PADreadPort1", \
-	      (void*)PAD__readPort1} \
-	       } } 
+	      (void*)SSS_PADreadPort1} \
+	       } }
 	    
 #define PAD2_PLUGIN \
 	{ "PAD2",      \
-	  5,         \
+	  7,         \
 	  { { "PADinit",  \
 	      (void*)PAD__init }, \
 	    { "PADshutdown",	\
 	      (void*)PAD__shutdown}, \
 	    { "PADopen", \
-	      (void*)PAD__open}, \
+	      (void*)SSS_PADopen}, \
 	    { "PADclose", \
-	      (void*)PAD__close}, \
+	      (void*)SSS_PADclose}, \
+	    { "PADpoll", \
+	      (void*)SSS_PADpoll}, \
+	    { "PADstartPoll", \
+	      (void*)SSS_PADstartPoll}, \
 	    { "PADreadPort2", \
-	      (void*)PAD__readPort2} \
+	      (void*)SSS_PADreadPort2} \
 	       } }
 
 #define CDR_PLUGIN \
