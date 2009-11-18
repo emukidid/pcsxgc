@@ -28,60 +28,13 @@
 #include "../PsxCommon.h"
 #include "ppc.h"
 #include "reguse.h"
+#include "pR3000A.h"
 #include "../R3000A.h"
 #include "../PsxHLE.h"
 #include "../Gamecube/DEBUG.h"
 
-extern void SysRunGui();
-extern void SysMessage(char *fmt, ...);
-extern void SysReset();
-extern void SysPrintf(char *fmt, ...);
-
-extern int stop;
-
-//#define NO_CONSTANT
-
-u32 psxRecLUT[0x010000];
-
-#undef _Op_
-#define _Op_     _fOp_(psxRegs.code)
-#undef _Funct_
-#define _Funct_  _fFunct_(psxRegs.code)
-#undef _Rd_
-#define _Rd_     _fRd_(psxRegs.code)
-#undef _Rt_
-#define _Rt_     _fRt_(psxRegs.code)
-#undef _Rs_
-#define _Rs_     _fRs_(psxRegs.code)
-#undef _Sa_
-#define _Sa_     _fSa_(psxRegs.code)
-#undef _Im_
-#define _Im_     _fIm_(psxRegs.code)
-#undef _Target_
-#define _Target_ _fTarget_(psxRegs.code)
-
-#undef _Imm_
-#define _Imm_	 _fImm_(psxRegs.code)
-#undef _ImmU_
-#define _ImmU_	 _fImmU_(psxRegs.code)
-
-#undef PC_REC
-#undef PC_REC8
-#undef PC_REC16
-#undef PC_REC32
-#define PC_REC(x)	(psxRecLUT[x >> 16] + (x & 0xffff))
-#define PC_REC8(x)	(*(u8 *)PC_REC(x))
-#define PC_REC16(x) (*(u16*)PC_REC(x))
-#define PC_REC32(x) (*(u32*)PC_REC(x))
-
-#define OFFSET(X,Y) ((u32)(Y)-(u32)(X))
-
-#ifdef HW_DOL
-#define RECMEM_SIZE		(7*1024*1024)
-#elif HW_RVL
-#define RECMEM_SIZE		(8*1024*1024)
-#endif
-
+/* variable declarations */
+static u32 psxRecLUT[0x010000];
 static char recMem[RECMEM_SIZE] __attribute__((aligned(32)));	/* the recompiled blocks will be here */
 static char recRAM[0x200000] __attribute__((aligned(32)));	/* and the ptr to the blocks here */
 static char recROM[0x080000] __attribute__((aligned(32)));	/* and here */
@@ -92,31 +45,9 @@ static int count;		/* recompiler intruction count */
 static int branch;		/* set for branch */
 static u32 target;		/* branch target */
 static u32 resp;
-
-u32 dyna_used = 0;
-u32 dyna_total = RECMEM_SIZE;
-u32 cop2readypc = 0;
-u32 idlecyclecount = 0;
-
-#define NUM_REGISTERS	34
-typedef struct {
-	int state;
-	u32 k;
-	int reg;
-} iRegisters;
-
+static u32 cop2readypc = 0;
+static u32 idlecyclecount = 0;
 static iRegisters iRegs[34];
-
-#define ST_UNK      0x00
-#define ST_CONST    0x01
-#define ST_MAPPED   0x02
-
-#ifdef NO_CONSTANT
-#define IsConst(reg) 0
-#else
-#define IsConst(reg)  (iRegs[reg].state & ST_CONST)
-#endif
-#define IsMapped(reg) (iRegs[reg].state & ST_MAPPED)
 
 static void (*recBSC[64])();
 static void (*recSPC[64])();
@@ -125,48 +56,6 @@ static void (*recCP0[32])();
 static void (*recCP2[64])();
 static void (*recCP2BSC[32])();
 
-#define REG_LO			32
-#define REG_HI			33
-
-// Hardware register usage
-#define HWUSAGE_NONE     0x00
-
-#define HWUSAGE_READ     0x01
-#define HWUSAGE_WRITE    0x02
-#define HWUSAGE_CONST    0x04
-#define HWUSAGE_ARG      0x08	/* used as an argument for a function call */
-
-#define HWUSAGE_RESERVED 0x10	/* won't get flushed when flushing all regs */
-#define HWUSAGE_SPECIAL  0x20	/* special purpose register */
-#define HWUSAGE_HARDWIRED 0x40	/* specific hardware register mapping that is never disposed */
-#define HWUSAGE_INITED    0x80
-#define HWUSAGE_PSXREG    0x100
-
-// Remember to invalidate the special registers if they are modified by compiler
-enum {
-    ARG1 = 3,
-    ARG2 = 4,
-    ARG3 = 5,
-    PSXREGS,	// ptr
-	 PSXMEM,		// ptr
-    CYCLECOUNT,	// ptr
-    PSXPC,	// ptr
-    TARGETPTR,	// ptr
-    TARGET,	// ptr
-    RETVAL,
-    REG_RZERO,
-    REG_WZERO
-};
-
-typedef struct {
-    int code;
-    u32 k;
-    int usage;
-    int lastUsed;
-    
-    void (*flush)(int hwreg);
-    int private;
-} HWRegister;
 static HWRegister HWRegisters[NUM_HW_REGISTERS];
 static int HWRegUseCount;
 static int DstCPUReg;
@@ -190,6 +79,10 @@ static int GetHWRegSpecial(int which);
 static int PutHWRegSpecial(int which);
 static void recRecompile();
 static void recError();
+
+// used in debug.c for dynarec free space printing
+u32 dyna_used = 0;
+u32 dyna_total = RECMEM_SIZE;
 
 /* --- Generic register mapping --- */
 
@@ -2791,7 +2684,6 @@ static void (*recCP2BSC[32])() = {
 };
 
 static void recRecompile() {
-	//static int recCount = 0;
 	char *p;
 	u32 *ptr;
 	int i;
@@ -2835,86 +2727,34 @@ static void recRecompile() {
 	ppcAlign();
 #endif
 	ptr = ppcPtr;
-	
-	
+		
 	// tell the LUT where to find us
 	PC_REC32(psxRegs.pc) = (u32)ppcPtr;
 
 	pcold = pc = psxRegs.pc;
 	
-	
+	//where did 500 come from?
 	for (count=0; count<500;) {
 		p = (char *)PSXM(pc);
 		if (p == NULL) recError();
 		psxRegs.code = SWAP32(*(u32 *)p);
-/*
-		if ((psxRegs.code >> 26) == 0x23) { // LW
-			int i;
-			u32 code;
-
-			for (i=1;; i++) {
-				p = (char *)PSXM(pc+i*4);
-				if (p == NULL) recError();
-				code = *(u32 *)p;
-
-				if ((code >> 26) != 0x23 ||
-					_fRs_(code)  != _Rs_ ||
-					_fImm_(code) != (_Imm_+i*4))
-					break;
-			}
-			if (i > 1) {
-				recLWBlock(i);
-				pc = pc + i*4; continue;
-			}
-		}
-
-		if ((psxRegs.code >> 26) == 0x2b) { // SW
-			int i;
-			u32 code;
-
-			for (i=1;; i++) {
-				p = (char *)PSXM(pc+i*4);
-				if (p == NULL) recError();
-				code = *(u32 *)p;
-
-				if ((code >> 26) != 0x2b ||
-					_fRs_(code)  != _Rs_ ||
-					_fImm_(code) != (_Imm_+i*4))
-					break;
-			}
-			if (i > 1) {
-				recSWBlock(i);
-				pc = pc + i*4; continue;
-			}
-		}*/
-
 		pc+=4; count++;
-//		iFlushRegs(0); // test
 		recBSC[psxRegs.code>>26]();
 
 		if (branch) {
 			branch = 0;
-			//if (dump) iDumpBlock(ptr);
-			goto done;
+			break;
 		}
 	}
+  if(!branch) {
+	  iFlushRegs(pc);
+	  LIW(PutHWRegSpecial(PSXPC), pc);
+	  iRet();
+  }
 
-	iFlushRegs(pc);
-	
-	LIW(PutHWRegSpecial(PSXPC), pc);
-
-	iRet();
-
-done:;
-	u32 a = (u32)(u8*)ptr;
-	while(a < (u32)(u8*)ppcPtr) {
-	  __asm__ __volatile__("icbi 0,%0" : : "r" (a));
-	  __asm__ __volatile__("dcbst 0,%0" : : "r" (a));
-	  a += 4;
-	}
-	__asm__ __volatile__("sync");
-	__asm__ __volatile__("isync");
-	
+  DCFlushRange((u8*)ptr,(u32)(u8*)ppcPtr-(u32)(u8*)ptr);
+  ICInvalidateRange((u8*)ptr,(u32)(u8*)ppcPtr-(u32)(u8*)ptr);
+  
 #ifdef TAG_CODE
 	sprintf((char *)ppcPtr, "PC=%08x", pcold);  //causes misalignment
 	ppcPtr += strlen((char *)ppcPtr);
