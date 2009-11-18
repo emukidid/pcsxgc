@@ -93,6 +93,8 @@ static int branch;		/* set for branch */
 static u32 target;		/* branch target */
 static u32 resp;
 
+u32 dyna_used = 0;
+u32 dyna_total = RECMEM_SIZE;
 u32 cop2readypc = 0;
 u32 idlecyclecount = 0;
 
@@ -2829,8 +2831,9 @@ static void recRecompile() {
 	/* if ppcPtr reached the mem limit reset whole mem */
 	if (((u32)ppcPtr - (u32)recMem) >= (RECMEM_SIZE - 0x10000)) // fix me. don't just assume 0x10000
 		recReset();
-
-	ppcAlign(/*32*/4);
+#ifdef TAG_CODE
+	ppcAlign();
+#endif
 	ptr = ppcPtr;
 	
 	
@@ -2912,13 +2915,11 @@ done:;
 	__asm__ __volatile__("sync");
 	__asm__ __volatile__("isync");
 	
-
-	sprintf((char *)ppcPtr, "PC=%08x", pcold);
+#ifdef TAG_CODE
+	sprintf((char *)ppcPtr, "PC=%08x", pcold);  //causes misalignment
 	ppcPtr += strlen((char *)ppcPtr);
-	
-	sprintf(txtbuffer,"Dynarec (KB) %04d/%04d",((u32)ppcPtr - (u32)recMem)/1024,RECMEM_SIZE/1024);
-	DEBUG_print(txtbuffer,DBG_CORE1);
-
+#endif
+  dyna_used = ((u32)ppcPtr - (u32)recMem)/1024;
 }
 
 

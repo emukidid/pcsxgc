@@ -42,7 +42,7 @@ void ppcInit();
 void ppcSetPtr(u32 *ptr);
 void ppcShutdown();
 
-void ppcAlign(int bytes);
+extern inline void ppcAlign();
 void returnPC();
 void recRun(void (*func)(), u32 hw1, u32 hw2);
 u8 dynMemRead8(u32 mem);
