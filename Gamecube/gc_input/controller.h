@@ -91,14 +91,24 @@ typedef struct _virtualControllers_t {
 	int           number;  // The physical controller number
 } virtualControllers_t;
 
-extern virtualControllers_t virtualControllers[4];
+extern virtualControllers_t virtualControllers[2];
 
 // List of all the defined controller_t's
+#if defined(WII) && !defined(NO_BT)
+
 #define num_controller_t 3
 extern controller_t controller_GC;
 extern controller_t controller_Classic;
 extern controller_t controller_WiimoteNunchuk;
 extern controller_t* controller_ts[num_controller_t];
+
+#else // WII && !NO_BT
+
+#define num_controller_t 1
+extern controller_t controller_GC;
+extern controller_t* controller_ts[num_controller_t];
+
+#endif // WII && !NO_BT
 
 void init_controller_ts(void);
 void assign_controller(int whichVirtual, controller_t*, int whichPhysical);

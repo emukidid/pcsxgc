@@ -178,4 +178,20 @@ enum padAssign
 	PADASSIGN_INPUT3
 };
 
+extern char controllerType;
+enum controllerType
+{
+	CONTROLLERTYPE_STANDARD=0,
+	CONTROLLERTYPE_ANALOG,
+	CONTROLLERTYPE_LIGHTGUN
+};
+
+extern char numMultitaps;
+enum numMultitaps
+{
+	MULTITAPS_NONE=0,
+	MULTITAPS_ONE,
+	MULTITAPS_TWO
+};
+
 #endif //WIISXCONFIG_H

@@ -77,18 +77,18 @@ static int _GetKeys(int Control, BUTTONS * Keys )
 	c->btns.SELECT_BUTTON   = (b & CLASSIC_CTRL_BUTTON_MINUS) ? 0 : 1;
 	
 	c->btns.SQUARE_BUTTON   = (b & CLASSIC_CTRL_BUTTON_Y)  ? 0 : 1;
-  c->btns.CROSS_BUTTON    = (b & CLASSIC_CTRL_BUTTON_B)  ? 0 : 1;
-  c->btns.CIRCLE_BUTTON   = (b & CLASSIC_CTRL_BUTTON_A)  ? 0 : 1;
-  c->btns.TRIANGLE_BUTTON = (b & CLASSIC_CTRL_BUTTON_X)  ? 0 : 1;
+	c->btns.CROSS_BUTTON    = (b & CLASSIC_CTRL_BUTTON_B)  ? 0 : 1;
+	c->btns.CIRCLE_BUTTON   = (b & CLASSIC_CTRL_BUTTON_A)  ? 0 : 1;
+	c->btns.TRIANGLE_BUTTON = (b & CLASSIC_CTRL_BUTTON_X)  ? 0 : 1;
 	
 	c->btns.R1_BUTTON       = (b & CLASSIC_CTRL_BUTTON_ZR)  ? 0 : 1;
-  c->btns.L1_BUTTON       = (b & CLASSIC_CTRL_BUTTON_ZL)  ? 0 : 1;
-  c->btns.R2_BUTTON       = (b & CLASSIC_CTRL_BUTTON_FULL_R)  ? 0 : 1;
-  c->btns.L2_BUTTON       = (b & CLASSIC_CTRL_BUTTON_FULL_L)  ? 0 : 1;
+	c->btns.L1_BUTTON       = (b & CLASSIC_CTRL_BUTTON_ZL)  ? 0 : 1;
+	c->btns.R2_BUTTON       = (b & CLASSIC_CTRL_BUTTON_FULL_R)  ? 0 : 1;
+	c->btns.L2_BUTTON       = (b & CLASSIC_CTRL_BUTTON_FULL_L)  ? 0 : 1;
 
-  s8 substickX = getStickValue(&wpad->exp.classic.rjs, STICK_X, 7);
-  s8 substickY = getStickValue(&wpad->exp.classic.rjs, STICK_Y, 7);
-  c->rightStickX  = (u8)(substickX+127) & 0xFF;
+	s8 substickX = getStickValue(&wpad->exp.classic.rjs, STICK_X, 7);
+	s8 substickY = getStickValue(&wpad->exp.classic.rjs, STICK_Y, 7);
+	c->rightStickX  = (u8)(substickX+127) & 0xFF;
 	c->rightStickY  = (u8)(substickY+127) & 0xFF;
 	c->leftStickX   = (u8)(getStickValue(&wpad->exp.classic.ljs, STICK_X, 127)+127)    & 0xFF;
 	c->leftStickY   = (u8)(-getStickValue(&wpad->exp.classic.ljs, STICK_Y, 127)+127)   & 0xFF;

@@ -1,11 +1,11 @@
 /**
- * Wii64 - controller-WiimoteNunchuk.c
+ * WiiSX - controller-WiimoteNunchuk.c
  * Copyright (C) 2007, 2008, 2009 Mike Slegeir
  * Copyright (C) 2007, 2008, 2009 sepp256
  * 
  * Wiimote + Nunchuk input module
  *
- * Wii64 homepage: http://www.emulatemii.com
+ * WiiSX homepage: http://www.emulatemii.com
  * email address: tehpola@gmail.com
  *                sepp256@gmail.com
  *
@@ -51,6 +51,7 @@ static int _GetKeys(int Control, BUTTONS * Keys )
 	WPADData* wpad = WPAD_Data(Control);
 	BUTTONS* c = Keys;
 	memset(c, 0, sizeof(BUTTONS));
+	c->btns.All = 0xFFFF;  //needed
 
 	// Only use a connected nunchuck controller
 	if(wpad->err == WPAD_ERR_NONE &&
@@ -65,28 +66,47 @@ static int _GetKeys(int Control, BUTTONS * Keys )
 		return 0;
 	}
 
-	int b  = wpad->btns_h;
-	int d2 = b & WPAD_BUTTON_2;
-/*	c->R_DPAD       = (b & WPAD_BUTTON_RIGHT && d2)  ? 1 : 0;
-	c->L_DPAD       = (b & WPAD_BUTTON_LEFT  && d2)  ? 1 : 0;
-	c->D_DPAD       = (b & WPAD_BUTTON_DOWN  && d2)  ? 1 : 0;
-	c->U_DPAD       = (b & WPAD_BUTTON_UP    && d2)  ? 1 : 0;
-	c->START_BUTTON = (b & WPAD_BUTTON_HOME)         ? 1 : 0;
-	c->B_BUTTON     = (b & (WPAD_BUTTON_MINUS | WPAD_BUTTON_PLUS)) ? 1 : 0;
-	c->A_BUTTON     = (b & WPAD_BUTTON_A)            ? 1 : 0;
+	int b = wpad->btns_h;
+	int bmod = b & WPAD_NUNCHUK_BUTTON_C;	//use bmod to switch to analog input
+	s8 nunStickX = getStickValue(&wpad->exp.nunchuk.js, STICK_X, 127);
+	s8 nunStickY = getStickValue(&wpad->exp.nunchuk.js, STICK_Y, 127);
+	s8 fakeStickX = -127*((b & WPAD_BUTTON_LEFT)>>8)  + 127*((b & WPAD_BUTTON_RIGHT)>>9);
+	s8 fakeStickY = -127*((b & WPAD_BUTTON_DOWN)>>10) + 127*((b & WPAD_BUTTON_UP)>>11);
+	s8 stickThresh = 63;
+	if (bmod)
+	{
+		c->rightStickX  = (u8)(nunStickX+127) & 0xFF;
+		c->rightStickY  = (u8)(nunStickY+127) & 0xFF;
+		c->leftStickX   = (u8)(fakeStickX+127) & 0xFF;
+		c->leftStickY   = (u8)(fakeStickY+127) & 0xFF;
 
-	c->Z_TRIG       = (b & WPAD_NUNCHUK_BUTTON_Z)    ? 1 : 0;
-	c->R_TRIG       = (b & WPAD_BUTTON_B)            ? 1 : 0;
-	c->L_TRIG       = (b & WPAD_NUNCHUK_BUTTON_C)    ? 1 : 0;
+		c->btns.R1_BUTTON       = (b & WPAD_BUTTON_A)          ? 0 : 1;
+		c->btns.L1_BUTTON       = (b & WPAD_NUNCHUK_BUTTON_Z)  ? 0 : 1;
+	}
+	else
+	{
+		c->rightStickX  = 0;
+		c->rightStickY  = 0;
+		c->leftStickX   = 0;
+		c->leftStickY   = 0;
 
-	c->R_CBUTTON    = (b & WPAD_BUTTON_RIGHT)        ? 1 : 0;
-	c->L_CBUTTON    = (b & WPAD_BUTTON_LEFT)         ? 1 : 0;
-	c->D_CBUTTON    = (b & WPAD_BUTTON_DOWN)         ? 1 : 0;
-	c->U_CBUTTON    = (b & WPAD_BUTTON_UP)           ? 1 : 0;
+		c->btns.R_DPAD          = (nunStickX >  stickThresh) ? 0 : 1;
+		c->btns.L_DPAD          = (nunStickX < -stickThresh) ? 0 : 1;
+		c->btns.D_DPAD          = (nunStickY < -stickThresh) ? 0 : 1;
+		c->btns.U_DPAD          = (nunStickY >  stickThresh) ? 0 : 1;
 
-	c->X_AXIS       = getStickValue(&wpad->exp.nunchuk.js, STICK_X, 127);
-	c->Y_AXIS       = getStickValue(&wpad->exp.nunchuk.js, STICK_Y, 127);
-*/
+		c->btns.CIRCLE_BUTTON   = (b & WPAD_BUTTON_RIGHT) ? 0 : 1;
+		c->btns.SQUARE_BUTTON   = (b & WPAD_BUTTON_LEFT)  ? 0 : 1;
+		c->btns.CROSS_BUTTON    = (b & WPAD_BUTTON_DOWN)  ? 0 : 1;
+		c->btns.TRIANGLE_BUTTON = (b & WPAD_BUTTON_UP)    ? 0 : 1;
+
+		c->btns.R2_BUTTON       = (b & WPAD_BUTTON_A)          ? 0 : 1;
+		c->btns.L2_BUTTON       = (b & WPAD_NUNCHUK_BUTTON_Z)  ? 0 : 1;
+	}
+
+	c->btns.START_BUTTON    = (b & WPAD_BUTTON_HOME)                       ? 0 : 1;
+	c->btns.SELECT_BUTTON   = (b & (WPAD_BUTTON_MINUS | WPAD_BUTTON_PLUS)) ? 0 : 1;
+
 	// 1+2 quits to menu
 	return (b & WPAD_BUTTON_1) && (b & WPAD_BUTTON_2);
 }

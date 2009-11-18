@@ -65,7 +65,6 @@ u32* xfb[2] = { NULL, NULL };	/*** Framebuffers ***/
 int whichfb = 0;        /*** Frame buffer toggle ***/
 GXRModeObj *vmode;				/*** Graphics Mode Object ***/
 #define DEFAULT_FIFO_SIZE ( 256 * 1024 )
-extern int controllerType;
 BOOL hasLoadedISO = FALSE;
 fileBrowser_file *isoFile  = NULL;  //the ISO file
 fileBrowser_file *biosFile = NULL;  //BIOS file
@@ -97,6 +96,8 @@ char screenMode = 0;
 char padAutoAssign;
 char padType[2];
 char padAssign[2];
+char controllerType;
+char numMultitaps;
 
 int stop = 0;
 
@@ -183,11 +184,12 @@ int main(int argc, char *argv[])
 	padType[1]		 = PADTYPE_NONE;
 	padAssign[0]	 = PADASSIGN_INPUT0;
 	padAssign[1]	 = PADASSIGN_INPUT1;
+	controllerType	 = CONTROLLERTYPE_STANDARD;
+	numMultitaps	 = MULTITAPS_NONE;
 	menuActive = 1;
 
 	//PCSX-specific defaults
 	memset(&Config, 0, sizeof(PcsxConfig));
-	controllerType=0;	//Standard controller
 	Config.Cpu=dynacore;		//Dynarec core
 	strcpy(Config.Net,"Disabled");
 	Config.PsxOut = 1;
