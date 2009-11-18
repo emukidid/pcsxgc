@@ -666,7 +666,7 @@ void Func_SaveSettingsSD()
   if(configFile_init(configFile_file)) {                //only if device initialized ok
     FILE* f = fopen( "sd:/wiiSX/settings.cfg", "wb" );  //attempt to open file
     if(f) {
-//      writeConfig(f);                                   //write out the config
+      writeConfig(f);                                   //write out the config
       fclose(f);
       menu::MessageBox::getInstance().setMessage("Saved settings.cfg to SD");
       return;
@@ -683,7 +683,7 @@ void Func_SaveSettingsUSB()
   if(configFile_init(configFile_file)) {                //only if device initialized ok
     FILE* f = fopen( "usb:/wiiSX/settings.cfg", "wb" ); //attempt to open file
     if(f) {
-//      writeConfig(f);                                   //write out the config
+      writeConfig(f);                                   //write out the config
       fclose(f);
       menu::MessageBox::getInstance().setMessage("Saved settings.cfg to USB");
       return;

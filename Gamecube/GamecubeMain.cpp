@@ -101,6 +101,34 @@ char numMultitaps;
 
 int stop = 0;
 
+static struct {
+	char* key;
+	char* value; // Not a string, but a char pointer
+	char  min, max;
+} OPTIONS[] =
+{ { "Audio", &audioEnabled, AUDIO_DISABLE, AUDIO_ENABLE },
+  { "FPS", &showFPSonScreen, FPS_HIDE, FPS_SHOW },
+//  { "Debug", &printToScreen, DEBUG_HIDE, DEBUG_SHOW },
+  { "ScreenMode", &screenMode, SCREENMODE_4x3, SCREENMODE_16x9 },
+  { "Core", &dynacore, DYNACORE_DYNAREC, DYNACORE_INTERPRETER },
+  { "NativeDevice", &nativeSaveDevice, NATIVESAVEDEVICE_SD, NATIVESAVEDEVICE_CARDB },
+  { "StatesDevice", &saveStateDevice, SAVESTATEDEVICE_SD, SAVESTATEDEVICE_USB },
+  { "AutoSave", &autoSave, AUTOSAVE_DISABLE, AUTOSAVE_ENABLE },
+  { "BiosDevice", &biosDevice, BIOSDEVICE_HLE, BIOSDEVICE_USB },
+  { "LimitFrames", &frameLimit, FRAMELIMIT_NONE, FRAMELIMIT_AUTO },
+  { "SkipFrames", &frameSkip, FRAMESKIP_DISABLE, FRAMESKIP_ENABLE },
+  { "PadAutoAssign", &padAutoAssign, PADAUTOASSIGN_MANUAL, PADAUTOASSIGN_AUTOMATIC },
+  { "PadType1", &padType[0], PADTYPE_NONE, PADTYPE_WII },
+  { "PadType2", &padType[1], PADTYPE_NONE, PADTYPE_WII },
+  { "PadAssign1", &padAssign[0], PADASSIGN_INPUT0, PADASSIGN_INPUT3 },
+  { "PadAssign2", &padAssign[1], PADASSIGN_INPUT0, PADASSIGN_INPUT3 },
+  { "ControllerType", &controllerType, CONTROLLERTYPE_STANDARD, CONTROLLERTYPE_LIGHTGUN },
+  { "NumberMultitaps", &numMultitaps, MULTITAPS_NONE, MULTITAPS_TWO },
+};
+void handleConfigPair(char* kv);
+void readConfig(FILE* f);
+void writeConfig(FILE* f);
+
 void ScanPADSandReset(u32 dummy) 
 {
 	PAD_ScanPads();
@@ -202,7 +230,6 @@ int main(int argc, char *argv[])
   
 	update_controller_assignment(); //Perform controller auto assignment at least once at startup.
 
-#if 0
 	//config stuff
 	fileBrowser_file* configFile_file;
 	int (*configFile_init)(fileBrowser_file*) = fileBrowser_libfat_init;
@@ -236,7 +263,9 @@ int main(int argc, char *argv[])
 		handleConfigPair(argv[i]);
 	}
 #endif
-#endif //0
+
+	//Synch settings with Config
+	Config.Cpu=dynacore;
 
 	while (menu->isRunning()) {}
 
@@ -309,60 +338,40 @@ int loadISO(fileBrowser_file* file)
 	return 0;
 }
 
-#if 0
-//int loadISO(fileBrowser_file* iso)
-int loadISO(void)
-{
-	// Configure pcsx //
-	memset(&Config, 0, sizeof(PcsxConfig));
-
-	u16 butns=0;
-	printf("Select Controller Type:\n(A) Standard : (B) Analog\n");
-	do{butns = PAD_ButtonsDown(0);}while(!((butns & PAD_BUTTON_A) || (butns & PAD_BUTTON_B)));
-	if(butns & PAD_BUTTON_A)  controllerType=0;
-	else  controllerType=1;
-	printf("%s selected\n",controllerType ? "Analog":"Standard");
-
-	do{butns = PAD_ButtonsDown(0);}while(((butns & PAD_BUTTON_A) || (butns & PAD_BUTTON_B)));
-
-	printf("Select Core Type:\n(X) Dynarec : (Y) Interpreter\n");
-	do{butns = PAD_ButtonsDown(0);}while(!((butns & PAD_BUTTON_X) || (butns & PAD_BUTTON_Y)));
-	if(butns & PAD_BUTTON_X)  Config.Cpu=0;
-	else  Config.Cpu=1;
-	printf("%s selected\n",Config.Cpu ? "Interpreter":"Dynarec");
-
-	do{butns = PAD_ButtonsDown(0);}while(((butns & PAD_BUTTON_X) || (butns & PAD_BUTTON_Y)));
-
-	printf("Press A\n");
-	while(!(PAD_ButtonsDown(0) & PAD_BUTTON_A));
-	while((PAD_ButtonsDown(0) & PAD_BUTTON_A));
-
-
-	strcpy(Config.Bios, "SCPH1001.BIN"); // Use actual BIOS
-	strcpy(Config.BiosDir, "/PSXISOS/");
-	strcpy(Config.Net,"Disabled");
-	strcpy(Config.Mcd1,"/PSXISOS/Memcard1.mcd");
-	strcpy(Config.Mcd2,"/PSXISOS/Memcard2.mcd");
-	Config.PsxOut = 0; //Disable SysPrintf to console
-	Config.HLE = 1;
-	Config.Xa = 0;  //XA enabled
-	Config.Cdda = 1;
-	Config.PsxAuto = 1; //Autodetect
-	if (SysInit() == -1)
-	{
-		printf("SysInit() Error!\n");
-		while(1);
+void setOption(char* key, char value){
+	for(unsigned int i=0; i<sizeof(OPTIONS)/sizeof(OPTIONS[0]); ++i){
+		if(!strcmp(OPTIONS[i].key, key)){
+			if(value >= OPTIONS[i].min && value <= OPTIONS[i].max)
+				*OPTIONS[i].value = value;
+			break;
+		}
 	}
-	OpenPlugins();
-
-	SysReset();
-	CheckCdrom();
-	LoadCdrom();
-
-	return 0;
-
 }
-#endif
+
+void handleConfigPair(char* kv){
+	char* vs = kv;
+	while(*vs != ' ' && *vs != '\t' && *vs != ':' && *vs != '=')
+			++vs;
+	*(vs++) = 0;
+	while(*vs == ' ' || *vs == '\t' || *vs == ':' || *vs == '=')
+			++vs;
+
+	setOption(kv, atoi(vs));
+}
+
+void readConfig(FILE* f){
+	char line[256];
+	while(fgets(line, 256, f)){
+		if(line[0] == '#') continue;
+		handleConfigPair(line);
+	}
+}
+
+void writeConfig(FILE* f){
+	for(unsigned int i=0; i<sizeof(OPTIONS)/sizeof(OPTIONS[0]); ++i){
+		fprintf(f, "%s = %d\n", OPTIONS[i].key, *OPTIONS[i].value);
+	}
+}
 
 extern "C" {
 //System Functions
