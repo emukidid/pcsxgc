@@ -26,6 +26,9 @@
 #include <string.h>
 #include <time.h>
 #include <fat.h>
+#ifdef DEBUGON
+# include <debug.h>
+#endif
 #include "../PsxCommon.h"
 #include "PlugCD.h"
 #include "DEBUG.h"
