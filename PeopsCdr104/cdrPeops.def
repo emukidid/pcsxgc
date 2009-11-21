@@ -1,0 +1,27 @@
+; cdrPeops.def : Declares the module parameters for the DLL.
+
+LIBRARY      "cdrPeops"
+DESCRIPTION  'CDR Peops Driver'
+
+EXPORTS
+    ; Explicit exports can go here
+	
+	PSEgetLibType		@2
+	PSEgetLibName		@3
+	PSEgetLibVersion	@4
+	CDRinit				@5			  
+	CDRshutdown			@6
+	CDRopen				@7
+	CDRclose			@8
+	CDRconfigure		@9
+	CDRabout			@10
+	CDRtest				@11
+	CDRgetTN			@12
+	CDRgetTD			@13
+	CDRreadTrack		@14
+	CDRgetBuffer		@15
+	CDRgetDriveLetter	@16
+    CDRplay				@17
+    CDRstop				@18
+	CDRgetBufferSub		@19
+	CDRgetStatus		@20
