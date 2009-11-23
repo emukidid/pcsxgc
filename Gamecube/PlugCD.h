@@ -60,10 +60,10 @@ void openCue(fileBrowser_file* file);
 void openBin(fileBrowser_file* file);
 void openIso(fileBrowser_file* filename);
 char getNumTracks();
-void seekSector(const unsigned char m, const unsigned char s, const unsigned char f);
+void seekSector(unsigned long addr);
 unsigned char* getSector();
 void newCD(fileBrowser_file* filename);
-void readit(const unsigned char m, const unsigned char s, const unsigned char f);
+void readit(unsigned long addr);
 
 
 // subtracts two times in integer format (non-BCD) ->  l - r = a

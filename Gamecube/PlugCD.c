@@ -17,8 +17,33 @@
 #include "../plugins.h"
 #include "PlugCD.h"
 #include "../PsxCommon.h"
+#include "DEBUG.h"
 
 extern void SysPrintf(char *fmt, ...);
+
+//from PeopsCdr104
+#define btoi(b)      ((b)/16*10 + (b)%16)
+__inline unsigned long time2addrB(unsigned char *time)
+{
+ unsigned long addr;
+
+ addr = btoi(time[0])*60;
+ addr = (addr + btoi(time[1]))*75;
+ addr += btoi(time[2]);
+ addr -= 150;
+ return addr;
+}
+
+__inline unsigned long time2addr(unsigned char *time)
+{
+ unsigned long addr;
+
+ addr = time[0]*60;
+ addr = (addr + time[1])*75;
+ addr += time[2];
+ addr -= 150;
+ return addr;
+}
 
 // Gets track number
 long getTN(unsigned char* buffer)
@@ -233,7 +258,7 @@ void newCD(fileBrowser_file *file)
 	}
 
 	CD.bufferPos = 0x7FFFFFFF;
-	seekSector(0,2,0);
+	seekSector(0);
 }
 
 // return the sector address - the buffer address + 12 bytes for offset.
@@ -251,7 +276,7 @@ char getNumTracks()
 	return CD.numtracks;
 }
 
-void readit(const unsigned char m, const unsigned char s, const unsigned char f)
+void readit(unsigned long addr)
 {
 
 	// fakie ISO support.  iso is just cd-xa data without the ecc and header.
@@ -294,11 +319,10 @@ void readit(const unsigned char m, const unsigned char s, const unsigned char f)
 }
 
 
-void seekSector(const unsigned char m, const unsigned char s, const unsigned char f)
+void seekSector(unsigned long addr)
 {
 	// calc byte to search for
-	int sector = (( (m * 60) + (s - 2)) * 75 + f);
-	CD.sector = sector * 2352;
+	CD.sector = addr * 2352;
 	
 	// is it cached?
 	if ((CD.sector >= CD.bufferPos) && (CD.sector < (CD.bufferPos + BUFFER_SIZE)) ) 
@@ -308,7 +332,7 @@ void seekSector(const unsigned char m, const unsigned char s, const unsigned cha
 	// not cached - read a few blocks into the cache
 	else
 	{
-		readit(m,s,f);
+		readit(addr);
 	}
 }
 
@@ -352,7 +376,7 @@ long CDR__getTD(unsigned char track, unsigned char *buffer) {
 /* called when the psx requests a read */
 long CDR__readTrack(unsigned char *time) {
 	if (isoFile) {
-		seekSector(BCDToInt(time[0]), BCDToInt(time[1]), BCDToInt(time[2]));
+		seekSector(time2addrB(time));
 		return PSE_CDR_ERR_SUCCESS;
 	}
 	else
@@ -371,10 +395,15 @@ unsigned char *CDR__getBufferSub(void) {
   return getSector(1);
 }
 
-long CDR__play(unsigned char *sector) { 
+long CDR__play(unsigned char *msf) { 
+  //unsigned long byteSector = ( msf[0] * 75 * 60 ) + ( msf[1] * 75 ) + msf[2]; //xbox way
+  unsigned int byteSector = time2addr(msf);  //peops way
+  sprintf(txtbuffer,"CDR play %08X",byteSector);
+	DEBUG_print(txtbuffer,DBG_SPU1);
   return 0; 
 }
 long CDR__stop(void) { 
+  DEBUG_print("CDR stop",DBG_SPU2);
   return 0; 
 }
 
