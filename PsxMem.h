@@ -36,6 +36,10 @@
 #define SWAPu16(v) SWAP16((u16)(v))
 #define SWAPs16(v) SWAP16((s16)(v))
 
+#define SWAP16p(ptr) ({u16 __ret, *__ptr=(ptr); __asm__ ("lhbrx %0, 0, %1" : "=r" (__ret) : "r" (__ptr)); __ret;})
+#define SWAP32p(ptr) ({u32 __ret, *__ptr=(ptr); __asm__ ("lwbrx %0, 0, %1" : "=r" (__ret) : "r" (__ptr)); __ret;})
+#define SWAP32wp(ptr,val) ({u32 __val=(val), *__ptr=(ptr); __asm__ ("stwbrx %0, 0, %1" : : "r" (__val), "r" (__ptr) : "memory");})
+
 #else
 
 #define SWAP16(b) (b)
