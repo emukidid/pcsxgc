@@ -250,16 +250,6 @@ static void PADsetMode (const int pad, const int mode)
 	global.padID[pad] = padID[global.padMode2[pad] * 2 + mode];
 }
 
-void checkAnalog(const int pad, const int press)
-{
-	static char prev[2] = { 0, 0};
-	if ((prev[pad] != press) && (global.padModeF[pad] == 0))
-	{
-		prev[pad] = press;
-		if (press) PADsetMode (pad, !global.padMode1[pad]);
-	}
-}
-
 static void UpdateState (const int pad)
 {
 	const int vib0 = global.padVibF[pad][0] ? 1 : 0;
@@ -277,9 +267,9 @@ static void UpdateState (const int pad)
 	lastport2.leftJoyX = PAD_2.leftStickX; lastport2.leftJoyY = PAD_2.leftStickY;
 	lastport2.rightJoyX = PAD_2.rightStickX; lastport2.rightJoyY = PAD_2.rightStickY;
 	
-	checkAnalog( 0, controllerType == CONTROLLERTYPE_ANALOG ? 0 : 1 ) ;
+	PADsetMode( 0, controllerType == CONTROLLERTYPE_ANALOG ? 1 : 0);
 	global.padStat[0] = (((PAD_1.btns.All>>8)&0xFF) | ( (PAD_1.btns.All<<8) & 0xFF00 )) &0xFFFF;
-	checkAnalog( 1, controllerType == CONTROLLERTYPE_ANALOG ? 0 : 1 ) ;
+	PADsetMode( 1, controllerType == CONTROLLERTYPE_ANALOG ? 1 : 0);
 	global.padStat[1] = (((PAD_2.btns.All>>8)&0xFF) | ( (PAD_2.btns.All<<8) & 0xFF00 )) &0xFFFF;
   
 	lastport1.buttonStatus = global.padStat[0];
