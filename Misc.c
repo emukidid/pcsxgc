@@ -373,8 +373,8 @@ int Load(fileBrowser_file *exe) {
 	int type, temp;
 	int retval = 0;
 
-	strncpy(CdromId, "Homebrew", 8);
-	strncpy(CdromLabel, "Demo", 4);
+	strncpy(CdromId, "Homebrew\0", 9);
+	strncpy(CdromLabel, "Demo\0",  5);
 
 	if (isoFile_readFile(exe, &temp, 4) != 4) {
 		SysMessage(_("Error opening file: %s"), exe->name);
