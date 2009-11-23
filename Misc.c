@@ -341,16 +341,16 @@ int CheckCdrom() {
 	return 0;
 }
 
-static int PSXGetFileType(FILE *f) {
+static int PSXGetFileType(fileBrowser_file *f) {
     unsigned long current;
     u32 mybuf[2048];
     EXE_HEADER *exe_hdr;
     FILHDR *coff_hdr;
 
-    current = ftell(f);
-    fseek(f,0L,SEEK_SET);
-    fread(mybuf,2048,1,f);
-    fseek(f,current,SEEK_SET);
+    current = f->offset;
+    isoFile_seekFile(f, 0, FILE_BROWSER_SEEK_SET);
+    isoFile_readFile(f, mybuf, 2048);
+    isoFile_seekFile(f, current, FILE_BROWSER_SEEK_SET);
 
     exe_hdr = (EXE_HEADER *)mybuf;
     if (memcmp(exe_hdr->id,"PS-X EXE",8)==0)
@@ -367,27 +367,26 @@ static int PSXGetFileType(FILE *f) {
 }
 
 /* TODO Error handling - return integer for each error case below, defined in an enum. Pass variable on return */
-int Load(char *ExePath) {
-	FILE *tmpFile;
+int Load(fileBrowser_file *exe) {
+
 	EXE_HEADER tmpHead;
-	int type;
+	int type, temp;
 	int retval = 0;
 
 	strncpy(CdromId, "SLUS99999", 9);
 	strncpy(CdromLabel, "SLUS_999.99", 11);
 
-    tmpFile = fopen(ExePath,"rb");
-	if (tmpFile == NULL) {
-		SysMessage(_("Error opening file: %s"), ExePath);
+	if (isoFile_readFile(exe, &temp, 4) != 4) {
+		SysMessage(_("Error opening file: %s"), exe->name);
 		retval = 0;
 	} else {
-		type = PSXGetFileType(tmpFile);
+  	exe->offset = 0;  //reset the offset back to 0
+		type = PSXGetFileType(exe);
 		switch (type) {
 			case PSX_EXE:
-				fread(&tmpHead,sizeof(EXE_HEADER),1,tmpFile);
-				fseek(tmpFile, 0x800, SEEK_SET);		
-				fread((void *)PSXM(SWAP32(tmpHead.t_addr)), SWAP32(tmpHead.t_size),1,tmpFile);
-				fclose(tmpFile);
+				isoFile_readFile(exe, &tmpHead, sizeof(EXE_HEADER));
+				isoFile_seekFile(exe, 0x800, FILE_BROWSER_SEEK_SET);
+				isoFile_readFile(exe, (void *)PSXM(SWAP32(tmpHead.t_addr)), SWAP32(tmpHead.t_size));
 				psxRegs.pc = SWAP32(tmpHead.pc0);
 				psxRegs.GPR.n.gp = SWAP32(tmpHead.gp0);
 				psxRegs.GPR.n.sp = SWAP32(tmpHead.s_addr); 

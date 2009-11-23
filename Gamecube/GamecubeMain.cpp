@@ -290,7 +290,14 @@ int loadISO(fileBrowser_file* file)
 	hasLoadedISO = 1;
 	CheckCdrom();
 	SysReset();
-	LoadCdrom();
+	
+	char *tempStr = &file->name[0];
+	if((strstr(tempStr,".EXE")!=NULL) || (strstr(tempStr,".exe")!=NULL)) {
+		Load(file);
+	}
+	else {
+	  LoadCdrom();
+  }
 	
 	if(autoSave==AUTOSAVE_ENABLE) {
     switch (nativeSaveDevice)

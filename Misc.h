@@ -26,6 +26,7 @@
 #include "plugins.h"
 #include "R3000A.h"
 #include "PsxMem.h"
+#include "Gamecube/fileBrowser/fileBrowser.h"
 
 #undef s_addr
 
@@ -56,7 +57,7 @@ char CdromLabel[33];
 int LoadCdrom();
 int LoadCdromFile(char *filename, EXE_HEADER *head);
 int CheckCdrom();
-int Load(char *ExePath);
+int Load(fileBrowser_file *exe);
 
 int SaveState();
 int LoadState();
