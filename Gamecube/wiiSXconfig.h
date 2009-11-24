@@ -101,7 +101,7 @@ extern char saveEnabled;	//???
 extern char nativeSaveDevice;
 enum nativeSaveDevice
 {
-	NATIVESAVEDEVICE_NONE=-1,
+	NATIVESAVEDEVICE_NONE=0,
 	NATIVESAVEDEVICE_SD,
 	NATIVESAVEDEVICE_USB,
 	NATIVESAVEDEVICE_CARDA,

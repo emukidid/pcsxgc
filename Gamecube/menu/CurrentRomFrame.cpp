@@ -129,6 +129,9 @@ CurrentRomFrame::~CurrentRomFrame()
 extern MenuContext *pMenuContext;
 extern char CdromId[10];
 extern char CdromLabel[33];
+extern "C" {
+char getNumTracks();
+};
 
 void Func_ShowRomInfo()
 {
@@ -136,12 +139,16 @@ void Func_ShowRomInfo()
 	char buffer [50];
 	
 	sprintf(buffer,"CD-ROM Label: %s\n",CdromLabel);
-	strcat(RomInfo,buffer);
-	sprintf(buffer,"CD-ROM ID: %s\n", CdromId);
-	strcat(RomInfo,buffer);
-	sprintf(buffer,"ISO Size: %d Mb\n",isoFile->size/1024/1024);
-	strcat(RomInfo,buffer);
-	sprintf(buffer,"Country: %s\n",(!Config.PsxType) ? "NTSC":"PAL");
+  strcat(RomInfo,buffer);
+  sprintf(buffer,"CD-ROM ID: %s\n", CdromId);
+  strcat(RomInfo,buffer);
+  sprintf(buffer,"ISO Size: %d Mb\n",isoFile->size/1024/1024);
+  strcat(RomInfo,buffer);
+  sprintf(buffer,"Country: %s\n",(!Config.PsxType) ? "NTSC":"PAL");
+  strcat(RomInfo,buffer);
+  sprintf(buffer,"BIOS: %s\n",(Config.HLE==BIOS_USER_DEFINED) ? "USER DEFINED":"HLE");
+  strcat(RomInfo,buffer);
+  sprintf(buffer,"Number of tracks %i\n", getNumTracks());
 	strcat(RomInfo,buffer);
 
 	menu::MessageBox::getInstance().setMessage(RomInfo);

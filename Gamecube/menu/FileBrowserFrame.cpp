@@ -34,6 +34,7 @@ extern "C" {
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-DVD.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
+char getNumTracks();
 /*#include "../main/rom.h"
 #include "../main/ROM-Cache.h"
 #include "../main/wii64config.h"*/
@@ -331,7 +332,6 @@ void fileBrowserFrame_LoadFile(int i)
 
 			char RomInfo[512] = "";
 			char buffer [50];
-			char buffer2 [50];
 			strcat(RomInfo,feedback_string);
 			sprintf(buffer,"\nCD-ROM Label: %s\n",CdromLabel);
     	strcat(RomInfo,buffer);
@@ -343,6 +343,8 @@ void fileBrowserFrame_LoadFile(int i)
     	strcat(RomInfo,buffer);
     	sprintf(buffer,"BIOS: %s\n",(Config.HLE==BIOS_USER_DEFINED) ? "USER DEFINED":"HLE");
     	strcat(RomInfo,buffer);
+    	sprintf(buffer,"Number of tracks %i\n", getNumTracks());
+	    strcat(RomInfo,buffer);
     	
 			
 			switch (autoSaveLoaded)
