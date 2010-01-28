@@ -396,10 +396,12 @@ unsigned char *CDR__getBufferSub(void) {
 }
 
 long CDR__play(unsigned char *msf) { 
+#ifdef SHOW_DEBUG
   //unsigned long byteSector = ( msf[0] * 75 * 60 ) + ( msf[1] * 75 ) + msf[2]; //xbox way
   unsigned int byteSector = time2addr(msf);  //peops way
   sprintf(txtbuffer,"CDR play %08X",byteSector);
 	DEBUG_print(txtbuffer,DBG_SPU1);
+#endif
   return 0; 
 }
 long CDR__stop(void) { 

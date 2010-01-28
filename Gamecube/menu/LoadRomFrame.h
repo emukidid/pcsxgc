@@ -1,8 +1,8 @@
 /**
- * Wii64 - LoadRomFrame.h
- * Copyright (C) 2009 sepp256
+ * WiiSX - LoadRomFrame.h
+ * Copyright (C) 2009, 2010 sepp256
  *
- * Wii64 homepage: http://www.emulatemii.com
+ * WiiSX homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
  *
  *
@@ -29,6 +29,7 @@ class LoadRomFrame : public menu::Frame
 public:
 	LoadRomFrame();
 	~LoadRomFrame();
+	void activateSubmenu(int submenu);
 
 private:
 	

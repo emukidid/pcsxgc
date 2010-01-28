@@ -1,8 +1,8 @@
 /**
- * Wii64 - FileBrowserFrame.cpp
- * Copyright (C) 2009 sepp256
+ * WiiSX - FileBrowserFrame.cpp
+ * Copyright (C) 2009, 2010 sepp256
  *
- * Wii64 homepage: http://www.emulatemii.com
+ * WiiSX homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
  *
  *
@@ -138,6 +138,13 @@ FileBrowserFrame::~FileBrowserFrame()
 		delete FRAME_BUTTONS[i].button;
 	}
 
+}
+
+int fileBrowserMode = FileBrowserFrame::FILEBROWSER_LOADISO;
+
+void FileBrowserFrame::activateSubmenu(int submenu)
+{
+	fileBrowserMode = submenu;
 }
 
 static fileBrowser_file* dir_entries;
@@ -310,6 +317,9 @@ extern char CdromId[10];
 extern char CdromLabel[33];
 extern char autoSaveLoaded;
 void Func_SetPlayGame();
+extern "C" {
+void newCD(fileBrowser_file *file);
+}
 
 void fileBrowserFrame_LoadFile(int i)
 {
@@ -322,7 +332,7 @@ void fileBrowserFrame_LoadFile(int i)
 		free(dir);
 		menu::Focus::getInstance().clearPrimaryFocus();
 		if (num_entries > 2) pMenuContext->getFrame(MenuContext::FRAME_FILEBROWSER)->setDefaultFocus(FRAME_BUTTONS[4].button);
-	} else {
+	} else if (fileBrowserMode == FileBrowserFrame::FILEBROWSER_LOADISO) {
 		// We must select this file
 		int ret = loadISO( &dir_entries[i] );
 		
@@ -334,18 +344,18 @@ void fileBrowserFrame_LoadFile(int i)
 			char buffer [50];
 			strcat(RomInfo,feedback_string);
 			sprintf(buffer,"\nCD-ROM Label: %s\n",CdromLabel);
-    	strcat(RomInfo,buffer);
-    	sprintf(buffer,"CD-ROM ID: %s\n", CdromId);
-    	strcat(RomInfo,buffer);
-    	sprintf(buffer,"ISO Size: %d Mb\n",isoFile->size/1024/1024);
-    	strcat(RomInfo,buffer);
-    	sprintf(buffer,"Country: %s\n",(!Config.PsxType) ? "NTSC":"PAL");
-    	strcat(RomInfo,buffer);
-    	sprintf(buffer,"BIOS: %s\n",(Config.HLE==BIOS_USER_DEFINED) ? "USER DEFINED":"HLE");
-    	strcat(RomInfo,buffer);
-    	sprintf(buffer,"Number of tracks %i\n", getNumTracks());
-	    strcat(RomInfo,buffer);
-    	
+			strcat(RomInfo,buffer);
+			sprintf(buffer,"CD-ROM ID: %s\n", CdromId);
+			strcat(RomInfo,buffer);
+			sprintf(buffer,"ISO Size: %d Mb\n",isoFile->size/1024/1024);
+			strcat(RomInfo,buffer);
+			sprintf(buffer,"Country: %s\n",(!Config.PsxType) ? "NTSC":"PAL");
+			strcat(RomInfo,buffer);
+			sprintf(buffer,"BIOS: %s\n",(Config.HLE==BIOS_USER_DEFINED) ? "USER DEFINED":"HLE");
+			strcat(RomInfo,buffer);
+			sprintf(buffer,"Number of tracks %i\n", getNumTracks());
+			strcat(RomInfo,buffer);
+    		
 			
 			switch (autoSaveLoaded)
 			{
@@ -401,5 +411,12 @@ void fileBrowserFrame_LoadFile(int i)
 
 		pMenuContext->setActiveFrame(MenuContext::FRAME_MAIN);
 		if(hasLoadedISO) Func_SetPlayGame();
+	} 
+	else //Swap CD
+	{ 
+		//TODO: Properly implement this
+		newCD( &dir_entries[i] );
+		menu::MessageBox::getInstance().setMessage("Swapped CD");
+		
 	}
 }

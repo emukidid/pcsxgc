@@ -6,7 +6,7 @@
  * 
  * Basic Analog PAD plugin for WiiSX
  *
- * Wii64 homepage: http://www.emulatemii.com
+ * WiiSX homepage: http://www.emulatemii.com
  * email address: tehpola@gmail.com
  *                sepp256@gmail.com
  *                emukidid@gmail.com

@@ -137,7 +137,7 @@ extern MenuContext *pMenuContext;
 
 void Func_LoadROM()
 {
-	pMenuContext->setActiveFrame(MenuContext::FRAME_LOADROM);
+	pMenuContext->setActiveFrame(MenuContext::FRAME_LOADROM,FileBrowserFrame::FILEBROWSER_LOADISO);
 }
 
 extern BOOL hasLoadedISO;

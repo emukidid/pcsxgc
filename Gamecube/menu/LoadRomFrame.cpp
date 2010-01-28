@@ -1,8 +1,8 @@
 /**
- * Wii64 - LoadRomFrame.cpp
- * Copyright (C) 2009 sepp256
+ * WiiSX - LoadRomFrame.cpp
+ * Copyright (C) 2009, 2010 sepp256
  *
- * Wii64 homepage: http://www.emulatemii.com
+ * WiiSX homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
  *
  *
@@ -20,6 +20,7 @@
 
 #include "MenuContext.h"
 #include "LoadRomFrame.h"
+#include "FileBrowserFrame.h"
 #include "../libgui/Button.h"
 #include "../libgui/resources.h"
 #include "../libgui/FocusManager.h"
@@ -106,6 +107,14 @@ LoadRomFrame::~LoadRomFrame()
 
 }
 
+int loadRomMode = FileBrowserFrame::FILEBROWSER_LOADISO;
+
+void LoadRomFrame::activateSubmenu(int submenu)
+{
+	loadRomMode = submenu;
+}
+
+
 extern MenuContext *pMenuContext;
 extern void fileBrowserFrame_OpenDirectory(fileBrowser_file* dir);
 
@@ -124,7 +133,7 @@ void Func_LoadFromSD()
 	isoFile_deinit( isoFile_topLevel );
 	isoFile_init( isoFile_topLevel );
 
-	pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER);
+	pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER,loadRomMode);
 	fileBrowserFrame_OpenDirectory(isoFile_topLevel);
 }
 
@@ -142,7 +151,7 @@ void Func_LoadFromDVD()
 	// Make sure the romFile system is ready before we browse the filesystem
 	isoFile_init( isoFile_topLevel );
 
-	pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER);
+	pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER,loadRomMode);
 	fileBrowserFrame_OpenDirectory(isoFile_topLevel);
 }
 
@@ -162,7 +171,7 @@ void Func_LoadFromUSB()
 	isoFile_deinit( isoFile_topLevel );
 	isoFile_init( isoFile_topLevel );
 	
-	pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER);
+	pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER,loadRomMode);
 	fileBrowserFrame_OpenDirectory(isoFile_topLevel);
 #endif
 }

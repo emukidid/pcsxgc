@@ -43,6 +43,7 @@ extern int SaveMcd(int mcd, fileBrowser_file *savepath);
 
 void Func_ShowRomInfo();
 void Func_ResetROM();
+void Func_SwapCD();
 void Func_LoadSave();
 void Func_SaveGame();
 void Func_LoadState();
@@ -50,15 +51,24 @@ void Func_SaveState();
 void Func_StateCycle();
 void Func_ReturnFromCurrentRomFrame();
 
-#define NUM_FRAME_BUTTONS 7
+#define NUM_FRAME_BUTTONS 8
 #define FRAME_BUTTONS currentRomFrameButtons
 #define FRAME_STRINGS currentRomFrameStrings
 
-static char FRAME_STRINGS[7][25] =
-	{ "Show ISO Info",
-	  "Restart Game",
-	  "Load Save File",
-	  "Save Game",
+/* Button Layout:
+ * [Restart Game] [Swap CD]
+ * [Load MemCard] [Save MemCard]
+ * [Show ISO Info]
+ * [Load State] [Slot "x"]
+ * [Save State]
+ */
+
+static char FRAME_STRINGS[8][15] =
+	{ "Restart Game",
+	  "Swap CD",
+	  "Load MemCards",
+	  "Save MemCards",
+	  "Show ISO Info",
 	  "Load State",
 	  "Save State",
 	  "Slot 0"};
@@ -80,13 +90,14 @@ struct ButtonInfo
 	ButtonFunc		returnFunc;
 } FRAME_BUTTONS[NUM_FRAME_BUTTONS] =
 { //	button	buttonStyle	buttonString		x		y		width	height	Up	Dwn	Lft	Rt	clickFunc			returnFunc
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[0],	150.0,	 60.0,	340.0,	56.0,	 5,	 1,	-1,	-1,	Func_ShowRomInfo,	Func_ReturnFromCurrentRomFrame }, // Show ROM Info
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[1],	150.0,	120.0,	340.0,	56.0,	 0,	 2,	-1,	-1,	Func_ResetROM,		Func_ReturnFromCurrentRomFrame }, // Reset ROM
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[2],	150.0,	180.0,	340.0,	56.0,	 1,	 3,	-1,	-1,	Func_LoadSave,		Func_ReturnFromCurrentRomFrame }, // Load Native Save
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[3],	150.0,	240.0,	340.0,	56.0,	 2,	 4,	-1,	-1,	Func_SaveGame,		Func_ReturnFromCurrentRomFrame }, // Save Native Save
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[4],	150.0,	300.0,	220.0,	56.0,	 3,	 5,	 6,	 6,	Func_LoadState,		Func_ReturnFromCurrentRomFrame }, // Load State 
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[5],	150.0,	360.0,	220.0,	56.0,	 4,	 0,	 6,	 6,	Func_SaveState,		Func_ReturnFromCurrentRomFrame }, // Save State 
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[6],	390.0,	330.0,	100.0,	56.0,	 3,	 0,	 4,	 4,	Func_StateCycle,	Func_ReturnFromCurrentRomFrame }, // Cycle State 
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[0],	100.0,	 60.0,	210.0,	56.0,	 6,	 2,	 1,	 1,	Func_ResetROM,		Func_ReturnFromCurrentRomFrame }, // Reset ROM
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[1],	330.0,	 60.0,	210.0,	56.0,	 7,	 3,	 0,	 0,	Func_SwapCD,		Func_ReturnFromCurrentRomFrame }, // Swap CD
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[2],	100.0,	120.0,	210.0,	56.0,	 0,	 4,	 3,	 3,	Func_LoadSave,		Func_ReturnFromCurrentRomFrame }, // Load MemCards
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[3],	330.0,	120.0,	210.0,	56.0,	 1,	 4,	 2,	 2,	Func_SaveGame,		Func_ReturnFromCurrentRomFrame }, // Save MemCards
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[4],	150.0,	180.0,	340.0,	56.0,	 2,	 5,	-1,	-1,	Func_ShowRomInfo,	Func_ReturnFromCurrentRomFrame }, // Show ISO Info
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[5],	150.0,	240.0,	220.0,	56.0,	 4,	 6,	 7,	 7,	Func_LoadState,		Func_ReturnFromCurrentRomFrame }, // Load State 
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[6],	150.0,	300.0,	220.0,	56.0,	 5,	 0,	 7,	 7,	Func_SaveState,		Func_ReturnFromCurrentRomFrame }, // Save State 
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[7],	390.0,	270.0,	100.0,	56.0,	 4,	 1,	 5,	 5,	Func_StateCycle,	Func_ReturnFromCurrentRomFrame }, // Cycle State 
 };
 
 CurrentRomFrame::CurrentRomFrame()
@@ -175,6 +186,12 @@ void Func_ResetROM()
 	LoadCdrom();
 	menu::MessageBox::getInstance().setMessage("Game restarted");
 	Func_SetPlayGame();
+}
+
+void Func_SwapCD()
+{
+	//Call Filebrowser with "Swap CD"
+	pMenuContext->setActiveFrame(MenuContext::FRAME_LOADROM,FileBrowserFrame::FILEBROWSER_SWAPCD);
 }
 
 extern "C" char mcd1Written;
@@ -325,7 +342,7 @@ void Func_StateCycle()
 	
 	which_slot = (which_slot+1) %10;
 	savestates_select_slot(which_slot);
-	FRAME_STRINGS[6][5] = which_slot + '0';
+	FRAME_STRINGS[7][5] = which_slot + '0';
 
 }
 
