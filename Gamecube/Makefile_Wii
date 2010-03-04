@@ -18,9 +18,9 @@ include $(DEVKITPPC)/wii_rules
 TARGET		:=	WiiSX
 BUILD		:=	build
 SOURCES		:=	. ./gc_input/ ./libgui/ ./menu/ ./fileBrowser/ .. ../ppc/ ../PeopsSoftGPU/ ../PeopsSpu109/
-#SOURCES		:=	. ./gc_input/ ./fileBrowser/ .. ../ppc/ ../PeopsSoftGPU/ ../PeopsSpu109/
+
 DATA		:=	data  
-#INCLUDES	:=	.. ./fileBrowser/ ../ppc/ ../PeopsSpu109/ ./libgui/resources/
+
 INCLUDES	:=	
 
 #---------------------------------------------------------------------------------
@@ -107,6 +107,7 @@ export OUTPUT	:=	$(CURDIR)/$(TARGET)
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile_Wii
+	@elf2dol $(OUTPUT).elf $(OUTPUT).dol
 
 #---------------------------------------------------------------------------------
 clean:
@@ -121,7 +122,6 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-$(OUTPUT).dol: $(OUTPUT).elf
 $(OUTPUT).elf: $(OFILES)
 
 #---------------------------------------------------------------------------------

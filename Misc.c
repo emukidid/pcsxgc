@@ -419,10 +419,14 @@ static unsigned int savestates_slot = 0;
 extern unsigned char  *psxVub;
 extern unsigned short  spuMem[256*1024];
 #define iGPUHeight 512
+#define SAVE_STATE_MSG "Saving State .."
+#define LOAD_STATE_MSG "Loading State .."
 
 void savestates_select_slot(unsigned int s)
 {
-   if (s > 9) return;
+   if (s > 9) {
+     return;
+   }
    savestates_slot = s;
 }
 
@@ -433,28 +437,26 @@ int SaveState() {
 	SPUFreeze_t *spufP;
 	int Size;
 	unsigned char *pMem;
-	char *filename, buf[1024];
+	char *filename;
 	
   /* fix the filename to %s.st%d format */
-	filename = malloc(256);
+	filename = malloc(1024);
+	
 #ifdef HW_RVL
-  if(saveStateDevice==SAVESTATEDEVICE_USB)
-    strcpy(filename,"usb:");
+  sprintf(filename, "%s%s%s.st%d",(saveStateDevice==SAVESTATEDEVICE_USB)?"usb:":"sd:",
+                           statespath, CdromId, savestates_slot);
+#else
+  sprintf(filename, "sd:%s%s.st%d", statespath, CdromId, savestates_slot);
 #endif
-  if(saveStateDevice==SAVESTATEDEVICE_SD)
-    strcpy(filename,"sd:"); //"sd:/" is any currently mounted SD on GC or Wii
-	strcat(filename, statespath);
-  strcat(filename, CdromId);
-	strcat(filename, ".st");
-	sprintf(buf, "%d", savestates_slot);
-	strcat(filename, buf);
 
 	f = gzopen(filename, "wb");
   free(filename);
    	
-  if(!f)
+  if(!f) {
   	return 0;
-  LoadingBar_showBar(0.0f, "Saving State ..");
+	}
+	
+  LoadingBar_showBar(0.0f, SAVE_STATE_MSG);
   pauseRemovalThread(); 
   GPU_updateLace();
     
@@ -466,16 +468,17 @@ int SaveState() {
 	gzwrite(f, pMem, 128*96*3);
 	free(pMem);
 
-	if (Config.HLE)
+	if (Config.HLE) {
 		psxBiosFreeze(1);
-  LoadingBar_showBar(0.10f, "Saving State ..");
+	}
+  LoadingBar_showBar(0.10f, SAVE_STATE_MSG);
 	gzwrite(f, psxM, 0x00200000);
-	LoadingBar_showBar(0.40f, "Saving State ..");
+	LoadingBar_showBar(0.40f, SAVE_STATE_MSG);
 	gzwrite(f, psxR, 0x00080000);
-	LoadingBar_showBar(0.60f, "Saving State ..");
+	LoadingBar_showBar(0.60f, SAVE_STATE_MSG);
 	gzwrite(f, psxH, 0x00010000);
 	gzwrite(f, (void*)&psxRegs, sizeof(psxRegs));
-  LoadingBar_showBar(0.70f, "Saving State ..");
+  LoadingBar_showBar(0.70f, SAVE_STATE_MSG);
 	// gpu
 	gpufP = (GPUFreeze_t *) malloc(sizeof(GPUFreeze_t));
 	gpufP->ulFreezeVersion = 1;
@@ -484,7 +487,7 @@ int SaveState() {
 	free(gpufP);
 	// gpu VRAM save (save directly to save memory)
 	gzwrite(f, &psxVub[0], 1024*iGPUHeight*2);
-  LoadingBar_showBar(0.80f, "Saving State ..");
+  LoadingBar_showBar(0.80f, SAVE_STATE_MSG);
 	// spu
 	spufP = (SPUFreeze_t *) malloc(16);
 	SPU_freeze(2, spufP);
@@ -496,18 +499,18 @@ int SaveState() {
 	free(spufP);
   // spu spuMem save (save directly to save memory)
   gzwrite(f, &spuMem[0], 0x80000);
-  LoadingBar_showBar(0.90f, "Saving State ..");
+  LoadingBar_showBar(0.90f, SAVE_STATE_MSG);
   
 	sioFreeze(f, 1);
 	cdrFreeze(f, 1);
 	psxHwFreeze(f, 1);
 	psxRcntFreeze(f, 1);
 	mdecFreeze(f, 1);
-  LoadingBar_showBar(0.99f, "Saving State ..");
+  LoadingBar_showBar(0.99f, SAVE_STATE_MSG);
 	gzclose(f);
 	
 	continueRemovalThread();
-  LoadingBar_showBar(1.0f, "Saving State ..");
+  LoadingBar_showBar(1.0f, SAVE_STATE_MSG);
 	return 1; //ok
 }
 
@@ -517,34 +520,30 @@ int LoadState() {
 	SPUFreeze_t *spufP;
 	int Size;
 	char header[32];
-	char *filename, buf[1024];
+	char *filename;
 	
   /* fix the filename to %s.st%d format */
-	filename = malloc(256);
+	filename = malloc(1024);
 #ifdef HW_RVL
-  if(saveStateDevice==SAVESTATEDEVICE_USB)
-    strcpy(filename,"usb:");
+  sprintf(filename, "%s%s%s.st%d",(saveStateDevice==SAVESTATEDEVICE_USB)?"usb:":"sd:",
+                           statespath, CdromId, savestates_slot);
+#else
+  sprintf(filename, "sd:%s%s.st%d", statespath, CdromId, savestates_slot);
 #endif
-  if(saveStateDevice==SAVESTATEDEVICE_SD)
-    strcpy(filename,"sd:"); //"sd:/" is any currently mounted SD on GC or Wii
-	strcat(filename, statespath);
-  strcat(filename, CdromId);
-	strcat(filename, ".st");
-	sprintf(buf, "%d", savestates_slot);
-	strcat(filename, buf);
 
 	f = gzopen(filename, "rb");
   free(filename);
    	
-  if(!f)
+  if(!f) {
   	return 0;
+	}
 
 	pauseRemovalThread();
-	LoadingBar_showBar(0.0f, "Loading State ..");
+	LoadingBar_showBar(0.0f, LOAD_STATE_MSG);
 	//SysReset();
 	
 	psxCpu->Reset();
-  LoadingBar_showBar(0.10f, "Loading State ..");
+  LoadingBar_showBar(0.10f, LOAD_STATE_MSG);
 	gzread(f, header, 32);
 
 	if (strncmp("STv3 PCSX", header, 9)) { gzclose(f); return -1; }
@@ -552,12 +551,12 @@ int LoadState() {
 	gzseek(f, 128*96*3, SEEK_CUR);
 
 	gzread(f, psxM, 0x00200000);
-	LoadingBar_showBar(0.40f, "Loading State ..");
+	LoadingBar_showBar(0.40f, LOAD_STATE_MSG);
 	gzread(f, psxR, 0x00080000);
-	LoadingBar_showBar(0.60f, "Loading State ..");
+	LoadingBar_showBar(0.60f, LOAD_STATE_MSG);
 	gzread(f, psxH, 0x00010000);
 	gzread(f, (void*)&psxRegs, sizeof(psxRegs));
-  LoadingBar_showBar(0.70f, "Loading State ..");
+  LoadingBar_showBar(0.70f, LOAD_STATE_MSG);
 	if (Config.HLE)
 		psxBiosFreeze(0);
 
@@ -568,7 +567,7 @@ int LoadState() {
 	free(gpufP);
 	// gpu VRAM load (load directly to save memory)
 	gzread(f, &psxVub[0], 1024*iGPUHeight*2);
-	LoadingBar_showBar(0.80f, "Loading State ..");
+	LoadingBar_showBar(0.80f, LOAD_STATE_MSG);
 	
 	// spu
 	gzread(f, &Size, 4);
@@ -578,7 +577,7 @@ int LoadState() {
 	free(spufP);
   // spu spuMem save (save directly to save memory)
   gzread(f, &spuMem[0], 0x80000);
-  LoadingBar_showBar(0.99f, "Loading State ..");
+  LoadingBar_showBar(0.99f, LOAD_STATE_MSG);
   
 	sioFreeze(f, 0);
 	cdrFreeze(f, 0);
@@ -588,7 +587,7 @@ int LoadState() {
 
 	gzclose(f);
   continueRemovalThread();
-  LoadingBar_showBar(1.0f, "Loading State ..");
+  LoadingBar_showBar(1.0f, LOAD_STATE_MSG);
   
 	return 1;
 }
