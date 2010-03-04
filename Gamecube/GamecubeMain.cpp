@@ -94,7 +94,7 @@ char shutdown = 0;
 char nativeSaveDevice;
 char saveStateDevice;
 char autoSave;
-char autoSaveLoaded = 0;
+signed char autoSaveLoaded = 0;
 char screenMode = 0;
 char padAutoAssign;
 char padType[2];
@@ -277,6 +277,18 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+// loadISO loads an ISO file as current media to read from.
+int loadISOSwap(fileBrowser_file* file) {
+  if(isoFile) free(isoFile);
+	isoFile = (fileBrowser_file*) memalign(32,sizeof(fileBrowser_file));
+	memcpy( isoFile, file, sizeof(fileBrowser_file) );
+	
+	//might need to insert code here to trigger a lid open/close interrupt
+	return CheckCdrom();
+}
+
+
+// loadISO loads an ISO, resets the system and loads the save.
 int loadISO(fileBrowser_file* file) 
 {
 	if(isoFile) free(isoFile);

@@ -214,6 +214,7 @@ static char* filenameFromAbsPath(char* absPath)
 }
 
 int loadISO(fileBrowser_file*);
+int loadISOSwap(fileBrowser_file*);
 
 static int dir_comparator(const void* _x, const void* _y){
 	const fileBrowser_file* x = (const fileBrowser_file*)_x;
@@ -315,7 +316,7 @@ void fileBrowserFrame_FillPage()
 extern BOOL hasLoadedISO;
 extern char CdromId[10];
 extern char CdromLabel[33];
-extern char autoSaveLoaded;
+extern signed char autoSaveLoaded;
 void Func_SetPlayGame();
 extern "C" {
 void newCD(fileBrowser_file *file);
@@ -412,11 +413,14 @@ void fileBrowserFrame_LoadFile(int i)
 		pMenuContext->setActiveFrame(MenuContext::FRAME_MAIN);
 		if(hasLoadedISO) Func_SetPlayGame();
 	} 
-	else //Swap CD
-	{ 
+	else if (fileBrowserMode == FileBrowserFrame::FILEBROWSER_SWAPCD) {
 		//TODO: Properly implement this
-		newCD( &dir_entries[i] );
-		menu::MessageBox::getInstance().setMessage("Swapped CD");
+		int ret = loadISOSwap( &dir_entries[i] );
+		if(!ret) {
+		  menu::MessageBox::getInstance().setMessage("Swapped CD");
+	  } else {
+  	  menu::MessageBox::getInstance().setMessage("Error swapping CD");
+	  }
 		
 	}
 }
