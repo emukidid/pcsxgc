@@ -31,10 +31,10 @@
 #endif
 #include "../PsxCommon.h"
 #include "PlugCD.h"
-#include "DEBUG.h"
 #include "wiiSXconfig.h"
 #include "menu/MenuContext.h"
 extern "C" {
+#include "DEBUG.h"
 #include "fileBrowser/fileBrowser.h"
 #include "fileBrowser/fileBrowser-libfat.h"
 #include "fileBrowser/fileBrowser-DVD.h"
@@ -496,6 +496,9 @@ int framesdone = 0;
 void SysUpdate() 
 {
 	framesdone++;
+#ifdef PROFILE
+  refresh_stat();
+#endif
 }
 
 void SysRunGui() {}

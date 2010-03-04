@@ -22,12 +22,42 @@
 #define DBG_PROFILE_AUDIO 13
 #define DBG_PROFILE_TLB 14
 #define DBG_PROFILE_FP 15
+#define DBG_PROFILE_COMP 16
+#define DBG_PROFILE_INTERP 17
+#define DBG_PROFILE_TRAMP 18
 #define DBG_STATSBASE 12 // ALL stats print from this line onwards
 #define DBG_SDGECKOAPPEND 0xFB
 #define DBG_SDGECKOOPEN 0xFC
 #define DBG_SDGECKOCLOSE 0xFD
 #define DBG_SDGECKOPRINT 0xFE
 #define DBG_USBGECKO 0xFF
+
+// profiling
+
+#define GFX_SECTION 1
+#define AUDIO_SECTION 2
+#define COMPILER_SECTION 3
+#define IDLE_SECTION 4
+#define TLB_SECTION 5
+#define FP_SECTION 6
+#define INTERP_SECTION 7
+#define TRAMP_SECTION 8
+#define FUNCS_SECTION 9
+#define NUM_SECTIONS 9
+
+#ifdef PROFILE
+
+void start_section(int section_type);
+void end_section(int section_type);
+void refresh_stat();
+
+#else
+
+#define start_section(a)
+#define end_section(a)
+#define refresh_stat()
+
+#endif
 
 //DEBUG_stats defines
 #define STAT_TYPE_ACCUM 0
