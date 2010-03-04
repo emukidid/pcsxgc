@@ -21,31 +21,21 @@
 **/
 
 
-#include "fileBrowser.h"
-#include <ogc/machine/processor.h>
-#include "../gc_dvd.h"
 #include <string.h>
 #include <unistd.h>
 #include <malloc.h>
 #include <ogc/dvd.h>
+#include <ogc/machine/processor.h>
+#include "fileBrowser.h"
+#include "../gc_dvd.h"
 #ifdef HW_RVL
 #include <di/di.h>
 #endif
 
-#ifdef HW_DOL
-#define mfpvr()   ({unsigned int rval; \
-      asm volatile("mfpvr %0" : "=r" (rval)); rval;})
-#endif
-
 /* DVD Globals */
-#define GC_CPU_VERSION 0x00083214
-extern int previously_initd;
-int dvdInitialized = 0;
+int dvd_init = 0;
 
-/* Worked out manually from my original Disc */
-#define OOT_OFFSET 0x54FBEEF4ULL
-#define MQ_OFFSET  0x52CCC5FCULL
-#define ZELDA_SIZE 0x2000000
+
 
 fileBrowser_file topLevel_DVD =
 	{ "\\", // file name
@@ -54,63 +44,20 @@ fileBrowser_file topLevel_DVD =
 	  0,         // size
 	  FILE_BROWSER_ATTR_DIR
 	};
-
-void init_dvd()
-{
-#ifdef HW_DOL
-  if(mfpvr()!=GC_CPU_VERSION) //GC mode on Wii, modchip required
-  {
-    DVD_Reset(DVD_RESETHARD);
-    dvd_read_id();
-    if(!dvd_get_error())
-      dvdInitialized=1;
-  }
-  else      //GC, no modchip even required :)
-  {
-    DVD_Reset(DVD_RESETHARD);
-    DVD_Mount ();
-    if(!dvd_get_error())
-      dvdInitialized=1;
-  }
-#endif
-#ifdef HW_RVL
-  //Wiimode stuff is handled by DVDx
-  u32 val;
-  DI_GetCoverRegister(&val);
-  if(val & 0x1) return; //no disc inserted
-	DI_Mount();
-	while(DI_GetStatus() & DVD_INIT) usleep(20000);
-	dvdInitialized=1;
-#endif
-}
  
-	 
 int fileBrowser_DVD_readDir(fileBrowser_file* ffile, fileBrowser_file** dir){	
-#ifdef HW_DOL
-  if(dvd_get_error())
-    dvdInitialized = 0;
-#endif
-  if(!dvdInitialized)
-    init_dvd();
-  if(!dvdInitialized) return FILE_BROWSER_ERROR;  //fails if No disc
+  
+  int num_entries = 0, ret = 0;
+  
+  if(dvd_get_error() || !dvd_init) { //if some error
+    ret = init_dvd();
+    if(ret) {    //try init
+      return ret; //fail
+    }
+    dvd_init = 1;
+  } 
 	
-  int num_entries = 0;
-	
-	if (!memcmp((void*)0x80000000, "D43U01", 6)) { //OoT bonus disc support.
-		num_entries = 2;
-		*dir = malloc( num_entries * sizeof(fileBrowser_file) );
-		strcpy( (*dir)[0].name, "Zelda - Ocarina of Time");
-		(*dir)[0].discoffset = OOT_OFFSET;
-		(*dir)[0].offset = 0;
-		(*dir)[0].size   = ZELDA_SIZE;
-		(*dir)[0].attr	 = 0;
-		strcpy( (*dir)[1].name, "Zelda - Ocarina of Time MQ" );
-		(*dir)[1].discoffset = MQ_OFFSET;
-		(*dir)[1].offset = 0;
-		(*dir)[1].size   = ZELDA_SIZE;
-		(*dir)[1].attr	 = 0;
-		return num_entries;
-	}
+
 	
 	// Call the corresponding DVD function
 	num_entries = dvd_read_directoryentries(ffile->discoffset,ffile->size);

@@ -1,7 +1,24 @@
-/* gc_dvd.h - dvd basic functions for iso9660 parsing, code borrowed from qoob mp3 player
-   by emu_kidid for Mupen64-GC
- */
-
+/**
+ * Wii64/Cube64 - gc_dvd.h
+ * Copyright (C) 2007, 2008, 2009, 2010 emu_kidid
+ * 
+ * DVD Reading support for GC/Wii
+ *
+ * Wii64 homepage: http://www.emulatemii.com
+ * email address: emukidid@gmail.com
+ *
+ *
+ * This program is free software; you can redistribute it and/
+ * or modify it under the terms of the GNU General Public Li-
+ * cence as published by the Free Software Foundation; either
+ * version 2 of the Licence, or any later version.
+ *
+ * This program is distributed in the hope that it will be use-
+ * ful, but WITHOUT ANY WARRANTY; without even the implied war-
+ * ranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public Licence for more details.
+ *
+**/
 #ifndef GC_DVD_H
 #define GC_DVD_H
 
@@ -11,6 +28,15 @@
 #define NO_ISO9660_DISC -2
 #define FATAL_ERROR -3
 #define MAXIMUM_ENTRIES_PER_DIR 2048
+
+#define GC_CPU_VERSION 0x00083214
+#define NO_HW_ACCESS -1000
+#define NO_DISC      -1001
+#define NORMAL 0xA8000000
+#define DVDR   0xD0000000
+#define HW_REG_BASE   0xcd800000
+#define HW_ARMIRQMASK (HW_REG_BASE + 0x03c)
+#define HW_ARMIRQFLAG (HW_REG_BASE + 0x038)
 
 typedef struct
 {
@@ -26,6 +52,7 @@ typedef struct
 
 extern file_entries *DVDToc;
 
+int init_dvd();
 void dvd_motor_off();
 unsigned int dvd_get_error(void);
 int dvd_read_directoryentries(uint64_t offset, int size);
@@ -34,9 +61,8 @@ int read_safe(void* dst, uint64_t offset, int len);
 int read_direntry(unsigned char* direntry);
 int read_sector(void* buffer, uint32_t sector);
 int dvd_read(void* dst,unsigned int len, unsigned int offset);
-int is_unicode;
-int files;
 int dvd_read_id();
+int DVD_LowRead64(void* dst, unsigned int len, uint64_t offset);
 
 struct pvd_s
 {

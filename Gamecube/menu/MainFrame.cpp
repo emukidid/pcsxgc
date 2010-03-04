@@ -190,11 +190,6 @@ void Func_ExitToLoader()
 {
 	if(menu::MessageBox::getInstance().askMessage("Are you sure you want to exit to loader?"))
 		shutdown = 2;
-//#ifdef WII
-//	DI_Close();
-//#endif
-//	void (*rld)() = (void (*)()) 0x80001800;
-//	rld();
 }
 
 extern "C" {
