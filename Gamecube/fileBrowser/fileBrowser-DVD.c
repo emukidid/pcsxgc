@@ -35,8 +35,6 @@
 /* DVD Globals */
 int dvd_init = 0;
 
-
-
 fileBrowser_file topLevel_DVD =
 	{ "\\", // file name
 	  0ULL,      // discoffset (u64)
@@ -56,9 +54,7 @@ int fileBrowser_DVD_readDir(fileBrowser_file* ffile, fileBrowser_file** dir){
     }
     dvd_init = 1;
   } 
-	
-
-	
+		
 	// Call the corresponding DVD function
 	num_entries = dvd_read_directoryentries(ffile->discoffset,ffile->size);
 	

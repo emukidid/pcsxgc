@@ -29,6 +29,7 @@
 #include <gccore.h>
 #include <unistd.h>
 #include "gc_dvd.h"
+
 #ifdef WII
 #include <di/di.h>
 #endif
@@ -274,33 +275,40 @@ int read_sector(void* buffer, uint32_t sector)
 
 int read_safe(void* dst, uint64_t offset, int len)
 {
-	int ol = len;
-	int ret = 0;	
-  unsigned char* sector_buffer = (unsigned char*)memalign(32,32768);
+	int ret = 0, len_read = 0;
+  unsigned char* sector_buffer = (unsigned char*)memalign(32,2048); 
+  
+  // if required, align the start and read it
+  if(offset&2047) {
+    int alignment = offset&2047;
+    int amount_to_copy = len > 2048-alignment ? 2048-alignment : len-alignment;
+    ret |= DVD_LowRead64(sector_buffer, 2048, offset - alignment);
+    memcpy(dst, sector_buffer+alignment, amount_to_copy );	
+
+    len_read += amount_to_copy;
+		offset += amount_to_copy;
+		len -= amount_to_copy;
+		dst += amount_to_copy;
+  }
+  
+  //if required, do aligned reads now until the end.
 	while (len)
 	{
-		ret |= DVD_LowRead64(sector_buffer, 32768, offset);
-		uint32_t off = offset & 32767;
+		ret |= DVD_LowRead64(sector_buffer, 2048, offset);
+		int amount_to_copy = len > 2048 ? 2048 : len;
+		memcpy(dst, sector_buffer, amount_to_copy);	
 
-		int rl = 32768 - off;
-		if (rl > len)
-			rl = len;
-		else 
-		  rl = 32768;
-		memcpy(dst, sector_buffer, rl);	
-
-		offset += rl;
-		len -= rl;
-		dst += rl;
+		len_read += amount_to_copy;
+		offset += amount_to_copy;
+		len -= amount_to_copy;
+		dst += amount_to_copy;
 	}
 	free(sector_buffer);
-	if(ret)
+	if((ret) || (dvd_get_error())) {
   	return -1;
-  	
-  if(dvd_get_error())
-    init_dvd();
+	}
 
-	return ol;
+  return len_read;
 }
 
 int read_direntry(unsigned char* direntry)
