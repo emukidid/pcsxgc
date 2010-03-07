@@ -27,7 +27,7 @@
 #define NO_FILES -1
 #define NO_ISO9660_DISC -2
 #define FATAL_ERROR -3
-#define MAXIMUM_ENTRIES_PER_DIR 2048
+#define MAXIMUM_ENTRIES_PER_DIR 512
 
 #define GC_CPU_VERSION 0x00083214
 #define NO_HW_ACCESS -1000
@@ -50,7 +50,7 @@ typedef struct
 	file_entry file[MAXIMUM_ENTRIES_PER_DIR];
 } file_entries; 
 
-extern file_entries *DVDToc;
+extern file_entries DVDToc;
 
 int init_dvd();
 void dvd_motor_off();
