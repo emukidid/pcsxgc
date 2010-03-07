@@ -125,6 +125,7 @@ void Func_LoadFromSD()
 	// Change all the romFile pointers
 	isoFile_topLevel = &topLevel_libfat_Default;
 	isoFile_readDir  = fileBrowser_libfat_readDir;
+	isoFile_open     = fileBrowser_libfat_open;
 	isoFile_readFile = fileBrowser_libfatROM_readFile;
 	isoFile_seekFile = fileBrowser_libfat_seekFile;
 	isoFile_init     = fileBrowser_libfat_init;
@@ -144,6 +145,7 @@ void Func_LoadFromDVD()
 	// Change all the romFile pointers
 	isoFile_topLevel = &topLevel_DVD;
 	isoFile_readDir  = fileBrowser_DVD_readDir;
+	isoFile_open     = fileBrowser_DVD_open;
 	isoFile_readFile = fileBrowser_DVD_readFile;
 	isoFile_seekFile = fileBrowser_DVD_seekFile;
 	isoFile_init     = fileBrowser_DVD_init;
@@ -163,6 +165,7 @@ void Func_LoadFromUSB()
 	// Change all the romFile pointers
 	isoFile_topLevel = &topLevel_libfat_USB;
 	isoFile_readDir  = fileBrowser_libfat_readDir;
+	isoFile_open     = fileBrowser_libfat_open;
 	isoFile_readFile = fileBrowser_libfatROM_readFile;
 	isoFile_seekFile = fileBrowser_libfat_seekFile;
 	isoFile_init     = fileBrowser_libfat_init;

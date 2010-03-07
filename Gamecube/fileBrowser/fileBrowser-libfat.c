@@ -197,7 +197,6 @@ void InitRemovalThread()
 #endif
 }
 
-
 int fileBrowser_libfat_readDir(fileBrowser_file* file, fileBrowser_file** dir){
 
   pauseRemovalThread();
@@ -229,6 +228,17 @@ int fileBrowser_libfat_readDir(fileBrowser_file* file, fileBrowser_file** dir){
 	continueRemovalThread();
 
 	return num_entries;
+}
+
+int fileBrowser_libfat_open(fileBrowser_file* file) {
+  struct stat fileInfo;
+  if(!stat(&file->name[0], &fileInfo)){
+    file->offset = 0;
+    file->discoffset = 0;
+    file->size = fileInfo.st_size;
+    return 0;
+  }
+  return FILE_BROWSER_ERROR_NO_FILE;
 }
 
 int fileBrowser_libfat_seekFile(fileBrowser_file* file, unsigned int where, unsigned int type){

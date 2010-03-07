@@ -416,6 +416,7 @@ int SysInit() {
   if(biosDevice != BIOSDEVICE_HLE) {
    	biosFile_dir = (biosDevice == BIOSDEVICE_SD) ? &biosDir_libfat_Default : &biosDir_libfat_USB;
   	biosFile_readFile  = fileBrowser_libfat_readFile;
+  	biosFile_open      = fileBrowser_libfat_open;
   	biosFile_init      = fileBrowser_libfat_init;
   	biosFile_deinit    = fileBrowser_libfat_deinit;
 	 	if(biosFile) {

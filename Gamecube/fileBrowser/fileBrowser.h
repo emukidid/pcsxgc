@@ -64,6 +64,9 @@ extern fileBrowser_file* biosFile;
 /* Must be called before any using other functions */
 extern int (*isoFile_init)(fileBrowser_file*);
 
+/* open checks if a file exists and fills out the fileBrowser_file* */
+extern int (*isoFile_open)(fileBrowser_file*);
+
 /* readDir functions should return the number of directory entries
      or an error of the given file pointer and fill out the file array */
 extern int (*isoFile_readDir)(fileBrowser_file*, fileBrowser_file**);
@@ -93,6 +96,8 @@ extern int (*saveFile_deinit)(fileBrowser_file*);
 
 // -- biosFile function pointers --
 extern int (*biosFile_init)(fileBrowser_file*);
+
+extern int (*biosFile_open)(fileBrowser_file*);
 
 extern int (*biosFile_readFile)(fileBrowser_file*, void*, unsigned int);
 

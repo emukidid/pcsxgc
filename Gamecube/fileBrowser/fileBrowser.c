@@ -31,6 +31,7 @@ fileBrowser_file* saveFile_dir;
 fileBrowser_file* biosFile_dir;
 
 int (*isoFile_init)(fileBrowser_file*) = NULL;
+int (*isoFile_open)(fileBrowser_file*) = NULL;
 int (*isoFile_readDir)(fileBrowser_file*, fileBrowser_file**) = NULL;
 int (*isoFile_readFile)(fileBrowser_file*, void*, unsigned int) = NULL;
 int (*isoFile_seekFile)(fileBrowser_file*, unsigned int, unsigned int) = NULL;
@@ -43,5 +44,6 @@ int (*saveFile_writeFile)(fileBrowser_file*, void*, unsigned int) = NULL;
 int (*saveFile_deinit)(fileBrowser_file*) = NULL;
 
 int (*biosFile_init)(fileBrowser_file*) = NULL;
+int (*biosFile_open)(fileBrowser_file*) = NULL;
 int (*biosFile_readFile)(fileBrowser_file*, void*, unsigned int) = NULL;
 int (*biosFile_deinit)(fileBrowser_file*) = NULL;

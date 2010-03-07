@@ -215,17 +215,20 @@ void openCue(fileBrowser_file* cueFile)
 	char relative[256];
 	sprintf(relative, "%s/%s", isoFile_topLevel->name, bin_filename);
 	// Determine relative vs absolute path and get the stat
-	struct stat binInfo;
-	if( stat(relative, &binInfo) ){
+	fileBrowser_file tmpFile;
+	memset(&tmpFile, 0, sizeof(fileBrowser_file));
+	strcpy(&tmpFile.name[0],relative);
+	if( isoFile_open(&tmpFile) == FILE_BROWSER_ERROR_NO_FILE ){
 		SysPrintf("Failed to open %s\n", relative);
 		// The relative path failed, try absolute
-		if( stat(bin_filename, &binInfo) ){
+		strcpy(&tmpFile.name[0], bin_filename);
+		if( isoFile_open(&tmpFile) == FILE_BROWSER_ERROR_NO_FILE ){
 			SysPrintf("Failed to open %s\n", bin_filename);
-			while(1);
+			while(1); //fix me.
 		}
-	} else strcpy(bin_filename, relative);
+	}
 	// Fill out the last track's end based on size
-	unsigned int blocks = binInfo.st_size / 2352;
+	unsigned int blocks = tmpFile.size / 2352;
 	CD.tl[CD.numtracks-1].end[2] = blocks % 75;
 	CD.tl[CD.numtracks-1].end[1] = ((blocks - CD.tl[CD.numtracks-1].end[2]) / 75) % 60;
 	CD.tl[CD.numtracks-1].end[0] = (((blocks - CD.tl[CD.numtracks-1].end[2]) / 75)
@@ -233,11 +236,7 @@ void openCue(fileBrowser_file* cueFile)
 	normalizeTime(CD.tl[CD.numtracks-1].end);
 
 	// setup the isoFile to now point to the .iso
-	if(isoFile) free(isoFile);
-	isoFile = malloc(sizeof(fileBrowser_file));
-	strcpy(isoFile->name,bin_filename);
-	isoFile->offset = 0;
-	isoFile->size   = binInfo.st_size;
+	memcpy(isoFile, &tmpFile, sizeof(fileBrowser_file));
 	printf("Loaded bin from cue: %s size: %d\n", isoFile->name, isoFile->size);
 
 }

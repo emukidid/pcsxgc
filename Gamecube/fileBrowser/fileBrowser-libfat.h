@@ -34,6 +34,7 @@ extern fileBrowser_file biosDir_libfat_Default;   //GC SD Slots & Wii Front SD S
 extern fileBrowser_file biosDir_libfat_USB;       //Wii only, USB
 
 int fileBrowser_libfat_readDir(fileBrowser_file*, fileBrowser_file**);
+int fileBrowser_libfat_open(fileBrowser_file* f);
 int fileBrowser_libfat_readFile(fileBrowser_file*, void*, unsigned int);
 int fileBrowser_libfat_writeFile(fileBrowser_file*, void*, unsigned int);
 int fileBrowser_libfat_seekFile(fileBrowser_file*, unsigned int, unsigned int);

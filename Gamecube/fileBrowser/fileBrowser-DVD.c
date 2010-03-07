@@ -34,6 +34,7 @@
 
 /* DVD Globals */
 int dvd_init = 0;
+int num_entries = 0;
 
 fileBrowser_file topLevel_DVD =
 	{ "\\", // file name
@@ -45,7 +46,8 @@ fileBrowser_file topLevel_DVD =
  
 int fileBrowser_DVD_readDir(fileBrowser_file* ffile, fileBrowser_file** dir){	
   
-  int num_entries = 0, ret = 0;
+  int ret = 0;
+  num_entries = 0;
   
   if(dvd_get_error() || !dvd_init) { //if some error
     ret = init_dvd();
@@ -80,6 +82,20 @@ int fileBrowser_DVD_readDir(fileBrowser_file* ffile, fileBrowser_file** dir){
 		strcpy( (*dir)[0].name, ".." );
 	
 	return num_entries;
+}
+
+int fileBrowser_DVD_open(fileBrowser_file* file) {
+  int i;
+	for(i=0; i<num_entries; ++i) {
+  	if (strcmp(&file->name[0], &DVDToc.file[i].name[0]) == 0) {
+    	//we found the file, fill out info for it
+    	file->discoffset = (uint64_t)(((uint64_t)DVDToc.file[i].sector)*2048);
+    	file->offset = 0;
+    	file->size = DVDToc.file[i].size;
+    	return 0;
+  	}
+	}
+	return FILE_BROWSER_ERROR_NO_FILE;
 }
 
 int fileBrowser_DVD_seekFile(fileBrowser_file* file, unsigned int where, unsigned int type){
