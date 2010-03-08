@@ -26,6 +26,8 @@
 #include <string.h>
 #include <time.h>
 #include <fat.h>
+#include <asndlib.h>
+
 #ifdef DEBUGON
 # include <debug.h>
 #endif
@@ -178,6 +180,7 @@ int main(int argc, char *argv[])
 	DI_Init();    // first
 #endif
 
+  ASND_Init();
 	MenuContext *menu = new MenuContext(vmode);
 	VIDEO_SetPostRetraceCallback (ScanPADSandReset);
 #ifndef WII

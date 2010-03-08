@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/dir.h>
+#include <asndlib.h>
 #include "DEBUG.h"
 #include "TEXT.h"
 //#include "usb.h"
@@ -29,7 +30,9 @@ static void check_heap_space(void){
 	
 	sprintf(txtbuffer,"Dynarec (KB) %04d/%04d",dyna_used,dyna_total/1024);
 	DEBUG_print(txtbuffer,DBG_CORE1);
-
+	
+	sprintf(txtbuffer,"DSP is at %d%%",ASND_GetDSP_PercentUse());
+	DEBUG_print(txtbuffer,DBG_CORE2);
 }
 #endif
 
