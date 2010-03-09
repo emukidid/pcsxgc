@@ -588,22 +588,50 @@ void Func_BiosSelectHLE()
 	biosDevice = BIOSDEVICE_HLE;
 }
 
+int checkBiosExists(int testDevice) {
+  fileBrowser_file testFile;
+  memset(&testFile, 0, sizeof(fileBrowser_file));
+  
+  biosFile_dir = (testDevice == BIOSDEVICE_SD) ? &biosDir_libfat_Default : &biosDir_libfat_USB;
+  sprintf(&testFile.name[0], "%s/SCPH1001.BIN", &biosFile_dir->name[0]);
+  biosFile_readFile  = fileBrowser_libfat_readFile;
+  biosFile_open      = fileBrowser_libfat_open;
+  biosFile_init      = fileBrowser_libfat_init;
+  biosFile_deinit    = fileBrowser_libfat_deinit;
+  biosFile_init(&testFile);  //initialize the bios device (it might not be the same as ISO device)
+  return biosFile_open(&testFile);
+}
+
 void Func_BiosSelectSD()
 {
 	for (int i = 7; i <= 9; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[8].button->setSelected(true);
 
-	biosDevice = BIOSDEVICE_SD;
+	if(checkBiosExists(BIOSDEVICE_SD) == FILE_BROWSER_ERROR_NO_FILE) {
+  	menu::MessageBox::getInstance().setMessage("BIOS not found on SD");
+  	biosDevice = BIOSDEVICE_HLE;
+  	FRAME_BUTTONS[7].button->setSelected(true);
+	}
+	else {
+	  biosDevice = BIOSDEVICE_SD;
+	  FRAME_BUTTONS[8].button->setSelected(true);
+  }
 }
 
 void Func_BiosSelectUSB()
 {
 	for (int i = 7; i <= 9; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[9].button->setSelected(true);
 
-	biosDevice = BIOSDEVICE_USB;
+	if(checkBiosExists(BIOSDEVICE_USB) == FILE_BROWSER_ERROR_NO_FILE) {
+  	menu::MessageBox::getInstance().setMessage("BIOS not found on USB");
+  	biosDevice = BIOSDEVICE_HLE;
+  	FRAME_BUTTONS[7].button->setSelected(true);
+	}
+	else {
+	  biosDevice = BIOSDEVICE_USB;
+	  FRAME_BUTTONS[9].button->setSelected(true);
+  }
 }
 
 void Func_BootBiosYes()
