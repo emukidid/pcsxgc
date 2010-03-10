@@ -21,6 +21,8 @@
 
 extern void SysPrintf(char *fmt, ...);
 
+_CD CD;
+
 //from PeopsCdr104
 #define btoi(b)      ((b)/16*10 + (b)%16)
 __inline unsigned long time2addrB(unsigned char *time)
@@ -410,8 +412,12 @@ long CDR__stop(void) {
 
 long CDR__getStatus(struct CdrStat *stat) {
     //TODO, fix this up, it will be needed for multi-disc games?
-    if (cdOpenCase) stat->Status = 0x10;
-    else stat->Status = 0;
+    if (cdOpenCase) {
+      stat->Status = 0x10;  // lid open
+    }
+    else {
+      stat->Status = 0;     // lid closed
+    }
     return 0;
 }
 

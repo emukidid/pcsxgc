@@ -107,7 +107,7 @@ char numMultitaps;
 int stop = 0;
 
 static struct {
-	char* key;
+	const char* key;
 	char* value; // Not a string, but a char pointer
 	char  min, max;
 } OPTIONS[] =

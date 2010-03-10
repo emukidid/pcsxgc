@@ -41,7 +41,7 @@ typedef struct
    unsigned char end[3];
 } Track;
 
-struct
+typedef struct
 {
    fileBrowser_file* cd;
    fileBrowser_file* cdda;
@@ -51,8 +51,8 @@ struct
    Track* tl;
    unsigned char buffer[BUFFER_SIZE];
    enum CDType type;
-} CD;
-
+} _CD;
+extern _CD CD;
 void CDDAclose(void);
 
 // function headers for cdreader.c

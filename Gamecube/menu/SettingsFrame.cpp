@@ -667,19 +667,18 @@ void Func_ExecuteBios()
     //TODO: Implement yes/no that current game will be reset
     SysClose();
   }
-  if(isoFile)
-    free(isoFile);
+
   //TODO: load/save memcards here
 	SysInit ();
 	CheckCdrom();
 	SysReset();
 	pauseRemovalThread();
 	resumeAudio();
-	//resumeInput();
+	resumeInput();
 	menuActive = 0;
   SysStartCPU();
   menuActive = 1;
-	//pauseInput();
+	pauseInput();
 	pauseAudio();
 	continueRemovalThread();
 }

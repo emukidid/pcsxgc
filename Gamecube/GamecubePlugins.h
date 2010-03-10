@@ -28,10 +28,10 @@
 
 #define SYMS_PER_LIB 32
 typedef struct {
-	char* lib;
+	const char* lib;
 	int   numSyms;
 	struct {
-		char* sym;
+		const char* sym;
 		void* pntr;
 	} syms[SYMS_PER_LIB];
 } PluginTable;
