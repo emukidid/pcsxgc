@@ -72,7 +72,7 @@ void psxDma4(u32 madr, u32 bcr, u32 chcr) { // SPU
 #endif
 	}
 
-	HW_DMA4_CHCR &= SWAP32(~0x01000000);
+	HW_DMA4_CHCR &= SWAPu32(~0x01000000);
 	DMA_INTERRUPT(4);
 #ifdef PROFILE
 	end_section(AUDIO_SECTION);
@@ -134,7 +134,7 @@ void psxDma2(u32 madr, u32 bcr, u32 chcr) { // GPU
 #endif
 	}
 
-	HW_DMA2_CHCR &= SWAP32(~0x01000000);
+	HW_DMA2_CHCR &= SWAPu32(~0x01000000);
 	DMA_INTERRUPT(2);
 #ifdef PROFILE
 	end_section(GFX_SECTION);
@@ -142,7 +142,7 @@ void psxDma2(u32 madr, u32 bcr, u32 chcr) { // GPU
 }
 
 void gpuInterrupt() {
-	HW_DMA2_CHCR &= SWAP32(~0x01000000);
+	HW_DMA2_CHCR &= SWAPu32(~0x01000000);
 	DMA_INTERRUPT(2);
 }
 
@@ -158,16 +158,16 @@ void psxDma6(u32 madr, u32 bcr, u32 chcr) {
 #ifdef CPU_LOG
 			CPU_LOG("*** DMA6 OT *** NULL Pointer!!!\n");
 #endif
-			HW_DMA6_CHCR &= SWAP32(~0x01000000);
+			HW_DMA6_CHCR &= SWAPu32(~0x01000000);
 			DMA_INTERRUPT(6);
 			return;
 		}
 
 		while (bcr--) {
-			*mem-- = SWAP32((madr - 4) & 0xffffff);
+			*mem-- = SWAPu32((madr - 4) & 0xffffff);
 			madr -= 4;
 		}
-		mem++; *mem = 0xffffff;
+		mem++; *mem = SWAPu32(0xffffff);
 	}
 #ifdef PSXDMA_LOG
 	else {
@@ -176,7 +176,7 @@ void psxDma6(u32 madr, u32 bcr, u32 chcr) {
 	}
 #endif
 
-	HW_DMA6_CHCR &= SWAP32(~0x01000000);
+	HW_DMA6_CHCR &= SWAPu32(~0x01000000);
 	DMA_INTERRUPT(6);
 }
 
