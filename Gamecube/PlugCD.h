@@ -52,7 +52,7 @@ typedef struct
    unsigned char buffer[BUFFER_SIZE];
    enum CDType type;
 } _CD;
-extern _CD CD;
+
 void CDDAclose(void);
 
 // function headers for cdreader.c

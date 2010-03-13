@@ -22,8 +22,8 @@
 extern void SysPrintf(char *fmt, ...);
 
 
-_CD CD; //Current CD struct
-int isCDDAPlaying = 0;
+static _CD CD; //Current CD struct
+static int isCDDAPlaying = 0;
 
 //from PeopsCdr104
 #define btoi(b)      ((b)/16*10 + (b)%16)
