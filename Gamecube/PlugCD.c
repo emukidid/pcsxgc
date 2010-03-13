@@ -21,7 +21,9 @@
 
 extern void SysPrintf(char *fmt, ...);
 
-_CD CD;
+
+_CD CD; //Current CD struct
+int isCDDAPlaying = 0;
 
 //from PeopsCdr104
 #define btoi(b)      ((b)/16*10 + (b)%16)
@@ -51,14 +53,15 @@ __inline unsigned long time2addr(unsigned char *time)
 long getTN(unsigned char* buffer)
 {
 	int numtracks = getNumTracks();
-
+	sprintf(txtbuffer, "getTN: cd.tl[0].num %i numtracks %i",CD.tl[0].num, numtracks);
+  DEBUG_print(txtbuffer, DBG_CDR4);
  	if (-1 == numtracks) {
 		buffer[0]=buffer[1]=1;
     return -1;
  	}
 
- 	buffer[0]=CD.tl[0].num;
- 	buffer[1]=numtracks;
+ 	buffer[0]=CD.tl[0].num; // First Track
+ 	buffer[1]=numtracks;    // Last Track
   return 0;
 }
 
@@ -66,20 +69,20 @@ long getTN(unsigned char* buffer)
 // otherwise return start in bcd time format
 long getTD(int track, unsigned char* buffer)
 {
-	if (track > CD.numtracks) {
-		return -1;  //bad
-	}
 
-  if (track == 0) {
+  if (track == 0) { // 0 case == last track
     buffer[0] = CD.tl[CD.numtracks-1].end[0];
     buffer[1] = CD.tl[CD.numtracks-1].end[1];
     buffer[2] = CD.tl[CD.numtracks-1].end[2];
   }
-	else {
+	else {  //else any track
 		buffer[0] = CD.tl[track-1].start[0];
 		buffer[1] = CD.tl[track-1].start[1];
 		buffer[2] = CD.tl[track-1].start[2];
 	}
+	
+	sprintf(txtbuffer, "getTD %i: [%i][%i][%i]",track,buffer[0],buffer[1],buffer[2]);
+  DEBUG_print(txtbuffer, DBG_CDR3);
 
 	// bcd encode it
 	buffer[0] = intToBCD(buffer[0]);
@@ -204,6 +207,7 @@ void openCue(fileBrowser_file* cueFile)
 				CD.tl[CD.numtracks-2].end[1] = CD.tl[CD.numtracks-1].start[1];
 				CD.tl[CD.numtracks-2].end[2] = CD.tl[CD.numtracks-1].start[2];
 			}
+			CD.tl[CD.numtracks-1].num = CD.numtracks;
 
 		}
 		// Get the next token
@@ -239,7 +243,7 @@ void openCue(fileBrowser_file* cueFile)
 
 	// setup the isoFile to now point to the .iso
 	memcpy(isoFile, &tmpFile, sizeof(fileBrowser_file));
-	printf("Loaded bin from cue: %s size: %d\n", isoFile->name, isoFile->size);
+	SysPrintf("Loaded bin from cue: %s size: %d\n", isoFile->name, isoFile->size);
 
 }
 
@@ -248,7 +252,7 @@ void newCD(fileBrowser_file *file)
 {
 	const char* ext = file->name + strlen(file->name) - 4;
 	SysPrintf("Opening file with extension %s size: %d\n", ext, file->size);
-	
+		
 	if(( !strcmp(ext, ".cue") ) || ( !strcmp(ext, ".CUE") )){
 		CD.type = Cue;
 		openCue(file);  //if we open a .cue, the isoFile global will be redirected
@@ -401,30 +405,57 @@ long CDR__play(unsigned char *msf) {
   //unsigned long byteSector = ( msf[0] * 75 * 60 ) + ( msf[1] * 75 ) + msf[2]; //xbox way
   unsigned int byteSector = time2addr(msf);  //peops way
   sprintf(txtbuffer,"CDR play %08X",byteSector);
-	DEBUG_print(txtbuffer,DBG_SPU1);
+  DEBUG_print(txtbuffer, DBG_CDR1);  
 #endif
-  return 0; 
+  // Time will need to be updated in a thread.
+  //isCDDAPlaying will need to made 0 on track end (threaded).
+  isCDDAPlaying = 1;
+  return PSE_CDR_ERR_SUCCESS; 
 }
 long CDR__stop(void) { 
-  DEBUG_print("CDR stop",DBG_SPU2);
-  return 0; 
+  DEBUG_print("CDR Stop", DBG_CDR1);
+  isCDDAPlaying  = 0;
+  return PSE_CDR_ERR_SUCCESS; 
 }
+
+
+
+// reads cdr status
+// type:
+// 0x00 - unknown
+// 0x01 - data
+// 0x02 - audio
+// 0xff - no cdrom
+// status:
+// 0x00 - unknown
+// 0x02 - error
+// 0x08 - seek error
+// 0x10 - shell open
+// 0x20 - reading
+// 0x40 - seeking
+// 0x80 - playing
+// time:
+// byte 0 - minute
+// byte 1 - second
+// byte 2 - frame
 
 long CDR__getStatus(struct CdrStat *stat) {
-    //TODO, fix this up, it will be needed for multi-disc games?
-    if (cdOpenCase) {
-      stat->Status = 0x10;  // lid open
-    }
-    else {
-      stat->Status = 0;     // lid closed
-    }
-    return 0;
+  DEBUG_print("CDR getStatus", DBG_CDR2);
+
+  stat->Status = 0;       // Ok so far
+
+  if(isCDDAPlaying) {
+    stat->Type = 0x02;    // Audio
+    stat->Status|=0x80;   // Playing flag
+    // Time will need to be updated in a thread.
+    stat->Time[0] = 0;  // current play time
+    stat->Time[1] = 0;
+    stat->Time[2] = 0;
+  }
+  else {
+    stat->Type = 0x01;    // Data
+  }
+
+  return 0;
 }
 
-/*
-long (CALLBACK* CDRconfigure)(void);
-long (CALLBACK* CDRtest)(void);
-void (CALLBACK* CDRabout)(void);
-long (CALLBACK* CDRplay)(unsigned char *);
-long (CALLBACK* CDRstop)(void);
-*/
