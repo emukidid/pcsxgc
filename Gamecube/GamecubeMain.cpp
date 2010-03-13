@@ -286,7 +286,10 @@ int loadISOSwap(fileBrowser_file* file) {
 	memcpy( isoFile, file, sizeof(fileBrowser_file) );
 	
 	//might need to insert code here to trigger a lid open/close interrupt
-	return CheckCdrom();
+	CDR_open();
+	CheckCdrom();
+	LoadCdrom();
+	return 0;
 }
 
 

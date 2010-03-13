@@ -18,6 +18,10 @@
 #define DBG_SPU1	7
 #define DBG_SPU2	8
 #define DBG_SPU3	9
+#define DBG_CDR1  10
+#define DBG_CDR2  11
+#define DBG_CDR3  12
+#define DBG_CDR4  13
 #define DBG_PROFILE_GFX 15
 #define DBG_PROFILE_AUDIO 16
 #define DBG_PROFILE_TLB 17

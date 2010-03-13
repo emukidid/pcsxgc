@@ -421,6 +421,6 @@ void fileBrowserFrame_LoadFile(int i)
 	  } else {
   	  menu::MessageBox::getInstance().setMessage("Error swapping CD");
 	  }
-		
+	  pMenuContext->setActiveFrame(MenuContext::FRAME_MAIN);
 	}
 }
