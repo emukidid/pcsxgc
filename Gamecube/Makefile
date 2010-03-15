@@ -17,26 +17,30 @@ include $(DEVKITPPC)/gamecube_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	CubeSX
 BUILD		:=	build
-SOURCES		:=	. .. ../ppc/ ../PeopsSoftGPU/ ../PeopsSpu109/
+SOURCES		:=	. ./gc_input/ ./libgui/ ./menu/ ./fileBrowser/ .. ../ppc/ ../PeopsSoftGPU/ ../PeopsSpu109/
+
 DATA		:=	data  
-INCLUDES	:=	.. ../ppc/ ../PeopsSpu109/
+
+INCLUDES	:=	
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS	= -g -O2 -Wall $(MACHDEP) $(INCLUDE) -D__GAMECUBE__ -D__ppc__ \
-		  -D__GX__ -DHW_DOL -D_SDL -DSHOW_DEBUG -DEMBEDDED_FONTS -DNOTHREADLIB \
-		  -DTHREADED_AUDIO
+CFLAGS	= -g -O3 -Wall $(MACHDEP) $(INCLUDE) -D__GAMECUBE__ -DHW_DOL -D__ppc__ \
+		  -D__GX__ -D_SDL -DEMBEDDED_FONTS -DNOTHREADLIB \
+		  -DTHREADED_AUDIO -DSHOW_DEBUG -DPROFILE
 		  
 CXXFLAGS	=	$(CFLAGS)
 
-LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
+ASFLAGS := -DHW_DOL
+
+LDFLAGS	=	-g $(MACHDEP) -mogc -Wl,-Map,$(notdir $@).map
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-lm -lfat -logc
+LIBS	:=	-lasnd -lz -lm -lfat -logc
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
@@ -103,6 +107,8 @@ export OUTPUT	:=	$(CURDIR)/$(TARGET)
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+	@echo creating ... $(notdir $(OUTPUT)).dol
+	@elf2dol $(OUTPUT).elf $(OUTPUT).dol
 
 #---------------------------------------------------------------------------------
 clean:
@@ -117,7 +123,6 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-$(OUTPUT).dol: $(OUTPUT).elf
 $(OUTPUT).elf: $(OFILES)
 
 #---------------------------------------------------------------------------------

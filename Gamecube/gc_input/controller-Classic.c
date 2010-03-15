@@ -24,6 +24,7 @@
  *
 **/
 
+#ifdef HW_RVL
 
 #include <string.h>
 #include <math.h>
@@ -138,3 +139,4 @@ static void init(void){
 			controller_Classic.available[i] = 0;
 	}
 }
+#endif

@@ -22,6 +22,7 @@
  *
 **/
 
+#ifdef HW_RVL
 
 #include <string.h>
 #include <math.h>
@@ -152,3 +153,4 @@ static void init(void){
 			controller_WiimoteNunchuk.available[i] = 0;
 	}
 }
+#endif

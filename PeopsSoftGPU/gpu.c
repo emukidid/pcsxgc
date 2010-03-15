@@ -2430,6 +2430,7 @@ extern char * Xpixels;
 
 void GPUgetScreenPic(unsigned char * pMem)
 {
+#if 0  
  unsigned short c;unsigned char * pf;int x,y;
 
  float XS=(float)iResX/128;
@@ -2542,6 +2543,7 @@ void GPUgetScreenPic(unsigned char * pMem)
    *(pf+(127*3))=0xff;*pf++=0xff;
    pf+=127*3;                                          // offset to next line
   }
+  #endif
 }
 #endif
 

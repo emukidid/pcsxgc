@@ -29,7 +29,7 @@
 #include "NoPic.h"
 #endif //!__GX__
 
-void OnFile_Exit();
+void OnFile_Exit(){}
 
 unsigned long gpuDisp;
 
