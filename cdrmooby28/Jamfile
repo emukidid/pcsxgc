@@ -1,0 +1,37 @@
+SubDir TOP ;
+
+VERSION = 2 ;
+BUILD = 8 ;
+
+OPTIM = -O2 ;
+
+FLTK_FLAGS =  -L/usr/X11R6/lib -ldl -lm -lXext -lX11 ;
+FLTK_LIBS = /usr/lib/libfltk.a ;
+
+rule MakeSharedLibrary
+{
+   local libname ;
+   libname = lib$(<)-$(VERSION).$(BUILD).so ;
+   Main $(libname) : $(>) ;
+   LinkLibraries $(libname) : unrar portaudio ;
+   LINKFLAGS on $(libname) += $(LINKFLAGS) -shared -Wl,-soname,$(<) ;
+   LINKFLAGS on $(libname) += -lstdc++ -lz -lbz2 -lpthread $(FLTK_FLAGS) ;
+   LINKLIBS on $(libname) += $(FLTK_LIBS) ;
+   Clean clean : $(libname) ;
+}
+
+SubDirC++Flags -D__LINUX__ ;
+SubDirCcFlags -D__LINUX__ ;
+
+SubDirHdrs $(TOP) portaudio ;
+SubDirHdrs $(TOP) unrar ;
+
+MakeSharedLibrary cdrmooby : 
+  About.cpp CDDAData.cpp
+  ConfigCallbacks.cpp ConfigFunctions.cpp
+  TrackParser.cpp FileInterface.cpp
+  Globals.cpp Open.cpp PS2Open.cpp
+  Preferences.cpp SubchannelData.cpp ;
+
+SubInclude TOP portaudio ;
+SubInclude TOP unrar ;

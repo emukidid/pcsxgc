@@ -1,0 +1,124 @@
+and 2.8
+
+- there was a bug that was preventing the config window from ever returning - it would disappear but never close.  i say *was* cause it's fixed =)
+- use the "Enable subchannel option" to turn on/off subchannel data reading.  some games work better with it off rather than on.
+- upgraded PortAudio to version 0.18.1 (for CD-DA audio)
+- added an experimental caching option.  it's pretty much just a huge LRU cache for previously read data from the image.  try it and see if you like it.
+- other random fixes...  i dont quite remember them all =)
+
+
+yeah, yeah... 2.7
+
+- fixed a bug that was causing games without a track listing file (.cue, .ccd) to crash with the error "read past end of disc".  just a lesson to keep those files when you're making your disc images =)
+- the rar library is now using assembly optimized code.
+- fixed (yet another) off by one problem, this time in the internally generated subchannel data.
+- found a bug where if it seeked to the end of disk, sometimes it would get stuck there... oops
+
+
+CDRMooby 2.6
+
+- the total cd length was returning 0:0:0.. oops =) i doubt this affects any compatability, but it's nice to have it fixed.
+- by request, added a config option to alter the autorun settings.  autorun images are now persistent until changed or cleared with the config settings or manually.  this lets you use autorun with epsxecutor and other frontends.
+
+
+CDRMooby 2.5
+
+sorry for the lack of communication folks, been on a hiatus of sorts lately...  and sorry about 2.4 which ended up causing more problems than it fixed.  anyway, here's the scoop on the latest stuff:
+
+- Fixed an off-by-one-frame subchannel problem that was causing XA playback to stop in certain games.  Big thanks to the Peops CDR freely available source code for helping me find this one =)
+- Fixed some mishandled pregap data that was messing with CDDA timing.
+- Previously, only SUB subchannel files could be used because the plugin would fail to find any of the other subchannel file types.
+- Linked with FLTK 1.1.3
+
+
+CDRMooby 2.4
+
+I think this is fixed CDDA data better than any previous version =)
+
+
+CDRMooby 2.3
+
+This release is dedicated to people who understand that problems get fixed when accompanied by DETAILED EXPLANATIONS of what went wrong.  To the rest of you out there, don't complain unless you're willing to help.  By the way, it seems many of you don't know that I have a forum of my own hosted by emufanatics at http://www.emufanatics.com/forums/viewforum.php?f=29 so use it.
+
+- fixes CDDA problems.  If you still have trouble, describe the problem IN DETAIL at my forum...
+
+
+
+CDRMooby 2.2
+
+Do any of you use the Linux binaries?  I just switched to Debian and I'm much happier for doing so. However Linux binaries that use C++ libraries don't translate well across Linuxes.  In other words, this Linux binary probably won't work for everyone.  And to make things worse for you Linux users, I got rid of make and replaced it with (the much superior) Jam (http://www.perforce.com/jam/jam.html) to make compiling the plugin more difficult for the rest of you.  So no complaints from the peanut gallery if the Linux version doesn't work.
+
+- Added .CCD support - experimental at best, but will probably work in most cases
+- Added PCSX2 interface.  I've only tried one demo image and it worked, so consider this experimental too.
+- Added some new CDDA play modes - play one track (and stop), repeat one track, repeat all tracks - selectable in the config menu.  Choose whatever mode you prefer or is appropriate for the game.  A serious shortcoming of the PSX CD emulation is the lack of pause and changing the repeat mode.  I'm not sure if this is a BIOS function or CD hardware function or whatever, but it would be nice to fix someday...
+- New config stuff: In Windows, the configuration settings are now stored in the registry.  There's also a new key called "autorun" that, if set, the plugin will automatically use the image listed there without prompting for a file (a nice feature for you frontend people).  Also, the plugin keeps track of the last file you ran and makes that the default when starting the emulator.
+- The file chooser defaults to files that I know work well with the plugin.  There still is the *.* option available, but I suggest you don't use it.
+- Linked with FLTK 1.1.2, now with fewer bugs =)
+
+CDRMooby 2.1
+
+Because of complaints that I didn't change the version number last time, it's different now...
+
+- fixed a bug with FILE NAMES IN ALL CAPS (but why you would use them is beyond me...)
+- fixed the linux bug with windows not closing when they should
+- linked with FLTK 1.1.0 fixing various bugs, including a nasty drag-n-drop bug...
+
+
+
+CDRMooby 2.01
+
+re-linked it with the latest FLTK which fixes some bugs with the file selection.  this also includes a bug fix with linux and bz and z compressed images.
+
+
+
+CDRMooby2 - The Real Deal
+
+Yes, after a long wait, this is the full release...  New features since 1.6...
+
+Real subchannel support. Automatically detects subchannel files when they're available.  Just make sure they're in the same directory as the image and named the same.
+New GUIs, audio handling thanks to external libraries.  Use the favorites tab in the file selection window to speed up finding your images.
+CDDA Volume is now controllable from the config menu.
+Better compatability with all emus, especially CD-DA audio.
+
+that's the new stuff... otherwise, it should behave similarly (tho better) than the last version.  the rest is for those who dont have a clue what this does...
+
+THIS PLUGIN RUNS CD IMAGES, NOT CDS THEMSELVES.
+   The images MUST be in raw (2352 byte/frame) format or in one of the compressed formats - RAR (2.x only), Z.table or .bz.index (both available in the config menu)
+   When using a .CUE sheet, CD-DA is available (for games which have it)
+      - CD-DA volume is available in the config menu
+   Subchannel support using .sub (CloneCD), .sbi or .m3s (Pete's plugin)
+   Very stable and compatable
+
+BRAND NEW LOOK!!! Now uses FLTK for dialog boxes...
+   When selecting an image, you can add a directory to the favorites tab to quickly get back there in the future!
+   Volume settings are persistant from session to session.
+
+ENTIRELY REWRITTEN FROM SCRATCH!!!
+   Uses C++ for nearly everything, external libraries for guis, audio, and compression.
+   GPL'd code for anyone out there to see.
+
+For those of you who are using 1.6 or one of the beta versions, please upgrade to this version!!!
+
+If you have any questions or bugs, PLEASE let me know so I can squish them like the annoying pests they are:
+http://mooby.psxfanatics.com
+
+
+Info for building it n such...
+
+For this plugin, I used the following external libraries:
+
+   zlib v1.1.4: http://www.gzip.org/zlib/ (windows only)
+   bzlib v1.02: http://sources.redhat.com/bzip2/ (windows only)
+   portaudio v18: http://www.portaudio.com/
+   fltk v1.1.0rc5: http://www.fltk.org/
+   unrarlib v.40: http://www.unrarlib.org/
+
+FYI, I include the bzlib and zlib files because I've taken out alot of unnecessary files from the distro, not because I edited them.  Well, I did change the name of the zlib compress.c file to zcompress.c, but that was it...
+
+If you're trying to build....
+
+the windows version:
+   get portaudio and fltk from the sites above and build them...  then set environment variables 'fltkdir' and 'portaudiodir' with the root directory where you put them (i.e. if the libs are in d:/fltk/libs then the env var would be d:/fltk).  it should compile fine after that...
+
+for linux:
+   build and install fltk, then build portaudio and set the path appropriately in the makefile.  if you have bzlib and zlib installed, it should compile just fine...
