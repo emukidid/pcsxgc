@@ -1,6 +1,11 @@
 #ifndef FRAME_HPP
 #define FRAME_HPP
 
+#include <math.h>
+#include <cstdlib>
+extern "C" {
+  #include <gccore.h>
+}
 #include "Utils.hpp"
 
 // one frame of CD data, 2352 bytes

@@ -36,14 +36,18 @@ public:
    {
          // based on the program name, decide what order to return the
          // track info.  fyi, tester is my testing/development program.
+#ifdef WINDOWS
       programName = getProgramName();
       if ( (programName == "epsxe") ||
            (programName == "pcsx")  ||
            (programName == "pcsx2") || 
            (programName == "tester") )
+#endif
          tdtnformat = fsmint;
+#ifdef WINDOWS
       else
          tdtnformat = msfbcd;
+#endif
    }
 
 		// opens the file

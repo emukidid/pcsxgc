@@ -19,7 +19,9 @@ http://mooby.psxfanatics.com
 #include "CDTime.hpp"
 #include "TrackInfo.hpp"
 
+#ifdef WINDOWS
 #include <portaudio.h>
+#endif
 
 // CDDA data virtual base class
 class CDDAData
@@ -54,7 +56,13 @@ public:
    PlayCDDAData(const std::vector<TrackInfo> ti, CDTime gapLength);
 
 		// cleans up
-   virtual ~PlayCDDAData() {if (playing) stop(); delete theCD; Pa_Terminate();}
+   virtual ~PlayCDDAData() {
+     if (playing) stop(); 
+     delete theCD; 
+#ifdef WINDOWS
+     Pa_Terminate();
+#endif
+   }
 
 		// opens the file and readies the plugin for playing
    virtual void openFile(const std::string& file);
@@ -69,8 +77,12 @@ public:
 	// All the data members are public so they can be accessed by the PortAudio
 	// callback
 
+#ifdef WINDOWS
 		// the PortAudio stream for playing
    PortAudioStream* stream;
+#else
+   char* stream;
+#endif
 
       // the volume as set in the configuration window
    double volume;

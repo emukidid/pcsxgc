@@ -1,6 +1,7 @@
 #ifndef CONFIG_CALLBACKS_HPP
 #define CONFIG_CALLBACKS_HPP
 
+#ifdef WINDOWS
 void bzCompress(Fl_Button*, void*);
 void bzDecompress(Fl_Button*, void*);
 void zCompress(Fl_Button*, void*);
@@ -15,5 +16,6 @@ void playOneCDDA(Fl_Check_Button*, void* val = NULL);
 void configOK(Fl_Return_Button*, void*);
 void chooseAutorunImage(Fl_Button*, void*);
 void clearAutorunImage(Fl_Button*, void*);
+#endif
 
 #endif

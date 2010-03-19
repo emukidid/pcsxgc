@@ -10,7 +10,9 @@ http://mooby.psxfanatics.com
 
 ************************************************************************/
 
+#ifdef WINDOWS
 #pragma warning(disable:4786)
+#endif
 
 #include "SubchannelData.hpp"
 #include "Preferences.hpp"

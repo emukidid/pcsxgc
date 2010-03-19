@@ -10,7 +10,9 @@ http://mooby.psxfanatics.com
 
 ************************************************************************/
 
+#ifdef WINDOWS
 #pragma warning(disable:4786)
+#endif
 
 #ifndef EXCEPTION_HPP
 #define EXCEPTION_HPP
@@ -20,7 +22,9 @@ http://mooby.psxfanatics.com
 #include <iostream>
 #include <sstream>
 
+#ifdef WINDOWS
 #include <FL/fl_ask.H>
+#endif
 
 // the exception data for the plugin.  stores the line number too
 // for easy debugging

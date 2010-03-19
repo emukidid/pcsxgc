@@ -10,12 +10,16 @@ http://mooby.psxfanatics.com
 
 ************************************************************************/
 
+#ifdef WINDOWS
 #pragma warning(disable:4786)
+#endif
 
 #include "CDDAData.hpp"
 #include "Preferences.hpp"
 
+#ifdef WINDOWS
 #include <portaudio.h>
+#endif
 
 using namespace std;
 
@@ -25,7 +29,7 @@ extern std::string programName;
 // this callback repeats one track over and over
 int CDDACallbackRepeat(  void *inputBuffer, void *outputBuffer,
                      unsigned long framesPerBuffer,
-                     PaTimestamp outTime, void *userData )
+                     /*PaTimestamp outTime,*/ void *userData )
 {
    unsigned int i;
 /* Cast data passed through stream to our structure type. */
@@ -70,7 +74,7 @@ int CDDACallbackRepeat(  void *inputBuffer, void *outputBuffer,
 // this callback plays through one track once and stops
 int CDDACallbackOneTrackStop(  void *inputBuffer, void *outputBuffer,
                      unsigned long framesPerBuffer,
-                     PaTimestamp outTime, void *userData )
+                     /*PaTimestamp outTime,*/ void *userData )
 {
    unsigned int i;
 /* Cast data passed through stream to our structure type. */
@@ -140,16 +144,20 @@ PlayCDDAData::PlayCDDAData(const std::vector<TrackInfo> ti, CDTime gapLength)
 // initialize the CDDA file data and initalize the audio stream
 void PlayCDDAData::openFile(const std::string& file) 
 {
+#ifdef WINDOWS
    PaError err;
+#endif
    std::string extension;
    theCD = FileInterfaceFactory(file, extension);
    theCD->setPregap(pregapLength, trackList[2].trackStart);
+#ifdef WINDOWS
    err = Pa_Initialize();
    if( err != paNoError )
    {
       Exception e(string("PA Init error: ") + string(Pa_GetErrorText( err )));
       THROW(e);
    }
+#endif
       // disable extra caching on the file interface
    theCD->setCacheMode(FileInterface::oldMode);
 }
@@ -232,6 +240,7 @@ int PlayCDDAData::play(const CDTime& startTime)
 
       // open a stream - pass in this CDDA object as the user data.
       // depending on the play mode, use a different callback
+#ifdef WINDOWS
    PaError err;
    
    if (prefs.prefsMap[repeatString] == repeatAllString)
@@ -257,7 +266,7 @@ int PlayCDDAData::play(const CDTime& startTime)
    {
      return 0;
    }
-
+#endif
    playing = true;
    return 0;
 }
@@ -267,12 +276,14 @@ int PlayCDDAData::stop()
 {
    if (playing)
    {
+#ifdef WINDOWS
       PaError err = Pa_CloseStream( stream );
       if( err != paNoError )
       {  
          Exception e(string("PA Close Stream error: ") + string(Pa_GetErrorText( err )));
          THROW(e);
       }
+#endif
       playing = false;
    }
    return 0;

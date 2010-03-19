@@ -10,7 +10,9 @@ http://mooby.psxfanatics.com
 
 ************************************************************************/
 
+#ifdef WINDOWS
 #pragma warning(disable:4786)
+#endif
 
 #include "FileInterface.hpp"
 #include "TrackParser.hpp"
@@ -20,6 +22,7 @@ http://mooby.psxfanatics.com
 #include <sstream>
 
 #include <stdio.h>
+#ifdef WINDOWS
 #include <bzlib.h>
 #include <zlib.h>
 
@@ -27,6 +30,7 @@ http://mooby.psxfanatics.com
 bool RARFileInterface::alreadyUncompressed = false;
 unsigned char* RARFileInterface::theFile = NULL;
 unsigned long RARFileInterface::length = 0;
+#endif
 
 // leave this here or the unrarlib will complain about errors
 using namespace std;
@@ -60,6 +64,7 @@ FileInterface* FileInterfaceFactory(const std::string& filename,
 		// for every file type that's supported, try to match the extension
    FileInterface* image;
 
+#ifdef WINDOWS
    if (extensionMatches(filename, ".rar"))
    {
       extension = filename.substr(filename.size() - string(".rar").size());
@@ -95,7 +100,9 @@ FileInterface* FileInterfaceFactory(const std::string& filename,
       image = new ZTableFileInterface(1);
       image->openFile(filename);
    }
-   else if (extensionMatches(filename, ".ccd"))
+   else 
+#endif
+   if (extensionMatches(filename, ".ccd"))
    {
       moobyMessage("Please open the image and not the ccd file.");
       image = new UncompressedFileInterface(1);
@@ -177,7 +184,7 @@ void FileInterface::openFile(const std::string& str)
    file.open(str.c_str(), std::ios::binary);
    if (!file) 
    {
-      Exception e(std::string("Cannot open file: ") + str);
+      Exception e(std::string("Cannot open file: ") + str + "\r\n");
       THROW(e);
    }
    fileName = str;
@@ -186,6 +193,7 @@ void FileInterface::openFile(const std::string& str)
    bufferPos.setMSF(MSFTime(255,255,255));
 }
 
+#ifdef WINDOWS
 // seekUnbuffered for the .index/.table files.
 void CompressedFileInterface::seekUnbuffered(const CDTime& cdt)
 throw(std::exception, Exception)
@@ -196,7 +204,7 @@ throw(std::exception, Exception)
    unsigned long cdtime = requestedFrame / compressedFrames;
    if ((cdtime + 1) >= lookupTable.size())
    {
-      Exception e("Seek past end of compressed index");
+      Exception e("Seek past end of compressed index\r\n");
       THROW(e);
    }
    unsigned long seekStart = lookupTable[cdtime];
@@ -515,7 +523,7 @@ void RARFileInterface::openFile(const std::string& str) throw(Exception)
       CDLength = bufferEnd;
    }
 }
-
+#endif
 
 // reads data into the cache for UncompressedFileInterface
 void UncompressedFileInterface::seekUnbuffered(const CDTime& cdt)

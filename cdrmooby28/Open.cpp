@@ -23,12 +23,14 @@ http://mooby.psxfanatics.com
 #include "externs.h"
 #include <stdlib.h>
 
+#ifdef WINDOWS
 #include <FL/Fl.H>
 #include <FL/Fl_Button.H>
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Input.H>
 #include <FL/Fl_File_Chooser.H>
 #include <FL/Fl_File_Icon.H>
+#endif
 
 using namespace std;
 
@@ -89,6 +91,7 @@ void openIt(void)
    if (prefs.prefsMap[autorunString] == std::string())
    {
       char * returned;
+#ifdef WINDOWS
       while ( (returned = moobyFileChooser("Choose an image to run", theUsualSuspects.c_str(), prefs.prefsMap[lastrunString])) == NULL)
       {
          if (moobyAsk("You hit cancel or didn't pick a file.\nPick a different file? ('No' will end the program)") == 0)
@@ -96,6 +99,7 @@ void openIt(void)
             exit(0);
          }
       }
+#endif
       theFile = returned;
    }
    else
@@ -148,8 +152,6 @@ int CD_Stop(void)
    return theCD->stopTrack();
 }
 
-#if defined _WINDOWS || defined __CYGWIN32__
-
 long CALLBACK CDRgetStatus(struct CdrStat *stat) 
 {
    if (theCD->isPlaying())
@@ -168,8 +170,6 @@ long CALLBACK CDRgetStatus(struct CdrStat *stat)
    stat->Time[2] = intToBCD(now.f());
    return 0;
 }
-
-#endif
 
 char CALLBACK CDRgetDriveLetter(void)
 {

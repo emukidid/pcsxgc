@@ -127,6 +127,7 @@ protected:
       const unsigned long requiredFrames);
 };
 
+#ifdef WINDOWS
 // virtual interface to compressed files with index files (like .bz.index or .Z.table)
 class CompressedFileInterface : public FileInterface
 {
@@ -229,6 +230,7 @@ protected:
 private:
    BZIndexFileInterface();
 };
+#endif
 
 // interface to uncompressed files
 class UncompressedFileInterface : public FileInterface
@@ -248,7 +250,7 @@ private:
    UncompressedFileInterface();
 };
 
-
+#ifdef WINDOWS
 // interface to RAR files.  All the data members are static so it doesn't
 // decompress the file twice for normal data and CDDA data
 class RARFileInterface : public FileInterface
@@ -283,6 +285,7 @@ private:
 		// the length of the file
    static unsigned long length;
 };
+#endif
 
 // i optimized this function so the CDTimes don't need to use the timeConvert() function
 // with all the + operations.  If the data is buffered, it should return very quickly.
@@ -330,7 +333,7 @@ inline void FileInterface::seek(const CDTime& cdt)
    }
    else
    {
-      Exception e("Seek past end of disc");
+      Exception e("Seek past end of disc\r\n");
       THROW(e);
    }
 }

@@ -1,6 +1,6 @@
 #ifndef CONFIG_FUNCTIONS_HPP
 #define CONFIG_FUNCTIONS_HPP
-
+#ifdef WINDOWS
 #include "ConfigCallbacks.hpp"
 
 #include "Utils.hpp"
@@ -39,5 +39,5 @@ public:
 private:
    ConfigWindow w;
 };
-
+#endif
 #endif

@@ -14,9 +14,11 @@ http://mooby.psxfanatics.com
 #include "defines.h"
 #include "externs.h"
 #include "Utils.hpp"
+#ifdef WINDOWS
 #include <FL/fl_ask.h>
 #include <FL/Fl.H>
 #include <string.h>
+
 
 //  About.cpp
 //  has the config, about, and test functions and related structs
@@ -56,7 +58,6 @@ static FPSEAbout aboutMooby = {FPSE_CDROM,
 #endif
    "moo"};
 
-
 /** PSX emu interface **/
 
 // lots of this code was swiped from PEOPS.  thank you =)
@@ -74,20 +75,26 @@ unsigned long CALLBACK PSEgetLibVersion(void)
 {
  return version<<16|REVISION<<8|BUILD;
 }
+#endif
 
 void CALLBACK CDRabout(void)
 {
+#ifdef WINDOWS
    std::ostringstream out;
    out << libraryName;
    moobyMessage(out.str());
+#endif
 }
 
 long CALLBACK CDRtest(void)
 {
+#ifdef WINDOWS
    moobyMessage("Of course it'll work.");
+#endif
    return 0;
 }
 
+#ifdef WINDOWS
 /** FPSE interface **/
 
 void   CD_About(UINT32 *par)
@@ -121,3 +128,4 @@ char* CALLBACK PS2EgetLibName(void)
 {
    return PSEgetLibName();  
 }
+#endif

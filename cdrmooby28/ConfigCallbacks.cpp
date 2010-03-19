@@ -9,7 +9,7 @@ http://mooby.psxfanatics.com
   the source code distribution.
 
 ************************************************************************/
-
+#ifdef WINDOWS
 #pragma warning(disable:4786)
 
 #include <FL/Fl.H>
@@ -353,3 +353,4 @@ void subEnable(Fl_Check_Button* button, void*)
       prefs.prefsMap[subEnableString] = std::string();
    prefs.write();
 }
+#endif

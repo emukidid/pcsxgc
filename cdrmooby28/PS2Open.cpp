@@ -1,3 +1,4 @@
+#ifdef WINDOWS
 #pragma warning(disable:4786)
 
 #include "externs.h"
@@ -47,4 +48,4 @@ s32  CALLBACK CDVDgetTD(u8 Track, cdvdLoc *Buffer)
 {
    return CDRgetTD(Track, (unsigned char*)Buffer);
 }
-
+#endif

@@ -10,8 +10,9 @@ http://mooby.psxfanatics.com
 
 ************************************************************************/
 
+#ifdef WINDOWS
 #pragma warning(disable:4786)
-
+#endif
 
 #ifndef EXTERNS_H
 #define EXTERNS_H
@@ -34,10 +35,7 @@ long CALLBACK CDRshutdown(void);
 long CALLBACK CDRplay(unsigned char * sector);
 long CALLBACK CDRstop(void);
 
-// gcc doenst like this...
-#if defined _WINDOWS || defined __CYGWIN32__
 long CALLBACK CDRgetStatus(struct CdrStat *stat) ;
-#endif
 
 char CALLBACK CDRgetDriveLetter(void);
 long CALLBACK CDRinit(void);

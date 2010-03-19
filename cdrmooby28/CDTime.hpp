@@ -20,6 +20,14 @@ http://mooby.psxfanatics.com
 
 #include <iomanip>
 #include <iostream>
+extern "C" {
+  #include <gccore.h>
+  #include <string.h>
+  #include <stdint.h>
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <unistd.h>
+}
 
 // MSFTime is a container for minute, second, and frame
 class MSFTime

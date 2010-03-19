@@ -18,7 +18,10 @@ http://mooby.psxfanatics.com
 #include <map>
 #include <list>
 #include <string>
+
+#ifdef WINDOWS
 #include <FL/Fl_Preferences.h>
+#endif
 
 static char* repeatString = "repeat";
 static char* volumeString = "volume";

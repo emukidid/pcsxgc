@@ -9,6 +9,7 @@ http://mooby.psxfanatics.com
   the source code distribution.
 
 ************************************************************************/
+#ifdef WINDOWS
 
 #pragma warning(disable:4786)
 
@@ -132,3 +133,4 @@ void CALLBACK CDVDconfigure()
 {
    CDRconfigure();
 }
+#endif

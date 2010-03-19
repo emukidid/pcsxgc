@@ -1,11 +1,15 @@
 #include "Preferences.hpp"
 
+#ifdef WINDOWS
 #pragma warning(disable:4786)
+#endif
 
 Preferences::Preferences()
    : initialized(false)
 {
+#ifdef WINDOWS
    this->open();
+#endif
 }
 
 Preferences::~Preferences()
@@ -14,6 +18,7 @@ Preferences::~Preferences()
 
 void Preferences::write()
 {
+#ifdef WINDOWS
 #ifdef WIN32
    HKEY myKey;
    DWORD myDisp;
@@ -40,10 +45,12 @@ void Preferences::write()
       itr++;
    }
 #endif
+#endif
 }
 
 void Preferences::open()
 {
+#ifdef WINDOWS
    if (!initialized)
    {
       initialized = true;
@@ -96,4 +103,5 @@ void Preferences::open()
 
       delete [] buffer;
    }
+#endif
 }

@@ -10,8 +10,9 @@ http://mooby.psxfanatics.com
 
 ************************************************************************/
 
+#ifdef WINDOWS
 #pragma warning(disable:4786)
-
+#endif
 
 #ifndef __DEFINES_H
 #define __DEFINES_H
@@ -21,6 +22,8 @@ http://mooby.psxfanatics.com
 #else
 #define CALLBACK
 #endif
+
+#include <gccore.h>
 
 // PSEMU DEFINES
 
@@ -122,6 +125,8 @@ typedef struct {
     HINSTANCE     HInstance;
 } FPSEWin32;
 
+#endif
+
 // cdr stat struct
 struct CdrStat
 {
@@ -129,8 +134,6 @@ struct CdrStat
  unsigned long Status;
  unsigned char Time[3]; // current playing time
 };
-
-#endif
 
 // Main Struct for initialization
 typedef struct {
@@ -158,6 +161,7 @@ typedef struct {
 
 /* PS2 defines */
 
+#if 0
 #if defined(_WINDOWS)
 
 typedef __int8  s8;
@@ -170,7 +174,7 @@ typedef unsigned __int16 u16;
 typedef unsigned __int32 u32;
 typedef unsigned __int64 u64;
 
-#elif defined(__LINUX__)
+#else
 
 typedef char s8;
 typedef short s16;
@@ -182,6 +186,7 @@ typedef unsigned short u16;
 typedef unsigned long u32;
 typedef unsigned long long u64;
 
+#endif
 #endif
 
 typedef struct { // NOT bcd coded
