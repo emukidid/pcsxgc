@@ -34,6 +34,7 @@
 //*************************************************************************//
 
 #include "stdafx.h"
+#include "spuswap.h"
 
 #define _IN_REVERB
 
@@ -117,8 +118,8 @@ INLINE void StoreREVERB(SPUCHAN * pChannel,int ns)
  else
  if(iUseReverb==2) // -------------------------------- // Neil's reverb
   {
-   const int iRxl=(pChannel->sval*pChannel->iLeftVolume)/0x4000;
-   const int iRxr=(pChannel->sval*pChannel->iRightVolume)/0x4000;
+   const int iRxl=(pChannel->sval*pChannel->iLeftVolume)>>14;
+   const int iRxr=(pChannel->sval*pChannel->iRightVolume)>>14;
 
    ns<<=1;
 
@@ -131,10 +132,10 @@ INLINE void StoreREVERB(SPUCHAN * pChannel,int ns)
 
    // we use the half channel volume (/0x8000) for the first reverb effects, quarter for next and so on
 
-   int iRxl=(pChannel->sval*pChannel->iLeftVolume)/0x8000;
-   int iRxr=(pChannel->sval*pChannel->iRightVolume)/0x8000;
+   int iRxl=(pChannel->sval*pChannel->iLeftVolume)>>15;
+   int iRxr=(pChannel->sval*pChannel->iRightVolume)>>15;
  
-   for(iRn=1;iRn<=pChannel->iRVBNum;iRn++,iRr+=pChannel->iRVBRepeat,iRxl/=2,iRxr/=2)
+   for(iRn=1;iRn<=pChannel->iRVBNum;iRn++,iRr+=pChannel->iRVBRepeat,iRxl>>=1,iRxr>>=1)
     {
      pN=sRVBPlay+((pChannel->iRVBOffset+iRr+ns)<<1);
      if(pN>=sRVBEnd) pN=sRVBStart+(pN-sRVBEnd);
@@ -154,7 +155,7 @@ INLINE int g_buffer(int iOff)                          // get_buffer content hel
  iOff=(iOff*4)+rvb.CurrAddr;
  while(iOff>0x3FFFF)       iOff=rvb.StartAddr+(iOff-0x40000);
  while(iOff<rvb.StartAddr) iOff=0x3ffff-(rvb.StartAddr-iOff);
- return (int)*(p+iOff);
+ return (int)(short)LE2HOST16(*(p+iOff));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -166,7 +167,7 @@ INLINE void s_buffer(int iOff,int iVal)                // set_buffer content hel
  while(iOff>0x3FFFF) iOff=rvb.StartAddr+(iOff-0x40000);
  while(iOff<rvb.StartAddr) iOff=0x3ffff-(rvb.StartAddr-iOff);
  if(iVal<-32768L) iVal=-32768L;if(iVal>32767L) iVal=32767L;
- *(p+iOff)=(short)iVal;
+ *(p+iOff)=HOST2LE16((short)iVal);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -178,7 +179,7 @@ INLINE void s_buffer1(int iOff,int iVal)                // set_buffer (+1 sample
  while(iOff>0x3FFFF) iOff=rvb.StartAddr+(iOff-0x40000);
  while(iOff<rvb.StartAddr) iOff=0x3ffff-(rvb.StartAddr-iOff);
  if(iVal<-32768L) iVal=-32768L;if(iVal>32767L) iVal=32767L;
- *(p+iOff)=(short)iVal;
+ *(p+iOff)=HOST2LE16((short)iVal);
 }
 
 ////////////////////////////////////////////////////////////////////////

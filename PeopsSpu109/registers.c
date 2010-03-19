@@ -47,6 +47,7 @@
 #include "reverb.h"
 #include <gccore.h>
 #include "../PsxMem.h"
+#include "spuswap.h"
 /*
 // adsr time values (in ms) by James Higgs ... see the end of
 // the adsr.c source for details
@@ -205,7 +206,7 @@ void CALLBACK PEOPS_SPUwriteRegister(unsigned long reg, unsigned short val)
       break;
     //-------------------------------------------------//
     case H_SPUdata:
-      spuMem[spuAddr>>1] = SWAP16(val);
+      spuMem[spuAddr>>1] = HOST2LE16(val);
       spuAddr+=2;
       if(spuAddr>0x7ffff) spuAddr=0;
       break;
@@ -417,7 +418,7 @@ unsigned short CALLBACK PEOPS_SPUreadRegister(unsigned long reg)
 
     case H_SPUdata:
      {
-      unsigned short s=SWAP16(spuMem[spuAddr>>1]);
+      unsigned short s=LE2HOST16(spuMem[spuAddr>>1]);
       spuAddr+=2;
       if(spuAddr>0x7ffff) spuAddr=0;
       return s;

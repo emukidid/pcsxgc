@@ -31,6 +31,8 @@
 #include "externals.h"
 #include <gccore.h>
 #include "../PsxMem.h"
+#include "spuswap.h"
+
 ////////////////////////////////////////////////////////////////////////
 // READ DMA (one value)
 ////////////////////////////////////////////////////////////////////////
@@ -40,8 +42,7 @@ unsigned short CALLBACK PEOPS_SPUreadDMA(void)
   //DEBUG_print("PEOPS_SPUreadDMA called",13);
  unsigned short s;
 
- //s=SWAP16(spuMem[spuAddr>>1]);
-  s=spuMem[spuAddr>>1];
+  s=LE2HOST16(spuMem[spuAddr>>1]);
 
  spuAddr+=2;
  if(spuAddr>0x7ffff) spuAddr=0;
@@ -57,15 +58,12 @@ unsigned short CALLBACK PEOPS_SPUreadDMA(void)
 
 void CALLBACK PEOPS_SPUreadDMAMem(unsigned short * pusPSXMem,int iSize)
 {
-  //DEBUG_print("PEOPS_SPUreadDMAmem called",14);
- int i;
+ int i, mask = 0x7fffe;
 
  for(i=0;i<iSize;i++)
   {
    *pusPSXMem++=spuMem[spuAddr>>1];                    // spu addr got by writeregister
-   //spuMem[spuAddr>>1] = SWAP16(spuMem[spuAddr>>1]);
-   spuAddr+=2;                                         // inc spu addr
-   if(spuAddr>0x7ffff) spuAddr=0;                      // wrap
+   spuAddr = (spuAddr+2) & mask;
   }
 
  iSpuAsyncWait=0;
@@ -86,9 +84,7 @@ void CALLBACK PEOPS_SPUreadDMAMem(unsigned short * pusPSXMem,int iSize)
   
 void CALLBACK PEOPS_SPUwriteDMA(unsigned short val)
 {
-//  DEBUG_print("PEOPS_SPUwriteDMA called",15);
- //spuMem[spuAddr>>1] = SWAP16(val);                             // spu addr got by writeregister
-  spuMem[spuAddr>>1] = val;
+ spuMem[spuAddr>>1] = HOST2LE16(val);                  // spu addr got by writeregister
  spuAddr+=2;                                           // inc spu addr
  if(spuAddr>0x7ffff) spuAddr=0;                        // wrap
 
@@ -102,15 +98,12 @@ void CALLBACK PEOPS_SPUwriteDMA(unsigned short val)
 
 void CALLBACK PEOPS_SPUwriteDMAMem(unsigned short * pusPSXMem,int iSize)
 {
-//  DEBUG_print("PEOPS_SPUwriteDMAmem called",16);
- int i;
+ int i, mask = 0x7fffe;
 
  for(i=0;i<iSize;i++)
   {
    spuMem[spuAddr>>1] = *pusPSXMem++;                  // spu addr got by writeregister
-   //spuMem[spuAddr>>1] = SWAP16(spuMem[spuAddr>>1]);
-   spuAddr+=2;                                         // inc spu addr
-   if(spuAddr>0x7ffff) spuAddr=0;                      // wrap
+   spuAddr = (spuAddr+2) & mask;                                    // wrap
   }
  
  iSpuAsyncWait=0;

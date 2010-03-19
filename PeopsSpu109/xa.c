@@ -70,8 +70,8 @@ INLINE void MixXA(void)
   {
    XALastVal=*XAPlay++;
    if(XAPlay==XAEnd) XAPlay=XAStart;
-   SSumL[ns]+=(((short)(XALastVal&0xffff))       * iLeftXAVol)/32767;
-   SSumR[ns]+=(((short)((XALastVal>>16)&0xffff)) * iRightXAVol)/32767;
+   SSumL[ns]+=(((short)(XALastVal&0xffff))       * iLeftXAVol)/32768;
+   SSumR[ns]+=(((short)((XALastVal>>16)&0xffff)) * iRightXAVol)/32768;
   }
 
  if(XAPlay==XAFeed && XARepeat)
@@ -79,8 +79,8 @@ INLINE void MixXA(void)
    XARepeat--;
    for(;ns<NSSIZE;ns++)
     {
-     SSumL[ns]+=(((short)(XALastVal&0xffff))       * iLeftXAVol)/32767;
-     SSumR[ns]+=(((short)((XALastVal>>16)&0xffff)) * iRightXAVol)/32767;
+     SSumL[ns]+=(((short)(XALastVal&0xffff))       * iLeftXAVol)/32768;
+     SSumR[ns]+=(((short)((XALastVal>>16)&0xffff)) * iRightXAVol)/32768;
     }
   }
 }

@@ -538,9 +538,8 @@ static void *MAINThread(void *arg)
  int ch,predict_nr,shift_factor,flags,d,s;
  int bIRQReturn=0;SPUCHAN * pChannel;
                             
- //while(!bEndThread)                                    // until we are shutting down
+// while(!bEndThread)                                    // until we are shutting down
  // {
-//    SysPrintf("MAINThread called\n");
    //--------------------------------------------------//
    // ok, at the beginning we are looking if there is
    // enuff free place in the dsound/oss buffer to
@@ -754,7 +753,7 @@ GOON: ;
               fa=iGetNoiseVal(pChannel);               // get noise val
          else fa=iGetInterpolationVal(pChannel);       // get sample val
 
-         pChannel->sval=(MixADSR(pChannel)*fa)/1023;   // mix adsr
+         pChannel->sval=(MixADSR(pChannel)*fa)/1024;   // mix adsr
 
          if(pChannel->bFMod==2)                        // fmod freq channel
           iFMod[ns]=pChannel->sval;                    // -> store 1T sample data, use that to do fmod on next channel
@@ -1112,14 +1111,14 @@ void SetupStreams(void)
 
  //sRVBStart = (int *)malloc(i*4);                       // alloc reverb buffer
  memset(sRVBStart,0,i*4);
- sRVBEnd  = sRVBStart + i;
- sRVBPlay = sRVBStart;
+ sRVBEnd  = &sRVBStart[0] + i;
+ sRVBPlay = &sRVBStart[0];
 
  //XAStart =                                             // alloc xa buffer
   //(unsigned long *)malloc(44100*4);
- XAPlay  = XAStart;
- XAFeed  = XAStart;
- XAEnd   = XAStart + 44100;
+ XAPlay  = &XAStart[0];
+ XAFeed  = &XAStart[0];
+ XAEnd   = &XAStart[0] + 44100;
 
  for(i=0;i<MAXCHAN;i++)                                // loop sound channels
   {
