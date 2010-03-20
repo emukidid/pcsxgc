@@ -26,8 +26,8 @@
 #include <malloc.h>
 
 
-#define NUM_BUFFERS 8
-#define BUFFER_SIZE (2*1024)
+#define NUM_BUFFERS 16
+#define BUFFER_SIZE (4*1024)
 static char buffer[NUM_BUFFERS][BUFFER_SIZE] __attribute__((aligned(32)));
 static int which_buffer = 0;
 static unsigned int buffer_offset = 0;
