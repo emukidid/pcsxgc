@@ -108,7 +108,7 @@ void RemoveSound(void)
 unsigned long SoundGetBytesBuffered(void)
 {
 	// FIXME: I don't think this is accurate at all
-	unsigned int buffered = ((which_buffer - thread_buffer + NUM_BUFFERS) % NUM_BUFFERS) * buffer_size;
+	unsigned int buffered = ((which_buffer - thread_buffer + NUM_BUFFERS) % NUM_BUFFERS) * BUFFER_SIZE;
 	return buffered + (ASND_TestVoiceBufferReady(voice) ? 0 : ASND_GetSamplesPerTick());
 }
 
