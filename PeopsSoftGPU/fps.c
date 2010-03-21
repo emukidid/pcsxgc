@@ -83,6 +83,9 @@ float  fps_cur  = 0;
 
 void CheckFrameRate(void)
 {
+#ifdef PROFILE
+ start_section(IDLE_SECTION);
+#endif
  if(UseFrameSkip)                                      // skipping mode?
   {
    if(!(dwActFixes&0x80))                              // not old skipping mode?
@@ -109,6 +112,9 @@ void CheckFrameRate(void)
    if(UseFrameLimit) FrameCap();                       // -> do it
    if(ulKeybits&KEY_SHOWFPS) calcfps();                // -> and calc fps display
   }
+#ifdef PROFILE
+	end_section(IDLE_SECTION);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////

@@ -22,6 +22,7 @@
 #define DBG_CDR2  11
 #define DBG_CDR3  12
 #define DBG_CDR4  13
+#define DBG_PROFILE_IDLE 14
 #define DBG_PROFILE_GFX 15
 #define DBG_PROFILE_AUDIO 16
 #define DBG_PROFILE_TLB 17
