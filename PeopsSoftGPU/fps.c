@@ -47,6 +47,9 @@
 #include "fps.h"
 #include "gpu.h"
 
+#ifdef __GX__
+#include "../Gamecube/DEBUG.h"
+#endif //__GX__
 
 ////////////////////////////////////////////////////////////////////////
 // FPS stuff
@@ -696,9 +699,17 @@ void FrameCap (void)
      if((_ticks_since_last_update-TicksToWait) > dwFrameRateTicks)
           TicksToWait=0;
      else TicksToWait=dwFrameRateTicks-(_ticks_since_last_update-TicksToWait);
+#ifdef SHOW_DEBUG
+//	sprintf(txtbuffer, "FrameCap: No Wait; dwFrameRateTicks %i; TicksToWait %i",(int)dwFrameRateTicks, (int)TicksToWait);
+//	DEBUG_print(txtbuffer,DBG_GPU2);
+#endif //SHOW_DEBUG
     }
    else
     {
+#ifdef SHOW_DEBUG
+//	sprintf(txtbuffer, "FrameCap: Wait; dwFRTicks %i; TicksWait %i; TicksSince %i",(int)dwFrameRateTicks, (int)TicksToWait, (int)_ticks_since_last_update);
+//	DEBUG_print(txtbuffer,DBG_GPU3);
+#endif //SHOW_DEBUG
      while (Waiting)
       {
        curticks = timeGetTime();
@@ -706,6 +717,10 @@ void FrameCap (void)
        if ((_ticks_since_last_update > TicksToWait) ||
            (curticks < lastticks))
         {
+#ifdef SHOW_DEBUG
+//	sprintf(txtbuffer, "FrameCap: Done Wait; TicksWait %i; TicksSince %i; cur %i; last %i",(int)TicksToWait, (int)_ticks_since_last_update, (int)curticks, (int)lastticks);
+//	DEBUG_print(txtbuffer,DBG_GPU3+1);
+#endif //SHOW_DEBUG
          Waiting = FALSE;
          lastticks = curticks;
          TicksToWait = dwFrameRateTicks;
@@ -978,7 +993,8 @@ void SetAutoFrameCap(void)
            fFrameRateHz=33868800.0f/565031.25f;        // 59.94146
       else fFrameRateHz=33868800.0f/566107.50f;        // 59.82750
     }
-   dwFrameRateTicks=(TIMEBASE / (unsigned long)fFrameRateHz);
+//   dwFrameRateTicks=(TIMEBASE / (unsigned long)fFrameRateHz);
+   dwFrameRateTicks=(unsigned long) (TIMEBASE / fFrameRateHz);
   }
 }
 
