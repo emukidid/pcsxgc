@@ -145,6 +145,24 @@ unsigned char SSS_PADpoll (const unsigned char value);
 long SSS_PADreadPort1 (PadDataS* pads);
 long SSS_PADreadPort2 (PadDataS* pads);
 
+/* Mooby28 CDR Plugin */
+void CALLBACK Mooby2CDRabout(void);
+long CALLBACK Mooby2CDRtest(void);
+long CALLBACK Mooby2CDRconfigure(void);
+long CALLBACK Mooby2CDRclose(void);
+long CALLBACK Mooby2CDRopen(void);
+long CALLBACK Mooby2CDRshutdown(void);
+long CALLBACK Mooby2CDRplay(unsigned char * sector);
+long CALLBACK Mooby2CDRstop(void);
+long CALLBACK Mooby2CDRgetStatus(struct CdrStat *stat) ;
+char CALLBACK Mooby2CDRgetDriveLetter(void);
+long CALLBACK Mooby2CDRinit(void);
+long CALLBACK Mooby2CDRgetTN(unsigned char *buffer);
+unsigned char * CALLBACK Mooby2CDRgetBufferSub(void);
+long CALLBACK Mooby2CDRgetTD(unsigned char track, unsigned char *buffer);
+long CALLBACK Mooby2CDRreadTrack(unsigned char *time);
+unsigned char * CALLBACK Mooby2CDRgetBuffer(void);
+
 #define EMPTY_PLUGIN \
 	{ NULL,      \
 	  0,         \
@@ -189,6 +207,35 @@ long SSS_PADreadPort2 (PadDataS* pads);
 	      (void*)SSS_PADreadPort2} \
 	       } }
 
+#define MOOBY28_CDR_PLUGIN \
+	{ "CDR",      \
+	  12,         \
+	  { { "CDRinit",  \
+	      (void*)Mooby2CDRinit }, \
+	    { "CDRshutdown",	\
+	      (void*)Mooby2CDRshutdown}, \
+	    { "CDRopen", \
+	      (void*)Mooby2CDRopen}, \
+	    { "CDRclose", \
+	      (void*)Mooby2CDRclose}, \
+	    { "CDRgetTN", \
+	      (void*)Mooby2CDRgetTN}, \
+	    { "CDRgetTD", \
+	      (void*)Mooby2CDRgetTD}, \
+	    { "CDRreadTrack", \
+	      (void*)Mooby2CDRreadTrack}, \
+	    { "CDRgetBuffer", \
+	      (void*)Mooby2CDRgetBuffer}, \
+	    { "CDRplay", \
+	      (void*)Mooby2CDRplay}, \
+	    { "CDRstop", \
+	      (void*)Mooby2CDRstop}, \
+	    { "CDRgetStatus", \
+	      (void*)Mooby2CDRgetStatus}, \
+	    { "CDRgetBufferSub", \
+	      (void*)Mooby2CDRgetBufferSub} \
+	       } }
+	       
 #define CDR_PLUGIN \
 	{ "CDR",      \
 	  12,         \
@@ -359,7 +406,8 @@ long SSS_PADreadPort2 (PadDataS* pads);
 #define PLUGIN_SLOT_0 EMPTY_PLUGIN
 #define PLUGIN_SLOT_1 PAD1_PLUGIN
 #define PLUGIN_SLOT_2 PAD2_PLUGIN
-#define PLUGIN_SLOT_3 CDR_PLUGIN
+//#define PLUGIN_SLOT_3 CDR_PLUGIN
+#define PLUGIN_SLOT_3 MOOBY28_CDR_PLUGIN
 //#define PLUGIN_SLOT_4 SPU_NULL_PLUGIN
 #define PLUGIN_SLOT_4 SPU_PEOPS_PLUGIN
 //#define PLUGIN_SLOT_5 GPU_NULL_PLUGIN

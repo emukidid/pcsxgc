@@ -32,7 +32,6 @@
 # include <debug.h>
 #endif
 #include "../PsxCommon.h"
-#include "PlugCD.h"
 #include "wiiSXconfig.h"
 #include "menu/MenuContext.h"
 extern "C" {

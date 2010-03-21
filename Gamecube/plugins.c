@@ -156,7 +156,7 @@ int LoadCDRplugin(char *CDRdll) {
 	LoadCdrSym1(stop, "CDRstop");
 	LoadCdrSym1(getStatus, "CDRgetStatus");
 	LoadCdrSym0(getDriveLetter, "CDRgetDriveLetter");
-	LoadCdrSym0(getBufferSub, "CDRgetBufferSub");
+	LoadCdrSym1(getBufferSub, "CDRgetBufferSub");
 	LoadCdrSym0(configure, "CDRconfigure");
 	LoadCdrSym0(test, "CDRtest");
 	LoadCdrSym0(about, "CDRabout");

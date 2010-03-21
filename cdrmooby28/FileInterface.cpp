@@ -32,6 +32,14 @@ unsigned char* RARFileInterface::theFile = NULL;
 unsigned long RARFileInterface::length = 0;
 #endif
 
+extern "C" {
+#include "../fileBrowser/fileBrowser.h"
+#include "../fileBrowser/fileBrowser-libfat.h"
+#include "../fileBrowser/fileBrowser-DVD.h"
+#include "../fileBrowser/fileBrowser-CARD.h"
+extern fileBrowser_file *isoFile; 
+}
+
 // leave this here or the unrarlib will complain about errors
 using namespace std;
 
@@ -42,16 +50,17 @@ FileInterface::FileInterface(const unsigned long requestedFrames,
    : bufferFrames(0), fileBuffer(NULL), pregapLength(CDTime(0,0,0)), 
      pregapTime(CDTime(99,59,74)), cacheMode(oldMode)
 {
-   cache.setMaxSize(atoi(prefs.prefsMap[cacheSizeString].c_str()));
+   //cache.setMaxSize(atoi(prefs.prefsMap[cacheSizeString].c_str()));
+   cache.setMaxSize(1);
    if (requiredFrames != 0)
    {
       bufferFrames = (requestedFrames < requiredFrames) ? requiredFrames : requestedFrames;
       fileBuffer = new unsigned char[bufferFrames * bytesPerFrame];
    }
       // set the holdout size
-   if (prefs.prefsMap[cachingModeString] == newCachingString)
-      cacheMode = newMode;
-   else if (prefs.prefsMap[cachingModeString] == oldCachingString)
+//   if (prefs.prefsMap[cachingModeString] == newCachingString)
+//      cacheMode = newMode;
+//   else if (prefs.prefsMap[cachingModeString] == oldCachingString)
       cacheMode = oldMode;
 }
 
@@ -181,16 +190,15 @@ FileInterface& FileInterface::setPregap(const CDTime& gapLength,
 void FileInterface::openFile(const std::string& str)
       throw(Exception)
 {
-   file.open(str.c_str(), std::ios::binary);
-   if (!file) 
-   {
-      Exception e(std::string("Cannot open file: ") + str + "\r\n");
-      THROW(e);
-   }
-   fileName = str;
-   CDLength= CDTime(file.seekg(0, std::ios::end).tellg(), CDTime::abByte) + CDTime(0,2,0);
-   file.clear();
-   bufferPos.setMSF(MSFTime(255,255,255));
+	if(isoFile->size <= 0) {
+    Exception e(std::string("Cannot open file: ") + str + "\r\n");
+    THROW(e);
+  }
+  isoFile_seekFile(isoFile,0,SEEK_SET);
+  fileName = str;
+  CDLength= CDTime(isoFile->size, CDTime::abByte) + CDTime(0,2,0);
+
+  bufferPos.setMSF(MSFTime(255,255,255));
 }
 
 #ifdef WINDOWS
@@ -529,10 +537,9 @@ void RARFileInterface::openFile(const std::string& str) throw(Exception)
 void UncompressedFileInterface::seekUnbuffered(const CDTime& cdt)
    throw(std::exception, Exception)
 {
-   file.clear();
    CDTime seekTime(cdt - CDTime(0,2,0));
-   file.seekg(seekTime.getAbsoluteByte(), ios::beg);
-   file.read((char*)fileBuffer, bufferFrames * bytesPerFrame);
+   isoFile_seekFile(isoFile,seekTime.getAbsoluteByte(),SEEK_SET);
+   isoFile_readFile(isoFile,(char*)fileBuffer,bufferFrames * bytesPerFrame);
    bufferPointer = fileBuffer;
    bufferPos = cdt;
    bufferEnd = cdt + CDTime(bufferFrames, CDTime::abFrame);

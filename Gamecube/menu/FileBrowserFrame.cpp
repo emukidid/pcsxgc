@@ -34,7 +34,7 @@ extern "C" {
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-DVD.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
-char getNumTracks();
+long Mooby2CDRgetTN(unsigned char *buffer);
 /*#include "../main/rom.h"
 #include "../main/ROM-Cache.h"
 #include "../main/wii64config.h"*/
@@ -354,7 +354,9 @@ void fileBrowserFrame_LoadFile(int i)
 			strcat(RomInfo,buffer);
 			sprintf(buffer,"BIOS: %s\n",(Config.HLE==BIOS_USER_DEFINED) ? "USER DEFINED":"HLE");
 			strcat(RomInfo,buffer);
-			sprintf(buffer,"Number of tracks %i\n", getNumTracks());
+			unsigned char tracks[2];
+      Mooby2CDRgetTN(&tracks[0]);
+      sprintf(buffer,"Number of tracks %i\n", tracks[1]);
 			strcat(RomInfo,buffer);
     		
 			

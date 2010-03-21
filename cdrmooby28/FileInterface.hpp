@@ -90,8 +90,6 @@ protected:
    virtual void seekUnbuffered(const CDTime& cdt)
       throw(std::exception, Exception) = 0;
 
-		// the cd image
-   std::ifstream file;
 		// the number of frames buffered (0 for RAR)
    unsigned long bufferFrames;
 		// the buffer to the cached data

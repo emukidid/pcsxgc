@@ -10,7 +10,9 @@ http://mooby.psxfanatics.com
 
 ************************************************************************/
 
+#ifdef WINDOWS
 #pragma warning(disable:4786)
+#endif
 
 #include <iostream>
 #include <string>
@@ -31,6 +33,15 @@ http://mooby.psxfanatics.com
 #include <FL/Fl_File_Chooser.H>
 #include <FL/Fl_File_Icon.H>
 #endif
+
+extern "C" {
+#include "../DEBUG.h"
+#include "../fileBrowser/fileBrowser.h"
+#include "../fileBrowser/fileBrowser-libfat.h"
+#include "../fileBrowser/fileBrowser-DVD.h"
+#include "../fileBrowser/fileBrowser-CARD.h"
+extern fileBrowser_file *isoFile; 
+}
 
 using namespace std;
 
@@ -72,7 +83,7 @@ void closeIt(void)
    }
 }
 
-long CALLBACK CDRclose(void)
+long CALLBACK Mooby2CDRclose(void)
 {
    closeIt();
    return 0;
@@ -86,7 +97,8 @@ void CD_Close(void)
 void openIt(void)
 {
    if (theCD)
-      CDRclose();
+      Mooby2CDRclose();
+/*
    std::string theFile;
    if (prefs.prefsMap[autorunString] == std::string())
    {
@@ -100,20 +112,20 @@ void openIt(void)
          }
       }
 #endif
-      theFile = returned;
+      theFile = isoFile->name;
    }
    else
    {
       theFile = prefs.prefsMap[autorunString];
    }
    prefs.prefsMap[lastrunString] = theFile;
-   prefs.write();
+   prefs.write();*/
    theCD = new CDInterface();
-   theCD->open(theFile);
+   theCD->open(isoFile->name);
 }
 
 // psemu open call - call open
-long CALLBACK CDRopen(void)
+long CALLBACK Mooby2CDRopen(void)
 {
    mode = psemu;
    openIt();
@@ -127,12 +139,12 @@ int CD_Open(unsigned int* par)
    return FPSE_OK;
 }
 
-long CALLBACK CDRshutdown(void)
+long CALLBACK Mooby2CDRshutdown(void)
 {
-   return CDRclose();
+   return Mooby2CDRclose();
 }
 
-long CALLBACK CDRplay(unsigned char * sector)
+long CALLBACK Mooby2CDRplay(unsigned char * sector)
 {  
    return theCD->playTrack(CDTime(sector, msfint));
 }
@@ -142,7 +154,7 @@ int CD_Play(unsigned char * sector)
    return theCD->playTrack(CDTime(sector, msfint));
 }
 
-long CALLBACK CDRstop(void)
+long CALLBACK Mooby2CDRstop(void)
 {
 	return theCD->stopTrack();
 }
@@ -152,7 +164,7 @@ int CD_Stop(void)
    return theCD->stopTrack();
 }
 
-long CALLBACK CDRgetStatus(struct CdrStat *stat) 
+long CALLBACK Mooby2CDRgetStatus(struct CdrStat *stat) 
 {
    if (theCD->isPlaying())
    {
@@ -171,19 +183,19 @@ long CALLBACK CDRgetStatus(struct CdrStat *stat)
    return 0;
 }
 
-char CALLBACK CDRgetDriveLetter(void)
+char CALLBACK Mooby2CDRgetDriveLetter(void)
 {
    return 0;
 }
 
 
-long CALLBACK CDRinit(void)
+long CALLBACK Mooby2CDRinit(void)
 {
    theCD=NULL;
    return 0;
 }
 
-long CALLBACK CDRgetTN(unsigned char *buffer)
+long CALLBACK Mooby2CDRgetTN(unsigned char *buffer)
 {
    buffer[0] = 1;
    if (tdtnformat == fsmint)
@@ -200,7 +212,7 @@ int CD_GetTN(char* buffer)
    return FPSE_OK;
 }
 
-unsigned char * CALLBACK CDRgetBufferSub(void)
+unsigned char * CALLBACK Mooby2CDRgetBufferSub(void)
 {
    return theCD->readSubchannelPointer();
 }
@@ -210,7 +222,7 @@ unsigned char* CD_GetSeek(void)
    return theCD->readSubchannelPointer() + 12;
 }
 
-long CALLBACK CDRgetTD(unsigned char track, unsigned char *buffer)
+long CALLBACK Mooby2CDRgetTD(unsigned char track, unsigned char *buffer)
 {
    if (tdtnformat == fsmint)
       memcpy(buffer, theCD->getTrackInfo(track).trackStart.getMSFbuf(tdtnformat), 3);
@@ -228,7 +240,7 @@ int CD_GetTD(char* result, int track)
    return FPSE_OK;
 }
 
-long CALLBACK CDRreadTrack(unsigned char *time)
+long CALLBACK Mooby2CDRreadTrack(unsigned char *time)
 {
    CDTime now(time, msfbcd);
    theCD->moveDataPointer(now);
@@ -242,7 +254,7 @@ unsigned char* CD_Read(unsigned char* time)
    return theCD->readDataPointer() + 12;
 }
 
-unsigned char * CALLBACK CDRgetBuffer(void)
+unsigned char * CALLBACK Mooby2CDRgetBuffer(void)
 {
    return theCD->readDataPointer() + 12;
 }

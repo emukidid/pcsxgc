@@ -26,26 +26,25 @@ extern "C"
 char * CALLBACK PSEgetLibName(void);
 unsigned long CALLBACK PSEgetLibType(void);
 unsigned long CALLBACK PSEgetLibVersion(void);
-void CALLBACK CDRabout(void);
-long CALLBACK CDRtest(void);
-long CALLBACK CDRconfigure(void);
-long CALLBACK CDRclose(void);
-long CALLBACK CDRopen(void);
-long CALLBACK CDRshutdown(void);
-long CALLBACK CDRplay(unsigned char * sector);
-long CALLBACK CDRstop(void);
 
-long CALLBACK CDRgetStatus(struct CdrStat *stat) ;
+void CALLBACK Mooby2CDRabout(void);
+long CALLBACK Mooby2CDRtest(void);
+long CALLBACK Mooby2CDRconfigure(void);
+long CALLBACK Mooby2CDRclose(void);
+long CALLBACK Mooby2CDRopen(void);
+long CALLBACK Mooby2CDRshutdown(void);
+long CALLBACK Mooby2CDRplay(unsigned char * sector);
+long CALLBACK Mooby2CDRstop(void);
+long CALLBACK Mooby2CDRgetStatus(struct CdrStat *stat) ;
+char CALLBACK Mooby2CDRgetDriveLetter(void);
+long CALLBACK Mooby2CDRinit(void);
+long CALLBACK Mooby2CDRgetTN(unsigned char *buffer);
+unsigned char * CALLBACK Mooby2CDRgetBufferSub(void);
+long CALLBACK Mooby2CDRgetTD(unsigned char track, unsigned char *buffer);
+long CALLBACK Mooby2CDRreadTrack(unsigned char *time);
+unsigned char * CALLBACK Mooby2CDRgetBuffer(void);
 
-char CALLBACK CDRgetDriveLetter(void);
-long CALLBACK CDRinit(void);
-long CALLBACK CDRgetTN(unsigned char *buffer);
-unsigned char * CALLBACK CDRgetBufferSub(void);
-long CALLBACK CDRgetTD(unsigned char track, unsigned char *buffer);
-long CALLBACK CDRreadTrack(unsigned char *time);
-unsigned char * CALLBACK CDRgetBuffer(void);
-
-
+/* FPSE stuff, we don't use it in WiiSX */
 void   CD_About(UINT32 *par);
 int CD_Wait(void);
 void CD_Close(void);
