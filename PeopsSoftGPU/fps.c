@@ -774,6 +774,10 @@ void FrameSkip(void)
 
  if(!dwLaceCnt) return;                                // important: if no updatelace happened, we ignore it completely
 
+#ifdef PROFILE
+ start_section(IDLE_SECTION);
+#endif
+
  if(iNumSkips)                                         // we are in skipping mode?
   {
    dwLastLace+=dwLaceCnt;                              // -> calc frame limit helper (number of laces)
@@ -815,6 +819,9 @@ void FrameSkip(void)
            iAdditionalSkip++;                          // -> inc our watchdog var
            dwLaceCnt=0;                                // -> reset lace count
            lastticks = timeGetTime();
+#ifdef PROFILE
+	end_section(IDLE_SECTION);
+#endif
            return;                                     // -> done, we will skip next frame to get more speed
           }
         }
@@ -827,6 +834,9 @@ void FrameSkip(void)
      dwLaceCnt=0;                                      // -> and we start to count the laces
      dwLastLace=0;
      _ticks_since_last_update=0;
+#ifdef PROFILE
+	end_section(IDLE_SECTION);
+#endif
      return;                                           // -> done, the next frame will get drawn
     }
 
@@ -869,6 +879,9 @@ void FrameSkip(void)
   }
 
  dwLaceCnt=0;                                          // init lace counter
+#ifdef PROFILE
+	end_section(IDLE_SECTION);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
