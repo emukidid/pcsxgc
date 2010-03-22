@@ -55,7 +55,7 @@ extern "C" {
 int SysInit();
 void SysReset();
 void SysClose();
-void SysPrintf(char *fmt, ...);
+void SysPrintf(const char *fmt, ...);
 void *SysLoadLibrary(char *lib);
 void *SysLoadSym(void *lib, char *sym);
 char *SysLibError();
@@ -460,7 +460,7 @@ void SysClose()
 #endif
 }
 
-void SysPrintf(char *fmt, ...) 
+void SysPrintf(const char *fmt, ...) 
 {
 #ifdef PRINTGECKO
 	va_list list;

@@ -47,9 +47,14 @@ extern Preferences prefs;
 
 FileInterface::FileInterface(const unsigned long requestedFrames, 
       const unsigned long requiredFrames)
-   : bufferFrames(0), fileBuffer(NULL), pregapLength(CDTime(0,0,0)), 
-     pregapTime(CDTime(99,59,74)), cacheMode(oldMode)
 {
+  
+  bufferFrames = 0;
+  cacheMode = oldMode;
+  fileBuffer = NULL; 
+  pregapTime = CDTime(99,59,74);
+  pregapLength = CDTime(0,0,0);
+   
    //cache.setMaxSize(atoi(prefs.prefsMap[cacheSizeString].c_str()));
    cache.setMaxSize(1);
    if (requiredFrames != 0)
@@ -194,7 +199,7 @@ void FileInterface::openFile(const std::string& str)
     Exception e(std::string("Cannot open file: ") + str + "\r\n");
     THROW(e);
   }
-  isoFile_seekFile(isoFile,0,SEEK_SET);
+  isoFile_seekFile(isoFile,0,FILE_BROWSER_SEEK_SET);
   fileName = str;
   CDLength= CDTime(isoFile->size, CDTime::abByte) + CDTime(0,2,0);
 
@@ -538,7 +543,7 @@ void UncompressedFileInterface::seekUnbuffered(const CDTime& cdt)
    throw(std::exception, Exception)
 {
    CDTime seekTime(cdt - CDTime(0,2,0));
-   isoFile_seekFile(isoFile,seekTime.getAbsoluteByte(),SEEK_SET);
+   isoFile_seekFile(isoFile,seekTime.getAbsoluteByte(),FILE_BROWSER_SEEK_SET);
    isoFile_readFile(isoFile,(char*)fileBuffer,bufferFrames * bytesPerFrame);
    bufferPointer = fileBuffer;
    bufferPos = cdt;

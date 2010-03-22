@@ -72,7 +72,7 @@ static const unsigned long bytesPerSecond = bytesPerFrame * framesPerSecond;
 static const unsigned long bytesPerMinute = bytesPerSecond * secondsPerMinute;
 
 extern "C" {
-  void SysPrintf(char *fmt, ...);
+  void SysPrintf(const char *fmt, ...);
 }
 
 inline void moobyMessage(const std::string& message)

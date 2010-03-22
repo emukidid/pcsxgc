@@ -34,10 +34,7 @@ extern "C" {
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-DVD.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
-long CDR_getTN(unsigned char *buffer);
-/*#include "../main/rom.h"
-#include "../main/ROM-Cache.h"
-#include "../main/wii64config.h"*/
+extern long Mooby2CDRgetTN(unsigned char *buffer);
 }
 
 void Func_PrevPage();
@@ -355,7 +352,7 @@ void fileBrowserFrame_LoadFile(int i)
 			sprintf(buffer,"BIOS: %s\n",(Config.HLE==BIOS_USER_DEFINED) ? "USER DEFINED":"HLE");
 			strcat(RomInfo,buffer);
 			unsigned char tracks[2];
-      CDR_getTN(&tracks[0]);
+      Mooby2CDRgetTN(&tracks[0]);
       sprintf(buffer,"Number of tracks %i\n", tracks[1]);
 			strcat(RomInfo,buffer);
     		

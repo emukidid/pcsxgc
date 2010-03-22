@@ -10,7 +10,9 @@ http://mooby.psxfanatics.com
 
 ************************************************************************/
 
+#ifdef WINDOWS
 #pragma warning(disable:4786)
+#endif
 
 #ifndef PREFERENCES_HPP
 #define PREFERENCES_HPP
@@ -23,20 +25,20 @@ http://mooby.psxfanatics.com
 #include <FL/Fl_Preferences.h>
 #endif
 
-static char* repeatString = "repeat";
-static char* volumeString = "volume";
-static char* autorunString = "autorun";
-static char* lastrunString = "lastrun";
-static char* cacheSizeString = "cachesize";
-static char* cachingModeString = "cachemode";
-static char* subEnableString = "subenable";
+static const char* repeatString = "repeat";
+static const char* volumeString = "volume";
+static const char* autorunString = "autorun";
+static const char* lastrunString = "lastrun";
+static const char* cacheSizeString = "cachesize";
+static const char* cachingModeString = "cachemode";
+static const char* subEnableString = "subenable";
 
 // these are the repeat mode strings
-static char* repeatAllString = "repeatAll";
-static char* repeatOneString = "repeatOne";
-static char* playOneString = "playOne";
-static char* oldCachingString = "old";
-static char* newCachingString = "new";
+static const char* repeatAllString = "repeatAll";
+static const char* repeatOneString = "repeatOne";
+static const char* playOneString = "playOne";
+static const char* oldCachingString = "old";
+static const char* newCachingString = "new";
 
 // a wrapper for preference information.
 class Preferences

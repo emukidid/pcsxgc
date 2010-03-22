@@ -60,6 +60,7 @@ public:
          return bufferPointer;
       else if (cacheMode == newMode)
          return *holdout;
+      return 0;  //shouldn't happen!
    }
 
 		// returns the length of the CD
