@@ -141,7 +141,7 @@ extern MenuContext *pMenuContext;
 extern char CdromId[10];
 extern char CdromLabel[33];
 extern "C" {
-long Mooby2CDRgetTN(unsigned char *buffer);
+long CDR_getTN(unsigned char *buffer);
 };
 
 void Func_ShowRomInfo()
@@ -160,7 +160,7 @@ void Func_ShowRomInfo()
   sprintf(buffer,"BIOS: %s\n",(Config.HLE==BIOS_USER_DEFINED) ? "USER DEFINED":"HLE");
   strcat(RomInfo,buffer);
   unsigned char tracks[2];
-  Mooby2CDRgetTN(&tracks[0]);
+  CDR_getTN(&tracks[0]);
   sprintf(buffer,"Number of tracks %i\n", tracks[1]);
 	strcat(RomInfo,buffer);
 
