@@ -21,6 +21,10 @@ http://mooby.psxfanatics.com
 
 #ifdef WINDOWS
 #include <portaudio.h>
+#elif defined(__GAMECUBE__)
+#include <asndlib.h>
+#include <ogc/lwp.h>
+#include <ogc/semaphore.h>
 #endif
 
 // CDDA data virtual base class
@@ -56,13 +60,7 @@ public:
    PlayCDDAData(const std::vector<TrackInfo> ti, CDTime gapLength);
 
 		// cleans up
-   virtual ~PlayCDDAData() {
-     if (playing) stop(); 
-     delete theCD; 
-#ifdef WINDOWS
-     Pa_Terminate();
-#endif
-   }
+   virtual ~PlayCDDAData();
 
 		// opens the file and readies the plugin for playing
    virtual void openFile(const std::string& file);
@@ -83,6 +81,16 @@ public:
 #else
    char* stream;
 #endif
+   
+#ifdef __GAMECUBE__
+   bool live;
+   sem_t firstAudio;
+   
+   lwp_t audioThread;
+   static const int audioPriority = 128;
+   static const int audioStackSize = 1024;
+   unsigned char audioStack[audioStackSize];
+#endif
 
       // the volume as set in the configuration window
    double volume;
@@ -101,6 +109,8 @@ public:
    std::vector<TrackInfo> trackList;
 		// if true, it's playing.
    bool playing;
+	   // if true, the track will repeat when it's done playing
+   bool repeat;
       // a buffer of null audio if repeat is off
    char nullAudio[bytesPerFrame];
       // if true and repeating one track, this is at the end of the currently playing track
