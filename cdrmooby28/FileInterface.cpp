@@ -195,10 +195,16 @@ FileInterface& FileInterface::setPregap(const CDTime& gapLength,
 void FileInterface::openFile(const std::string& str)
       throw(Exception)
 {
-	if(isoFile->size <= 0) {
+  fileBrowser_file tempFile;
+  memset(&tempFile, 0, sizeof(fileBrowser_file));
+  strcpy(&tempFile.name[0], str.c_str());
+
+	if(isoFile_open(&tempFile) == FILE_BROWSER_ERROR_NO_FILE) {
     Exception e(std::string("Cannot open file: ") + str + "\r\n");
     THROW(e);
   }
+  
+  memcpy(isoFile, &tempFile, sizeof(fileBrowser_file));
   isoFile_seekFile(isoFile,0,FILE_BROWSER_SEEK_SET);
   fileName = str;
   CDLength= CDTime(isoFile->size, CDTime::abByte) + CDTime(0,2,0);
