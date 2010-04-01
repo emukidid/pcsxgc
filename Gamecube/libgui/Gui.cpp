@@ -134,7 +134,7 @@ void Gui::drawBackground()
 	//Draw Menu Backdrop
 	Resources::getInstance().getImage(Resources::IMAGE_MENU_BACKGROUND)->activateImage(GX_TEXMAP0);
 //	gfx->setTEV(GX_REPLACE);
-	GXColor muxCol = (GXColor){0,17,85,255};
+	GXColor muxCol = (GXColor){0,35,70,255};
 	GX_SetTevColor(GX_TEVREG0,muxCol);
 	GX_SetTevColorIn(GX_TEVSTAGE0,GX_CC_C0,GX_CC_ZERO,GX_CC_TEXC,GX_CC_TEXC);
 	GX_SetTevColorOp(GX_TEVSTAGE0,GX_TEV_ADD,GX_TB_ZERO,GX_CS_SCALE_1,GX_TRUE,GX_TEVPREV);

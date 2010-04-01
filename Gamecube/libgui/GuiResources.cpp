@@ -44,9 +44,9 @@ Resources::Resources()
 //	menuBackgroundImage = new Image(BackgroundTexture, 848, 480, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	menuBackgroundImage = new Image(BackgroundTexture, 424, 240, GX_TF_I8, GX_CLAMP, GX_CLAMP, GX_FALSE);
 #ifdef HW_RVL
-	logoImage = new Image(LogoTexture, 144, 52, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
+	logoImage = new Image(LogoTexture, 136, 52, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
 #else
-	logoImage = new Image(LogoTexture, 192, 52, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
+	logoImage = new Image(LogoTexture, 176, 52, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
 #endif
 	controllerEmptyImage = new Image(ControlEmptyTexture, 48, 64, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	controllerGamecubeImage = new Image(ControlGamecubeTexture, 48, 64, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
