@@ -1,6 +1,6 @@
 /**
- * Wii64 - Frame.cpp
- * Copyright (C) 2009 sepp256
+ * WiiSX - Frame.cpp
+ * Copyright (C) 2009, 2010 sepp256
  *
  * Wii64 homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
@@ -48,14 +48,19 @@ void Frame::hideFrame()
 
 void Frame::updateTime(float deltaTime)
 {
-	ComponentList::const_iterator iteration;
-	for (iteration = componentList.begin(); iteration != componentList.end(); iteration++)
+	if(isVisible())
 	{
-		(*iteration)->updateTime(deltaTime);
+		updateFrame(deltaTime);
+
+		ComponentList::const_iterator iteration;
+		for (iteration = componentList.begin(); iteration != componentList.end(); iteration++)
+		{
+			(*iteration)->updateTime(deltaTime);
+		}
 	}
 }
 
-void Frame::drawChildren(Graphics &gfx) const
+void Frame::drawChildren(Graphics &gfx)
 {
 	if(isVisible())
 	{

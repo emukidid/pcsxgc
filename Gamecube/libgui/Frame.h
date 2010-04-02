@@ -1,6 +1,6 @@
 /**
- * Wii64 - Frame.h
- * Copyright (C) 2009 sepp256
+ * WiiSX - Frame.h
+ * Copyright (C) 2009, 2010 sepp256
  *
  * Wii64 homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
@@ -36,7 +36,7 @@ public:
 	void showFrame();
 	void hideFrame();
 	void setEnabled(bool enable);
-	void drawChildren(Graphics& gfx) const;
+	virtual void drawChildren(Graphics& gfx);
 	void remove(Component* component);
 	void removeAll();
 	void add(Component* comp);
@@ -47,6 +47,7 @@ public:
 	void setSelectFunc(FrameFunc selectFn);
 	Component* updateFocus(int direction, int buttonsPressed);
 	virtual void activateSubmenu(int submenu) {};
+	virtual void updateFrame(float deltaTime) {};
 
 private:
 	Component* defaultFocus;
