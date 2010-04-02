@@ -456,7 +456,7 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch)
 
 	float xcoord = 1.0;
 	float ycoord = 1.0;
-	if(screenMode) xcoord = 640.0/848.0;
+	if(screenMode == SCREENMODE_16x9_PILLARBOX) xcoord = 640.0/848.0;
 
 	GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
 	  GX_Position2f32(-xcoord, ycoord);

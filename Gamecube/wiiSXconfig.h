@@ -1,6 +1,6 @@
 /**
  * WiiSX - wiiSXconfig.h
- * Copyright (C) 2007, 2008, 2009 sepp256
+ * Copyright (C) 2007, 2008, 2009, 2010 sepp256
  * 
  * External declaration and enumeration of config variables
  *
@@ -151,7 +151,8 @@ extern char screenMode;
 enum screenMode
 {
 	SCREENMODE_4x3=0,
-	SCREENMODE_16x9
+	SCREENMODE_16x9,
+	SCREENMODE_16x9_PILLARBOX
 };
 
 extern char padAutoAssign;

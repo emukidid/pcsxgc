@@ -913,7 +913,10 @@ void Func_ScreenMode16_9()
 
 void Func_ScreenForce16_9()
 {
-  	menu::MessageBox::getInstance().setMessage("Force 16_9 not implemented");
+	for (int i = 22; i <= 24; i++)
+		FRAME_BUTTONS[i].button->setSelected(false);
+	FRAME_BUTTONS[24].button->setSelected(true);
+	screenMode = SCREENMODE_16x9_PILLARBOX;
 }
 
 void Func_DitheringNone()
