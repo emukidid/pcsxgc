@@ -1,8 +1,8 @@
 /**
- * Wii64 - MenuResources.h
- * Copyright (C) 2009 sepp256
+ * WiiSX - MenuResources.h
+ * Copyright (C) 2009, 2010 sepp256
  *
- * Wii64 homepage: http://www.emulatemii.com
+ * WiiSX homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
  *
  *
@@ -28,5 +28,6 @@ extern  u8 ControlEmptyTexture[];
 extern  u8 ControlGamecubeTexture[];
 extern  u8 ControlClassicTexture[];
 extern  u8 ControlWiimoteNunchuckTexture[];
+extern  u8 ControlWiimoteTexture[];
 
 #endif

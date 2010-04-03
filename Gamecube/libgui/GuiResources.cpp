@@ -1,8 +1,8 @@
 /**
- * Wii64 - GuiResources.cpp
- * Copyright (C) 2009 sepp256
+ * WiiSX - GuiResources.cpp
+ * Copyright (C) 2009, 2010 sepp256
  *
- * Wii64 homepage: http://www.emulatemii.com
+ * WiiSX homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
  *
  *
@@ -52,6 +52,7 @@ Resources::Resources()
 	controllerGamecubeImage = new Image(ControlGamecubeTexture, 48, 64, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	controllerClassicImage = new Image(ControlClassicTexture, 48, 64, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	controllerWiimoteNunchuckImage = new Image(ControlWiimoteNunchuckTexture, 48, 64, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
+	controllerWiimoteImage = new Image(ControlWiimoteTexture, 48, 64, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
 
 }
 
@@ -71,6 +72,7 @@ Resources::~Resources()
 	delete controllerGamecubeImage;
 	delete controllerClassicImage;
 	delete controllerWiimoteNunchuckImage;
+	delete controllerWiimoteImage;
 }
 
 Image* Resources::getImage(int image)
@@ -119,6 +121,9 @@ Image* Resources::getImage(int image)
 		break;
 	case IMAGE_CONTROLLER_WIIMOTENUNCHUCK:
 		returnImage = controllerWiimoteNunchuckImage;
+		break;
+	case IMAGE_CONTROLLER_WIIMOTE:
+		returnImage = controllerWiimoteImage;
 		break;
 	}
 	return returnImage;

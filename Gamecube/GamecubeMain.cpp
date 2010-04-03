@@ -1,5 +1,6 @@
 /*  Pcsx - Pc Psx Emulator
  *  Copyright (C) 1999-2002  Pcsx Team
+ *  Copyright (C) 2009-2010  WiiSX Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -100,6 +101,7 @@ char screenMode = 0;
 char padAutoAssign;
 char padType[2];
 char padAssign[2];
+char loadButtonSlot;
 char controllerType;
 char numMultitaps;
 
@@ -126,6 +128,7 @@ static struct {
   { "PadType2", &padType[1], PADTYPE_NONE, PADTYPE_WII },
   { "PadAssign1", &padAssign[0], PADASSIGN_INPUT0, PADASSIGN_INPUT3 },
   { "PadAssign2", &padAssign[1], PADASSIGN_INPUT0, PADASSIGN_INPUT3 },
+  { "LoadButtonSlot", &loadButtonSlot, LOADBUTTON_SLOT0, LOADBUTTON_DEFAULT },
   { "ControllerType", &controllerType, CONTROLLERTYPE_STANDARD, CONTROLLERTYPE_LIGHTGUN },
   { "NumberMultitaps", &numMultitaps, MULTITAPS_NONE, MULTITAPS_TWO },
 };
@@ -216,6 +219,7 @@ int main(int argc, char *argv[])
 	padType[1]		 = PADTYPE_NONE;
 	padAssign[0]	 = PADASSIGN_INPUT0;
 	padAssign[1]	 = PADASSIGN_INPUT1;
+	loadButtonSlot	 = LOADBUTTON_DEFAULT;
 	controllerType	 = CONTROLLERTYPE_STANDARD;
 	numMultitaps	 = MULTITAPS_NONE;
 	menuActive = 1;
@@ -231,8 +235,8 @@ int main(int argc, char *argv[])
 	iVolume=3; //Volume="medium" in PEOPSspu
 	Config.PsxAuto = 1; //Autodetect
 	LoadCdBios=0;
-  
-	update_controller_assignment(); //Perform controller auto assignment at least once at startup.
+
+	control_info_init(); //Perform controller auto assignment at least once at startup.
 
 	//config stuff
 	fileBrowser_file* configFile_file;
@@ -246,6 +250,28 @@ int main(int argc, char *argv[])
 				readConfig(f);
 				fclose(f);
 			}
+			f = fopen( "usb:/wiisx/controlG.cfg", "r" );  //attempt to open file
+			if(f) {
+				load_configurations(f, &controller_GC);					//read in GC controller mappings
+				fclose(f);
+			}
+#ifdef HW_RVL
+			f = fopen( "usb:/wiisx/controlC.cfg", "r" );  //attempt to open file
+			if(f) {
+				load_configurations(f, &controller_Classic);			//read in Classic controller mappings
+				fclose(f);
+			}
+			f = fopen( "usb:/wiisx/controlN.cfg", "r" );  //attempt to open file
+			if(f) {
+				load_configurations(f, &controller_WiimoteNunchuk);		//read in WM+NC controller mappings
+				fclose(f);
+			}
+			f = fopen( "usb:/wiisx/controlW.cfg", "r" );  //attempt to open file
+			if(f) {
+				load_configurations(f, &controller_Wiimote);			//read in Wiimote controller mappings
+				fclose(f);
+			}
+#endif //HW_RVL
 		}
 	}
 	else /*if((argv[0][0]=='s') || (argv[0][0]=='/'))*/
@@ -258,6 +284,28 @@ int main(int argc, char *argv[])
 				readConfig(f);
 				fclose(f);
 			}
+			f = fopen( "sd:/wiisx/controlG.cfg", "r" );  //attempt to open file
+			if(f) {
+				load_configurations(f, &controller_GC);					//read in GC controller mappings
+				fclose(f);
+			}
+#ifdef HW_RVL
+			f = fopen( "sd:/wiisx/controlC.cfg", "r" );  //attempt to open file
+			if(f) {
+				load_configurations(f, &controller_Classic);			//read in Classic controller mappings
+				fclose(f);
+			}
+			f = fopen( "sd:/wiisx/controlN.cfg", "r" );  //attempt to open file
+			if(f) {
+				load_configurations(f, &controller_WiimoteNunchuk);		//read in WM+NC controller mappings
+				fclose(f);
+			}
+			f = fopen( "sd:/wiisx/controlW.cfg", "r" );  //attempt to open file
+			if(f) {
+				load_configurations(f, &controller_Wiimote);			//read in Wiimote controller mappings
+				fclose(f);
+			}
+#endif //HW_RVL
 		}
 	}
 #ifdef HW_RVL

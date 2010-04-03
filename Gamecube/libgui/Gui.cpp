@@ -1,8 +1,8 @@
 /**
- * Wii64 - Gui.cpp
- * Copyright (C) 2009 sepp256
+ * WiiSX - Gui.cpp
+ * Copyright (C) 2009, 2010 sepp256
  *
- * Wii64 homepage: http://www.emulatemii.com
+ * WiiSX homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
  *
  *
@@ -74,7 +74,7 @@ void Gui::draw()
 	Input::getInstance().refreshInput();
 	Cursor::getInstance().updateCursor();
 	Focus::getInstance().updateFocus();
-	if(padAutoAssign) update_controller_assignment();
+	if(padAutoAssign) auto_assign_controllers();
 	//Update time??
 	//Get graphics framework and pass to Frame draw fns?
 	gfx->drawInit();

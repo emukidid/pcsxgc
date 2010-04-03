@@ -1,8 +1,8 @@
 /**
- * Wii64 - InputStatusBar.cpp
- * Copyright (C) 2009 sepp256
+ * WiiSX - InputStatusBar.cpp
+ * Copyright (C) 2009, 2010 sepp256
  *
- * Wii64 homepage: http://www.emulatemii.com
+ * WiiSX homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
  *
  *
@@ -73,9 +73,6 @@ extern "C" char mcd2Written;
 
 void InputStatusBar::drawComponent(Graphics& gfx)
 {
-#ifdef HW_RVL
-	WPADData* wpad;
-#endif
 	int box_x = 50;
 	int box_y = 0;
 	int width = 235;
@@ -83,7 +80,12 @@ void InputStatusBar::drawComponent(Graphics& gfx)
 	int labelScissor = 5;
 	GXColor activeColor = (GXColor) {255, 255, 255, 255};
 	GXColor inactiveColor = (GXColor) {192, 192, 192, 192};
-	//char statusText[20];
+//	GXColor controllerColors[5] = {	{  1,  29, 169, 255}, //blue
+//									{229,  29,  19, 255}, //orange/red
+//									{  8, 147,  48, 255}, //green
+//									{255, 192,   1, 255}, //yellow/gold
+//									{150, 150, 255, 255}};
+//	char statusText[50];
 	Image* statusIcon = NULL;
 	//Draw Status Info Box
 	GXColor boxColor = (GXColor) {87, 90, 100,128};
@@ -131,6 +133,8 @@ void InputStatusBar::drawComponent(Graphics& gfx)
 			{
 				gfx.setColor(activeColor);
 				IplFont::getInstance().drawInit(activeColor);
+//				gfx.setColor(controllerColors[i]);
+//				IplFont::getInstance().drawInit(controllerColors[i]);
 			}
 			else
 			{
@@ -142,14 +146,19 @@ void InputStatusBar::drawComponent(Graphics& gfx)
 			break;
 #ifdef HW_RVL
 		case PADTYPE_WII:
-			wpad = WPAD_Data((int)padAssign[i]);
-			controller_Classic.available[(int)padAssign[i]] = (wpad->err == WPAD_ERR_NONE && wpad->exp.type == WPAD_EXP_CLASSIC) ? 1 : 0;
-			controller_WiimoteNunchuk.available[(int)padAssign[i]] = (wpad->err == WPAD_ERR_NONE && wpad->exp.type == WPAD_EXP_NUNCHUK) ? 1 : 0;
+			u32 type;
+			s32 err;
+			err = WPAD_Probe((int)padAssign[i], &type);
+			controller_Classic.available[(int)padAssign[i]] = (err == WPAD_ERR_NONE && type == WPAD_EXP_CLASSIC) ? 1 : 0;
+			controller_WiimoteNunchuk.available[(int)padAssign[i]] = (err == WPAD_ERR_NONE && type == WPAD_EXP_NUNCHUK) ? 1 : 0;
+			controller_Wiimote.available[(int)padAssign[i]] = (err == WPAD_ERR_NONE && type == WPAD_EXP_NONE) ? 1 : 0;
 			if (controller_Classic.available[(int)padAssign[i]])
 			{
 				assign_controller(i, &controller_Classic, (int)padAssign[i]);
 				gfx.setColor(activeColor);
 				IplFont::getInstance().drawInit(activeColor);
+//				gfx.setColor(controllerColors[i]);
+//				IplFont::getInstance().drawInit(controllerColors[i]);
 				statusIcon = Resources::getInstance().getImage(Resources::IMAGE_CONTROLLER_CLASSIC);
 //				sprintf (statusText, "Pad%d: CC%d", i+1, padAssign[i]+1);
 			}
@@ -158,14 +167,26 @@ void InputStatusBar::drawComponent(Graphics& gfx)
 				assign_controller(i, &controller_WiimoteNunchuk, (int)padAssign[i]);
 				gfx.setColor(activeColor);
 				IplFont::getInstance().drawInit(activeColor);
+//				gfx.setColor(controllerColors[i]);
+//				IplFont::getInstance().drawInit(controllerColors[i]);
 				statusIcon = Resources::getInstance().getImage(Resources::IMAGE_CONTROLLER_WIIMOTENUNCHUCK);
 //				sprintf (statusText, "Pad%d: WM+N%d", i+1, padAssign[i]+1);
+			}
+			else if (controller_Wiimote.available[(int)padAssign[i]])
+			{
+				assign_controller(i, &controller_Wiimote, (int)padAssign[i]);
+				gfx.setColor(activeColor);
+				IplFont::getInstance().drawInit(activeColor);
+//				gfx.setColor(controllerColors[i]);
+//				IplFont::getInstance().drawInit(controllerColors[i]);
+				statusIcon = Resources::getInstance().getImage(Resources::IMAGE_CONTROLLER_WIIMOTE);
+//				sprintf (statusText, "Pad%d: WM%d", i+1, padAssign[i]+1);
 			}
 			else
 			{
 				gfx.setColor(inactiveColor);
 				IplFont::getInstance().drawInit(inactiveColor);
-				statusIcon = Resources::getInstance().getImage(Resources::IMAGE_CONTROLLER_WIIMOTENUNCHUCK);
+				statusIcon = Resources::getInstance().getImage(Resources::IMAGE_CONTROLLER_WIIMOTE);
 //				sprintf (statusText, "Pad%d: Wii%d", i+1, padAssign[i]+1);
 			}
 

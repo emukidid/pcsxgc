@@ -1,8 +1,8 @@
 /**
- * Wii64 - GuiResources.h
- * Copyright (C) 2009 sepp256
+ * WiiSX - GuiResources.h
+ * Copyright (C) 2009, 2010 sepp256
  *
- * Wii64 homepage: http://www.emulatemii.com
+ * WiiSX homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
  *
  *
@@ -50,7 +50,8 @@ public:
 		IMAGE_CONTROLLER_EMPTY,
 		IMAGE_CONTROLLER_GAMECUBE,
 		IMAGE_CONTROLLER_CLASSIC,
-		IMAGE_CONTROLLER_WIIMOTENUNCHUCK
+		IMAGE_CONTROLLER_WIIMOTENUNCHUCK,
+		IMAGE_CONTROLLER_WIIMOTE
 	};
 
 private:
@@ -64,6 +65,7 @@ private:
 	Image *logoImage;
 	Image *controllerEmptyImage, *controllerGamecubeImage;
 	Image *controllerClassicImage, *controllerWiimoteNunchuckImage;
+	Image *controllerWiimoteImage;
 
 };
 

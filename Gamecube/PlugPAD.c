@@ -1,7 +1,7 @@
 /**
  * WiiSX - PlugPAD.c
  * Copyright (C) 2007, 2008, 2009 Mike Slegeir
- * Copyright (C) 2007, 2008, 2009 sepp256
+ * Copyright (C) 2007, 2008, 2009, 2010 sepp256
  * Copyright (C) 2007, 2008, 2009 emu_kidid
  * 
  * Basic Analog PAD plugin for WiiSX
@@ -83,6 +83,7 @@ controller_t* controller_ts[num_controller_t] =
 #if defined(WII) && !defined(NO_BT)
 	{ &controller_GC, &controller_Classic,
 	  &controller_WiimoteNunchuk,
+	  &controller_Wiimote,
 	 };
 #else
 	{ &controller_GC,
@@ -94,6 +95,11 @@ controller_t* controller_ts[num_controller_t] =
 	virtualControllers[Control].control->func( \
 		virtualControllers[Control].number, ## args)
 
+void control_info_init(void){
+	//Call once during emulator start to auto assign controllers
+	init_controller_ts();
+	auto_assign_controllers();
+}
 
 void pauseInput(void){
 	int i;
@@ -108,15 +114,26 @@ void resumeInput(void){
 }
 
 void init_controller_ts(void){
-	int i;
-	for(i=0; i<num_controller_t; ++i)
-		controller_ts[i]->init();
+	int i, j;
+	for(i=0; i<num_controller_t; ++i){
+		controller_ts[i]->refreshAvailable();
+
+		for(j=0; j<4; ++j){
+			memcpy(&controller_ts[i]->config[j],
+			       &controller_ts[i]->config_default,
+			       sizeof(controller_config_t));
+			memcpy(&controller_ts[i]->config_slot[j],
+			       &controller_ts[i]->config_default,
+			       sizeof(controller_config_t));
+		}
+	}
 }
 
 void assign_controller(int wv, controller_t* type, int wp){
 	virtualControllers[wv].control = type;
 	virtualControllers[wv].inUse   = 1;
 	virtualControllers[wv].number  = wp;
+	virtualControllers[wv].config  = &type->config[wv];
 
 	type->assign(wp,wv);
 }
@@ -127,14 +144,14 @@ void unassign_controller(int wv){
 	virtualControllers[wv].number  = -1;
 }
 
-void update_controller_assignment (void)
+void auto_assign_controllers(void)
 {
 	//TODO: Map 5 or 8 controllers if multitaps are used.
 	int i,t,w;
-
-	init_controller_ts();
-
 	int num_assigned[num_controller_t];
+
+//	init_controller_ts();
+
 	memset(num_assigned, 0, sizeof(num_assigned));
 
 	// Map controllers in the priority given
@@ -143,6 +160,8 @@ void update_controller_assignment (void)
 		// Middle loop: controller type
 		for(t=0; t<num_controller_t; ++t){
 			controller_t* type = controller_ts[t];
+			type->refreshAvailable();
+
 			// Inner loop: which controller
 			for(w=num_assigned[t]; w<4 && !type->available[w]; ++w, ++num_assigned[t]);
 			// If we've exhausted this type, move on
@@ -164,6 +183,97 @@ void update_controller_assignment (void)
 	for(; i<2; ++i){
 		unassign_controller(i);
 		padType[i] = PADTYPE_NONE;
+	}
+}
+
+int load_configurations(FILE* f, controller_t* controller){
+	int i,j;
+	char magic[4] = { 
+		'W', 'X', controller->identifier, CONTROLLER_CONFIG_VERSION
+	};
+	char actual[4];
+	fread(actual, 1, 4, f);
+	if(memcmp(magic, actual, 4))
+		return 0;
+	
+	inline button_t* getPointer(button_t* list, int size){
+		int index;
+		fread(&index, 4, 1, f);
+		return list + (index % size);
+	}
+	inline button_t* getButton(void){
+		return getPointer(controller->buttons, controller->num_buttons);
+	}
+	
+	for(i=0; i<4; ++i){
+		controller->config_slot[i].SQU = getButton();
+		controller->config_slot[i].CRO = getButton();
+		controller->config_slot[i].CIR = getButton();
+		controller->config_slot[i].TRI = getButton();
+		
+		controller->config_slot[i].R1 = getButton();
+		controller->config_slot[i].L1 = getButton();
+		controller->config_slot[i].R2 = getButton();
+		controller->config_slot[i].L2 = getButton();
+
+		controller->config_slot[i].DL = getButton();
+		controller->config_slot[i].DR = getButton();
+		controller->config_slot[i].DU = getButton();
+		controller->config_slot[i].DD = getButton();
+
+		controller->config_slot[i].START  = getButton();
+		controller->config_slot[i].SELECT = getButton();
+				
+		controller->config_slot[i].analogL = 
+			getPointer(controller->analog_sources, controller->num_analog_sources);
+		controller->config_slot[i].analogR = 
+			getPointer(controller->analog_sources, controller->num_analog_sources);
+		controller->config_slot[i].exit =
+			getPointer(controller->menu_combos, controller->num_menu_combos);
+		fread(&controller->config_slot[i].invertedYL, 4, 1, f);
+		fread(&controller->config_slot[i].invertedYR, 4, 1, f);
+	}
+
+	if (loadButtonSlot != LOADBUTTON_DEFAULT)
+		for(j=0; j<4; ++j)
+			memcpy(&controller->config[j],
+			       &controller->config_slot[(int)loadButtonSlot],
+			       sizeof(controller_config_t));
+	
+	return 1;
+}
+
+void save_configurations(FILE* f, controller_t* controller){
+	int i;
+	char magic[4] = { 
+		'W', 'X', controller->identifier, CONTROLLER_CONFIG_VERSION
+	};
+	fwrite(magic, 1, 4, f);
+	
+	for(i=0; i<4; ++i){
+		fwrite(&controller->config_slot[i].SQU->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].CRO->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].CIR->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].TRI->index, 4, 1, f);
+		
+		fwrite(&controller->config_slot[i].R1->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].L1->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].R2->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].L2->index, 4, 1, f);
+		
+		fwrite(&controller->config_slot[i].DL->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].DR->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].DU->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].DD->index, 4, 1, f);
+		
+		fwrite(&controller->config_slot[i].START->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].SELECT->index, 4, 1, f);
+				
+		fwrite(&controller->config_slot[i].analogL->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].analogR->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].exit->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].invertedYL, 4, 1, f);
+		fwrite(&controller->config_slot[i].invertedYR, 4, 1, f);
 	}
 }
 
@@ -255,15 +365,48 @@ static void UpdateState (const int pad)
 	const int vib0 = global.padVibF[pad][0] ? 1 : 0;
 	const int vib1 = global.padVibF[pad][1] ? 1 : 0;
 
-	if( virtualControllers[0].inUse && DO_CONTROL(0, GetKeys, (BUTTONS*)&PAD_1) ) {
-    stop = 1;
-  }
-  lastport1.leftJoyX = PAD_1.leftStickX; lastport1.leftJoyY = PAD_1.leftStickY;
+	//TODO: Rework the 4 calls to GetKeys to reuse the same code & reset BUTTONS when no controller in use
+	int Control = 0;
+#if defined(WII) && !defined(NO_BT)
+	//Need to switch between Classic and WiimoteNunchuck if user swapped extensions
+	if (padType[virtualControllers[Control].number] == PADTYPE_WII)
+	{
+		if (virtualControllers[Control].control == &controller_Classic &&
+			!controller_Classic.available[virtualControllers[Control].number] &&
+			controller_WiimoteNunchuk.available[virtualControllers[Control].number])
+			assign_controller(Control, &controller_WiimoteNunchuk, virtualControllers[Control].number);
+		else if (virtualControllers[Control].control == &controller_WiimoteNunchuk &&
+			!controller_WiimoteNunchuk.available[virtualControllers[Control].number] &&
+			controller_Classic.available[virtualControllers[Control].number])
+			assign_controller(Control, &controller_Classic, virtualControllers[Control].number);
+	}
+#endif
+	if(virtualControllers[Control].inUse)
+		if(DO_CONTROL(Control, GetKeys, (BUTTONS*)&PAD_1, virtualControllers[Control].config))
+			stop = 1;
+
+	lastport1.leftJoyX = PAD_1.leftStickX; lastport1.leftJoyY = PAD_1.leftStickY;
 	lastport1.rightJoyX = PAD_1.rightStickX; lastport1.rightJoyY = PAD_1.rightStickY;
-		
-  if( virtualControllers[1].inUse && DO_CONTROL(1, GetKeys, (BUTTONS*)&PAD_2) ) {
-    stop = 1;
-  }
+
+	Control = 1;
+#if defined(WII) && !defined(NO_BT)
+	//Need to switch between Classic and WiimoteNunchuck if user swapped extensions
+	if (padType[virtualControllers[Control].number] == PADTYPE_WII)
+	{
+		if (virtualControllers[Control].control == &controller_Classic &&
+			!controller_Classic.available[virtualControllers[Control].number] &&
+			controller_WiimoteNunchuk.available[virtualControllers[Control].number])
+			assign_controller(Control, &controller_WiimoteNunchuk, virtualControllers[Control].number);
+		else if (virtualControllers[Control].control == &controller_WiimoteNunchuk &&
+			!controller_WiimoteNunchuk.available[virtualControllers[Control].number] &&
+			controller_Classic.available[virtualControllers[Control].number])
+			assign_controller(Control, &controller_Classic, virtualControllers[Control].number);
+	}
+#endif
+	if(virtualControllers[Control].inUse)
+		if(DO_CONTROL(Control, GetKeys, (BUTTONS*)&PAD_2, virtualControllers[Control].config))
+			stop = 1;
+
 	lastport2.leftJoyX = PAD_2.leftStickX; lastport2.leftJoyY = PAD_2.leftStickY;
 	lastport2.rightJoyX = PAD_2.rightStickX; lastport2.rightJoyY = PAD_2.rightStickY;
 	
@@ -530,9 +673,25 @@ long SSS_PADreadPort1 (PadDataS* pads)
 	else
 	{
 		pads->controllerType = PSE_PAD_TYPE_ANALOGPAD;
-		if( virtualControllers[0].inUse && DO_CONTROL(0, GetKeys, (BUTTONS*)&PAD_1) ) {
-      stop = 1;
-    }
+		int Control = 0;
+#if defined(WII) && !defined(NO_BT)
+		//Need to switch between Classic and WiimoteNunchuck if user swapped extensions
+		if (padType[virtualControllers[Control].number] == PADTYPE_WII)
+		{
+			if (virtualControllers[Control].control == &controller_Classic &&
+				!controller_Classic.available[virtualControllers[Control].number] &&
+				controller_WiimoteNunchuk.available[virtualControllers[Control].number])
+				assign_controller(Control, &controller_WiimoteNunchuk, virtualControllers[Control].number);
+			else if (virtualControllers[Control].control == &controller_WiimoteNunchuk &&
+				!controller_WiimoteNunchuk.available[virtualControllers[Control].number] &&
+				controller_Classic.available[virtualControllers[Control].number])
+				assign_controller(Control, &controller_Classic, virtualControllers[Control].number);
+		}
+#endif
+		if(virtualControllers[Control].inUse)
+			if(DO_CONTROL(Control, GetKeys, (BUTTONS*)&PAD_1, virtualControllers[Control].config))
+				stop = 1;
+
 		pads->leftJoyX = PAD_1.leftStickX; pads->leftJoyY = PAD_1.leftStickY;
 		pads->rightJoyX = PAD_1.rightStickX; pads->rightJoyY = PAD_1.rightStickY;
 	}
@@ -556,9 +715,25 @@ long SSS_PADreadPort2 (PadDataS* pads)
 	else
 	{
 		pads->controllerType = PSE_PAD_TYPE_ANALOGPAD;
-		if( virtualControllers[1].inUse && DO_CONTROL(1, GetKeys, (BUTTONS*)&PAD_2) ) {
-      stop = 1;
-    }
+		int Control = 1;
+#if defined(WII) && !defined(NO_BT)
+		//Need to switch between Classic and WiimoteNunchuck if user swapped extensions
+		if (padType[virtualControllers[Control].number] == PADTYPE_WII)
+		{
+			if (virtualControllers[Control].control == &controller_Classic &&
+				!controller_Classic.available[virtualControllers[Control].number] &&
+				controller_WiimoteNunchuk.available[virtualControllers[Control].number])
+				assign_controller(Control, &controller_WiimoteNunchuk, virtualControllers[Control].number);
+			else if (virtualControllers[Control].control == &controller_WiimoteNunchuk &&
+				!controller_WiimoteNunchuk.available[virtualControllers[Control].number] &&
+				controller_Classic.available[virtualControllers[Control].number])
+				assign_controller(Control, &controller_Classic, virtualControllers[Control].number);
+		}
+#endif
+		if(virtualControllers[Control].inUse)
+			if(DO_CONTROL(Control, GetKeys, (BUTTONS*)&PAD_2, virtualControllers[Control].config))
+				stop = 1;
+
 		pads->leftJoyX = PAD_2.leftStickX; pads->leftJoyY = PAD_2.leftStickY;
 		pads->rightJoyX = PAD_2.rightStickX; pads->rightJoyY = PAD_2.rightStickY;
 	}

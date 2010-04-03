@@ -60,3 +60,11 @@
    ControlWiimoteNunchuckTexture_length:
    .long (ControlWiimoteNunchuckTexture_length - ControlWiimoteNunchuckTexture)
 
+   .globl ControlWiimoteTexture
+   .balign 32
+   ControlWiimoteTexture:
+   .incbin	"../menu/resources/cntrlWM.tx"
+   .globl ControlWiimoteTexture_length
+   ControlWiimoteTexture_length:
+   .long (ControlWiimoteTexture_length - ControlWiimoteTexture)
+
