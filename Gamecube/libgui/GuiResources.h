@@ -51,7 +51,8 @@ public:
 		IMAGE_CONTROLLER_GAMECUBE,
 		IMAGE_CONTROLLER_CLASSIC,
 		IMAGE_CONTROLLER_WIIMOTENUNCHUCK,
-		IMAGE_CONTROLLER_WIIMOTE
+		IMAGE_CONTROLLER_WIIMOTE,
+		IMAGE_PSX_CONTROLLER
 	};
 
 private:
@@ -66,6 +67,7 @@ private:
 	Image *controllerEmptyImage, *controllerGamecubeImage;
 	Image *controllerClassicImage, *controllerWiimoteNunchuckImage;
 	Image *controllerWiimoteImage;
+	Image *psxControllerImage;
 
 };
 

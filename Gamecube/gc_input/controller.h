@@ -78,7 +78,7 @@ typedef button_t* button_tp;
 #define CONTROLLER_CONFIG_VERSION 1
 typedef struct {
 	button_tp SQU, CRO, CIR, TRI;
-	button_tp R1, L1, R2, L2;
+	button_tp R1, L1, R2, L2, R3, L3;
 	button_tp DL, DR, DU, DD;
 	button_tp START, SELECT;
 	button_tp analogL, analogR, exit;

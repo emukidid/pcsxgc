@@ -53,6 +53,7 @@ Resources::Resources()
 	controllerClassicImage = new Image(ControlClassicTexture, 48, 64, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	controllerWiimoteNunchuckImage = new Image(ControlWiimoteNunchuckTexture, 48, 64, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	controllerWiimoteImage = new Image(ControlWiimoteTexture, 48, 64, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
+	psxControllerImage = new Image(PsxControllerTexture, 232, 152, GX_TF_IA4, GX_CLAMP, GX_CLAMP, GX_FALSE);
 
 }
 
@@ -73,6 +74,7 @@ Resources::~Resources()
 	delete controllerClassicImage;
 	delete controllerWiimoteNunchuckImage;
 	delete controllerWiimoteImage;
+	delete psxControllerImage;
 }
 
 Image* Resources::getImage(int image)
@@ -124,6 +126,9 @@ Image* Resources::getImage(int image)
 		break;
 	case IMAGE_CONTROLLER_WIIMOTE:
 		returnImage = controllerWiimoteImage;
+		break;
+	case IMAGE_PSX_CONTROLLER:
+		returnImage = psxControllerImage;
 		break;
 	}
 	return returnImage;

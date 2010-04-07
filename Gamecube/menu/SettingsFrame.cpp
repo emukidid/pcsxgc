@@ -30,6 +30,7 @@
 #include "../../PsxCommon.h"
 
 extern "C" {
+#include "../gc_input/controller.h"
 #include "../fileBrowser/fileBrowser.h"
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
@@ -277,8 +278,8 @@ struct ButtonInfo
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[30],	325.0,	430.0,	 75.0,	56.0,	-1,	-1,	29,	29,	Func_ScalingNone,		Func_ReturnFromSettingsFrame }, // Scaling: None
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[31],	420.0,	430.0,	 75.0,	56.0,	-1,	-1,	28,	28,	Func_Scaling2xSai,		Func_ReturnFromSettingsFrame }, // Scaling: 2xSai
 	//Buttons for Input Tab (starts at button[30])
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[34],	 95.0,	100.0,	220.0,	56.0,	 2,	32,	31,	31,	Func_ConfigureInput,	Func_ReturnFromSettingsFrame }, // Configure Input Assignment
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[35],	325.0,	100.0,	220.0,	56.0,	 2,	32,	30,	30,	Func_ConfigureButtons,	Func_ReturnFromSettingsFrame }, // Configure Button Mappings
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[34],	 90.0,	100.0,	220.0,	56.0,	 2,	32,	31,	31,	Func_ConfigureInput,	Func_ReturnFromSettingsFrame }, // Configure Input Assignment
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[35],	325.0,	100.0,	235.0,	56.0,	 2,	32,	30,	30,	Func_ConfigureButtons,	Func_ReturnFromSettingsFrame }, // Configure Button Mappings
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[38],	285.0,	170.0,	130.0,	56.0,	30,	35,	34,	33,	Func_PsxTypeStandard,	Func_ReturnFromSettingsFrame }, // PSX Controller Type: Standard
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[39],	425.0,	170.0,	110.0,	56.0,	31,	37,	32,	34,	Func_PsxTypeAnalog,		Func_ReturnFromSettingsFrame }, // PSX Controller Type: Analog
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[40],	545.0,	170.0,	 60.0,	56.0,	31,	37,	33,	32,	Func_PsxTypeLightGun,	Func_ReturnFromSettingsFrame }, // PSX Controller Type: Light Gun
@@ -964,7 +965,8 @@ void Func_ConfigureInput()
 
 void Func_ConfigureButtons()
 {
-	menu::MessageBox::getInstance().setMessage("Button Mapping not implemented");
+//	menu::MessageBox::getInstance().setMessage("Button Mapping not implemented");
+	pMenuContext->setActiveFrame(MenuContext::FRAME_CONFIGUREBUTTONS,ConfigureButtonsFrame::SUBMENU_PSX_PADNONE);
 }
 
 void Func_PsxTypeStandard()
@@ -1020,17 +1022,91 @@ void Func_NumMultitaps2()
 
 void Func_SaveButtonsSD()
 {
-	menu::MessageBox::getInstance().setMessage("Save Button Config to SD not implemented");
+	fileBrowser_file* configFile_file;
+	int (*configFile_init)(fileBrowser_file*) = fileBrowser_libfat_init;
+	int num_written = 0;
+	configFile_file = &saveDir_libfat_Default;
+	if(configFile_init(configFile_file)) {                //only if device initialized ok
+		FILE* f = fopen( "sd:/wiisx/controlG.cfg", "wb" );  //attempt to open file
+		if(f) {
+			save_configurations(f, &controller_GC);					//write out GC controller mappings
+			fclose(f);
+			num_written++;
+		}
+#ifdef HW_RVL
+		f = fopen( "sd:/wiisx/controlC.cfg", "wb" );  //attempt to open file
+		if(f) {
+			save_configurations(f, &controller_Classic);			//write out Classic controller mappings
+			fclose(f);
+			num_written++;
+		}
+		f = fopen( "sd:/wiisx/controlN.cfg", "wb" );  //attempt to open file
+		if(f) {
+			save_configurations(f, &controller_WiimoteNunchuk);	//write out WM+NC controller mappings
+			fclose(f);
+			num_written++;
+		}
+		f = fopen( "sd:/wiisx/controlW.cfg", "wb" );  //attempt to open file
+		if(f) {
+			save_configurations(f, &controller_Wiimote);			//write out Wiimote controller mappings
+			fclose(f);
+			num_written++;
+		}
+#endif //HW_RVL
+	}
+	if (num_written == num_controller_t)
+		menu::MessageBox::getInstance().setMessage("Saved Button Configs to SD");
+	else
+		menu::MessageBox::getInstance().setMessage("Error saving Button Configs to SD");
 }
 
 void Func_SaveButtonsUSB()
 {
-	menu::MessageBox::getInstance().setMessage("Save Button Config to SD not implemented");
+	fileBrowser_file* configFile_file;
+	int (*configFile_init)(fileBrowser_file*) = fileBrowser_libfat_init;
+	int num_written = 0;
+	configFile_file = &saveDir_libfat_USB;
+	if(configFile_init(configFile_file)) {                //only if device initialized ok
+		FILE* f = fopen( "usb:/wiisx/controlG.cfg", "wb" );  //attempt to open file
+		if(f) {
+			save_configurations(f, &controller_GC);					//write out GC controller mappings
+			fclose(f);
+			num_written++;
+		}
+#ifdef HW_RVL
+		f = fopen( "usb:/wiisx/controlC.cfg", "wb" );  //attempt to open file
+		if(f) {
+			save_configurations(f, &controller_Classic);			//write out Classic controller mappings
+			fclose(f);
+			num_written++;
+		}
+		f = fopen( "usb:/wiisx/controlN.cfg", "wb" );  //attempt to open file
+		if(f) {
+			save_configurations(f, &controller_WiimoteNunchuk);	//write out WM+NC controller mappings
+			fclose(f);
+			num_written++;
+		}
+		f = fopen( "usb:/wiisx/controlW.cfg", "wb" );  //attempt to open file
+		if(f) {
+			save_configurations(f, &controller_Wiimote);			//write out Wiimote controller mappings
+			fclose(f);
+			num_written++;
+		}
+#endif //HW_RVL
+	}
+	if (num_written == num_controller_t)
+		menu::MessageBox::getInstance().setMessage("Saved Button Configs to USB");
+	else
+		menu::MessageBox::getInstance().setMessage("Error saving Button Configs to USB");
 }
 
 void Func_ToggleButtonLoad()
 {
-	menu::MessageBox::getInstance().setMessage("Set Button Load Slot not implemented");
+	loadButtonSlot = (loadButtonSlot + 1) % 5;
+	if (loadButtonSlot == LOADBUTTON_DEFAULT)
+		strcpy(FRAME_STRINGS[46], "Default");
+	else
+		sprintf(FRAME_STRINGS[46], "Slot %d", loadButtonSlot+1);
 }
 
 void Func_DisableAudioYes()

@@ -1,8 +1,8 @@
 /**
- * Wii64 - MenuContext.h
- * Copyright (C) 2009 sepp256
+ * WiiSX - MenuContext.h
+ * Copyright (C) 2009, 2010 sepp256
  *
- * Wii64 homepage: http://www.emulatemii.com
+ * WiiSX homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
  *
  *
@@ -30,6 +30,7 @@
 #include "CurrentRomFrame.h"
 #include "SettingsFrame.h"
 #include "ConfigureInputFrame.h"
+#include "ConfigureButtonsFrame.h"
 
 #include "MenuTypes.h"
 
@@ -50,6 +51,7 @@ public:
 		FRAME_CURRENTROM,
 		FRAME_SETTINGS,
 		FRAME_CONFIGUREINPUT,
+		FRAME_CONFIGUREBUTTONS
 		
 	};
 
@@ -62,6 +64,7 @@ private:
 	CurrentRomFrame *currentRomFrame;
 	SettingsFrame *settingsFrame;
 	ConfigureInputFrame *configureInputFrame;
+	ConfigureButtonsFrame *configureButtonsFrame;
 
 };
 

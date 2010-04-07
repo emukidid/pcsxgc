@@ -1,8 +1,8 @@
 /**
- * Wii64 - GraphicsGX.h
- * Copyright (C) 2009 sepp256
+ * WiiSX - GraphicsGX.h
+ * Copyright (C) 2009, 2010 sepp256
  *
- * Wii64 homepage: http://www.emulatemii.com
+ * WiiSX homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
  *
  *
@@ -49,6 +49,7 @@ public:
 	void fillRect(int x, int y, int width, int height);
 	void drawImage(int textureId, int x, int y, int width, int height, float s1, float s2, float t1, float t2);
 	void drawLine(int x1, int y1, int x2, int y2);
+	void drawCircle(int x, int y, int radius, int numSegments);
 	void drawString(int x, int y, std::string str);
 	void drawPoint(int x, int y, int radius);
 	void setLineWidth(int width);

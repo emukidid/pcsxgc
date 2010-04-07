@@ -1,8 +1,8 @@
 /**
- * Wii64 - MenuContext.cpp
- * Copyright (C) 2009 sepp256
+ * WiiSX - MenuContext.cpp
+ * Copyright (C) 2009, 2010 sepp256
  *
- * Wii64 homepage: http://www.emulatemii.com
+ * WiiSX homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
  *
  *
@@ -31,7 +31,8 @@ MenuContext::MenuContext(GXRModeObj *vmode)
 		  fileBrowserFrame(0),
 		  currentRomFrame(0),
 		  settingsFrame(0),
-		  configureInputFrame(0)
+		  configureInputFrame(0),
+		  configureButtonsFrame(0)
 {
 	pMenuContext = this;
 
@@ -43,6 +44,7 @@ MenuContext::MenuContext(GXRModeObj *vmode)
 	currentRomFrame = new CurrentRomFrame();
 	settingsFrame = new SettingsFrame();
 	configureInputFrame = new ConfigureInputFrame();
+	configureButtonsFrame = new ConfigureButtonsFrame();
 
 	menu::Gui::getInstance().addFrame(mainFrame);
 	menu::Gui::getInstance().addFrame(loadRomFrame);
@@ -50,6 +52,7 @@ MenuContext::MenuContext(GXRModeObj *vmode)
 	menu::Gui::getInstance().addFrame(currentRomFrame);
 	menu::Gui::getInstance().addFrame(settingsFrame);
 	menu::Gui::getInstance().addFrame(configureInputFrame);
+	menu::Gui::getInstance().addFrame(configureButtonsFrame);
 
 	menu::Focus::getInstance().setFocusActive(true);
 	setActiveFrame(FRAME_MAIN);
@@ -57,6 +60,7 @@ MenuContext::MenuContext(GXRModeObj *vmode)
 
 MenuContext::~MenuContext()
 {
+	delete configureButtonsFrame;
 	delete configureInputFrame;
 	delete settingsFrame;
 	delete currentRomFrame;
@@ -103,6 +107,9 @@ void MenuContext::setActiveFrame(int frameIndex)
 	case FRAME_CONFIGUREINPUT:
 		currentActiveFrame = configureInputFrame;
 		break;
+	case FRAME_CONFIGUREBUTTONS:
+		currentActiveFrame = configureButtonsFrame;
+		break;
 	}
 
 	if(currentActiveFrame)
@@ -140,6 +147,9 @@ menu::Frame* MenuContext::getFrame(int frameIndex)
 		break;
 	case FRAME_CONFIGUREINPUT:
 		pFrame = configureInputFrame;
+		break;
+	case FRAME_CONFIGUREBUTTONS:
+		pFrame = configureButtonsFrame;
 		break;
 	}
 

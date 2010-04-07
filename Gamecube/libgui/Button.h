@@ -1,8 +1,8 @@
 /**
- * Wii64 - Button.h
- * Copyright (C) 2009 sepp256
+ * WiiSX - Button.h
+ * Copyright (C) 2009, 2010 sepp256
  *
- * Wii64 homepage: http://www.emulatemii.com
+ * WiiSX homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
  *
  *
@@ -45,6 +45,7 @@ public:
 	void setClicked(ButtonFunc clickedFn);
 	void doClicked();
 	void setText(char** strPtr);
+	void setFontSize(float size);
 	void setLabelMode(int mode);
 	void setLabelScissor(int scissor);
 	void setNormalImage(Image *image);
@@ -80,7 +81,7 @@ private:
 	char** buttonText;
 	int buttonStyle, labelMode, labelScissor;
 	unsigned long StartTime;
-	float x, y, width, height;
+	float x, y, width, height, fontSize;
 	GXColor	focusColor, inactiveColor, activeColor, selectedColor, labelColor;
 	ButtonFunc clickedFunc, returnFunc;
 

@@ -1,6 +1,6 @@
 /**
- * Wii64 - MenuResources.h
- * Copyright (C) 2009, 2010 sepp256
+ * WiiSX - ConfigureButtonsFrame.h
+ * Copyright (C) 2010 sepp256
  *
  * WiiSX homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
@@ -18,17 +18,30 @@
  *
 **/
 
-#ifndef MENURESOURCES_H
-#define MENURESOURCES_H
+#ifndef CONFIGUREBUTTONSFRAME_H
+#define CONFIGUREBUTTONSFRAME_H
 
-extern  u8 BackgroundTexture[];
-extern  u8 LogoTexture[];
-extern  u8 LoadingTexture[];
-extern  u8 ControlEmptyTexture[];
-extern  u8 ControlGamecubeTexture[];
-extern  u8 ControlClassicTexture[];
-extern  u8 ControlWiimoteNunchuckTexture[];
-extern  u8 ControlWiimoteTexture[];
-extern  u8 PsxControllerTexture[];
+#include "../libgui/Frame.h"
+#include "MenuTypes.h"
+
+class ConfigureButtonsFrame : public menu::Frame
+{
+public:
+	ConfigureButtonsFrame();
+	~ConfigureButtonsFrame();
+	void activateSubmenu(int submenu);
+	void updateFrame(float deltaTime);
+	void drawChildren(menu::Graphics& gfx);
+
+	enum ConfigureButtonsSubmenus
+	{
+		SUBMENU_PSX_PAD0=0,
+		SUBMENU_PSX_PAD1,
+		SUBMENU_PSX_PADNONE,
+	};
+
+private:
+
+};
 
 #endif

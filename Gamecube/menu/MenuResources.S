@@ -68,3 +68,11 @@
    ControlWiimoteTexture_length:
    .long (ControlWiimoteTexture_length - ControlWiimoteTexture)
 
+   .globl PsxControllerTexture
+   .balign 32
+   PsxControllerTexture:
+   .incbin	"../menu/resources/psxCntrl.tx"
+   .globl PsxControllerTexture_length
+   PsxControllerTexture_length:
+   .long (PsxControllerTexture_length - PsxControllerTexture)
+

@@ -1,8 +1,8 @@
 /**
- * Wii64 - ConfigureInputFrame.cpp
- * Copyright (C) 2009 sepp256
+ * WiiSX - ConfigureInputFrame.cpp
+ * Copyright (C) 2009, 2010 sepp256
  *
- * Wii64 homepage: http://www.emulatemii.com
+ * WiiSX homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
  *
  *
@@ -31,7 +31,7 @@
 //#include "../main/wii64config.h"
 
 extern "C" {
-//*#include "../gc_input/controller.h"
+#include "../gc_input/controller.h"
 }
 
 void Func_AutoSelectInput();
@@ -211,7 +211,7 @@ void Func_ManualSelectInput()
 
 void Func_AssignPad(int i)
 {
-/*	controller_t* type = NULL;
+	controller_t* type = NULL;
 	switch (padType[i])
 	{
 	case PADTYPE_GAMECUBE:
@@ -228,7 +228,7 @@ void Func_AssignPad(int i)
 #endif
 	}
 	assign_controller(i, type, (int) padAssign[i]);
-*/}
+}
 
 void Func_TogglePad0Type()
 {
@@ -240,7 +240,7 @@ void Func_TogglePad0Type()
 #endif
 
 	if (padType[i]) Func_AssignPad(i);
-//*	else			unassign_controller(i);
+	else			unassign_controller(i);
 	pMenuContext->getFrame(MenuContext::FRAME_CONFIGUREINPUT)->activateSubmenu(ConfigureInputFrame::SUBMENU_REINIT);
 }
 
@@ -254,7 +254,7 @@ void Func_TogglePad1Type()
 #endif
 
 	if (padType[i]) Func_AssignPad(i);
-//*	else			unassign_controller(i);
+	else			unassign_controller(i);
 	pMenuContext->getFrame(MenuContext::FRAME_CONFIGUREINPUT)->activateSubmenu(ConfigureInputFrame::SUBMENU_REINIT);
 }
 

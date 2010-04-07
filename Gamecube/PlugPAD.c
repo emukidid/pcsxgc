@@ -215,6 +215,8 @@ int load_configurations(FILE* f, controller_t* controller){
 		controller->config_slot[i].L1 = getButton();
 		controller->config_slot[i].R2 = getButton();
 		controller->config_slot[i].L2 = getButton();
+		controller->config_slot[i].R3 = getButton();
+		controller->config_slot[i].L3 = getButton();
 
 		controller->config_slot[i].DL = getButton();
 		controller->config_slot[i].DR = getButton();
@@ -260,6 +262,8 @@ void save_configurations(FILE* f, controller_t* controller){
 		fwrite(&controller->config_slot[i].L1->index, 4, 1, f);
 		fwrite(&controller->config_slot[i].R2->index, 4, 1, f);
 		fwrite(&controller->config_slot[i].L2->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].R3->index, 4, 1, f);
+		fwrite(&controller->config_slot[i].L3->index, 4, 1, f);
 		
 		fwrite(&controller->config_slot[i].DL->index, 4, 1, f);
 		fwrite(&controller->config_slot[i].DR->index, 4, 1, f);
