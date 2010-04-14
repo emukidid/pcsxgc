@@ -72,6 +72,8 @@ GXRModeObj *vmode;				/*** Graphics Mode Object ***/
 #define DEFAULT_FIFO_SIZE ( 256 * 1024 )
 BOOL hasLoadedISO = FALSE;
 fileBrowser_file *isoFile  = NULL;  //the ISO file
+fileBrowser_file *cddaFile  = NULL; //the CDDA file
+fileBrowser_file *subFile  = NULL;  //the SUB file
 fileBrowser_file *biosFile = NULL;  //BIOS file
 
 #if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
@@ -328,8 +330,16 @@ int main(int argc, char *argv[])
 
 // loadISO loads an ISO file as current media to read from.
 int loadISOSwap(fileBrowser_file* file) {
-  if(isoFile) free(isoFile);
+  
+  // Refresh file pointers
+	if(isoFile) free(isoFile);
+	if(cddaFile) free(cddaFile);
+	if(subFile) free(subFile);
+	
 	isoFile = (fileBrowser_file*) memalign(32,sizeof(fileBrowser_file));
+	cddaFile = (fileBrowser_file*) memalign(32,sizeof(fileBrowser_file));
+	subFile = (fileBrowser_file*) memalign(32,sizeof(fileBrowser_file));
+	
 	memcpy( isoFile, file, sizeof(fileBrowser_file) );
 	
 	//might need to insert code here to trigger a lid open/close interrupt
@@ -343,8 +353,15 @@ int loadISOSwap(fileBrowser_file* file) {
 // loadISO loads an ISO, resets the system and loads the save.
 int loadISO(fileBrowser_file* file) 
 {
+  // Refresh file pointers
 	if(isoFile) free(isoFile);
+	if(cddaFile) free(cddaFile);
+	if(subFile) free(subFile);
+	
 	isoFile = (fileBrowser_file*) memalign(32,sizeof(fileBrowser_file));
+	cddaFile = (fileBrowser_file*) memalign(32,sizeof(fileBrowser_file));
+	subFile = (fileBrowser_file*) memalign(32,sizeof(fileBrowser_file));
+	
 	memcpy( isoFile, file, sizeof(fileBrowser_file) );
 
 	if(hasLoadedISO) {

@@ -17,6 +17,16 @@ http://mooby.psxfanatics.com
 #include "SubchannelData.hpp"
 #include "Preferences.hpp"
 
+extern "C" {
+#include "../fileBrowser/fileBrowser.h"
+#include "../fileBrowser/fileBrowser-libfat.h"
+#include "../fileBrowser/fileBrowser-DVD.h"
+#include "../fileBrowser/fileBrowser-CARD.h"
+extern fileBrowser_file *isoFile; 
+extern fileBrowser_file *cddaFile;
+extern fileBrowser_file *subFile;
+};
+
 extern Preferences prefs;
 
 using namespace std;
@@ -25,7 +35,7 @@ using namespace std;
 
 // tries to open the subchannel files to determine which
 // one to use
-SubchannelData* SubchannelDataFactory(const std::string& fileroot)
+SubchannelData* SubchannelDataFactory(const std::string& fileroot, int type)
 {
    SubchannelData* scd = NULL;
 
@@ -34,35 +44,33 @@ SubchannelData* SubchannelDataFactory(const std::string& fileroot)
       scd = new DisabledSubchannelData();
       return scd;
    }
+   fileBrowser_file tempFile;
+   memset(&tempFile, 0, sizeof(fileBrowser_file));
+   strcpy(&tempFile.name[0], (fileroot + std::string(".sub")).c_str());
+
+   if(isoFile_open(&tempFile) != FILE_BROWSER_ERROR_NO_FILE)
    {
-      ifstream testFile;
-      testFile.open( (fileroot + std::string(".sub")).c_str());
-      if (testFile)
-      {
-         scd = new SUBSubchannelData();
-         scd->openFile(fileroot + std::string(".sub"));
-         return scd;
-      }
+      scd = new SUBSubchannelData();
+      scd->openFile(fileroot + std::string(".sub"), type);
+      return scd;
    }
+   
+   memset(&tempFile, 0, sizeof(fileBrowser_file));
+   strcpy(&tempFile.name[0], (fileroot + std::string(".sbi")).c_str());
+   if(isoFile_open(&tempFile) != FILE_BROWSER_ERROR_NO_FILE)
    {
-      ifstream testFile;
-      testFile.open( (fileroot + std::string(".sbi")).c_str());
-      if (testFile)
-      {
-         scd = new SBISubchannelData();
-         scd->openFile(fileroot + std::string(".sbi"));
-         return scd;
-      }
+      scd = new SBISubchannelData();
+      scd->openFile(fileroot + std::string(".sbi"), type);
+      return scd;
    }
+
+   memset(&tempFile, 0, sizeof(fileBrowser_file));
+   strcpy(&tempFile.name[0], (fileroot + std::string(".m3s")).c_str());
+   if(isoFile_open(&tempFile) != FILE_BROWSER_ERROR_NO_FILE)
    {
-      ifstream testFile;
-      testFile.open( (fileroot + std::string(".m3s")).c_str());
-      if (testFile)
-      {
-         scd = new M3SSubchannelData();
-         scd->openFile(fileroot + std::string(".m3s"));
-         return scd;
-      }
+      scd = new M3SSubchannelData();
+      scd->openFile(fileroot + std::string(".m3s"), type);
+      return scd;
    }
 
    scd = new NoSubchannelData();
@@ -76,11 +84,17 @@ SUBSubchannelData::SUBSubchannelData()
 }
 
 // SUB files read from the file whenever data is needed
-void SUBSubchannelData::openFile(const string& file)
+void SUBSubchannelData::openFile(const string& file, int type)
    throw(Exception)
 {
-   subFile.open(file.c_str(), ios::binary);
-   subFile.exceptions(ios::failbit);
+   fileBrowser_file tempFile;
+   memset(&tempFile, 0, sizeof(fileBrowser_file));
+   strcpy(&tempFile.name[0], file.c_str());
+   if(isoFile_open(&tempFile) != FILE_BROWSER_ERROR_NO_FILE) {
+     memcpy(subFile, &tempFile, sizeof(fileBrowser_file));
+     subFile->attr = type;
+     filePtr = subFile;
+   }
 }
 
 void SUBSubchannelData::seek(const CDTime& cdt)
@@ -96,9 +110,9 @@ void SUBSubchannelData::seek(const CDTime& cdt)
          return;
       }
       
-      subFile.clear();
-      subFile.seekg((cdt.getAbsoluteFrame() - 150) * SubchannelFrameSize);
-      subFile.read((char*)sf.subData, SubchannelFrameSize);
+      isoFile_seekFile(filePtr,(cdt.getAbsoluteFrame() - 150) * SubchannelFrameSize,FILE_BROWSER_SEEK_SET);
+      isoFile_readFile(filePtr,(char*)sf.subData, SubchannelFrameSize);
+
 
       if (enableCache)
          cache.insert(cdt, sf);
@@ -110,24 +124,34 @@ void SUBSubchannelData::seek(const CDTime& cdt)
 }
 
 // opens the SBI file and caches all the subframes in a map
-void SBISubchannelData::openFile(const std::string& file) 
+void SBISubchannelData::openFile(const std::string& file, int type) 
       throw(Exception)
 {
-   ifstream subFile(file.c_str(), ios::binary);
-   subFile.exceptions(ios::failbit|ios::badbit|ios::eofbit);
+   fileBrowser_file tempFile;
+   memset(&tempFile, 0, sizeof(fileBrowser_file));
+   strcpy(&tempFile.name[0], file.c_str());
+   if(isoFile_open(&tempFile) != FILE_BROWSER_ERROR_NO_FILE) {
+     memcpy(subFile, &tempFile, sizeof(fileBrowser_file));
+     subFile->attr = type;
+     filePtr = subFile;
+   }
 
    try
    {
       unsigned char buffer[4];
-      subFile.read((char*)&buffer, 4);
+      isoFile_seekFile(filePtr,0,FILE_BROWSER_SEEK_SET);
+      isoFile_readFile(filePtr,(char*)&buffer, 4);
+      
       if (string((char*)&buffer) != string("SBI"))
       {
          Exception e(file + string(" isn't an SBI file"));
          THROW(e);
       }
-      while (subFile)
+      for(int i = 0; i < filePtr->size; i+=4)
       {
-         subFile.read((char*)&buffer, 4);
+         isoFile_seekFile(filePtr,i,FILE_BROWSER_SEEK_SET);
+         isoFile_readFile(filePtr,(char*)&buffer, 4);
+ 
          CDTime now((unsigned char*)&buffer, msfbcd);
          SubchannelFrame subf(now);
             // numbers are BCD in file, so only convert the
@@ -137,13 +161,13 @@ void SBISubchannelData::openFile(const std::string& file)
          switch(buffer[3])
          {
          case 1:
-            subFile.read((char*)&subf.subData[12], 10);
+            isoFile_readFile(filePtr,(char*)&subf.subData[12], 10);
             break;
          case 2:
-            subFile.read((char*)&subf.subData[15], 3);
+            isoFile_readFile(filePtr,(char*)&subf.subData[15], 3);
             break;
          case 3:
-            subFile.read((char*)&subf.subData[19], 3);
+            isoFile_readFile(filePtr,(char*)&subf.subData[19], 3);
             break;
          default:
             Exception e("Unknown buffer type in SBI file");
@@ -156,15 +180,6 @@ void SBISubchannelData::openFile(const std::string& file)
    catch(Exception&)
    {
       throw;
-   }
-   catch (std::exception& e)
-   {
-      if (!subFile.eof())
-      {
-         Exception exc("Error reading SBI file");
-         exc.addText(string(e.what()));
-         THROW(exc);
-      }
    }
 }
 
@@ -184,33 +199,33 @@ void SBISubchannelData::seek(const CDTime& cdt)
 }
 
 // opens and caches the M3S data
-void M3SSubchannelData::openFile(const std::string& file) 
+void M3SSubchannelData::openFile(const std::string& file, int type) 
    throw(Exception)
 {
-   ifstream subFile(file.c_str(), ios::binary);
-   subFile.exceptions(ios::failbit|ios::badbit|ios::eofbit);
+   fileBrowser_file tempFile;
+   memset(&tempFile, 0, sizeof(fileBrowser_file));
+   strcpy(&tempFile.name[0], file.c_str());
+   if(isoFile_open(&tempFile) != FILE_BROWSER_ERROR_NO_FILE) {
+     memcpy(subFile, &tempFile, sizeof(fileBrowser_file));
+     subFile->attr = type;
+     filePtr = subFile;
+   }
 
-   try
+   CDTime t(3,0,0);
+   char buffer[16];
+   for(int i = 0; i < filePtr->size; i+=4)
    {
-      CDTime t(3,0,0);
-      char buffer[16];
-      while (subFile)
-      {
-         subFile.read((char*)&buffer, 16);
-         SubchannelFrame subf(t);
-         memcpy(&subf.subData[12], buffer, 16);
-         subMap[t] = subf;
-         t += CDTime(0,0,1);         
-         if (t == CDTime(4,0,0))
-            break;
-      }
+      isoFile_seekFile(filePtr,i,FILE_BROWSER_SEEK_SET);
+      isoFile_readFile(filePtr,(char*)&buffer, 16);
+ 
+      SubchannelFrame subf(t);
+      memcpy(&subf.subData[12], buffer, 16);
+      subMap[t] = subf;
+      t += CDTime(0,0,1);         
+      if (t == CDTime(4,0,0))
+         break;
    }
-   catch(std::exception& e)
-   {
-      Exception exc("Error reading M3S file");
-      exc.addText(string(e.what()));
-      THROW(exc);
-   }
+ 
 }
 
 // if no data is found, create data. otherwise, return the data found.

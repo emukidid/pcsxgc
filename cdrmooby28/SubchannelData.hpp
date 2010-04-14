@@ -22,6 +22,10 @@ http://mooby.psxfanatics.com
 #include <fstream>
 #include <map>
 
+extern "C" {
+#include "../fileBrowser/fileBrowser.h"
+};
+
 // so the funny thing is the subchannel is actually 98 bytes long, but
 // the first two are sync/identifier blocks, so 96 is ok for this.
 // that and CloneCD Sub files don't write those two blocks... 
@@ -95,7 +99,7 @@ class SubchannelData
 {
 public:
    SubchannelData()  {}
-   virtual void openFile(const std::string& file) 
+   virtual void openFile(const std::string& file, int type) 
       throw(Exception) = 0;
    virtual void seek(const CDTime& cdt) 
       throw(Exception) = 0;
@@ -114,7 +118,7 @@ public:
       delete [] sf.subData;
       sf.subData = NULL;
    }
-   virtual void openFile(const std::string& file) 
+   virtual void openFile(const std::string& file, int type) 
       throw(Exception) {}
    virtual void seek(const CDTime& cdt) throw(Exception)
       {}
@@ -126,7 +130,7 @@ class NoSubchannelData : public SubchannelData
 {
 public:
    NoSubchannelData() {}
-   virtual void openFile(const std::string& file) 
+   virtual void openFile(const std::string& file, int type) 
       throw(Exception) {}
    virtual void seek(const CDTime& cdt) throw(Exception)
       {sf.setTime(cdt);}
@@ -140,13 +144,13 @@ class SUBSubchannelData : public SubchannelData
 {
 public:
    SUBSubchannelData();
-   virtual void openFile(const std::string& file) 
+   virtual void openFile(const std::string& file, int type) 
       throw(Exception);
    virtual void seek(const CDTime& cdt)
       throw(Exception);
    virtual ~SUBSubchannelData() {}
 private:
-   std::ifstream subFile;
+   fileBrowser_file *filePtr;
 
          // the extra cache =)
    TimeCache<SubchannelFrame> cache;
@@ -173,12 +177,13 @@ class SBISubchannelData : public SubchannelData
 {
 public:
    SBISubchannelData() {}
-   virtual void openFile(const std::string& file) 
+   virtual void openFile(const std::string& file, int type) 
       throw(Exception);
    virtual void seek(const CDTime& cdt)
       throw(Exception);
    virtual ~SBISubchannelData() {}
 private:
+   fileBrowser_file *filePtr;
    std::map<CDTime, SubchannelFrame> subMap;
 };
 
@@ -195,17 +200,18 @@ class M3SSubchannelData : public SubchannelData
 {
 public:
    M3SSubchannelData() {}
-   virtual void openFile(const std::string& file) 
+   virtual void openFile(const std::string& file, int type) 
       throw(Exception);
    virtual void seek(const CDTime& cdt)
       throw(Exception);
    virtual ~M3SSubchannelData() {}
 private:
+   fileBrowser_file *filePtr;
    std::map<CDTime, SubchannelFrame> subMap;
 };
 
 // determines what kind of subchannel data is available based only
 // on file names
-SubchannelData* SubchannelDataFactory(const std::string& fileroot);
+SubchannelData* SubchannelDataFactory(const std::string& fileroot, int type);
 
 #endif

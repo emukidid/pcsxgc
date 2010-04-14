@@ -23,6 +23,10 @@ http://mooby.psxfanatics.com
 #include "TrackParser.hpp"
 #include "FileInterface.hpp"
 
+extern "C" {
+#include "../fileBrowser/fileBrowser.h"
+};
+
 extern TDTNFormat tdtnformat;
 extern std::string programName;
 
@@ -121,7 +125,7 @@ inline void CDInterface::open(const std::string& str)
 {
 		// use the FIFactory to make the FileInterface
    std::string extension;
-   image = FileInterfaceFactory(str, extension);
+   image = FileInterfaceFactory(str, extension, FILE_BROWSER_ISO_FILE_PTR);
 
    std::string fileroot = str;
    fileroot.erase(fileroot.rfind(extension));
@@ -136,7 +140,7 @@ inline void CDInterface::open(const std::string& str)
    if (trackList.size() > 2)
    {
       cdda = new PlayCDDAData(trackList, tp->getPregapLength());
-      cdda->openFile(str);
+      cdda->openFile(str, FILE_BROWSER_CDDA_FILE_PTR);
    }
    else
    {
@@ -144,7 +148,7 @@ inline void CDInterface::open(const std::string& str)
    }
 
 		// build the subchannel data
-   scd = SubchannelDataFactory(fileroot);
+   scd = SubchannelDataFactory(fileroot, FILE_BROWSER_SUB_FILE_PTR);
 
    if (trackList.size() > 2)
    {

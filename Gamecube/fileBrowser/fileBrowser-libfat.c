@@ -371,27 +371,36 @@ int fileBrowser_libfat_deinit(fileBrowser_file* f){
 }
 
 
-/* Special for ROM loading only */
-static FILE* fd = NULL;
+/* Special for ISO,CDDA,SUB file reading only 
+ * - Holds the same fat file handle to avoid fopen/fclose
+ * - Modified to keep 3 file handles open at once,
+ *   type is determined via attr value.
+ */
+#define FILE_BROWSER_MAX_FILE_PTRS 3
+static FILE* fd[FILE_BROWSER_MAX_FILE_PTRS];
 
 int fileBrowser_libfatROM_deinit(fileBrowser_file* f){
   pauseRemovalThread();
-	if(fd)
-		fclose(fd);
-	fd = NULL;
+  
+	if(fd[f->attr]) {
+		fclose(fd[f->attr]);
+	}
+	
+	fd[f->attr] = NULL;
 	continueRemovalThread();
-
 	return 0;
 }
 
 int fileBrowser_libfatROM_readFile(fileBrowser_file* file, void* buffer, unsigned int length){
   if(stop)     //do this only in the menu
     pauseRemovalThread();
-	if(!fd) fd = fopen( file->name, "rb");
+	if(!fd[file->attr]) fd[file->attr] = fopen( file->name, "rb");
 
-	fseek(fd, file->offset, SEEK_SET);
-	int bytes_read = fread(buffer, 1, length, fd);
-	if(bytes_read > 0) file->offset += bytes_read;
+	fseek(fd[file->attr], file->offset, SEEK_SET);
+	int bytes_read = fread(buffer, 1, length, fd[file->attr]);
+	if(bytes_read > 0) {
+  	file->offset += bytes_read;
+	}
 
 	if(stop)
 	  continueRemovalThread();

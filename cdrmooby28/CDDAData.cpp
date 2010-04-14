@@ -218,13 +218,13 @@ PlayCDDAData::~PlayCDDAData()
 }
 
 // initialize the CDDA file data and initalize the audio stream
-void PlayCDDAData::openFile(const std::string& file) 
+void PlayCDDAData::openFile(const std::string& file, int type) 
 {
 #ifdef WINDOWS
    PaError err;
 #endif
    std::string extension;
-   theCD = FileInterfaceFactory(file, extension);
+   theCD = FileInterfaceFactory(file, extension, type);
    theCD->setPregap(pregapLength, trackList[2].trackStart);
 #ifdef WINDOWS
    err = Pa_Initialize();

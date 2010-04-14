@@ -38,6 +38,10 @@
 #define FILE_BROWSER_SEEK_CUR 2
 #define FILE_BROWSER_SEEK_END 3
 
+#define FILE_BROWSER_ISO_FILE_PTR  0
+#define FILE_BROWSER_CDDA_FILE_PTR 1
+#define FILE_BROWSER_SUB_FILE_PTR  2
+
 typedef struct {
 	char         name[FILE_BROWSER_MAX_PATH_LEN];
 	uint64_t discoffset; // Only necessary for DVD

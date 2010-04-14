@@ -21,6 +21,10 @@ http://mooby.psxfanatics.com
 #include <vector>
 #include <fstream>
 
+extern "C" {
+#include "../fileBrowser/fileBrowser.h"
+};
+
 // the constants for the number of frames in compressed files as well as
 // how large the required buffers are
 const unsigned long BZIndexBufferFrames = 10;
@@ -46,7 +50,7 @@ public:
    }
 
 		// opens the file
-   virtual void openFile(const std::string& str)
+   virtual void openFile(const std::string& str, int type)
       throw(Exception);
 
 		// seeks to the time cdt in the file and sets the buffer pointer
@@ -91,6 +95,8 @@ protected:
    virtual void seekUnbuffered(const CDTime& cdt)
       throw(std::exception, Exception) = 0;
 
+    fileBrowser_file *filePtr;      
+      
 		// the number of frames buffered (0 for RAR)
    unsigned long bufferFrames;
 		// the buffer to the cached data
@@ -126,111 +132,6 @@ protected:
       const unsigned long requiredFrames);
 };
 
-#ifdef WINDOWS
-// virtual interface to compressed files with index files (like .bz.index or .Z.table)
-class CompressedFileInterface : public FileInterface
-{
-public:
-   CompressedFileInterface(const unsigned long bf, const unsigned long pf)
-      : FileInterface(bf, pf), compressedFrames(pf)
-   { 
-      compressedDataBuffer = 
-         new unsigned char[(pf + 1) * bytesPerFrame];
-   }
-
-   virtual ~CompressedFileInterface() 
-      {delete [] compressedDataBuffer;}
-
-   virtual unsigned char* getCompressedBuffer() {return compressedDataBuffer;}
-
-   virtual void compressData(char* uncompressedData,
-                             char* compressedData,
-                             unsigned int inputLen,
-                             unsigned int& outputLen)
-      throw(Exception) = 0;
-   virtual void decompressData(char* uncompressedData,
-                               char* compressedData,
-                               unsigned int inputLen,
-                               unsigned int& outputLen)
-      throw(Exception) = 0;
-
-   virtual std::string toTable(const std::vector<unsigned long>& table,
-                               const std::vector<unsigned long>& sizes) = 0;
-
-   unsigned long getCompressedFrames() {return compressedFrames;}
-
-protected:
-   virtual void seekUnbuffered(const CDTime& cdt)
-      throw(std::exception, Exception);
-   
-   unsigned char* compressedDataBuffer;
-   std::vector<unsigned long> lookupTable;
-   unsigned long compressedFrames;
-
-private:
-   CompressedFileInterface();
-};
-
-// interface to the ZTable type files
-class ZTableFileInterface : public CompressedFileInterface
-{
-public:
-   ZTableFileInterface(const unsigned long bf)
-      : CompressedFileInterface(bf, ZTableBufferFrames) {}
-   virtual ~ZTableFileInterface() {}
-   virtual void openFile(const std::string& str)
-      throw(Exception);
-   
-   virtual void compressData(char* uncompressedData,
-                             char* compressedData,
-                             unsigned int inputLen,
-                             unsigned int& outputLen)
-      throw(Exception);
-   virtual void decompressData(char* uncompressedData,
-                               char* compressedData,
-                               unsigned int inputLen,
-                               unsigned int& outputLen)
-      throw(Exception);
-
-   virtual std::string toTable(const std::vector<unsigned long>& table,
-                               const std::vector<unsigned long>& sizes);
-protected:
-
-private:
-   ZTableFileInterface();
-};
-
-// interface to the BZIndex type of files
-class BZIndexFileInterface : public CompressedFileInterface
-{
-public:
-   BZIndexFileInterface(const unsigned long bf)
-      : CompressedFileInterface(bf, BZIndexBufferFrames) {}
-   virtual ~BZIndexFileInterface() {}
-   virtual void openFile(const std::string& str)
-      throw(Exception);
-   
-   virtual void compressData(char* uncompressedData,
-                             char* compressedData,
-                             unsigned int inputLen,
-                             unsigned int& outputLen)
-      throw(Exception);
-
-   virtual void decompressData(char* uncompressedData,
-                               char* compressedData,
-                               unsigned int inputLen,
-                               unsigned int& outputLen)
-      throw(Exception);
-
-   virtual std::string toTable(const std::vector<unsigned long>& table,
-                               const std::vector<unsigned long>& sizes);
-protected:
-
-private:
-   BZIndexFileInterface();
-};
-#endif
-
 // interface to uncompressed files
 class UncompressedFileInterface : public FileInterface
 {
@@ -248,43 +149,6 @@ protected:
 private:
    UncompressedFileInterface();
 };
-
-#ifdef WINDOWS
-// interface to RAR files.  All the data members are static so it doesn't
-// decompress the file twice for normal data and CDDA data
-class RARFileInterface : public FileInterface
-{
-public:
-   RARFileInterface(const unsigned long bf)
-      : FileInterface(bf, 0)
-   {
-         // dont use the LRU cache (the data is already in memory)
-      cacheMode = oldMode;
-   }
-
-   virtual void openFile(const std::string& str)
-      throw(Exception);
-   virtual ~RARFileInterface() {toastStaticVars(); fileBuffer = NULL;}
-protected:
-   
-   virtual void seekUnbuffered(const CDTime& cdt)
-      throw(std::exception, Exception) {}
-private:
-   static void toastStaticVars() 
-      {alreadyUncompressed = false; free(theFile); theFile = NULL; length = 0;}
-   static void setUncompressed(const unsigned long len) 
-      {alreadyUncompressed = true; length = len;}
-
-
-   RARFileInterface();
-		// whether or not it's already decompressed
-   static bool alreadyUncompressed;
-		// the file data uncompressed in memory
-   static unsigned char* theFile;
-		// the length of the file
-   static unsigned long length;
-};
-#endif
 
 // i optimized this function so the CDTimes don't need to use the timeConvert() function
 // with all the + operations.  If the data is buffered, it should return very quickly.
@@ -339,6 +203,6 @@ inline void FileInterface::seek(const CDTime& cdt)
 
   // the factory method for creating a FileInterface based only on the filename
 FileInterface* FileInterfaceFactory(const std::string& filename,
-                                    std::string& extension);
+                                    std::string& extension, int type);
 
 #endif

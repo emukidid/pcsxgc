@@ -33,7 +33,7 @@ class CDDAData
 public:
    CDDAData() {}
    virtual ~CDDAData() {}
-   virtual void openFile(const std::string& file) = 0;
+   virtual void openFile(const std::string& file, int type) = 0;
    virtual int play(const CDTime& startTime) = 0;
    virtual int stop() = 0;
    virtual bool isPlaying(void) {return false;}
@@ -46,7 +46,7 @@ class NoCDDAData : public CDDAData
 public:
    NoCDDAData() {}
    virtual ~NoCDDAData() {}
-   virtual void openFile(const std::string& file) {}
+   virtual void openFile(const std::string& file, int type) {}
    virtual int play(const CDTime& startTime) {return 0;}
    virtual int stop() {return 0;}
 };
@@ -63,7 +63,7 @@ public:
    virtual ~PlayCDDAData();
 
 		// opens the file and readies the plugin for playing
-   virtual void openFile(const std::string& file);
+   virtual void openFile(const std::string& file, int type);
 		// plays data starting at startTime
    virtual int play(const CDTime& startTime);
 		// stops playing
