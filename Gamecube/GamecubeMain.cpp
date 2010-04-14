@@ -369,7 +369,6 @@ int loadISO(fileBrowser_file* file)
 	}
 	SysInit();
 	hasLoadedISO = 1;
-	CheckCdrom();
 	SysReset();
 	
 	char *tempStr = &file->name[0];
@@ -377,6 +376,7 @@ int loadISO(fileBrowser_file* file)
 		Load(file);
 	}
 	else {
+  	CheckCdrom();
 	  LoadCdrom();
   }
 	
