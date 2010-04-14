@@ -538,8 +538,8 @@ static void *MAINThread(void *arg)
  int ch,predict_nr,shift_factor,flags,d,s;
  int bIRQReturn=0;SPUCHAN * pChannel;
                             
-// while(!bEndThread)                                    // until we are shutting down
- // {
+ while(!bEndThread)                                    // until we are shutting down
+  {
    //--------------------------------------------------//
    // ok, at the beginning we are looking if there is
    // enuff free place in the dsound/oss buffer to
@@ -895,7 +895,7 @@ ENDX:   ;
     pS=(short *)pSpuBuffer;
     iCycle=0;
    }
- //}
+ }
 
  // end of big main loop...
 
