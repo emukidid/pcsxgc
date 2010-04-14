@@ -79,14 +79,16 @@ FileInterface* FileInterfaceFactory(const std::string& filename,
 {
 		// for every file type that's supported, try to match the extension
    FileInterface* image;
+   char buf[1024];
+   memset( buf, '\0', 1024 );
 
    if (extensionMatches(filename, ".ccd"))
    {
       moobyMessage("Please open the image and not the ccd file.");
       image = new UncompressedFileInterface(1);
-      extension = filename.substr(filename.size() - string(".ccd").size());
-      image->openFile(filename.substr(filename.size() - string(".ccd").size()) 
-         + string(".img"), type);
+      extension = filename.substr(filename.find_last_of('.'));
+      filename.copy(buf, filename.find_last_of('.'));
+      image->openFile(buf + string(".img"), type);
    }
 
 		// the CUE interface will take the name of the file
@@ -94,7 +96,7 @@ FileInterface* FileInterfaceFactory(const std::string& filename,
    else if (extensionMatches(filename, ".cue"))
    {
       moobyMessage("Please open the image and not the cue sheet.");
-      extension = filename.substr(filename.size() - string(".cue").size());
+      extension = filename.substr(filename.find_last_of('.'));
       CueParser cp(filename);
       cp.parse();
       image = new UncompressedFileInterface(1);
