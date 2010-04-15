@@ -176,14 +176,12 @@ void FileInterface::openFile(const std::string& str, int type)
     filePtr = isoFile;
   }
   else if(type==FILE_BROWSER_CDDA_FILE_PTR) {
+    if(cddaFile) {
+      isoFile_deinit(cddaFile);
+    }
     memcpy(cddaFile, &tempFile, sizeof(fileBrowser_file));
     cddaFile->attr = type;
     filePtr = cddaFile;
-  }
-  else if(type==FILE_BROWSER_SUB_FILE_PTR) {
-    memcpy(subFile, &tempFile, sizeof(fileBrowser_file));
-    subFile->attr = type;
-    filePtr = subFile;
   }
   
   isoFile_seekFile(filePtr,0,FILE_BROWSER_SEEK_SET);
