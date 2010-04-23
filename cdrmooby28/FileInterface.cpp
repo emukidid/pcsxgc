@@ -37,9 +37,9 @@ extern "C" {
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-DVD.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
-extern fileBrowser_file *isoFile; 
-extern fileBrowser_file *cddaFile;
-extern fileBrowser_file *subFile;
+extern fileBrowser_file isoFile; 
+extern fileBrowser_file cddaFile;
+extern fileBrowser_file subFile;
 };
 
 // leave this here or the unrarlib will complain about errors
@@ -171,17 +171,15 @@ void FileInterface::openFile(const std::string& str, int type)
   }
   
   if(type==FILE_BROWSER_ISO_FILE_PTR) {
-    memcpy(isoFile, &tempFile, sizeof(fileBrowser_file));
-    isoFile->attr = type;
-    filePtr = isoFile;
+    memcpy(&isoFile, &tempFile, sizeof(fileBrowser_file));
+    isoFile.attr = type;
+    filePtr = &isoFile;
   }
   else if(type==FILE_BROWSER_CDDA_FILE_PTR) {
-    if(cddaFile) {
-      isoFile_deinit(cddaFile);
-    }
-    memcpy(cddaFile, &tempFile, sizeof(fileBrowser_file));
-    cddaFile->attr = type;
-    filePtr = cddaFile;
+    isoFile_deinit(&cddaFile);
+    memcpy(&cddaFile, &tempFile, sizeof(fileBrowser_file));
+    cddaFile.attr = type;
+    filePtr = &cddaFile;
   }
   
   isoFile_seekFile(filePtr,0,FILE_BROWSER_SEEK_SET);

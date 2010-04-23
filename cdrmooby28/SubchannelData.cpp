@@ -22,7 +22,7 @@ extern "C" {
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-DVD.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
-extern fileBrowser_file *subFile;
+extern fileBrowser_file subFile;
 };
 
 extern Preferences prefs;
@@ -89,12 +89,10 @@ void SUBSubchannelData::openFile(const string& file, int type)
    memset(&tempFile, 0, sizeof(fileBrowser_file));
    strcpy(&tempFile.name[0], file.c_str());
    if(isoFile_open(&tempFile) != FILE_BROWSER_ERROR_NO_FILE) {
-     if(subFile) {
-       isoFile_deinit(subFile);
-     }
-     memcpy(subFile, &tempFile, sizeof(fileBrowser_file));
-     subFile->attr = type;
-     filePtr = subFile;
+     isoFile_deinit(&subFile);
+     memcpy(&subFile, &tempFile, sizeof(fileBrowser_file));
+     subFile.attr = type;
+     filePtr = &subFile;
    }
 }
 
@@ -132,12 +130,10 @@ void SBISubchannelData::openFile(const std::string& file, int type)
    memset(&tempFile, 0, sizeof(fileBrowser_file));
    strcpy(&tempFile.name[0], file.c_str());
    if(isoFile_open(&tempFile) != FILE_BROWSER_ERROR_NO_FILE) {
-     if(subFile) {
-       isoFile_deinit(subFile);
-     }
-     memcpy(subFile, &tempFile, sizeof(fileBrowser_file));
-     subFile->attr = type;
-     filePtr = subFile;
+     isoFile_deinit(&subFile);
+     memcpy(&subFile, &tempFile, sizeof(fileBrowser_file));
+     subFile.attr = type;
+     filePtr = &subFile;
    }
 
    try
@@ -210,12 +206,10 @@ void M3SSubchannelData::openFile(const std::string& file, int type)
    memset(&tempFile, 0, sizeof(fileBrowser_file));
    strcpy(&tempFile.name[0], file.c_str());
    if(isoFile_open(&tempFile) != FILE_BROWSER_ERROR_NO_FILE) {
-     if(subFile) {
-       isoFile_deinit(subFile);
-     }
-     memcpy(subFile, &tempFile, sizeof(fileBrowser_file));
-     subFile->attr = type;
-     filePtr = subFile;
+     isoFile_deinit(&subFile);
+     memcpy(&subFile, &tempFile, sizeof(fileBrowser_file));
+     subFile.attr = type;
+     filePtr = &subFile;
    }
 
    CDTime t(3,0,0);

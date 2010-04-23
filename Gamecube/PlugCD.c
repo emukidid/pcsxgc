@@ -242,8 +242,8 @@ void openCue(fileBrowser_file* cueFile)
 	normalizeTime(CD.tl[CD.numtracks-1].end);
 
 	// setup the isoFile to now point to the .iso
-	memcpy(isoFile, &tmpFile, sizeof(fileBrowser_file));
-	SysPrintf("Loaded bin from cue: %s size: %d\n", isoFile->name, isoFile->size);
+	memcpy(&isoFile, &tmpFile, sizeof(fileBrowser_file));
+	SysPrintf("Loaded bin from cue: %s size: %d\n", isoFile.name, isoFile.size);
 
 }
 
@@ -275,9 +275,6 @@ unsigned char* getSector(int subchannel)
 // returns the number of tracks
 char getNumTracks()
 {
-	if (!isoFile) {
-	    return -1;
-	}
 	return CD.numtracks;
 }
 
@@ -313,11 +310,11 @@ void readit(unsigned long addr)
 	}
 	else */
 	{
-	  isoFile_seekFile(isoFile,CD.sector, FILE_BROWSER_SEEK_SET);
-	  if(CD.sector + BUFFER_SIZE > isoFile->size)
-      isoFile_readFile(isoFile,CD.buffer,isoFile->size-CD.sector); //read till the end
+	  isoFile_seekFile(&isoFile,CD.sector, FILE_BROWSER_SEEK_SET);
+	  if(CD.sector + BUFFER_SIZE > isoFile.size)
+      isoFile_readFile(&isoFile,CD.buffer,isoFile.size-CD.sector); //read till the end
     else
-      isoFile_readFile(isoFile,CD.buffer,BUFFER_SIZE);            //read buffer size
+      isoFile_readFile(&isoFile,CD.buffer,BUFFER_SIZE);            //read buffer size
 	}
 
 	CD.bufferPos = CD.sector;
@@ -343,8 +340,7 @@ void seekSector(unsigned long addr)
 
 long CDR__open(void)
 {
-  if(isoFile)
-	  newCD(isoFile);
+  newCD(&isoFile);
 	return 0;
 }
 
@@ -380,20 +376,13 @@ long CDR__getTD(unsigned char track, unsigned char *buffer) {
 
 /* called when the psx requests a read */
 long CDR__readTrack(unsigned char *time) {
-	if (isoFile) {
-		seekSector(time2addrB(time));
-		return PSE_CDR_ERR_SUCCESS;
-	}
-	else
-	  return PSE_CDR_ERR_FAILURE;
+	seekSector(time2addrB(time));
+	return PSE_CDR_ERR_SUCCESS;
 }
 
 /* called after the read should be finished, and the data is needed */
 unsigned char *CDR__getBuffer(void) {
-	if (!isoFile)
-		return NULL;
-	else
-    return getSector(0);
+  return getSector(0);
 }
 
 unsigned char *CDR__getBufferSub(void) {

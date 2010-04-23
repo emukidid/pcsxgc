@@ -154,7 +154,7 @@ void Func_ShowRomInfo()
   strcat(RomInfo,buffer);
   sprintf(buffer,"CD-ROM ID: %s\n", CdromId);
   strcat(RomInfo,buffer);
-  sprintf(buffer,"ISO Size: %d Mb\n",isoFile->size/1024/1024);
+  sprintf(buffer,"ISO Size: %d Mb\n",isoFile.size/1024/1024);
   strcat(RomInfo,buffer);
   sprintf(buffer,"Country: %s\n",(!Config.PsxType) ? "NTSC":"PAL");
   strcat(RomInfo,buffer);

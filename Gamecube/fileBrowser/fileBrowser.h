@@ -60,7 +60,7 @@ extern fileBrowser_file* saveFile_dir;
 extern fileBrowser_file* biosFile_dir;
 
 // This is the currently loaded CD image
-extern fileBrowser_file* isoFile;
+extern fileBrowser_file isoFile;
 // This is the currently selected bios file
 extern fileBrowser_file* biosFile;
 

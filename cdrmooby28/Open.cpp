@@ -40,7 +40,7 @@ extern "C" {
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-DVD.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
-extern fileBrowser_file *isoFile; 
+extern fileBrowser_file isoFile; 
 }
 
 using namespace std;
@@ -121,7 +121,7 @@ void openIt(void)
    prefs.prefsMap[lastrunString] = theFile;
    prefs.write();*/
    theCD = new CDInterface();
-   theCD->open(isoFile->name);
+   theCD->open(&isoFile.name[0]);
 }
 
 // psemu open call - call open

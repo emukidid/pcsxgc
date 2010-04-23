@@ -71,9 +71,9 @@ int whichfb = 0;        /*** Frame buffer toggle ***/
 GXRModeObj *vmode;				/*** Graphics Mode Object ***/
 #define DEFAULT_FIFO_SIZE ( 256 * 1024 )
 BOOL hasLoadedISO = FALSE;
-fileBrowser_file *isoFile  = NULL;  //the ISO file
-fileBrowser_file *cddaFile  = NULL; //the CDDA file
-fileBrowser_file *subFile  = NULL;  //the SUB file
+fileBrowser_file isoFile;  //the ISO file
+fileBrowser_file cddaFile; //the CDDA file
+fileBrowser_file subFile;  //the SUB file
 fileBrowser_file *biosFile = NULL;  //BIOS file
 
 #if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
@@ -332,15 +332,11 @@ int main(int argc, char *argv[])
 int loadISOSwap(fileBrowser_file* file) {
   
   // Refresh file pointers
-	if(isoFile) free(isoFile);
-	if(cddaFile) free(cddaFile);
-	if(subFile) free(subFile);
+	memset(&isoFile, 0, sizeof(fileBrowser_file));
+	memset(&cddaFile, 0, sizeof(fileBrowser_file));
+	memset(&subFile, 0, sizeof(fileBrowser_file));
 	
-	isoFile = (fileBrowser_file*) memalign(32,sizeof(fileBrowser_file));
-	cddaFile = (fileBrowser_file*) memalign(32,sizeof(fileBrowser_file));
-	subFile = (fileBrowser_file*) memalign(32,sizeof(fileBrowser_file));
-	
-	memcpy( isoFile, file, sizeof(fileBrowser_file) );
+	memcpy(&isoFile, file, sizeof(fileBrowser_file) );
 	
 	//might need to insert code here to trigger a lid open/close interrupt
 	CDR_open();
@@ -354,15 +350,11 @@ int loadISOSwap(fileBrowser_file* file) {
 int loadISO(fileBrowser_file* file) 
 {
   // Refresh file pointers
-	if(isoFile) free(isoFile);
-	if(cddaFile) free(cddaFile);
-	if(subFile) free(subFile);
+	memset(&isoFile, 0, sizeof(fileBrowser_file));
+	memset(&cddaFile, 0, sizeof(fileBrowser_file));
+	memset(&subFile, 0, sizeof(fileBrowser_file));
 	
-	isoFile = (fileBrowser_file*) memalign(32,sizeof(fileBrowser_file));
-	cddaFile = (fileBrowser_file*) memalign(32,sizeof(fileBrowser_file));
-	subFile = (fileBrowser_file*) memalign(32,sizeof(fileBrowser_file));
-	
-	memcpy( isoFile, file, sizeof(fileBrowser_file) );
+	memcpy(&isoFile, file, sizeof(fileBrowser_file) );
 
 	if(hasLoadedISO) {
   	SysClose();	

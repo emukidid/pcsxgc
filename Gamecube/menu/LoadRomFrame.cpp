@@ -121,7 +121,7 @@ extern void fileBrowserFrame_OpenDirectory(fileBrowser_file* dir);
 void Func_LoadFromSD()
 {
 	// Deinit any existing romFile state
-	if(isoFile_deinit) isoFile_deinit( isoFile );
+	if(isoFile_deinit) isoFile_deinit( &isoFile );
 	// Change all the romFile pointers
 	isoFile_topLevel = &topLevel_libfat_Default;
 	isoFile_readDir  = fileBrowser_libfat_readDir;
@@ -140,7 +140,7 @@ void Func_LoadFromSD()
 void Func_LoadFromDVD()
 {
 	// Deinit any existing romFile state
-	if(isoFile_deinit) isoFile_deinit( isoFile );
+	if(isoFile_deinit) isoFile_deinit( &isoFile );
 	// Change all the romFile pointers
 	isoFile_topLevel = &topLevel_DVD;
 	isoFile_readDir  = fileBrowser_DVD_readDir;
@@ -160,7 +160,7 @@ void Func_LoadFromUSB()
 {
 #ifdef WII
 	// Deinit any existing romFile state
-	if(isoFile_deinit) isoFile_deinit( isoFile );
+	if(isoFile_deinit) isoFile_deinit( &isoFile );
 	// Change all the romFile pointers
 	isoFile_topLevel = &topLevel_libfat_USB;
 	isoFile_readDir  = fileBrowser_libfat_readDir;
