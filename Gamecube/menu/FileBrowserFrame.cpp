@@ -148,7 +148,6 @@ static fileBrowser_file* dir_entries;
 static int				num_entries;
 static int				current_page;
 static int				max_page;
-static char				feedback_string[256];
 
 void fileBrowserFrame_OpenDirectory(fileBrowser_file* dir);
 void fileBrowserFrame_Error(fileBrowser_file* dir);
@@ -355,6 +354,7 @@ void fileBrowserFrame_OpenDirectory(fileBrowser_file* dir)
 
 void fileBrowserFrame_Error(fileBrowser_file* dir)
 {
+	char feedback_string[256];
 	//disable all buttons
 	for (int i = 0; i < NUM_FRAME_BUTTONS; i++)
 		FRAME_BUTTONS[i].button->setActive(false);
@@ -431,6 +431,7 @@ void newCD(fileBrowser_file *file);
 
 void fileBrowserFrame_LoadFile(int i)
 {
+	char feedback_string[256];
 	if(dir_entries[i].attr & FILE_BROWSER_ATTR_DIR){
 		// Here we are 'recursing' into a subdirectory
 		// We have to do a little dance here to avoid a dangling pointer
