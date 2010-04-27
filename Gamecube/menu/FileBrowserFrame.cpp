@@ -148,7 +148,7 @@ static fileBrowser_file* dir_entries;
 static int				num_entries;
 static int				current_page;
 static int				max_page;
-static char				feedback_string[36];
+static char				feedback_string[256];
 
 void fileBrowserFrame_OpenDirectory(fileBrowser_file* dir);
 void fileBrowserFrame_Error(fileBrowser_file* dir);
@@ -340,7 +340,7 @@ void fileBrowserFrame_OpenDirectory(fileBrowser_file* dir)
 	num_entries = isoFile_readDir(dir, &dir_entries);
 	if(num_entries <= 0)
 	{ 
-		if(dir_entries) free(dir_entries); 
+		if(dir_entries) { free(dir_entries); dir_entries = NULL; } 
 		fileBrowserFrame_Error(dir); 
 		return;
 	}
@@ -358,7 +358,7 @@ void fileBrowserFrame_Error(fileBrowser_file* dir)
 	//disable all buttons
 	for (int i = 0; i < NUM_FRAME_BUTTONS; i++)
 		FRAME_BUTTONS[i].button->setActive(false);
-	for (int i = 1; i<NUM_FILE_SLOTS; i++)
+	for (int i = 0; i<NUM_FILE_SLOTS; i++)
 		FRAME_BUTTONS[i+2].buttonString = FRAME_STRINGS[2];
 	//set first entry to read 'error' and return to main menu
 	if(dir->name)
