@@ -142,7 +142,7 @@ unsigned char * pMixIrq=0;
 int             iUseXA=1;
 int             iVolume=3;
 int             iXAPitch=1;
-int             iUseTimer=2;
+int             iUseTimer=0;  //lwp (pthread mode)
 int             iSPUIRQWait=1;
 int             iSPUDebugMode=0;
 int             iRecordMode=0;
@@ -175,7 +175,13 @@ static HANDLE   hMainThread;
 #else
 // 2003/06/07 - Pete
 #ifndef NOTHREADLIB
-static pthread_t thread = -1;                          // thread id (linux)
+#include <ogc/lwp.h>
+#include <ogc/semaphore.h>
+static lwp_t spu_thread = -1;
+#define SPU_STACK_SIZE 1024 // MEM: I could get away with a smaller stack
+#define SPU_PRIORITY 120
+static char  spu_stack[SPU_STACK_SIZE];
+//static pthread_t thread = -1;                          // thread id (linux)
 #endif
 #endif
 
@@ -1055,7 +1061,8 @@ void SetupTimer(void)
 #ifndef NOTHREADLIB
  if(!iUseTimer)                                        // linux: use thread
   {
-   pthread_create(&thread, NULL, MAINThread, NULL);
+    LWP_CreateThread(&spu_thread, (void*)MAINThread, NULL, spu_stack, SPU_STACK_SIZE, SPU_PRIORITY);
+   //pthread_create(&thread, NULL, MAINThread, NULL);
   }
 #endif
 
@@ -1086,7 +1093,11 @@ void RemoveTimer(void)
   {
    int i=0;
    while(!bThreadEnded && i<2000) {usleep(1000L);i++;} // -> wait until thread has ended
-   if(thread!=-1) {pthread_cancel(thread);thread=-1;}  // -> cancel thread anyway
+   if(spu_thread!=-1/*thread!=-1*/) {
+     /*pthread_cancel(thread); thread=-1; */
+     LWP_JoinThread(spu_thread, NULL);
+     spu_thread = -1;
+   }  // -> cancel thread anyway
   }
 #endif
 

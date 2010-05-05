@@ -27,7 +27,7 @@
 
 
 #define NUM_BUFFERS 16
-#define BUFFER_SIZE (4*1024)
+#define BUFFER_SIZE (3264)
 static char buffer[NUM_BUFFERS][BUFFER_SIZE] __attribute__((aligned(32)));
 static int which_buffer = 0;
 static unsigned int buffer_offset = 0;
@@ -55,7 +55,7 @@ static const s32 freq = 44100;
 static s32 voice = SND_INVALID, first_sample = TRUE;
 s32 audio_volume[2] = { MID_VOLUME, MID_VOLUME };
 
-static void done_playing(void);
+static void done_playing(s32 voice);
 static void play_buffer(void);
 static void add_to_buffer(void* stream, unsigned int length);
 static void dummy_callback(s32 voice){ }
@@ -109,11 +109,13 @@ unsigned long SoundGetBytesBuffered(void)
 {
 	// FIXME: I don't think this is accurate at all
 	unsigned int buffered = ((which_buffer - thread_buffer + NUM_BUFFERS) % NUM_BUFFERS) * BUFFER_SIZE;
+	sprintf(txtbuffer, "SoundGetBytesBuffered %d",buffered + (ASND_TestVoiceBufferReady(voice) ? 0 : ASND_GetSamplesPerTick()));
+	DEBUG_print(txtbuffer, 10);
 	return buffered + (ASND_TestVoiceBufferReady(voice) ? 0 : ASND_GetSamplesPerTick());
 }
 
 #ifdef THREADED_AUDIO
-static void done_playing(void){
+static void done_playing(s32 voice){
 	// We're done playing, so we're releasing a buffer and the audio
 	LWP_SemPost(buffer_empty);
 	LWP_SemPost(audio_free);
@@ -133,36 +135,19 @@ static void play_buffer(void){
 	
 	// Wait for the audio interface to be free before playing
 	LWP_SemWait(audio_free);
-#endif
-
-	// Start playing the buffer
-	if(first_sample){
-		// Set up the audio stream for the first time
-		ASND_SetVoice(voice,
-					  iDisStereo ? VOICE_MONO_16BIT : VOICE_STEREO_16BIT,
+  // Set up the audio stream for the first time
+  ASND_SetVoice(voice,
+	          iDisStereo ? VOICE_MONO_16BIT : VOICE_STEREO_16BIT,
 					  freq, 0, buffer[thread_buffer], BUFFER_SIZE,
 					  audio_volume[0], audio_volume[1],
-#ifdef THREADED_AUDIO
 					  done_playing
-#else
-					  dummy_callback
-#endif
 					  );
-		ASND_Pause(0);
-		first_sample = FALSE;
-	} else {
-#ifndef THREADED_AUDIO
-		while(
-#endif
-		// Add more audio to the stream
-		ASND_AddVoice(voice, buffer[thread_buffer], BUFFER_SIZE)
-#ifndef THREADED_AUDIO
-		== SND_BUSY)
-#endif
-		;
+	if(first_sample != FALSE) {
+	  ASND_Pause(0);
+	  first_sample = FALSE;
 	}
 
-#ifdef THREADED_AUDIO
+
 	// Move the index to the next buffer
 	NEXT(thread_buffer);
 	}
@@ -175,7 +160,8 @@ static void play_buffer(void){
 void SoundFeedStreamData(unsigned char* pSound,long lBytes)
 {
 	if(!audioEnabled) return;
-	
+	sprintf(txtbuffer, "SoundFeedStreamData %ld",lBytes);
+	DEBUG_print(txtbuffer, 11);
 	add_to_buffer(pSound, lBytes);
 }
 
