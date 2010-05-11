@@ -37,15 +37,6 @@ typedef struct {
 } PluginTable;
 #define NUM_PLUGINS 8
 
-/* PAD */
-//typedef long (* PADopen)(unsigned long *);
-extern long PAD__init(long);
-extern long PAD__shutdown(void);	
-extern long PAD__open(void);
-extern long PAD__close(void);
-extern long PAD__readPort1(PadDataS*);
-extern long PAD__readPort2(PadDataS*);
-
 /* SPU NULL */
 //typedef long (* SPUopen)(void);
 void NULL_SPUwriteRegister(unsigned long reg, unsigned short val);
@@ -137,6 +128,19 @@ void PEOPS_GPUupdateLace(void);
 void PEOPS_GPUdisplayText(char *);
 long PEOPS_GPUfreeze(unsigned long,GPUFreeze_t *);
 
+/* PAD */
+//typedef long (* PADopen)(unsigned long *);
+extern long PAD__init(long);
+extern long PAD__shutdown(void);	
+
+/* WiiSX PAD Plugin */
+extern long PAD__open(void);
+extern long PAD__close(void);
+unsigned char PAD__startPoll (int pad);
+unsigned char PAD__poll (const unsigned char value);
+long PAD__readPort1(PadDataS*);
+long PAD__readPort2(PadDataS*);
+
 /* SSSPSX PAD Plugin */
 long SSS_PADopen (void *p);
 long SSS_PADclose (void);
@@ -177,6 +181,44 @@ unsigned char * CALLBACK Mooby2CDRgetBuffer(void);
 	    { "PADshutdown",	\
 	      (void*)PAD__shutdown}, \
 	    { "PADopen", \
+	      (void*)PAD__open}, \
+	    { "PADclose", \
+	      (void*)PAD__close}, \
+	    { "PADpoll", \
+	      (void*)PAD__poll}, \
+	    { "PADstartPoll", \
+	      (void*)PAD__startPoll}, \
+	    { "PADreadPort1", \
+	      (void*)PAD__readPort1} \
+	       } }
+	    
+#define PAD2_PLUGIN \
+	{ "PAD2",      \
+	  7,         \
+	  { { "PADinit",  \
+	      (void*)PAD__init }, \
+	    { "PADshutdown",	\
+	      (void*)PAD__shutdown}, \
+	    { "PADopen", \
+	      (void*)PAD__open}, \
+	    { "PADclose", \
+	      (void*)PAD__close}, \
+	    { "PADpoll", \
+	      (void*)PAD__poll}, \
+	    { "PADstartPoll", \
+	      (void*)PAD__startPoll}, \
+	    { "PADreadPort2", \
+	      (void*)PAD__readPort2} \
+	       } }
+
+#define SSS_PAD1_PLUGIN \
+	{ "PAD1",      \
+	  7,         \
+	  { { "PADinit",  \
+	      (void*)PAD__init }, \
+	    { "PADshutdown",	\
+	      (void*)PAD__shutdown}, \
+	    { "PADopen", \
 	      (void*)SSS_PADopen}, \
 	    { "PADclose", \
 	      (void*)SSS_PADclose}, \
@@ -188,7 +230,7 @@ unsigned char * CALLBACK Mooby2CDRgetBuffer(void);
 	      (void*)SSS_PADreadPort1} \
 	       } }
 	    
-#define PAD2_PLUGIN \
+#define SSS_PAD2_PLUGIN \
 	{ "PAD2",      \
 	  7,         \
 	  { { "PADinit",  \

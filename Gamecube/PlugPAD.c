@@ -265,7 +265,7 @@ long PAD__init(long flags) {
 long PAD__shutdown(void) {
 	return PSE_PAD_ERR_SUCCESS;
 }
-/*
+
 long PAD__open(void)
 {
 	return PSE_PAD_ERR_SUCCESS;
@@ -274,7 +274,7 @@ long PAD__open(void)
 long PAD__close(void) {
 	return PSE_PAD_ERR_SUCCESS;
 }
-
+/*
 long PAD__readPort1(PadDataS* pad) {
 	//TODO: Multitap support; Light Gun support
 
