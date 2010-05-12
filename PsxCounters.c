@@ -23,6 +23,7 @@
 */
 
 #include "PsxCounters.h"
+#include "Gamecube/DEBUG.h"
 
 static int cnts = 4;
 psxCounter psxCounters[5];
@@ -151,7 +152,13 @@ void psxRcntUpdate() {
 
 	if (cnts >= 5) {
 		if ((psxRegs.cycle - psxCounters[4].sCycle) >= psxCounters[4].Cycle) {
+#ifdef PROFILE
+  start_section(AUDIO_SECTION);
+#endif
 			SPU_async((psxRegs.cycle - psxCounters[4].sCycle) * BIAS);
+#ifdef PROFILE
+	end_section(AUDIO_SECTION);
+#endif
 			psxRcntReset(4);
 		}
 	}

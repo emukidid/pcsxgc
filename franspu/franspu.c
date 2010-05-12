@@ -199,12 +199,8 @@ void SPU_async_1ms(SPUCHAN * pChannel,int *SSumL, int *SSumR, int *iFMod)
               				}     
               				
               			// irq check
-                    sprintf(txtbuffer,"irqCallback: %08X spuCtrl %04X",(u32)irqCallback,spuCtrl);
-                    DEBUG_print(txtbuffer,10);
                    if((u32)irqCallback && (spuCtrl&0x40))         // some callback and irq active?
                     {
-                      sprintf(txtbuffer,"pSpuIrq: %08X start %08X flags %08X ploop %08X",(u32)pSpuIrq,(u32)start, (u32)flags, (u32)pChannel->pLoop);
-                    DEBUG_print(txtbuffer,11);
                      if((pSpuIrq >  start-16 &&              // irq address reached?
                          pSpuIrq <= start) ||
                         ((flags&1) &&                        // special: irq on looping addr, when stop/loop flag is set 
@@ -212,7 +208,6 @@ void SPU_async_1ms(SPUCHAN * pChannel,int *SSumL, int *SSumR, int *iFMod)
                           pSpuIrq <= pChannel->pLoop)))
                       {
                        pChannel->iIrqDone=1;                 // -> debug flag
-                       DEBUG_print("Calling IRQ!!",9);
                        irqCallback();                        // -> call main emu
 
                       }

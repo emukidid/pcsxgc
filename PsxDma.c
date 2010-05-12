@@ -28,9 +28,7 @@
 // Dma3   in CdRom.c
 
 void psxDma4(u32 madr, u32 bcr, u32 chcr) { // SPU
-#ifdef PROFILE
-  start_section(AUDIO_SECTION);
-#endif
+
 	u16 *ptr;
 	u32 size;
 
@@ -77,9 +75,7 @@ void psxDma4(u32 madr, u32 bcr, u32 chcr) { // SPU
 
 	HW_DMA4_CHCR &= SWAPu32(~0x01000000);
 	DMA_INTERRUPT(4);
-#ifdef PROFILE
-	end_section(AUDIO_SECTION);
-#endif
+
 }
 
 void psxDma2(u32 madr, u32 bcr, u32 chcr) { // GPU
