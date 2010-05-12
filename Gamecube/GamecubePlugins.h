@@ -84,6 +84,29 @@ unsigned short CALLBACK PEOPS_SPUreadRegister(unsigned long reg);
 //freeze.c
 long CALLBACK PEOPS_SPUfreeze(unsigned long ulFreezeMode,SPUFreeze_t * pF);
 
+/* franspu */
+//spu_registers.cpp
+void FRAN_SPU_writeRegister(unsigned long reg, unsigned short val);
+unsigned short FRAN_SPU_readRegister(unsigned long reg);
+//spu_dma.cpp
+unsigned short FRAN_SPU_readDMA(void);
+void FRAN_SPU_readDMAMem(unsigned short * pusPSXMem,int iSize);
+void FRAN_SPU_writeDMA(unsigned short val);
+void FRAN_SPU_writeDMAMem(unsigned short * pusPSXMem,int iSize);
+//spu.cpp
+void FRAN_SPU_async(unsigned long cycle);
+void FRAN_SPU_playADPCMchannel(xa_decode_t *xap);
+long FRAN_SPU_init(void);
+s32 FRAN_SPU_open(void);
+long FRAN_SPU_close(void);
+long FRAN_SPU_shutdown(void);
+long FRAN_SPU_freeze(unsigned long ulFreezeMode,SPUFreeze_t * pF);
+void FRAN_SPU_setConfigFile(char *cfgfile);
+void FRAN_SPU_About();
+void FRAN_SPU_test();
+void FRAN_SPU_registerCallback(void (*callback)(void));
+void FRAN_SPU_registerCDDAVolume(void (*CDDAVcallback)(unsigned short,unsigned short));
+
 /* CDR */
 long CDR__open(void);
 long CDR__init(void);
@@ -387,6 +410,47 @@ unsigned char * CALLBACK Mooby2CDRgetBuffer(void);
 	      (void*)PEOPS_SPUasync} \
 	       } }
       
+#define FRANSPU_PLUGIN \
+	{ "SPU",      \
+	  18,         \
+	  { { "SPUinit",  \
+	      (void*)FRAN_SPU_init }, \
+	    { "SPUshutdown",	\
+	      (void*)FRAN_SPU_shutdown}, \
+	    { "SPUopen", \
+	      (void*)FRAN_SPU_open}, \
+	    { "SPUclose", \
+	      (void*)FRAN_SPU_close}, \
+	    { "SPUconfigure", \
+	      (void*)FRAN_SPU_setConfigFile}, \
+	    { "SPUabout", \
+	      (void*)FRAN_SPU_About}, \
+	    { "SPUtest", \
+	      (void*)FRAN_SPU_test}, \
+	    { "SPUwriteRegister", \
+	      (void*)FRAN_SPU_writeRegister}, \
+	    { "SPUreadRegister", \
+	      (void*)FRAN_SPU_readRegister}, \
+	    { "SPUwriteDMA", \
+	      (void*)FRAN_SPU_writeDMA}, \
+	    { "SPUreadDMA", \
+	      (void*)FRAN_SPU_readDMA}, \
+	    { "SPUwriteDMAMem", \
+	      (void*)FRAN_SPU_writeDMAMem}, \
+	    { "SPUreadDMAMem", \
+	      (void*)FRAN_SPU_readDMAMem}, \
+	    { "SPUplayADPCMchannel", \
+	      (void*)FRAN_SPU_playADPCMchannel}, \
+	    { "SPUfreeze", \
+	      (void*)FRAN_SPU_freeze}, \
+	    { "SPUregisterCallback", \
+	      (void*)FRAN_SPU_registerCallback}, \
+	    { "SPUregisterCDDAVolume", \
+	      (void*)FRAN_SPU_registerCDDAVolume}, \
+	    { "SPUasync", \
+	      (void*)FRAN_SPU_async} \
+	       } }
+	       
 #define GPU_NULL_PLUGIN \
 	{ "GPU",      \
 	  10,         \
@@ -451,7 +515,8 @@ unsigned char * CALLBACK Mooby2CDRgetBuffer(void);
 //#define PLUGIN_SLOT_3 CDR_PLUGIN
 #define PLUGIN_SLOT_3 MOOBY28_CDR_PLUGIN
 //#define PLUGIN_SLOT_4 SPU_NULL_PLUGIN
-#define PLUGIN_SLOT_4 SPU_PEOPS_PLUGIN
+//#define PLUGIN_SLOT_4 SPU_PEOPS_PLUGIN
+#define PLUGIN_SLOT_4 FRANSPU_PLUGIN
 //#define PLUGIN_SLOT_5 GPU_NULL_PLUGIN
 #define PLUGIN_SLOT_5 GPU_PEOPS_PLUGIN
 #define PLUGIN_SLOT_6 EMPTY_PLUGIN
