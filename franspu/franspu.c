@@ -1,8 +1,11 @@
 #ifndef ALTERNATESPU
 
+#include <gccore.h>
+#include <malloc.h>
 #include "franspu.h"
 #include "../PSXCommon.h"
 #include "../Decode_XA.h"
+#include "../Gamecube/DEBUG.h"
 
 extern void SoundFeedStreamData(unsigned char* pSound,long lBytes);
 extern void InitADSR(void);
@@ -16,7 +19,11 @@ unsigned char * spuMemC;
 unsigned char * pSpuBuffer;
 unsigned char * pMixIrq=0;
 
-unsigned int iVolume = 10;
+void (*irqCallback)(void)=0;                  // func of main emu, called on spu irq
+unsigned char * pSpuIrq=0;
+int             iSPUIRQWait=0;
+int             iSpuAsyncWait=0;
+unsigned int    iVolume = 3;
 
 typedef struct
 {
@@ -138,13 +145,13 @@ void SPU_async_1ms(SPUCHAN * pChannel,int *SSumL, int *SSumR, int *iFMod)
  	unsigned char * start;
  	int predict_nr,shift_factor,flags,s;
 	const int f[5][2] = {{0,0},{60,0},{115,-52},{98,-55},{122,-60}};
-
+  
  	memset(SSumL,0,NSSIZE*sizeof(int));
  	memset(SSumR,0,NSSIZE*sizeof(int));
  	
-   	// main channel loop
+ 	 	// main channel loop
      	for(ch=0;ch<MAXCHAN;ch++,pChannel++)              	// loop em all... we will collect 1 ms of sound of each playing channel
-      	{
+      	{    
        		if(pChannel->bNew) StartSound(pChannel);        // start new sound
        		if(!pChannel->bOn) continue;                    // channel not playing? next
        		if(pChannel->iActFreq!=pChannel->iUsedFreq)     // new psx frequency?
@@ -190,6 +197,26 @@ void SPU_async_1ms(SPUCHAN * pChannel,int *SSumL, int *SSumR, int *iFMod)
                					s_2=s_1;s_1=fa;
                					pChannel->SB[i++]=fa;
               				}     
+              				
+              			// irq check
+                    sprintf(txtbuffer,"irqCallback: %08X spuCtrl %04X",(u32)irqCallback,spuCtrl);
+                    DEBUG_print(txtbuffer,10);
+                   if((u32)irqCallback && (spuCtrl&0x40))         // some callback and irq active?
+                    {
+                      sprintf(txtbuffer,"pSpuIrq: %08X start %08X flags %08X ploop %08X",(u32)pSpuIrq,(u32)start, (u32)flags, (u32)pChannel->pLoop);
+                    DEBUG_print(txtbuffer,11);
+                     if((pSpuIrq >  start-16 &&              // irq address reached?
+                         pSpuIrq <= start) ||
+                        ((flags&1) &&                        // special: irq on looping addr, when stop/loop flag is set 
+                         (pSpuIrq >  pChannel->pLoop-16 &&
+                          pSpuIrq <= pChannel->pLoop)))
+                      {
+                       pChannel->iIrqDone=1;                 // -> debug flag
+                       DEBUG_print("Calling IRQ!!",9);
+                       irqCallback();                        // -> call main emu
+
+                      }
+                    }
 
              				// flag handler
              				if((flags&4) && (!pChannel->bIgnoreLoop))
@@ -208,6 +235,8 @@ void SPU_async_1ms(SPUCHAN * pChannel,int *SSumL, int *SSumR, int *iFMod)
              				pChannel->s_2=s_2;      
            			}
            			
+           			
+             			
            			fa=pChannel->SB[pChannel->iSBPos++];        // get sample data
            			StoreInterpolationVal(pChannel,fa);         // store val for later interpolation
            			pChannel->spos -= 0x10000L;
@@ -241,14 +270,21 @@ ENDX:   ;
   	if(XAPlay!=XAFeed || XARepeat) MixXA();
 
   	// Mono Mix
-	for(i=0;i<NSSIZE;i++)
-      		*pS++=((*SSumL++)+(*SSumR++))>>1;
+	for(i=0;i<NSSIZE;i++) {
+    *pS++=((*SSumL++)+(*SSumR++))>>1;
+  }
 }
 
 void FRAN_SPU_async(unsigned long cycle)
 {
  	if( iSoundMuted > 0 ) return;
  	if(SoundGetBytesBuffered() > 4*1024) return;
+ 	if(iSpuAsyncWait)
+  {
+   iSpuAsyncWait++;
+   if(iSpuAsyncWait<=64) return;
+   iSpuAsyncWait=0;
+  }
 	int i;
 	int t=(cycle?20:16); /* cycle 0=NTSC 16 ms, 1=PAL 20 ms */
  	for (i=0;i<t;i++)
@@ -285,6 +321,8 @@ s32 FRAN_SPU_open(void)
  	bEndThread=0;
  	spuMemC=(unsigned char *)spuMem;      
  	pMixIrq=0;
+ 	pSpuIrq=0;
+ 	iSPUIRQWait=0;
  	memset((void *)s_chan,0,(MAXCHAN+1)*sizeof(SPUCHAN));
  
  	SetupSound();                                         // setup sound (before init!)
@@ -298,6 +336,7 @@ s32 FRAN_SPU_open(void)
  	for(i=0;i<MAXCHAN;i++)                                // loop sound channels
   	{
    		s_chan[i].ADSRX.SustainLevel = 0xf<<27;       // -> init sustain
+   		s_chan[i].iIrqDone=0;
    		s_chan[i].pLoop=spuMemC;
    		s_chan[i].pStart=spuMemC;
    		s_chan[i].pCurr=spuMemC;
@@ -355,7 +394,7 @@ long FRAN_SPU_test() {
 }
 
 void FRAN_SPU_registerCallback(void (*callback)(void)) {
-  
+  irqCallback = callback;
 }
 
 void FRAN_SPU_registerCDDAVolume(void (*CDDAVcallback)(unsigned short,unsigned short)) {

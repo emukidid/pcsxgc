@@ -2,6 +2,7 @@
 #define __SPUPSX4ALL_H__
 
 #include "../PSXCommon.h"
+#include "../Decode_XA.h"
 
 #ifndef __WIN32__
   #include <unistd.h>
@@ -10,8 +11,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
-
 
 #define RRand(range) (random()%range)  
 #include <string.h> 
@@ -132,6 +131,7 @@ typedef struct
  int               bIgnoreLoop;                        // ignore loop bit, if an external loop address is used
  int               iRightVolume;                       // right volume
  int               iRawPitch;                          // raw pitch (0...3fff)
+ int               iIrqDone;                           // debug irq done flag
  int               s_1;                                // last decoding infos
  int               s_2;
  int               bNoise;                             // noise active flag
@@ -199,6 +199,7 @@ extern unsigned short  regArea[];
 extern unsigned short  spuMem[];
 extern unsigned char * spuMemC;
 extern unsigned char * pSpuBuffer;
+extern unsigned char * pSpuIrq;
 
 // user settings
 
@@ -366,5 +367,10 @@ extern int           iRightXAVol;
 #define H_SPU_ADSRLevel21  0x0d58
 #define H_SPU_ADSRLevel22  0x0d68
 #define H_SPU_ADSRLevel23  0x0d78
+
+extern int MixADSR(SPUCHAN *ch);
+extern unsigned long SoundGetBytesBuffered(void);
+extern void FeedXA(xa_decode_t *xap);
+extern void MixXA(void);
 
 #endif

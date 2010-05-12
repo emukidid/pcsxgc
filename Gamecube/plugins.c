@@ -214,7 +214,7 @@ int LoadSPUplugin(char *SPUdll) {
 	LoadSpuSym1(freeze, "SPUfreeze");
 	LoadSpuSym1(async, "SPUasync");
 	LoadSpuSym1(registerCallback, "SPUregisterCallback");
-	//LoadSpuSym1(registerCDDAVolume, "SPUregisterCDDAVolume");
+	LoadSpuSym1(registerCDDAVolume, "SPUregisterCDDAVolume");
 
 	return 0;
 }

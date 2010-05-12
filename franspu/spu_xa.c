@@ -2,7 +2,6 @@
 // XA GLOBALS
 ////////////////////////////////////////////////////////////////////////
 
-#include "../Decode_XA.h"
 #include "franspu.h"
 
 unsigned long * XAFeed  = NULL;

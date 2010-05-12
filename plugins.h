@@ -181,6 +181,7 @@ typedef void (CALLBACK* SPUwriteDMAMem)(unsigned short *, int);
 typedef void (CALLBACK* SPUreadDMAMem)(unsigned short *, int);
 typedef void (CALLBACK* SPUplayADPCMchannel)(xa_decode_t *);
 typedef void (CALLBACK* SPUregisterCallback)(void (CALLBACK *callback)(void));
+typedef void (CALLBACK* SPUregisterCDDAVolume)(void (*CDDAVcallback)(unsigned short,unsigned short));
 typedef long (CALLBACK* SPUconfigure)(void);
 typedef long (CALLBACK* SPUtest)(void);			
 typedef void (CALLBACK* SPUabout)(void);
@@ -224,6 +225,7 @@ SPUreadDMAMem       SPU_readDMAMem;
 SPUplayADPCMchannel SPU_playADPCMchannel;
 SPUfreeze           SPU_freeze;
 SPUregisterCallback SPU_registerCallback;
+SPUregisterCDDAVolume SPU_registerCDDAVolume;
 SPUasync            SPU_async;
 
 // PAD Functions

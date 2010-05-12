@@ -201,7 +201,7 @@ void FRAN_SPU_writeRegister(unsigned long reg, unsigned short val)
          			}
        			}
       			break;
-    		case H_SPUirqAddr : spuIrq = val;		break;
+    		case H_SPUirqAddr : spuIrq = val;	pSpuIrq=spuMemC+((unsigned long) val<<3);	break;
     		case H_SPUrvolL   : rvb.VolLeft=val; 		break;
     		case H_SPUrvolR   : rvb.VolRight=val; 		break;
     		case H_SPUon1     : SoundOn(0,16,val); 		break;

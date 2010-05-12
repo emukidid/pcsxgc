@@ -111,9 +111,6 @@ unsigned long SoundGetBytesBuffered(void)
 	unsigned int buffered = ((which_buffer - thread_buffer + NUM_BUFFERS) % NUM_BUFFERS) * BUFFER_SIZE;
 	unsigned long returnAmount = buffered + (ASND_TestVoiceBufferReady(voice) ? 0 : ASND_GetSamplesPerTick());
 	
-	sprintf(txtbuffer, "SoundGetBytesBuffered: %d",returnAmount);
-	DEBUG_print(txtbuffer, 10);
-	
 	return returnAmount;
 }
 
