@@ -141,7 +141,7 @@ static void play_buffer(void){
 	if(first_sample){
 		// Set up the audio stream for the first time
 		ASND_SetVoice(voice,
-					  VOICE_MONO_16BIT,
+					  VOICE_STEREO_16BIT,
 					  freq, 0, buffer[thread_buffer], BUFFER_SIZE,
 					  audio_volume[0], audio_volume[1],
 #ifdef THREADED_AUDIO

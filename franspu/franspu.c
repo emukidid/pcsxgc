@@ -264,9 +264,10 @@ void SPU_async_1ms(SPUCHAN * pChannel,int *SSumL, int *SSumR, int *iFMod)
 	// Mix XA
 	if(XAPlay!=XAFeed || XARepeat) MixXA();
 	
-	// Mono Mix
+	// Stereo Mix
 	for(i=0;i<NSSIZE;i++) {
-		*pS++=((*SSumL++)+(*SSumR++))>>1;
+		*pS++=*SSumL++;
+		*pS++=*SSumR++;
 	}
 }
 
