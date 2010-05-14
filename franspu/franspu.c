@@ -266,8 +266,16 @@ void SPU_async_1ms(SPUCHAN * pChannel,int *SSumL, int *SSumR, int *iFMod)
 	
 	// Stereo Mix
 	for(i=0;i<NSSIZE;i++) {
-		*pS++=*SSumL++;
-		*pS++=*SSumR++;
+		int d;
+		d = *SSumL++;
+		if(d < -32767) d = -32767;
+		else if(d > 32767) d = 32767;
+		*pS++ = d;
+		
+		d = *SSumR++;
+		if(d < -32767) d = -32767;
+		else if(d > 32767) d = 32767;
+		*pS++ = d;
 	}
 }
 
