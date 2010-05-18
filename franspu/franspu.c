@@ -36,8 +36,9 @@ typedef struct
 } SPUFreeze_t;
 
 // user settings          
-int   iUseXA=1;
-int		iSoundMuted=0;
+int	iUseXA=1;
+int	iSoundMuted=0;
+int	iDisStereo=0;
 
 // infos struct for each channel
 SPUCHAN         s_chan[MAXCHAN+1];                     // channel + 1 infos (1 is security for fmod handling)
@@ -264,18 +265,34 @@ void SPU_async_1ms(SPUCHAN * pChannel,int *SSumL, int *SSumR, int *iFMod)
 	// Mix XA
 	if(XAPlay!=XAFeed || XARepeat) MixXA();
 	
-	// Stereo Mix
-	for(i=0;i<NSSIZE;i++) {
-		int d;
-		d = *SSumL++;
-		if(d < -32767) d = -32767;
-		else if(d > 32767) d = 32767;
-		*pS++ = d;
-		
-		d = *SSumR++;
-		if(d < -32767) d = -32767;
-		else if(d > 32767) d = 32767;
-		*pS++ = d;
+	if(iDisStereo) {
+		// Mono Mix
+		for(i=0;i<NSSIZE;i++) {
+			int l, r;
+			l = *SSumL++;
+			if(l < -32767) l = -32767;
+			else if(l > 32767) l = 32767;
+			
+			r = *SSumR++;
+			if(r < -32767) r = -32767;
+			else if(r > 32767) r = 32767;
+			
+			*pS++ = (l + r) / 2;
+		}
+	} else {
+		// Stereo Mix
+		for(i=0;i<NSSIZE;i++) {
+			int d;
+			d = *SSumL++;
+			if(d < -32767) d = -32767;
+			else if(d > 32767) d = 32767;
+			*pS++ = d;
+			
+			d = *SSumR++;
+			if(d < -32767) d = -32767;
+			else if(d > 32767) d = 32767;
+			*pS++ = d;
+		}
 	}
 }
 

@@ -205,6 +205,7 @@ extern unsigned char * pSpuIrq;
 
 extern int        iUseXA;
 extern int        iSoundMuted;
+extern int        iDisStereo;
 
 // MISC
 
