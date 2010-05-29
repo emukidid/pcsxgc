@@ -52,10 +52,10 @@ static struct
 {
 	SSSConfig config;
 	int devcnt;
-	u16 padStat[2];
+	u16 padStat[2];		//Digital Buttons
 	int padID[2];
-	int padMode1[2];
-	int padMode2[2];
+	int padMode1[2];	//0 = digital, 1 = analog
+	int padMode2[2];	
 	int padModeE[2];
 	int padModeC[2];
 	int padModeF[2];
@@ -86,7 +86,7 @@ extern virtualControllers_t virtualControllers[2];
 
 void assign_controller(int wv, controller_t* type, int wp);
 
-static void PADsetMode (const int pad, const int mode)
+static void PADsetMode (const int pad, const int mode)	//mode = 0 (digital) or 1 (analog)
 {
 	static const u8 padID[] = { 0x41, 0x73, 0x41, 0x79 };
 	global.padMode1[pad] = mode;
