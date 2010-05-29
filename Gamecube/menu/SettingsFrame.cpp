@@ -1151,10 +1151,11 @@ void Func_DisableCddaYes()
 
 void Func_DisableCddaNo()
 {
-	for (int i = 45; i <= 46; i++)
+/*	for (int i = 45; i <= 46; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[46].button->setSelected(true);
-	Config.Cdda = CDDA_ENABLE;
+	Config.Cdda = CDDA_ENABLE;*/
+	menu::MessageBox::getInstance().setMessage("CDDA audio is not implemented");
 }
 
 void Func_VolumeToggle()
