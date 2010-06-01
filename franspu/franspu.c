@@ -38,7 +38,7 @@ typedef struct
 // user settings          
 int	iUseXA=1;
 int	iSoundMuted=0;
-int	iDisStereo=0;
+int	iDisStereo=1;
 
 // infos struct for each channel
 SPUCHAN         s_chan[MAXCHAN+1];                     // channel + 1 infos (1 is security for fmod handling)

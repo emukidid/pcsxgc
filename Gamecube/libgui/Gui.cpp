@@ -118,7 +118,18 @@ void Gui::draw()
 				DI_Close();
 #endif
 				void (*rld)() = (void (*)()) 0x80001800;
+#ifdef HW_DOL
+				#define PSOSDLOADID 0x7c6000a6
+				// try to reload
+				if(*(volatile unsigned int*)0x80001800 == PSOSDLOADID) {
+					rld();
+				}
+				else {
+					*(volatile unsigned int*)0xCC003024 = 0;  //reboot
+			  }
+#else
 				rld();
+#endif
 			}
 		}
 
