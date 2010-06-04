@@ -497,16 +497,8 @@
 			LIS(__reg, (((u32)__imm)>>16)); \
 		} else { \
 			LI(__reg, __imm); \
-			if ((__imm & 0x8000) == 0) { \
-				ADDIS(__reg, __reg, ((u32)__imm)>>16); \
-			} else { \
-				ADDIS(__reg, __reg, ((((u32)__imm)>>16) & 0xffff) + 1); \
-			} \
+			ADDIS(__reg, __reg, ((u32)__imm+0x8000)>>16); \
 		} \
-		/*if ((((u32)__imm) & 0xffff) != 0) \
-		{ \
-			ORI(__reg, __reg, __imm); \
-		}*/ \
 	} \
 }
 #else

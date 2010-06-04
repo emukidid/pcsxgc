@@ -640,14 +640,10 @@ static void Return()
 {
 	iFlushRegs(0);
 	FlushAllHWReg();
-	if (((u32)returnPC & 0x1fffffc) == (u32)returnPC) {
-		BA((u32)returnPC);
-	}
-	else {
-		LIW(0, (u32)returnPC);
-		MTLR(0);
-		BLR();
-	}
+	LIW(0, (u32)returnPC);
+	MTLR(0);
+	BLR();
+
 }
 
 static void iRet() {
