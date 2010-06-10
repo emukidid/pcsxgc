@@ -12,6 +12,11 @@ extern void InitADSR(void);
 extern void SetupSound(void);
 extern void RemoveSound(void);
 
+// Actual SPU Buffer
+#define NUM_SPU_BUFFERS 4
+unsigned char spuBuffer[NUM_SPU_BUFFERS][3600] __attribute__((aligned(32)));
+unsigned int  whichBuffer = 0;
+
 // psx buffer / addresses
 unsigned short  regArea[10000];                        
 unsigned short  spuMem[256*1024];
@@ -311,6 +316,7 @@ void FRAN_SPU_async(unsigned long cycle)
 	for (i=0;i<t;i++)
 		SPU_async_1ms(s_chan,SSumL,SSumR,iFMod); // Calculates 1 ms of sound
 	SoundFeedStreamData((unsigned char*)pSpuBuffer,((unsigned char *)pS)-((unsigned char *)pSpuBuffer));
+	pSpuBuffer = spuBuffer[whichBuffer = ((whichBuffer + 1) % NUM_SPU_BUFFERS)];
 	pS=(short *)pSpuBuffer;
 }
 
@@ -349,7 +355,7 @@ s32 FRAN_SPU_open(void)
 	SetupSound();                                         // setup sound (before init!)
 	
 	//Setup streams
-	pSpuBuffer=(unsigned char *)memalign(32,32768);            // alloc mixing buffer
+	pSpuBuffer = spuBuffer[whichBuffer];            // alloc mixing buffer
 	XAStart = (unsigned long *)memalign(32,44100*4);           // alloc xa buffer
 	XAPlay  = XAStart;
 	XAFeed  = XAStart;
@@ -382,7 +388,6 @@ long FRAN_SPU_close(void)
 	RemoveSound();                                        // no more sound handling
 	
 	// Remove streams
-	free(pSpuBuffer);                                     // free mixing buffer
 	pSpuBuffer=NULL;
 	free(XAStart);                                        // free XA buffer
 	XAStart=0;
