@@ -29,7 +29,7 @@ INCLUDES	:=
 
 CFLAGS	= -g -O3 -Wall $(MACHDEP) $(INCLUDE) -D__GAMECUBE__ -DWII -DHW_RVL -D__ppc__ \
 		  -D__GX__ -D_SDL -DEMBEDDED_FONTS \
-		  -DTHREADED_AUDIO -DSHOW_DEBUG -DPROFILE
+		  -DTHREADED_AUDIO -DSHOW_DEBUG #-DPROFILE
 		  
 CXXFLAGS	=	$(CFLAGS)
 
@@ -40,7 +40,7 @@ LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-ldi -lasnd -lm -lfat -ldb -lwiiuse -lbte -logc -lz -lasnd
+LIBS	:=	-laesnd -ldi -lm -lfat -ldb -lwiiuse -lbte -logc -lz
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
@@ -108,7 +108,7 @@ $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile_Wii
 	@echo creating ... $(notdir $(OUTPUT)).dol
-	@elf2dol $(OUTPUT).elf $(OUTPUT).dol
+	@$(DEVKITPPC)/bin/elf2dol $(OUTPUT).elf $(OUTPUT).dol
 
 #---------------------------------------------------------------------------------
 clean:

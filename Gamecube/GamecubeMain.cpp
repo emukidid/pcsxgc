@@ -27,7 +27,7 @@
 #include <string.h>
 #include <time.h>
 #include <fat.h>
-#include <asndlib.h>
+#include <aesndlib.h>
 
 #ifdef DEBUGON
 # include <debug.h>
@@ -107,11 +107,18 @@ char loadButtonSlot;
 char controllerType;
 char numMultitaps;
 
+#define CONFIG_STRING_TYPE 0
+#define CONFIG_STRING_SIZE 256
+char exampleStringValue[CONFIG_STRING_SIZE];
+
 int stop = 0;
 
 static struct {
 	const char* key;
-	char* value; // Not a string, but a char pointer
+	// For integral options this is a pointer to a char
+	// for string values, this is a pointer to a 256-byte string
+	// thus, assigning a string value to an integral type will cause overflow
+	char* value;
 	char  min, max;
 } OPTIONS[] =
 { { "Audio", &audioEnabled, AUDIO_DISABLE, AUDIO_ENABLE },
@@ -133,6 +140,7 @@ static struct {
   { "LoadButtonSlot", &loadButtonSlot, LOADBUTTON_SLOT0, LOADBUTTON_DEFAULT },
   { "ControllerType", &controllerType, CONTROLLERTYPE_STANDARD, CONTROLLERTYPE_ANALOG },
 //  { "NumberMultitaps", &numMultitaps, MULTITAPS_NONE, MULTITAPS_TWO },
+  { "StringExample", exampleStringValue, CONFIG_STRING_TYPE, CONFIG_STRING_TYPE },
 };
 void handleConfigPair(char* kv);
 void readConfig(FILE* f);
@@ -183,8 +191,7 @@ int main(int argc, char *argv[])
 #ifdef HW_RVL
 	DI_Init();    // first
 #endif
-
-  ASND_Init();
+	
 	MenuContext *menu = new MenuContext(vmode);
 	VIDEO_SetPostRetraceCallback (ScanPADSandReset);
 #ifndef WII
@@ -320,8 +327,14 @@ int main(int argc, char *argv[])
 
 	//Synch settings with Config
 	Config.Cpu=dynacore;
+	
+	// Start up AESND (inited here because its used in SPU and CD)
+	AESND_Init();
 
 	while (menu->isRunning()) {}
+	
+	// Shut down AESND
+	AESND_Reset();
 
 	delete menu;
 
@@ -421,10 +434,24 @@ int loadISO(fileBrowser_file* file)
 	return 0;
 }
 
-void setOption(char* key, char value){
+void setOption(char* key, char* valuePointer){
+	bool isString = valuePointer[0] == '"';
+	char value = 0;
+	
+	if(isString) {
+		char* p = valuePointer++;
+		while(*++p != '"');
+		*p = 0;
+	} else
+		value = *valuePointer;
+	
 	for(unsigned int i=0; i<sizeof(OPTIONS)/sizeof(OPTIONS[0]); ++i){
 		if(!strcmp(OPTIONS[i].key, key)){
-			if(value >= OPTIONS[i].min && value <= OPTIONS[i].max)
+			if(isString) {
+				if(OPTIONS[i].max == CONFIG_STRING_TYPE)
+					strncpy(OPTIONS[i].value, valuePointer,
+					        CONFIG_STRING_SIZE-1);
+			} else if(value >= OPTIONS[i].min && value <= OPTIONS[i].max)
 				*OPTIONS[i].value = value;
 			break;
 		}
@@ -439,7 +466,7 @@ void handleConfigPair(char* kv){
 	while(*vs == ' ' || *vs == '\t' || *vs == ':' || *vs == '=')
 			++vs;
 
-	setOption(kv, atoi(vs));
+	setOption(kv, vs);
 }
 
 void readConfig(FILE* f){
@@ -452,7 +479,10 @@ void readConfig(FILE* f){
 
 void writeConfig(FILE* f){
 	for(unsigned int i=0; i<sizeof(OPTIONS)/sizeof(OPTIONS[0]); ++i){
-		fprintf(f, "%s = %d\n", OPTIONS[i].key, *OPTIONS[i].value);
+		if(OPTIONS[i].max == CONFIG_STRING_TYPE)
+			fprintf(f, "%s = \"%s\"\n", OPTIONS[i].key, OPTIONS[i].value);
+		else
+			fprintf(f, "%s = %d\n", OPTIONS[i].key, *OPTIONS[i].value);
 	}
 }
 
