@@ -25,8 +25,8 @@
 char audioEnabled;
 
 static const u32 freq = 44100;
+extern unsigned int iVolume; 
 static AESNDPB* voice = NULL;
-s32 audio_volume[2] = { 128, 128 };
 
 #define NUM_BUFFERS 4
 static struct { void* buffer; u32 len; } buffers[NUM_BUFFERS];
@@ -42,11 +42,14 @@ static void aesnd_callback(AESNDPB* voice, u32 state);
 
 void SetupSound(void)
 {
+	// iVolume goes 1 (loudest) - 4 (lowest); volume goes 255-64
+	u16 volume = ((4 - iVolume + 1) * 64) & 255;
 	voice = AESND_AllocateVoice(aesnd_callback);
-	AESND_SetVoiceFormat(voice, VOICE_STEREO16);
+	AESND_SetVoiceFormat(voice, iDisStereo ? VOICE_MONO16 : VOICE_STEREO16);
 	AESND_SetVoiceFrequency(voice, freq);
-	AESND_SetVoiceVolume(voice, audio_volume[0], audio_volume[1]);
+	AESND_SetVoiceVolume(voice, volume, volume);
 	AESND_SetVoiceStream(voice, true);
+	fill_buffer = play_buffer = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////
