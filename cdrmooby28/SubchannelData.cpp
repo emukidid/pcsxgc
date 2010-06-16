@@ -36,12 +36,13 @@ using namespace std;
 SubchannelData* SubchannelDataFactory(const std::string& fileroot, int type)
 {
    SubchannelData* scd = NULL;
-
+#if 0
    if (prefs.prefsMap[subEnableString] == std::string())
    {
       scd = new DisabledSubchannelData();
       return scd;
    }
+#endif
    fileBrowser_file tempFile;
    memset(&tempFile, 0, sizeof(fileBrowser_file));
    strcpy(&tempFile.name[0], (fileroot + std::string(".sub")).c_str());
