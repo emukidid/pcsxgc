@@ -43,7 +43,7 @@ static void aesnd_callback(AESNDPB* voice, u32 state);
 void SetupSound(void)
 {
 	// iVolume goes 1 (loudest) - 4 (lowest); volume goes 255-64
-	u16 volume = ((4 - iVolume + 1) * 64) & 255;
+	u16 volume = ((4 - iVolume + 1) * 64 - 1) & 255;
 	voice = AESND_AllocateVoice(aesnd_callback);
 	AESND_SetVoiceFormat(voice, iDisStereo ? VOICE_MONO16 : VOICE_STEREO16);
 	AESND_SetVoiceFrequency(voice, freq);
