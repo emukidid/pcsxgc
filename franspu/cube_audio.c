@@ -36,18 +36,23 @@ static unsigned char silence[SILENCE_SIZE];
 
 static void aesnd_callback(AESNDPB* voice, u32 state);
 
+void SetVolume(void)
+{
+	// iVolume goes 1 (loudest) - 4 (lowest); volume goes 255-64
+	u16 volume = ((4 - iVolume + 1) * 64 - 1) & 255;
+	if (voice) AESND_SetVoiceVolume(voice, volume, volume);
+}
+
 ////////////////////////////////////////////////////////////////////////
 // SETUP SOUND
 ////////////////////////////////////////////////////////////////////////
 
 void SetupSound(void)
 {
-	// iVolume goes 1 (loudest) - 4 (lowest); volume goes 255-64
-	u16 volume = ((4 - iVolume + 1) * 64 - 1) & 255;
 	voice = AESND_AllocateVoice(aesnd_callback);
 	AESND_SetVoiceFormat(voice, iDisStereo ? VOICE_MONO16 : VOICE_STEREO16);
 	AESND_SetVoiceFrequency(voice, freq);
-	AESND_SetVoiceVolume(voice, volume, volume);
+	SetVolume();
 	AESND_SetVoiceStream(voice, true);
 	fill_buffer = play_buffer = 0;
 }

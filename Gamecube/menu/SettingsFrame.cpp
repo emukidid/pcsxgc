@@ -1158,12 +1158,15 @@ void Func_DisableCddaNo()
 	menu::MessageBox::getInstance().setMessage("CDDA audio is not implemented");
 }
 
+extern "C" void SetVolume(void);
+
 void Func_VolumeToggle()
 {
 	iVolume--;
 	if (iVolume<1)
 		iVolume = 4;
 	FRAME_BUTTONS[47].buttonString = FRAME_STRINGS[50+iVolume];
+	SetVolume();
 }
 
 void Func_MemcardSaveSD()
