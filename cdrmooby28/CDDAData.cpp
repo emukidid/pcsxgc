@@ -33,7 +33,8 @@ static void AudioReady(s32 voice){
 }
 
 static void* CDDAThread(void* userData){
-	PlayCDDAData* data = static_cast<PlayCDDAData*>(userData);
+#if 0
+  PlayCDDAData* data = static_cast<PlayCDDAData*>(userData);
 	
 	while(data->live){
 		// Wait for the beginning of the first track
@@ -74,7 +75,7 @@ static void* CDDAThread(void* userData){
 		
 		ASND_StopVoice(voice);
 	}
-	
+#endif
 	return NULL;
 }
 #endif // __GAMECUBE__

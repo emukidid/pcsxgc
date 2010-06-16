@@ -109,7 +109,10 @@ char numMultitaps;
 
 #define CONFIG_STRING_TYPE 0
 #define CONFIG_STRING_SIZE 256
-char exampleStringValue[CONFIG_STRING_SIZE];
+char smbUserName[CONFIG_STRING_SIZE];
+char smbPassWord[CONFIG_STRING_SIZE];
+char smbShareName[CONFIG_STRING_SIZE];
+char smbIpAddr[CONFIG_STRING_SIZE];
 
 int stop = 0;
 
@@ -140,7 +143,10 @@ static struct {
   { "LoadButtonSlot", &loadButtonSlot, LOADBUTTON_SLOT0, LOADBUTTON_DEFAULT },
   { "ControllerType", &controllerType, CONTROLLERTYPE_STANDARD, CONTROLLERTYPE_ANALOG },
 //  { "NumberMultitaps", &numMultitaps, MULTITAPS_NONE, MULTITAPS_TWO },
-  { "StringExample", exampleStringValue, CONFIG_STRING_TYPE, CONFIG_STRING_TYPE },
+  { "smbusername", smbUserName, CONFIG_STRING_TYPE, CONFIG_STRING_TYPE },
+  { "smbpassword", smbPassWord, CONFIG_STRING_TYPE, CONFIG_STRING_TYPE },
+  { "smbsharename", smbShareName, CONFIG_STRING_TYPE, CONFIG_STRING_TYPE },
+  { "smbipaddr", smbIpAddr, CONFIG_STRING_TYPE, CONFIG_STRING_TYPE }
 };
 void handleConfigPair(char* kv);
 void readConfig(FILE* f);
