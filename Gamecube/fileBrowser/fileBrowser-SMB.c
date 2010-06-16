@@ -20,6 +20,7 @@
  *
 **/
 
+#ifdef HW_RVL
 
 #include <string.h>
 #include <unistd.h>
@@ -57,7 +58,7 @@ void init_network() {
   }
   
   res = if_config(ip, NULL, NULL, true);
-  if(!res) {
+  if(res >= 0) {
     net_initialized = 1;
   }
   else {
@@ -132,3 +133,4 @@ int fileBrowser_SMB_deinit(fileBrowser_file* file) {
 	return fileBrowser_libfatROM_deinit(file);
 }
 
+#endif
