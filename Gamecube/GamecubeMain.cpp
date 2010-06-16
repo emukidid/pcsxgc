@@ -154,7 +154,7 @@ void writeConfig(FILE* f);
 
 void ScanPADSandReset(u32 dummy) 
 {
-	PAD_ScanPads();
+//	PAD_ScanPads();
 	padNeedScan = wpadNeedScan = 1;
 	if(!((*(u32*)0xCC003000)>>16))
 		stop = 1;
