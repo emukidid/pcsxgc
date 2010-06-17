@@ -14,7 +14,7 @@ extern void RemoveSound(void);
 
 // Actual SPU Buffer
 #define NUM_SPU_BUFFERS 4
-unsigned char spuBuffer[NUM_SPU_BUFFERS][3600] __attribute__((aligned(32)));
+unsigned char spuBuffer[NUM_SPU_BUFFERS][7200] __attribute__((aligned(32)));
 unsigned int  whichBuffer = 0;
 
 // psx buffer / addresses
@@ -43,7 +43,7 @@ typedef struct
 // user settings          
 int	iUseXA=1;
 int	iSoundMuted=0;
-int	iDisStereo=1;
+int	iDisStereo=0;
 
 // infos struct for each channel
 SPUCHAN         s_chan[MAXCHAN+1];                     // channel + 1 infos (1 is security for fmod handling)
@@ -304,7 +304,7 @@ void SPU_async_1ms(SPUCHAN * pChannel,int *SSumL, int *SSumR, int *iFMod)
 void FRAN_SPU_async(unsigned long cycle)
 {
 	if( iSoundMuted > 0 ) return;
-	if(SoundGetBytesBuffered() > 4*1024) return;
+	if(SoundGetBytesBuffered() > 8*1024) return;
 	if(iSpuAsyncWait)
 	{
 		iSpuAsyncWait++;
@@ -312,11 +312,12 @@ void FRAN_SPU_async(unsigned long cycle)
 		iSpuAsyncWait=0;
 	}
 	int i;
-	int t=(cycle?20:16); /* cycle 0=NTSC 16 ms, 1=PAL 20 ms */
-	for (i=0;i<t;i++)
+	int t=(cycle?32:40); /* cycle 1=NTSC 16 ms, 0=PAL 20 ms; do two frames */for (i=0;i<t;i++)
 		SPU_async_1ms(s_chan,SSumL,SSumR,iFMod); // Calculates 1 ms of sound
-	SoundFeedStreamData((unsigned char*)pSpuBuffer,((unsigned char *)pS)-((unsigned char *)pSpuBuffer));
-	pSpuBuffer = spuBuffer[whichBuffer = ((whichBuffer + 1) % NUM_SPU_BUFFERS)];
+	SoundFeedStreamData((unsigned char*)pSpuBuffer,
+			((unsigned char *)pS)-((unsigned char *)pSpuBuffer));
+	pSpuBuffer = spuBuffer[whichBuffer =
+			((whichBuffer + 1) % NUM_SPU_BUFFERS)];
 	pS=(short *)pSpuBuffer;
 }
 

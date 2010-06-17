@@ -31,15 +31,13 @@ static AESNDPB* voice = NULL;
 #define NUM_BUFFERS 4
 static struct { void* buffer; u32 len; } buffers[NUM_BUFFERS];
 static u32 fill_buffer, play_buffer;
-#define SILENCE_SIZE 896
-static unsigned char silence[SILENCE_SIZE];
 
 static void aesnd_callback(AESNDPB* voice, u32 state);
 
 void SetVolume(void)
 {
 	// iVolume goes 1 (loudest) - 4 (lowest); volume goes 255-64
-	u16 volume = ((4 - iVolume + 1) * 64 - 1) & 255;
+	u16 volume = (4 - iVolume + 1) * 64 - 1;
 	if (voice) AESND_SetVoiceVolume(voice, volume, volume);
 }
 
@@ -89,8 +87,6 @@ static void aesnd_callback(AESNDPB* voice, u32 state){
 			AESND_SetVoiceBuffer(voice,
 					buffers[play_buffer].buffer, buffers[play_buffer].len);
 			play_buffer = (play_buffer + 1) % NUM_BUFFERS;
-		} else {
-			AESND_SetVoiceBuffer(voice, silence, SILENCE_SIZE);
 		}
 	}
 }
