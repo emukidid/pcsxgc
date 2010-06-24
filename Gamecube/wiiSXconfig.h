@@ -140,7 +140,7 @@ enum biosDevice
 	BIOSDEVICE_USB
 };
 
-extern long LoadCdBios;
+extern char LoadCdBios;
 enum loadCdBios
 {
 	BOOTTHRUBIOS_NO=0,

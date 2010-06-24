@@ -117,7 +117,7 @@ typedef struct {
 
 extern PcsxConfig Config;
 
-extern long LoadCdBios;
+extern char LoadCdBios;
 extern int StatesC;
 extern int cdOpenCase;
 extern int NetOpened;

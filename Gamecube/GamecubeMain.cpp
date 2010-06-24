@@ -84,6 +84,7 @@ FILE *emuLog;
 PcsxConfig Config;
 char dynacore;
 char biosDevice;
+char LoadCdBios=0;
 char frameLimit;
 char frameSkip;
 extern char audioEnabled;
@@ -133,6 +134,7 @@ static struct {
   { "StatesDevice", &saveStateDevice, SAVESTATEDEVICE_SD, SAVESTATEDEVICE_USB },
   { "AutoSave", &autoSave, AUTOSAVE_DISABLE, AUTOSAVE_ENABLE },
   { "BiosDevice", &biosDevice, BIOSDEVICE_HLE, BIOSDEVICE_USB },
+  { "BootThruBios", &LoadCdBios, BOOTTHRUBIOS_NO, BOOTTHRUBIOS_YES },
   { "LimitFrames", &frameLimit, FRAMELIMIT_NONE, FRAMELIMIT_AUTO },
   { "SkipFrames", &frameSkip, FRAMESKIP_DISABLE, FRAMESKIP_ENABLE },
   { "PadAutoAssign", &padAutoAssign, PADAUTOASSIGN_MANUAL, PADAUTOASSIGN_AUTOMATIC },
@@ -151,6 +153,7 @@ static struct {
 void handleConfigPair(char* kv);
 void readConfig(FILE* f);
 void writeConfig(FILE* f);
+int checkBiosExists(int testDevice);
 
 void ScanPADSandReset(u32 dummy) 
 {
@@ -188,8 +191,6 @@ PluginTable plugins[] =
 	  PLUGIN_SLOT_6,
 	  PLUGIN_SLOT_7 };
 }
-
-long LoadCdBios=0;
 
 int main(int argc, char *argv[]) 
 {
@@ -249,7 +250,7 @@ int main(int argc, char *argv[])
 	Config.Cdda = 1; //CDDA disabled
 	iVolume=3; //Volume="medium" in PEOPSspu
 	Config.PsxAuto = 1; //Autodetect
-	LoadCdBios=0;
+	LoadCdBios = BOOTTHRUBIOS_NO;
 
 	control_info_init(); //Perform controller auto assignment at least once at startup.
 
@@ -290,7 +291,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	else /*if((argv[0][0]=='s') || (argv[0][0]=='/'))*/
-#endif
+#endif //HW_RVL
 	{ //assume SD
 		configFile_file = &saveDir_libfat_Default;
 		if(configFile_init(configFile_file)) {                //only if device initialized ok
@@ -330,6 +331,11 @@ int main(int argc, char *argv[])
 		handleConfigPair(argv[i]);
 	}
 #endif
+
+	//Test for Bios file
+	if(biosDevice != BIOSDEVICE_HLE)
+		if(checkBiosExists((int)biosDevice) == FILE_BROWSER_ERROR_NO_FILE)
+			biosDevice = BIOSDEVICE_HLE;
 
 	//Synch settings with Config
 	Config.Cpu=dynacore;
@@ -505,29 +511,29 @@ int SysInit() {
 	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
 	emuLog = fopen("/PSXISOS/emu.log", "w");
 #endif
-  Config.Cpu = dynacore;  //cpu may have changed  
-  psxInit();
-  LoadPlugins();
-  OpenPlugins();
+	Config.Cpu = dynacore;  //cpu may have changed  
+	psxInit();
+	LoadPlugins();
+	OpenPlugins();
   
-  //Init biosFile pointers and stuff
-  if(biosDevice != BIOSDEVICE_HLE) {
-   	biosFile_dir = (biosDevice == BIOSDEVICE_SD) ? &biosDir_libfat_Default : &biosDir_libfat_USB;
-  	biosFile_readFile  = fileBrowser_libfat_readFile;
-  	biosFile_open      = fileBrowser_libfat_open;
-  	biosFile_init      = fileBrowser_libfat_init;
-  	biosFile_deinit    = fileBrowser_libfat_deinit;
-	 	if(biosFile) {
-    	free(biosFile);
+	//Init biosFile pointers and stuff
+	if(biosDevice != BIOSDEVICE_HLE) {
+		biosFile_dir = (biosDevice == BIOSDEVICE_SD) ? &biosDir_libfat_Default : &biosDir_libfat_USB;
+		biosFile_readFile  = fileBrowser_libfat_readFile;
+		biosFile_open      = fileBrowser_libfat_open;
+		biosFile_init      = fileBrowser_libfat_init;
+		biosFile_deinit    = fileBrowser_libfat_deinit;
+		if(biosFile) {
+    		free(biosFile);
 	 	}
-  	biosFile = (fileBrowser_file*)memalign(32,sizeof(fileBrowser_file));
-    memcpy(biosFile,biosFile_dir,sizeof(fileBrowser_file));
-    strcat(biosFile->name, "/SCPH1001.BIN");
-    biosFile_init(biosFile);  //initialize the bios device (it might not be the same as ISO device)
-    Config.HLE = BIOS_USER_DEFINED;
-  } else {
-    Config.HLE = BIOS_HLE;
-  }
+		biosFile = (fileBrowser_file*)memalign(32,sizeof(fileBrowser_file));
+		memcpy(biosFile,biosFile_dir,sizeof(fileBrowser_file));
+		strcat(biosFile->name, "/SCPH1001.BIN");
+		biosFile_init(biosFile);  //initialize the bios device (it might not be the same as ISO device)
+		Config.HLE = BIOS_USER_DEFINED;
+	} else {
+		Config.HLE = BIOS_HLE;
+	}
 
 	return 0;
 }
@@ -537,9 +543,9 @@ void SysReset() {
 }
 
 void SysStartCPU() {
-  Config.PsxOut = 0;
+	Config.PsxOut = 0;
 	stop = 0;
-  psxCpu->Execute();
+	psxCpu->Execute();
 }
 
 void SysClose() 
@@ -596,7 +602,7 @@ void SysUpdate()
 {
 	framesdone++;
 #ifdef PROFILE
-  refresh_stat();
+	refresh_stat();
 #endif
 }
 
