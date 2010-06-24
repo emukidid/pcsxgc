@@ -671,12 +671,13 @@ void Func_CpuInterp()
 	if(hasLoadedISO && dynacore != DYNACORE_INTERPRETER){ SysClose(); needInit = 1; }
 	dynacore = DYNACORE_INTERPRETER;
 	if(hasLoadedISO && needInit) {
-  	SysInit();
-  	CheckCdrom();
-    SysReset();
-  	LoadCdrom();
-  	Func_SetPlayGame();
-  }
+		SysInit();
+		CheckCdrom();
+		SysReset();
+		LoadCdrom();
+		Func_SetPlayGame();
+		menu::MessageBox::getInstance().setMessage("Game Reset");
+	}
 }
 
 void Func_CpuDynarec()
@@ -689,12 +690,13 @@ void Func_CpuDynarec()
 	if(hasLoadedISO && dynacore != DYNACORE_DYNAREC){ SysClose(); needInit = 1; }
 	dynacore = DYNACORE_DYNAREC;
 	if(hasLoadedISO && needInit) {
-  	SysInit ();
-  	CheckCdrom();
-    SysReset();
-  	LoadCdrom();
-  	Func_SetPlayGame();
-  }
+		SysInit ();
+		CheckCdrom();
+		SysReset();
+		LoadCdrom();
+		Func_SetPlayGame();
+		menu::MessageBox::getInstance().setMessage("Game Reset");
+	}
 }
 
 void Func_BiosSelectHLE()
@@ -703,21 +705,31 @@ void Func_BiosSelectHLE()
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[7].button->setSelected(true);
 
+	int needInit = 0;
+	if(hasLoadedISO && biosDevice != BIOSDEVICE_HLE){ SysClose(); needInit = 1; }
 	biosDevice = BIOSDEVICE_HLE;
+	if(hasLoadedISO && needInit) {
+		SysInit ();
+		CheckCdrom();
+		SysReset();
+		LoadCdrom();
+		Func_SetPlayGame();
+	}
 }
 
-int checkBiosExists(int testDevice) {
-  fileBrowser_file testFile;
-  memset(&testFile, 0, sizeof(fileBrowser_file));
-  
-  biosFile_dir = (testDevice == BIOSDEVICE_SD) ? &biosDir_libfat_Default : &biosDir_libfat_USB;
-  sprintf(&testFile.name[0], "%s/SCPH1001.BIN", &biosFile_dir->name[0]);
-  biosFile_readFile  = fileBrowser_libfat_readFile;
-  biosFile_open      = fileBrowser_libfat_open;
-  biosFile_init      = fileBrowser_libfat_init;
-  biosFile_deinit    = fileBrowser_libfat_deinit;
-  biosFile_init(&testFile);  //initialize the bios device (it might not be the same as ISO device)
-  return biosFile_open(&testFile);
+int checkBiosExists(int testDevice) 
+{
+	fileBrowser_file testFile;
+	memset(&testFile, 0, sizeof(fileBrowser_file));
+	
+	biosFile_dir = (testDevice == BIOSDEVICE_SD) ? &biosDir_libfat_Default : &biosDir_libfat_USB;
+	sprintf(&testFile.name[0], "%s/SCPH1001.BIN", &biosFile_dir->name[0]);
+	biosFile_readFile  = fileBrowser_libfat_readFile;
+	biosFile_open      = fileBrowser_libfat_open;
+	biosFile_init      = fileBrowser_libfat_init;
+	biosFile_deinit    = fileBrowser_libfat_deinit;
+	biosFile_init(&testFile);  //initialize the bios device (it might not be the same as ISO device)
+	return biosFile_open(&testFile);
 }
 
 void Func_BiosSelectSD()
@@ -725,14 +737,25 @@ void Func_BiosSelectSD()
 	for (int i = 7; i <= 10; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
 
+	int needInit = 0;
 	if(checkBiosExists(BIOSDEVICE_SD) == FILE_BROWSER_ERROR_NO_FILE) {
 		menu::MessageBox::getInstance().setMessage("BIOS not found on SD");
+		if(hasLoadedISO && biosDevice != BIOSDEVICE_HLE){ SysClose(); needInit = 1; }
 		biosDevice = BIOSDEVICE_HLE;
 		FRAME_BUTTONS[7].button->setSelected(true);
 	}
 	else {
+		if(hasLoadedISO && biosDevice != BIOSDEVICE_SD){ SysClose(); needInit = 1; }
 		biosDevice = BIOSDEVICE_SD;
 		FRAME_BUTTONS[8].button->setSelected(true);
+	}
+	if(hasLoadedISO && needInit) {
+		SysInit ();
+		CheckCdrom();
+		SysReset();
+		LoadCdrom();
+		Func_SetPlayGame();
+		menu::MessageBox::getInstance().setMessage("Game Reset");
 	}
 }
 
@@ -741,14 +764,25 @@ void Func_BiosSelectUSB()
 	for (int i = 7; i <= 10; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
 
+	int needInit = 0;
 	if(checkBiosExists(BIOSDEVICE_USB) == FILE_BROWSER_ERROR_NO_FILE) {
 		menu::MessageBox::getInstance().setMessage("BIOS not found on USB");
+		if(hasLoadedISO && biosDevice != BIOSDEVICE_HLE){ SysClose(); needInit = 1; }
 		biosDevice = BIOSDEVICE_HLE;
 		FRAME_BUTTONS[7].button->setSelected(true);
 	}
 	else {
+		if(hasLoadedISO && biosDevice != BIOSDEVICE_USB){ SysClose(); needInit = 1; }
 		biosDevice = BIOSDEVICE_USB;
 		FRAME_BUTTONS[9].button->setSelected(true);
+	}
+	if(hasLoadedISO && needInit) {
+		SysInit ();
+		CheckCdrom();
+		SysReset();
+		LoadCdrom();
+		Func_SetPlayGame();
+		menu::MessageBox::getInstance().setMessage("Game Reset");
 	}
 }
 
@@ -759,10 +793,11 @@ void Func_BiosSelectDVD()
 
 void Func_BootBiosYes()
 {
+	/* If HLE bios selected, boot thru bios shouldn't make a difference. TODO: Check this.
 	if(biosDevice == BIOSDEVICE_HLE) {
 		menu::MessageBox::getInstance().setMessage("You must select a BIOS, not HLE");
 		return;
-	}
+	}*/
 	
 	for (int i = 11; i <= 12; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
@@ -782,16 +817,16 @@ void Func_BootBiosNo()
 
 void Func_ExecuteBios()
 {
-  if(biosDevice == BIOSDEVICE_HLE) {
-    menu::MessageBox::getInstance().setMessage("You must select a BIOS, not HLE");
-    return;
-  }
-  if(hasLoadedISO) {
-    //TODO: Implement yes/no that current game will be reset
-    SysClose();
-  }
+	if(biosDevice == BIOSDEVICE_HLE) {
+		menu::MessageBox::getInstance().setMessage("You must select a BIOS, not HLE");
+		return;
+	}
+	if(hasLoadedISO) {
+		//TODO: Implement yes/no that current game will be reset
+		SysClose();
+	}
 
-  //TODO: load/save memcards here
+	//TODO: load/save memcards here
 	SysInit ();
 	CheckCdrom();
 	SysReset();
@@ -810,35 +845,35 @@ extern void writeConfig(FILE* f);
 
 void Func_SaveSettingsSD()
 {
-  fileBrowser_file* configFile_file;
-  int (*configFile_init)(fileBrowser_file*) = fileBrowser_libfat_init;
-  configFile_file = &saveDir_libfat_Default;
-  if(configFile_init(configFile_file)) {                //only if device initialized ok
-    FILE* f = fopen( "sd:/wiiSX/settings.cfg", "wb" );  //attempt to open file
-    if(f) {
-      writeConfig(f);                                   //write out the config
-      fclose(f);
-      menu::MessageBox::getInstance().setMessage("Saved settings.cfg to SD");
-      return;
-    }
-  }
+	fileBrowser_file* configFile_file;
+	int (*configFile_init)(fileBrowser_file*) = fileBrowser_libfat_init;
+	configFile_file = &saveDir_libfat_Default;
+	if(configFile_init(configFile_file)) {                //only if device initialized ok
+		FILE* f = fopen( "sd:/wiiSX/settings.cfg", "wb" );  //attempt to open file
+		if(f) {
+			writeConfig(f);                                   //write out the config
+			fclose(f);
+			menu::MessageBox::getInstance().setMessage("Saved settings.cfg to SD");
+			return;
+		}
+	}
 	menu::MessageBox::getInstance().setMessage("Error saving settings.cfg to SD");
 }
 
 void Func_SaveSettingsUSB()
 {
-  fileBrowser_file* configFile_file;
-  int (*configFile_init)(fileBrowser_file*) = fileBrowser_libfat_init;
-  configFile_file = &saveDir_libfat_USB;
-  if(configFile_init(configFile_file)) {                //only if device initialized ok
-    FILE* f = fopen( "usb:/wiiSX/settings.cfg", "wb" ); //attempt to open file
-    if(f) {
-      writeConfig(f);                                   //write out the config
-      fclose(f);
-      menu::MessageBox::getInstance().setMessage("Saved settings.cfg to USB");
-      return;
-    }
-  }
+	fileBrowser_file* configFile_file;
+	int (*configFile_init)(fileBrowser_file*) = fileBrowser_libfat_init;
+	configFile_file = &saveDir_libfat_USB;
+	if(configFile_init(configFile_file)) {                //only if device initialized ok
+		FILE* f = fopen( "usb:/wiiSX/settings.cfg", "wb" ); //attempt to open file
+		if(f) {
+			writeConfig(f);                                   //write out the config
+			fclose(f);
+			menu::MessageBox::getInstance().setMessage("Saved settings.cfg to USB");
+			return;
+		}
+	}
 	menu::MessageBox::getInstance().setMessage("Error saving settings.cfg to USB");
 }
 
