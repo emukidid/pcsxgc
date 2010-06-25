@@ -45,6 +45,7 @@ enum ConfigCdda //Config.Cdda
 };
 
 extern int iVolume;
+extern char volume;
 enum iVolume
 {
 	VOLUME_LOUDEST=1,

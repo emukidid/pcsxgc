@@ -88,6 +88,7 @@ char LoadCdBios=0;
 char frameLimit;
 char frameSkip;
 extern char audioEnabled;
+char volume;
 char showFPSonScreen;
 char printToScreen;
 char menuActive;
@@ -127,6 +128,7 @@ static struct {
 	char  min, max;
 } OPTIONS[] =
 { { "Audio", &audioEnabled, AUDIO_DISABLE, AUDIO_ENABLE },
+  { "Volume", &volume, VOLUME_LOUDEST, VOLUME_LOW },
   { "FPS", &showFPSonScreen, FPS_HIDE, FPS_SHOW },
 //  { "Debug", &printToScreen, DEBUG_HIDE, DEBUG_SHOW },
   { "ScreenMode", &screenMode, SCREENMODE_4x3, SCREENMODE_16x9_PILLARBOX },
@@ -161,6 +163,7 @@ void loadSettings(int argc, char *argv[])
 {
 	// Default Settings
 	audioEnabled     = 1; // Audio
+	volume           = VOLUME_MEDIUM;
 #ifdef RELEASE
 	showFPSonScreen  = 0; // Don't show FPS on Screen
 #else
@@ -197,7 +200,7 @@ void loadSettings(int argc, char *argv[])
 	Config.HLE = 1;
 	Config.Xa = 0;  //XA enabled
 	Config.Cdda = 1; //CDDA disabled
-	iVolume=3; //Volume="medium" in PEOPSspu
+	iVolume = volume; //Volume="medium" in PEOPSspu
 	Config.PsxAuto = 1; //Autodetect
 	LoadCdBios = BOOTTHRUBIOS_NO;
 
@@ -286,6 +289,7 @@ void loadSettings(int argc, char *argv[])
 
 	//Synch settings with Config
 	Config.Cpu=dynacore;
+	iVolume = volume;
 }
 
 void ScanPADSandReset(u32 dummy) 

@@ -1202,6 +1202,7 @@ void Func_VolumeToggle()
 	if (iVolume<1)
 		iVolume = 4;
 	FRAME_BUTTONS[47].buttonString = FRAME_STRINGS[50+iVolume];
+	volume = iVolume;
 	SetVolume();
 }
 
