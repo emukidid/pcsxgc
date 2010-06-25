@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
 	// Default Settings
 	audioEnabled     = 1; // Audio
 #ifdef RELEASE
-	showFPSonScreen  = 0; // Show FPS on Screen
+	showFPSonScreen  = 0; // Don't show FPS on Screen
 #else
 	showFPSonScreen  = 1; // Show FPS on Screen
 #endif
@@ -455,9 +455,9 @@ void setOption(char* key, char* valuePointer){
 		while(*++p != '"');
 		*p = 0;
 	} else
-		value = *valuePointer;
+		value = atoi(valuePointer);
 	
-	for(unsigned int i=0; i<sizeof(OPTIONS)/sizeof(OPTIONS[0]); ++i){
+	for(unsigned int i=0; i<sizeof(OPTIONS)/sizeof(OPTIONS[0]); i++){
 		if(!strcmp(OPTIONS[i].key, key)){
 			if(isString) {
 				if(OPTIONS[i].max == CONFIG_STRING_TYPE)

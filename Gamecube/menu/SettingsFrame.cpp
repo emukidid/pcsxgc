@@ -714,6 +714,7 @@ void Func_BiosSelectHLE()
 		SysReset();
 		LoadCdrom();
 		Func_SetPlayGame();
+		menu::MessageBox::getInstance().setMessage("Game Reset");
 	}
 }
 
@@ -849,7 +850,7 @@ void Func_SaveSettingsSD()
 	int (*configFile_init)(fileBrowser_file*) = fileBrowser_libfat_init;
 	configFile_file = &saveDir_libfat_Default;
 	if(configFile_init(configFile_file)) {                //only if device initialized ok
-		FILE* f = fopen( "sd:/wiiSX/settings.cfg", "wb" );  //attempt to open file
+		FILE* f = fopen( "sd:/wiisx/settings.cfg", "wb" );  //attempt to open file
 		if(f) {
 			writeConfig(f);                                   //write out the config
 			fclose(f);
@@ -866,7 +867,7 @@ void Func_SaveSettingsUSB()
 	int (*configFile_init)(fileBrowser_file*) = fileBrowser_libfat_init;
 	configFile_file = &saveDir_libfat_USB;
 	if(configFile_init(configFile_file)) {                //only if device initialized ok
-		FILE* f = fopen( "usb:/wiiSX/settings.cfg", "wb" ); //attempt to open file
+		FILE* f = fopen( "usb:/wiisx/settings.cfg", "wb" ); //attempt to open file
 		if(f) {
 			writeConfig(f);                                   //write out the config
 			fclose(f);
