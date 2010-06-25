@@ -101,6 +101,7 @@ char saveStateDevice;
 char autoSave;
 signed char autoSaveLoaded = 0;
 char screenMode = 0;
+char videoMode = 0;
 char padAutoAssign;
 char padType[2];
 char padAssign[2];
@@ -129,6 +130,7 @@ static struct {
   { "FPS", &showFPSonScreen, FPS_HIDE, FPS_SHOW },
 //  { "Debug", &printToScreen, DEBUG_HIDE, DEBUG_SHOW },
   { "ScreenMode", &screenMode, SCREENMODE_4x3, SCREENMODE_16x9_PILLARBOX },
+  { "VideoMode", &videoMode, VIDEOMODE_AUTO, VIDEOMODE_PROGRESSIVE },
   { "Core", &dynacore, DYNACORE_DYNAREC, DYNACORE_INTERPRETER },
   { "NativeDevice", &nativeSaveDevice, NATIVESAVEDEVICE_SD, NATIVESAVEDEVICE_CARDB },
   { "StatesDevice", &saveStateDevice, SAVESTATEDEVICE_SD, SAVESTATEDEVICE_USB },
@@ -155,62 +157,8 @@ void readConfig(FILE* f);
 void writeConfig(FILE* f);
 int checkBiosExists(int testDevice);
 
-void ScanPADSandReset(u32 dummy) 
+void loadSettings(int argc, char *argv[])
 {
-//	PAD_ScanPads();
-	padNeedScan = wpadNeedScan = 1;
-	if(!((*(u32*)0xCC003000)>>16))
-		stop = 1;
-}
-
-#ifdef HW_RVL
-void ShutdownWii() 
-{
-	shutdown = 1;
-	stop = 1;
-}
-#endif
-
-void video_mode_init(GXRModeObj *videomode,unsigned int *fb1, unsigned int *fb2)
-{
-	vmode = videomode;
-	xfb[0] = fb1;
-	xfb[1] = fb2;
-}
-
-// Plugin structure
-extern "C" {
-#include "GamecubePlugins.h"
-PluginTable plugins[] =
-	{ PLUGIN_SLOT_0,
-	  PLUGIN_SLOT_1,
-	  PLUGIN_SLOT_2,
-	  PLUGIN_SLOT_3,
-	  PLUGIN_SLOT_4,
-	  PLUGIN_SLOT_5,
-	  PLUGIN_SLOT_6,
-	  PLUGIN_SLOT_7 };
-}
-
-int main(int argc, char *argv[]) 
-{
-	/* INITIALIZE */
-#ifdef HW_RVL
-	DI_Init();    // first
-#endif
-	
-	MenuContext *menu = new MenuContext(vmode);
-	VIDEO_SetPostRetraceCallback (ScanPADSandReset);
-#ifndef WII
-	DVD_Init();
-#endif
-
-#ifdef DEBUGON
-	//DEBUG_Init(GDBSTUB_DEVICE_TCP,GDBSTUB_DEF_TCPPORT); //Default port is 2828
-	DEBUG_Init(GDBSTUB_DEVICE_USB, 1);
-	_break();
-#endif
-
 	// Default Settings
 	audioEnabled     = 1; // Audio
 #ifdef RELEASE
@@ -230,6 +178,7 @@ int main(int argc, char *argv[])
 	creditsScrolling = 0; // Normal menu for now
 	dynacore         = 0; // Dynarec
 	screenMode		 = 0; // Stretch FB horizontally
+	videoMode		 = VIDEOMODE_AUTO;
 	padAutoAssign	 = PADAUTOASSIGN_AUTOMATIC;
 	padType[0]		 = PADTYPE_NONE;
 	padType[1]		 = PADTYPE_NONE;
@@ -251,8 +200,6 @@ int main(int argc, char *argv[])
 	iVolume=3; //Volume="medium" in PEOPSspu
 	Config.PsxAuto = 1; //Autodetect
 	LoadCdBios = BOOTTHRUBIOS_NO;
-
-	control_info_init(); //Perform controller auto assignment at least once at startup.
 
 	//config stuff
 	fileBrowser_file* configFile_file;
@@ -339,7 +286,68 @@ int main(int argc, char *argv[])
 
 	//Synch settings with Config
 	Config.Cpu=dynacore;
+}
+
+void ScanPADSandReset(u32 dummy) 
+{
+//	PAD_ScanPads();
+	padNeedScan = wpadNeedScan = 1;
+	if(!((*(u32*)0xCC003000)>>16))
+		stop = 1;
+}
+
+#ifdef HW_RVL
+void ShutdownWii() 
+{
+	shutdown = 1;
+	stop = 1;
+}
+#endif
+
+void video_mode_init(GXRModeObj *videomode,unsigned int *fb1, unsigned int *fb2)
+{
+	vmode = videomode;
+	xfb[0] = fb1;
+	xfb[1] = fb2;
+}
+
+// Plugin structure
+extern "C" {
+#include "GamecubePlugins.h"
+PluginTable plugins[] =
+	{ PLUGIN_SLOT_0,
+	  PLUGIN_SLOT_1,
+	  PLUGIN_SLOT_2,
+	  PLUGIN_SLOT_3,
+	  PLUGIN_SLOT_4,
+	  PLUGIN_SLOT_5,
+	  PLUGIN_SLOT_6,
+	  PLUGIN_SLOT_7 };
+}
+
+int main(int argc, char *argv[]) 
+{
+	/* INITIALIZE */
+#ifdef HW_RVL
+	DI_Init();    // first
+#endif
 	
+	loadSettings(argc, argv);
+	MenuContext *menu = new MenuContext(vmode);
+	VIDEO_SetPostRetraceCallback (ScanPADSandReset);
+
+#ifndef WII
+	DVD_Init();
+#endif
+
+#ifdef DEBUGON
+	//DEBUG_Init(GDBSTUB_DEVICE_TCP,GDBSTUB_DEF_TCPPORT); //Default port is 2828
+	DEBUG_Init(GDBSTUB_DEVICE_USB, 1);
+	_break();
+#endif
+
+	control_info_init(); //Perform controller auto assignment at least once at startup.
+
 	// Start up AESND (inited here because its used in SPU and CD)
 	AESND_Init();
 

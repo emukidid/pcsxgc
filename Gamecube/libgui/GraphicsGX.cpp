@@ -46,16 +46,33 @@ Graphics::Graphics(GXRModeObj *rmode)
 	CONF_Init();
 #endif
 	VIDEO_Init();
-	//vmode = VIDEO_GetPreferredMode(NULL);
-	vmode = VIDEO_GetPreferredMode(&vmode_phys);
+	switch (videoMode)
+	{
+	case VIDEOMODE_AUTO:
+		//vmode = VIDEO_GetPreferredMode(NULL);
+		vmode = VIDEO_GetPreferredMode(&vmode_phys);
 #if 0
-	if(CONF_GetAspectRatio()) {
-		vmode->viWidth = 678;
-		vmode->viXOrigin = (VI_MAX_WIDTH_PAL - 678) / 2;
-	}
+		if(CONF_GetAspectRatio()) {
+			vmode->viWidth = 678;
+			vmode->viXOrigin = (VI_MAX_WIDTH_PAL - 678) / 2;
+		}
 #endif
-	if (memcmp( &vmode_phys, &TVPal528IntDf, sizeof(GXRModeObj)) == 0)
-		memcpy( &vmode_phys, &TVPal574IntDfScale, sizeof(GXRModeObj));
+		if (memcmp( &vmode_phys, &TVPal528IntDf, sizeof(GXRModeObj)) == 0)
+			memcpy( &vmode_phys, &TVPal574IntDfScale, sizeof(GXRModeObj));
+		break;
+	case VIDEOMODE_NTSC:
+		vmode = &TVNtsc480IntDf;
+		memcpy( &vmode_phys, vmode, sizeof(GXRModeObj));
+		break;
+	case VIDEOMODE_PAL:
+		vmode = &TVPal574IntDfScale;
+		memcpy( &vmode_phys, vmode, sizeof(GXRModeObj));
+		break;
+	case VIDEOMODE_PROGRESSIVE:
+		vmode = &TVNtsc480Prog;
+		memcpy( &vmode_phys, vmode, sizeof(GXRModeObj));
+		break;
+	}
 
 	//vmode->efbHeight = viewportHeight; // Note: all possible modes have efbHeight of 480
 
