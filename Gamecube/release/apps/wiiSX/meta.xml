@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+ <app version="1">
+   <name>WiiSX</name>
+   <coder>Wii64 Team</coder>
+   <version>Beta 2</version>
+   <release_date>201006250000</release_date>
+   <short_description>PSX Emulator for Wii</short_description>
+   <long_description>
+
+Wii64 Team is:
+Core Coder - tehpola  
+Graphics Coding - sepp256  
+General Coding - emu_kidid
+
+The Wii64Team proudly presents WiiSX Beta 2
+WiiSX is a port of PCSX to the Wii
+
+Special Thanks to:
+drmr - Graphics
+shagkur/WinterMute - libogc/devkitPPC
+Team Twiizers for Wii homebrew
+
+WiiSX and the WiiSX logo are trademarks of the Wii64 Team and should not be used in unofficial builds.
+   </long_description>
+ </app>
