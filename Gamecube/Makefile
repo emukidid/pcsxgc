@@ -28,14 +28,14 @@ INCLUDES	:=
 #---------------------------------------------------------------------------------
 
 CFLAGS	= -g -O3 -Wall $(MACHDEP) $(INCLUDE) -D__GAMECUBE__ -DHW_DOL -D__ppc__ \
-		  -D__GX__ -D_SDL -DEMBEDDED_FONTS -DNOTHREADLIB \
+		  -D__GX__ -D_SDL -DEMBEDDED_FONTS \
 		  -DTHREADED_AUDIO -DSHOW_DEBUG -DPROFILE
 		  
 CXXFLAGS	=	$(CFLAGS)
 
 ASFLAGS := -DHW_DOL
 
-LDFLAGS	=	-g $(MACHDEP) -mogc -Wl,-Map,$(notdir $@).map
+LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
@@ -108,7 +108,7 @@ $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 	@echo creating ... $(notdir $(OUTPUT)).dol
-	@elf2dol $(OUTPUT).elf $(OUTPUT).dol
+	@$(DEVKITPPC)/bin/elf2dol $(OUTPUT).elf $(OUTPUT).dol
 
 #---------------------------------------------------------------------------------
 clean:
