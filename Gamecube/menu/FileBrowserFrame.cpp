@@ -431,7 +431,7 @@ void newCD(fileBrowser_file *file);
 
 void fileBrowserFrame_LoadFile(int i)
 {
-	char feedback_string[256];
+	char feedback_string[256] = "Failed to load ISO";
 	if(dir_entries[i].attr & FILE_BROWSER_ATTR_DIR){
 		// Here we are 'recursing' into a subdirectory
 		// We have to do a little dance here to avoid a dangling pointer

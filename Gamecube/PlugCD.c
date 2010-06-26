@@ -12,12 +12,16 @@
 #include <errno.h>
 #include <string.h>
 #include <gccore.h>
+#include <asndlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "../plugins.h"
 #include "PlugCD.h"
 #include "../PsxCommon.h"
 #include "DEBUG.h"
+
+
+static s32 voice = SND_INVALID;
 
 extern void SysPrintf(char *fmt, ...);
 
@@ -345,10 +349,14 @@ long CDR__open(void)
 }
 
 long CDR__init(void) {
+	// Get a voice for CDDA
+	voice = ASND_GetFirstUnusedVoice();
 	return 0;
 }
 
 long CDR__shutdown(void) {
+	// Free our CDDA voice
+	ASND_StopVoice(voice);
 	return 0;
 }
 
@@ -389,11 +397,16 @@ unsigned char *CDR__getBufferSub(void) {
   return getSector(1);
 }
 
-long CDR__play(unsigned char *msf) { 
+static playCDDA(s32 voice) {
+	// If voice == -1, this is the start of the track
+	// TODO: Read in some CDDA, and send it to ASND
+}
+
+long CDR__play(unsigned char *msf) {
+	//unsigned long byteSector = ( msf[0] * 75 * 60 ) + ( msf[1] * 75 ) + msf[2]; //xbox way
+	unsigned int byteSector = time2addr(msf);  //peops way
 #ifdef SHOW_DEBUG
-  //unsigned long byteSector = ( msf[0] * 75 * 60 ) + ( msf[1] * 75 ) + msf[2]; //xbox way
-  unsigned int byteSector = time2addr(msf);  //peops way
-  sprintf(txtbuffer,"CDR play %08X",byteSector);
+	sprintf(txtbuffer,"CDR play %08X",byteSector);
   DEBUG_print(txtbuffer, DBG_CDR1);  
 #endif
   // Time will need to be updated in a thread.

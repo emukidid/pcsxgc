@@ -376,7 +376,8 @@ int loadISOSwap(fileBrowser_file* file) {
 	memcpy(&isoFile, file, sizeof(fileBrowser_file) );
 	
 	//might need to insert code here to trigger a lid open/close interrupt
-	CDR_open();
+	if(CDR_open() < 0)
+		return -1;
 	CheckCdrom();
 	LoadCdrom();
 	return 0;
@@ -386,17 +387,18 @@ int loadISOSwap(fileBrowser_file* file) {
 // loadISO loads an ISO, resets the system and loads the save.
 int loadISO(fileBrowser_file* file) 
 {
-  // Refresh file pointers
+	// Refresh file pointers
 	memset(&isoFile, 0, sizeof(fileBrowser_file));
 	memset(&cddaFile, 0, sizeof(fileBrowser_file));
 	memset(&subFile, 0, sizeof(fileBrowser_file));
 	
 	memcpy(&isoFile, file, sizeof(fileBrowser_file) );
-
+	
 	if(hasLoadedISO) {
-  	SysClose();	
+		SysClose();	
 	}
-	SysInit();
+	if(SysInit() < 0)
+		return -1;
 	hasLoadedISO = 1;
 	SysReset();
 	
@@ -405,55 +407,55 @@ int loadISO(fileBrowser_file* file)
 		Load(file);
 	}
 	else {
-  	CheckCdrom();
-	  LoadCdrom();
-  }
+		CheckCdrom();
+		LoadCdrom();
+	}
 	
 	if(autoSave==AUTOSAVE_ENABLE) {
-    switch (nativeSaveDevice)
-    {
-    	case NATIVESAVEDEVICE_SD:
-    	case NATIVESAVEDEVICE_USB:
-    		// Adjust saveFile pointers
-    		saveFile_dir = (nativeSaveDevice==NATIVESAVEDEVICE_SD) ? &saveDir_libfat_Default:&saveDir_libfat_USB;
-    		saveFile_readFile  = fileBrowser_libfat_readFile;
-    		saveFile_writeFile = fileBrowser_libfat_writeFile;
-    		saveFile_init      = fileBrowser_libfat_init;
-    		saveFile_deinit    = fileBrowser_libfat_deinit;
-    		break;
-    	case NATIVESAVEDEVICE_CARDA:
-    	case NATIVESAVEDEVICE_CARDB:
-    		// Adjust saveFile pointers
-    		saveFile_dir       = (nativeSaveDevice==NATIVESAVEDEVICE_CARDA) ? &saveDir_CARD_SlotA:&saveDir_CARD_SlotB;
-    		saveFile_readFile  = fileBrowser_CARD_readFile;
-    		saveFile_writeFile = fileBrowser_CARD_writeFile;
-    		saveFile_init      = fileBrowser_CARD_init;
-    		saveFile_deinit    = fileBrowser_CARD_deinit;
-    		break;
-    }
-    // Try loading everything
-  	int result = 0;
-  	saveFile_init(saveFile_dir);
-  	result += LoadMcd(1,saveFile_dir);
-  	result += LoadMcd(2,saveFile_dir);
-  	saveFile_deinit(saveFile_dir);
-
-  	switch (nativeSaveDevice)
-  	{
-  		case NATIVESAVEDEVICE_SD:
-  			if (result) autoSaveLoaded = NATIVESAVEDEVICE_SD;
-  			break;
-  		case NATIVESAVEDEVICE_USB:
-  			if (result) autoSaveLoaded = NATIVESAVEDEVICE_USB;
-  			break;
-  		case NATIVESAVEDEVICE_CARDA:
-  			if (result) autoSaveLoaded = NATIVESAVEDEVICE_CARDA;
-  			break;
-  		case NATIVESAVEDEVICE_CARDB:
-  			if (result) autoSaveLoaded = NATIVESAVEDEVICE_CARDB;
-  			break;
-  	}
-  }	
+		switch (nativeSaveDevice)
+		{
+		case NATIVESAVEDEVICE_SD:
+		case NATIVESAVEDEVICE_USB:
+			// Adjust saveFile pointers
+			saveFile_dir = (nativeSaveDevice==NATIVESAVEDEVICE_SD) ? &saveDir_libfat_Default:&saveDir_libfat_USB;
+			saveFile_readFile  = fileBrowser_libfat_readFile;
+			saveFile_writeFile = fileBrowser_libfat_writeFile;
+			saveFile_init      = fileBrowser_libfat_init;
+			saveFile_deinit    = fileBrowser_libfat_deinit;
+			break;
+		case NATIVESAVEDEVICE_CARDA:
+		case NATIVESAVEDEVICE_CARDB:
+			// Adjust saveFile pointers
+			saveFile_dir       = (nativeSaveDevice==NATIVESAVEDEVICE_CARDA) ? &saveDir_CARD_SlotA:&saveDir_CARD_SlotB;
+			saveFile_readFile  = fileBrowser_CARD_readFile;
+			saveFile_writeFile = fileBrowser_CARD_writeFile;
+			saveFile_init      = fileBrowser_CARD_init;
+			saveFile_deinit    = fileBrowser_CARD_deinit;
+			break;
+		}
+		// Try loading everything
+		int result = 0;
+		saveFile_init(saveFile_dir);
+		result += LoadMcd(1,saveFile_dir);
+		result += LoadMcd(2,saveFile_dir);
+		saveFile_deinit(saveFile_dir);
+		
+		switch (nativeSaveDevice)
+		{
+		case NATIVESAVEDEVICE_SD:
+			if (result) autoSaveLoaded = NATIVESAVEDEVICE_SD;
+			break;
+		case NATIVESAVEDEVICE_USB:
+			if (result) autoSaveLoaded = NATIVESAVEDEVICE_USB;
+			break;
+		case NATIVESAVEDEVICE_CARDA:
+			if (result) autoSaveLoaded = NATIVESAVEDEVICE_CARDA;
+			break;
+		case NATIVESAVEDEVICE_CARDB:
+			if (result) autoSaveLoaded = NATIVESAVEDEVICE_CARDB;
+			break;
+		}
+	}	
 	
 	return 0;
 }
@@ -526,7 +528,8 @@ int SysInit() {
 	Config.Cpu = dynacore;  //cpu may have changed  
 	psxInit();
 	LoadPlugins();
-	OpenPlugins();
+	if(OpenPlugins() < 0)
+		return -1;
   
 	//Init biosFile pointers and stuff
 	if(biosDevice != BIOSDEVICE_HLE) {

@@ -121,21 +121,35 @@ void openIt(void)
    prefs.prefsMap[lastrunString] = theFile;
    prefs.write();*/
    theCD = new CDInterface();
-   theCD->open(&isoFile.name[0]);
+   try {
+	   theCD->open(&isoFile.name[0]);
+   } catch(Exception& e) {
+	   closeIt();
+	   moobyMessage(e.text());
+	   throw e;
+   }
 }
 
 // psemu open call - call open
 long CALLBACK Mooby2CDRopen(void)
 {
    mode = psemu;
-   openIt();
-   return 0;
+   try {
+	   openIt();
+   } catch(Exception& e) {
+	   return PSE_CDR_ERR;
+   }
+   return PSE_CDR_ERR_SUCCESS;
 }
 
 int CD_Open(unsigned int* par)
 {
    mode = fpse;
-   openIt();
+   try {
+	   openIt();
+   } catch(Exception& e) {
+	   return FPSE_ERR;
+   }
    return FPSE_OK;
 }
 
