@@ -62,7 +62,6 @@ Settings:
    * Delete Saves: Not yet implemented
 
 COMPATIBILITY LIST:
- Please visit http://??? to see what runs
  Report any issues to http://code.google.com/p/pcsxgc/issues/list
 
 CREDITS:
@@ -74,28 +73,35 @@ CREDITS:
  * pcsx-df http://pcsx-df.sourceforge.net/
  * pcsx 1.5-test3 mac version by Gil Pederson http://pcsx.gpost.dk/
  * P.E.Op.S. PSX Gpu http://sourceforge.net/projects/peops/ 
- * Compiled using devKitPro r19 and libOGC
+ * franspu
+ * P.E.Op.S. SPU
+ * CDRMooby
+ * SSSPSX
+ * Compiled using devKitPro r21 and libOGC SVN
      ( http://sourceforge.net/projects/devkitpro )
  * Visit us on www.emulatemii.com and http://code.google.com/p/pcsxgc
 
 CHANGE LOG:
 Beta 2:
-   * Compiled with devkitPPC r19 / libOGC 1.8.1
+   * Compiled with devkitPPC r21 / libOGC SVN
    * Compiled with new libDI / DVDx V2
    * DVD reads are now done with direct PowerPC access
+   * Samba loading
+   * Execute BIOS
    * Controller improvements
      + Rumble for Wiimote-based input
      + Wiimote-only controls
+     + Classic Controller Pro & 3rd party controller support
      + Reconfigurable button mapping
        + Save/Load button mapping from file
    + New menu system
-      + Classic Controller support
-      + Wiimote / Wiimote & nunchuck support
-      + Settings saving
-      + Auto load/save option for saves
+     + Classic Controller support
+     + Wiimote / Wiimote & nunchuck support
+     + Settings saving
+     + Auto load/save option for saves
    * PEOPS GPU
-      + Pillar-boxing 'Force 16:9' mode
-      * Fixed color mapping for FMV
+     + Pillar-boxing 'Force 16:9' mode
+     * Fixed color mapping for FMV
    + FranSPU
      * Smooth stereo audio at full FPS
    - PEOPS SPU
