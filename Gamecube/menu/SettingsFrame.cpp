@@ -108,7 +108,7 @@ extern char menuActive;
 
 extern "C" {
 void SysReset();
-void SysInit();
+int SysInit();
 void SysClose();
 void SysStartCPU();
 void CheckCdrom();
@@ -828,7 +828,10 @@ void Func_ExecuteBios()
 	}
 
 	//TODO: load/save memcards here
-	SysInit ();
+	if(SysInit() < 0) {
+		menu::MessageBox::getInstance().setMessage("Failed to initialize system");
+		return;
+	}
 	CheckCdrom();
 	SysReset();
 	pauseRemovalThread();

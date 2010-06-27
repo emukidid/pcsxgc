@@ -127,6 +127,10 @@ void openIt(void)
 	   closeIt();
 	   moobyMessage(e.text());
 	   throw e;
+   } catch(std::exception& e) {
+	   closeIt();
+	   moobyMessage(e.what());
+	   THROW(Exception(e.what()));
    }
 }
 
