@@ -86,8 +86,8 @@ Beta 2:
    * Compiled with devkitPPC r21 / libOGC SVN
    * Compiled with new libDI / DVDx V2
    * DVD reads are now done with direct PowerPC access
-   * Samba loading
-   * Execute BIOS
+   + Samba loading
+   + Execute BIOS
    * Controller improvements
      + Rumble for Wiimote-based input
      + Wiimote-only controls
@@ -109,6 +109,7 @@ Beta 2:
      + DualShock Controller support
      + Rumble support
      * Analog/Digital switching
+   + CDRMooby
 Beta 1:
    * Working audio (choppy)
    * DVD loading
