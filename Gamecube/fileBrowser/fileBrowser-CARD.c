@@ -1,5 +1,5 @@
 /**
- * Wii64 - fileBrowser-CARD.c
+ * WiiSX - fileBrowser-CARD.c
  * Copyright (C) 2007, 2008, 2009 emu_kidid
  * 
  * fileBrowser module for Nintendo Gamecube Memory Cards

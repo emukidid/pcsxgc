@@ -1,5 +1,5 @@
 /**
- * Wii64 - fileBrowser-SMB.h
+ * WiiSX - fileBrowser-SMB.h
  * Copyright (C) 2010 emu_kidid
  * 
  * fileBrowser module for Samba based shares

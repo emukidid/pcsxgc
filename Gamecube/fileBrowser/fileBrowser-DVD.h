@@ -1,5 +1,5 @@
 /**
- * Wii64 - fileBrowser-DVD.h
+ * WiiSX - fileBrowser-DVD.h
  * Copyright (C) 2007, 2008, 2009 emu_kidid
  * 
  * fileBrowser module for ISO9660 DVD Discs
