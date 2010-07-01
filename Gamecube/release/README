@@ -72,9 +72,8 @@ CREDITS:
  * pcsx team http://www.pcsx.net/
  * pcsx-df http://pcsx-df.sourceforge.net/
  * pcsx 1.5-test3 mac version by Gil Pederson http://pcsx.gpost.dk/
- * P.E.Op.S. PSX Gpu http://sourceforge.net/projects/peops/ 
+ * P.E.Op.S. PSX Gpu & SPU http://sourceforge.net/projects/peops/ 
  * franspu
- * P.E.Op.S. SPU
  * CDRMooby
  * SSSPSX
  * Compiled using devKitPro r21 and libOGC SVN
@@ -105,11 +104,13 @@ Beta 2:
    + FranSPU
      * Smooth stereo audio at full FPS
    - PEOPS SPU
-   + SSS input plugin
+   + SSSPSX input plugin
      + DualShock Controller support
      + Rumble support
      * Analog/Digital switching
    + CDRMooby
+     * Improved compatibility
+     * CDDA not implemented yet
 Beta 1:
    * Working audio (choppy)
    * DVD loading
