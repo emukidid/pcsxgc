@@ -1,8 +1,8 @@
 /**
- * Wii64 - Logo.h
- * Copyright (C) 2009 sepp256
+ * WiiSX - Logo.h
+ * Copyright (C) 2009, 2010 sepp256
  *
- * Wii64 homepage: http://www.emulatemii.com
+ * WiiSX homepage: http://www.emulatemii.com
  * email address: sepp256@gmail.com
  *
  *
@@ -38,14 +38,13 @@ public:
 	void drawComponent(Graphics& gfx);
 	enum LogoMode
 	{
-		LOGO_N=0,
-		LOGO_M,
-		LOGO_W
+		LOGO_P=0,
 	};
 
 private:
 	void drawQuad(u8 v0, u8 v1, u8 v2, u8 v3, u8 c);
 	void drawLine(u8 v0, u8 v1, u8 c);
+	void drawBand(guVector center, guVector axis1, guVector axis2, float radius1, float radius2, float thetaMax, int numSegments, u8 c);
 	int logoMode;
 	float x, y, z, size;
 	float rotateAuto, rotateX, rotateY;

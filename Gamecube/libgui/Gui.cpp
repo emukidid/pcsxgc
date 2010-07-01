@@ -85,7 +85,7 @@ void Gui::draw()
 		(*iteration)->drawChildren(*gfx);
 	}
 //	menuLogo->drawComponent(*gfx);
-//	menuLogo->draw(*gfx);
+	menuLogo->draw(*gfx);
 	if (MessageBox::getInstance().getActive()) MessageBox::getInstance().drawMessageBox(*gfx);
 	if (LoadingBar::getInstance().getActive()) LoadingBar::getInstance().drawLoadingBar(*gfx);
 	Cursor::getInstance().drawCursor(*gfx);
