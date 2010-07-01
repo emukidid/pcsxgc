@@ -169,9 +169,9 @@ void Func_Credits()
 #endif
 	strcat(CreditsInfo,"\n");
 	strcat(CreditsInfo,"Wii64 Team:\n");
-	strcat(CreditsInfo,"tehpola - core  \n");
-	strcat(CreditsInfo,"sepp256 - graphics\n");
 	strcat(CreditsInfo,"    emu_kidid - general coding\n");
+	strcat(CreditsInfo,"      sepp256 - graphics & menu\n");
+	strcat(CreditsInfo,"tehpola - audio  \n");
 	strcat(CreditsInfo,"\n");
 	strcat(CreditsInfo,"Special Thanks To:\n");
 	strcat(CreditsInfo,"       drmr - for menu graphics\n");
