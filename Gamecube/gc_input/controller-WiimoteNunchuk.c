@@ -133,6 +133,8 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config,
 	c->btns.D_DPAD       = isHeld(config->DD);
 
 	c->btns.START_BUTTON  = isHeld(config->START);
+	c->btns.R3_BUTTON    = isHeld(config->R3);
+	c->btns.L3_BUTTON    = isHeld(config->L3);
 	c->btns.SELECT_BUTTON = isHeld(config->SELECT);
 
 	s8 stickX = 0;

@@ -39,28 +39,28 @@ void auto_assign_controllers(void);
 typedef union {
 	u16 All;
 	struct {
-  	unsigned SQUARE_BUTTON    : 1;
-  	unsigned CROSS_BUTTON     : 1;
-  	unsigned CIRCLE_BUTTON    : 1;
-  	unsigned TRIANGLE_BUTTON  : 1;
-  	unsigned R1_BUTTON        : 1;
-  	unsigned L1_BUTTON        : 1;
-  	unsigned R2_BUTTON        : 1;
-  	unsigned L2_BUTTON        : 1;
-  	unsigned L_DPAD           : 1;
-  	unsigned D_DPAD           : 1;
-  	unsigned R_DPAD           : 1;
-  	unsigned U_DPAD           : 1;
-  	unsigned START_BUTTON     : 1;
-		unsigned UNK_1            : 1;
-		unsigned UNK_2            : 1;
+		unsigned SQUARE_BUTTON    : 1;
+		unsigned CROSS_BUTTON     : 1;
+		unsigned CIRCLE_BUTTON    : 1;
+		unsigned TRIANGLE_BUTTON  : 1;
+		unsigned R1_BUTTON        : 1;
+		unsigned L1_BUTTON        : 1;
+		unsigned R2_BUTTON        : 1;
+		unsigned L2_BUTTON        : 1;
+		unsigned L_DPAD           : 1;
+		unsigned D_DPAD           : 1;
+		unsigned R_DPAD           : 1;
+		unsigned U_DPAD           : 1;
+		unsigned START_BUTTON     : 1;
+		unsigned R3_BUTTON        : 1;
+		unsigned L3_BUTTON        : 1;
 		unsigned SELECT_BUTTON    : 1;	
 	};
 } _BUTTONS;
 
 typedef struct {
-  _BUTTONS btns;
-  u8 leftStickX;
+	_BUTTONS btns;
+	u8 leftStickX;
 	u8 leftStickY;
 	u8 rightStickX;
 	u8 rightStickY;
