@@ -396,10 +396,11 @@ int loadISO(fileBrowser_file* file)
 	
 	if(hasLoadedISO) {
 		SysClose();	
+		hasLoadedISO = FALSE;
 	}
 	if(SysInit() < 0)
 		return -1;
-	hasLoadedISO = 1;
+	hasLoadedISO = TRUE;
 	SysReset();
 	
 	char *tempStr = &file->name[0];

@@ -520,7 +520,8 @@ void fileBrowserFrame_LoadFile(int i)
 		menu::Focus::getInstance().clearPrimaryFocus();*/
 
 		pMenuContext->setActiveFrame(MenuContext::FRAME_MAIN);
-		if(hasLoadedISO) Func_SetPlayGame();
+		//if(hasLoadedISO) Func_SetPlayGame();
+		Func_SetPlayGame(); //hasLoadedISO will be set to False if SysInit() fails
 	} 
 	else if (fileBrowserMode == FileBrowserFrame::FILEBROWSER_SWAPCD) {
 		//TODO: Properly implement this
