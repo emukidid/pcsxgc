@@ -483,6 +483,10 @@ void SettingsFrame::activateSubmenu(int submenu)
 				FRAME_BUTTONS[i].button->setVisible(true);
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
+			for (int i = 34; i <= 37; i++)	//disable light gun & multitap buttons
+			{
+				FRAME_BUTTONS[i].button->setActive(false);
+			}
 			break;
 		case SUBMENU_AUDIO:
 			setDefaultFocus(FRAME_BUTTONS[3].button);
@@ -507,6 +511,10 @@ void SettingsFrame::activateSubmenu(int submenu)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
 				FRAME_BUTTONS[i].button->setActive(true);
+			}
+			for (int i = 45; i <= 46; i++)	//disable CDDA buttons
+			{
+				FRAME_BUTTONS[i].button->setActive(false);
 			}
 			break;
 		case SUBMENU_SAVES:
@@ -829,7 +837,7 @@ void Func_ExecuteBios()
 
 	//TODO: load/save memcards here
 	if(SysInit() < 0) {
-		menu::MessageBox::getInstance().setMessage("Failed to initialize system");
+		menu::MessageBox::getInstance().setMessage("Failed to initialize system.\nTry loading an ISO.");
 		return;
 	}
 	CheckCdrom();
