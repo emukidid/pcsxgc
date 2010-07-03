@@ -52,8 +52,8 @@ typedef union {
 		unsigned R_DPAD           : 1;
 		unsigned U_DPAD           : 1;
 		unsigned START_BUTTON     : 1;
-		unsigned R3_BUTTON        : 1;
 		unsigned L3_BUTTON        : 1;
+		unsigned R3_BUTTON        : 1;
 		unsigned SELECT_BUTTON    : 1;	
 	};
 } _BUTTONS;
