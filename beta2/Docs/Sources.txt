@@ -1,0 +1,83 @@
+ Pcsx Sources Notes/FAQ
+ ---- ------- ---------
+
+
+Requeriments
+------------
+
+* zlib 1.1.3 - www.gzip.org/zlib
+
+ Platform specifycs
+ ------------------
+
+ Windows:
+* Visual C++ 6.0
+
+ Linux:
+* gtk 1.2.5 - www.gtk.org
+* gcc - www.gnu.org/gcc
+
+ DreamCast:
+
+* gcc - http://www.gnu.org/gcc
+* KOS 1.1.8cvs - http://dcdev.allusion.net/
+* GPU plugin - ????
+
+ Windows-mingw:
+* mingw http://mingw.sourceforge.net
+* gnu tools http://unxutils.sourceforge.net
+* directx 7 (dx70_mgw.zip) http://alleg.sourceforge.net
+* Borland C++ Compiler 5.5 (brcc32.exe, rw32core.dll) http://www.borland.com
+* mingw/include/afxres.h (2 lines)
+#include <windows.h>
+#define IDC_STATIC (-1)
+
+Building
+--------
+
+ Windows:
+  Open the pcsx.dsw, and use the build command, 
+  also you should set the active configuration to
+  release.
+
+ Linux:
+  Open the Linux dir, and type 'make', just that,
+  but maybe you'll want to edit the Makefile ie. if
+  you don't have pgcc comment the line CC = pgcc to CC = gcc.
+
+ DreamCast:
+  Set the correct environment variables according to the KOS documentation.
+  Change to the Dreamcast directory, and type 'make'. You will get an elf
+  binary called "pcsx.elf". Convert it to a raw binary format by typing
+  'sh-elf-objcopy -O binary pcsx.elf 1st.read'. After scrambling and adding
+  an IP.BIN, you're ready to burn it on CD.
+
+ Windows-mingw:
+  Open the Win32 dir, Type as below.
+SET PATH=%PATH%;c:\mingw\bin
+set INCLUDE=c:\mingw\include
+make
+
+FAQ
+---
+
+* Q - I think i found a bug in Pcsx, what should i do?
+  A - Tell me :) (linuzappz@hotmail.com).
+
+* Q - I would like to port it to some other platform/cpu, where can i start?
+  A - You should start porting the pcsx itself first (using the interpreter)
+      and then if needed u will have to code plugins also.
+  
+* Q - I found a problem with some game, how can i debug it?
+  A - Check Debug.h, enable the logs you think you need and check the output
+      over emuLog.txt, also you can use the LOG_STDOUT to send the logs over
+	  SysPrintf (to the console).
+
+* Q - I have problems compiling Pcsx, what's wrong?
+  A - First check the Building section, if you still have problem you can 
+      contact me (linuzappz@hotmail.com) and i'll try to help you.
+
+* Q - The code is all unaligned in my editor, why?
+  A - Set in the editor the tab/indent size to 4.
+
+

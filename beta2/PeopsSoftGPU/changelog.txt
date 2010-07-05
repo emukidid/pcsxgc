@@ -1,0 +1,474 @@
+#########################################################################
+
+Version 1.18
+------------
+
+- added visual rumble funcs - Pete
+
+  files changed: gpu.c, draw.c 
+
+- changed save state picture function - Pete
+
+  files changed: gpu.c
+
+- added 'fake gpu busy states' game fix - Pete
+
+  files changed: gpu.c, cfg.c
+
+- added 'GPUsetfix' function - Pete
+
+  files changed: gpu.c, gpuPeopsSoft.def
+
+- added 'GPUsetframelimit' function - Pete
+
+  files changed: gpu.c, gpuPeopsSoft.def
+
+- added 'sleep' fps limitation and new fps timings - Nagisa/SSSPSX
+
+  files changed: fps.c
+
+- added MMX screen filters and some fixes - MxC
+
+  files changed: draw.c, cfg.c, hq....asm files added
+
+
+Version 1.17
+------------
+
+- changed user frame limit to floating point value - Pete
+
+  files changed: menu.c, fpsewp.c, fps.c, externals.h, conf.c, key.c, cfg.c 
+
+- added game fix 0x200 (g-shaded quads) - Pete
+
+  files changed: soft.c
+
+- added 25% mode 3 blending - Pete
+
+  files changed: soft.c
+
+- added y sprite mirror - Pete
+
+  files changed: soft.c, prim.c
+
+- added HQ2X,HQ3X,Scale3X screen filters  - MxC
+
+  files changed: draw.c, cfg.c
+
+
+Version 1.16
+------------
+
+- added ZN stuff - Pete
+
+  files changed: too many to mention ;)
+
+- improved X8F6VM fullscreen switching a little - Stefan Sperling
+
+  files changed: draw.c
+
+- added sprite y coord wrap (skullmonkey) - Pete
+
+  files changed: prim.c
+
+- added game fix 0x100 (dark forces) - Pete
+
+  files changed: soft.c
+		    
+
+Version 1.15
+------------
+
+- fixed frame limitation if "old skipping method" is used - Pete
+
+  files changed: fps.c
+
+- added pad core flags display - Pete
+
+  files changed: menu.c
+
+- added sprite x coord wrap (skullmonkey) - Pete
+
+  files changed: prim.c
+
+- new mingw patches - yokota
+
+
+Version 1.14
+------------
+
+- repaired AVISetStreamFormat call in recording funcs - Avery Lee
+
+  files changed: record.c
+
+- added mingw patches in the "makes" directoy - yokota
+
+- rewrote Linux Config/About dialogs using Glade / fullscreen modes are get through XF86VM if enabled - linuzappz
+
+  files changed: conf.c
+  files added: callbacks.c, callbacks.h, interface.c, interface.h, support.c, support.h
+
+
+Version 1.12
+------------
+
+- fixed wrapped y display position offset (Legend of Legaia) - Pete
+
+  Files changed: gpu.c
+
+- the odd/even bit hack (CronoCross status screen) is now a special game fix - Pete
+
+  Files changed: gpu.c
+
+- gun cursor interface and drawing func - Pete
+  
+  Files changed: gpu.c, draw.c
+
+- added Scale2x display mode - Scale2x (C) 2002 Andrea Mazzoleni (http://scale2x.sourceforge.net) - Pete
+
+  Files changed: draw.c
+
+- improved frameskip func and added 'old skipping' game fix - Pete
+  
+  Files changed: fps.c, gpu.c
+
+- added dithering and improved g-shading - Pete, thanx to FF
+  
+  Files changed: soft.c, prim.c, menu.c, cfg.c, conf.c
+
+- some more messages for DGA2 errors - linuzappz
+  improved XStretch funcs a little   - linuzappz
+  fixed non-streched modes for DGA2  - linuzappz
+
+  Files changed: draw.c
+
+
+Version 1.11
+------------
+
+- added new frameskip func support and win timer game fix - Pete
+  
+  Files changed: gpu.c, fps.c, key.c
+
+- fixed 5bit masks for 2xSai - linuzappz
+
+  Files changed: draw.c
+
+
+Version 1.10
+------------
+
+- changed the y display pos handling - Farfetch'd & Pete
+
+  Files changed: gpu.c
+
+- added 2xSai, Super2xSaI, SuperEagle - Pete
+
+  Files changed: draw.c, cfg.c, conf.c
+
+
+Version 1.9
+-----------
+
+- changed: polylines, 11 bit coords, polygon discarding, BlkFill align - Farfetch'd & Pete
+
+  Files changed: prim.c
+
+- changed: mask bit handling - Farfetch'd & Pete
+
+  Files changed: soft.c, prim.c
+
+- added all kind of tiny stuff (gpureset, gpugetinfo, dmachain align, polylines, ...) - Farfetch'd & Pete
+
+  Files changed: gpu.c
+
+- fixed gpuwritedatamem & now doing every data processing with it - Pete
+
+  Files changed: gpu.c
+
+- added Win debug mode & full vram view key config - Pete
+
+  Files changed: cfg.c, key.c, draw.c
+
+- separated linux gui to conf.c - linuzappz
+ 
+  Files changed: cfg.c, mk.X11
+  Files added: conf.c
+
+- STP: read control register is now masked correctly with 0x3 - Farfetch'd
+ 
+  Files changed: prim.c
+
+
+Version 1.8
+-----------
+
+- delayed odd/even toggle for FF8 intro scanlines - Pete
+
+  Files changed: gpu.c
+
+- additional mask bit handling for sprites (AitD4) - Pete
+
+  Files changed: prim.c
+
+- correct TW coord adjustment (RRT4) - Lewpy & E}I{
+
+  Files changed: prim.c
+
+- added DrawString calls for DGA2 (FPS display) - linuzappz
+
+  Files changed: draw.c
+  Files added: drawstring.c, drawstring.h, drawstringfont.h  
+
+- "Sprite 1" command count added - Pete
+
+  Files changed: gpu.c
+
+- handles "screen disable" correctly - Pete
+
+  Files changed: gpu.c
+
+
+Version 1.7
+-----------
+
+- dmawrite/read wrap around - Pete
+
+  Files changed: gpu.c
+
+- removed dmachain fixes, added dma endless loop detection instead - Pete
+
+  Files changed: gpu.c
+
+- new line drawing funcs - Lewpy
+
+  Files changed: prim.c, soft.c, soft.h
+
+- Win95/NT "disable screensaver" fix - Lewpy
+
+  Files changed: gpu.c
+
+- fixed linux about dialog - linuzappz
+
+  Files changed: cfg.c
+
+- fixed a mask bit problem with FF9 - Pete
+
+  Files changed: prim.c
+
+- changed dmachain handler (monkey hero) - Pete
+
+  Files changed: gpu.c, prim.c
+
+
+
+Version 1.6
+-----------
+
+- fast forward frame skipping - linuzappz
+  
+  Files changed: gpu.c, key.c, menu.c
+
+- mdec mask bit problem in FF9 fixed - Pete
+  
+  Files changed: prim.c
+
+- Added dmachain "0" game fix (Ranma1/2) - Pete
+
+  Files changed: gpu.c
+
+- new coordinate checks, to remove weird polys
+  (MGS, etc) - Pete
+
+  Files changed: prim.c
+
+- Added extra code to remove distortions on g-shaded 
+  texture rects - Pete
+
+  Files changed: soft.c
+
+- Re-done all texture-window funcs... much better
+  speed - Pete
+
+  Files changed: soft.c
+
+- Mask bit fixed for non-textured primitives 
+  (Bloody Roar 2, Ace Combat 3) - Pete
+
+  Files changed: soft.c
+
+- Doom fixed - Pete
+
+  Files changed: soft.c
+
+
+Version 1.5
+-----------
+
+- fixed mk.x11 - lu 
+
+- added optional SDL only direct blit and direct 
+  stretch - lu
+
+  Files changed: draw.c
+
+- added Linux fullscreen DGA2 support - linuzappz
+
+  Files changed: draw.c, menu.c, gpu.c
+
+- added Lunar "ignore blending color" and capcom 2d 
+  fighter fixes - Pete
+
+  Files changed: prim.c, cfg.c, key.c
+
+- removed "no sprite transparency" and "black poly" 
+  fixes - Pete
+
+  Files changed: prim.c
+
+- additional Load/MoveImage checks for a few FF9/BOF4 
+  effects - Pete
+
+  Files changed: prim.c
+
+- Added dmacheck for The Mummy and T'ai Fu - Pete
+
+  Files changed: gpu.c
+
+
+Version 1.4
+-----------
+- Fixed a possible closing issue in the gtk dialog and added
+  an #ifdef for the title (X11 vs SDL) - lu
+
+  Files changed: cfg.c
+
+- Enabled configuration for linux FPSE - lu
+
+  Files changed: fpsewp.c gpu.c
+
+- Fixed linux stretch centering (no more garbled screens in
+  Star Ocean 2/Grandia/etc) - Pete
+
+  Files changed: draw.c
+
+- Fixed unwanted screen clearing on horizontal centering - Pete
+
+  Files changed: gpu.c
+
+- Added "Wait VSYNC" (Windows) - syo
+
+  Files changed: cfg.c draw.c
+
+- Added toggle "Wait VSYNC" key (Windows) - syo
+
+  Files changed: cfg.c key.c draw.c
+
+- support refresh rate change (Windows) - syo
+
+  Files changed: cfg.c draw.c
+
+- added "Transparent menu" (Windows) - syo
+
+  Files changed: cfg.c menu.c
+
+- enhanced recording: two types of compression (16bit & 24bit)
+  and FPSE 24bit MDEC support - Darko Matesic
+
+  Files changed: cfg.c, record.c, record.h, win recording dialog
+
+- linux fullscreen switching (without SDL) - Pete
+
+  Files changed: draw.c
+
+- linux config dialog fix - linuzappz
+  
+  Files changed: cfg.c
+
+
+Version 1.3
+-----------
+
+- Added Windows FPSE RGB24 mode switch - Pete
+
+  Files changed: fpsewp.c, draw.c, externals.h 
+
+- Yet Another FPSE layer change (hopefully the last one) - lu_zero
+
+  Files changed: fpsewp.c key.c
+
+- SDL linux fullsreen funcs by lu_zero
+
+  Files changed: gpu.c, draw.c, fpsewp.c
+
+- added support for 15 bit texture window primitives - Pete
+
+  Files changed: soft.c
+
+- fix for Grandia in ChangeDispOffsetsX - Pete
+
+  Files changed: gpu.c
+
+- added special coord checks for Nascar and Syphon Filter 2 - Pete
+
+  Files changed: prim.c 
+
+- fixed a mask bit bug in drawPoly4F - Pete
+
+  Files changed: soft.c 
+
+- added "Use system memory" by syo (syo68k@geocities.co.jp)
+  (small fixes in save state pic and nvidia scanlines by Pete)
+
+  Files changed: cfg.c draw.c 
+
+- added "Stop screen saver"	by syo (syo68k@geocities.co.jp)
+
+  Files changed: cfg.c gpu.c
+
+- fixed display mode change problem	by syo (syo68k@geocities.co.jp)
+
+  Since the radio button was not operating correctly,
+  it corrects that change in display mode was not completed correctly.
+
+  Files changed: cfg.c
+
+- native W32 fpse interface funcs by lu_zero
+
+  Files changed: fpsewp.c
+
+- linux config dialog by linuzappz
+  
+  Files changed: cfg.c, gpu.c
+
+
+Version 1.2
+-----------
+
+- avi recording funcs by Darko 
+  (small adjustments of the recording gpu key/dialog/menu by Pete)
+
+  Files changed: cfg.c, gpu.c ,key.c, menu.c
+  Files added:   record.c, record.h
+
+- nasm support for windows/linux by linuzappz
+  note: if you can't/don't want to use nasm, you can remove the
+  __i386__ define in the project settings
+  To use nasm (Win version), copy the nasm files into your 
+  VC98/bin directory, and set the MSVCDIR enviroment var to the
+  VC98 directory.
+
+  Files changed: soft.c, prim.c, Makefile
+  Files added:   i386.asm, macros.inc
+
+- SDL 1.2.x and FPSE layer support by lu_zero
+  -D_SDL <--Will set up SDL stuff
+  -D_FPSE,add the fpsewp.o <--Will add the layer
+  Note I have to fix the win32 related part. 
+
+Version 1.1
+-----------
+- First release
+
+#########################################################################
+

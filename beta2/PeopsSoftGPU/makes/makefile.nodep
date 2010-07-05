@@ -1,0 +1,8 @@
+#
+# Makefile for FPSE plugins
+#
+include ./makes/plg.mk
+include ./makes/mk.fpse
+
+# Dependencies
+

@@ -1,0 +1,1 @@
+( cat Makefile.nodep && gcc -MM --makedep -I./fpse `gtk-config --cflags`  *.c) > Makefile

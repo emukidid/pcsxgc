@@ -1,0 +1,29 @@
+## PCSX CODING STYLE
+
+typedef struct { // { within struct
+    int i;
+} name;
+
+void func(int i) { // { within func declaration
+    if () { // same
+        switch () { // same
+            default:
+                printf(); // 1 tab per level (considering the default and the code in it
+                          // as diferent ones
+        }
+    }
+
+    for (;;) { // same for while
+    }
+}
+
+Also try to align the code:
+	Something    = x;
+	AnotherThing = x;
+but not always:
+	i = x;
+	Something = x;
+
+tab = 4
+indent = 4
+

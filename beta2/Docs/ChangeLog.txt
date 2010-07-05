@@ -1,0 +1,388 @@
+ChageLog:
+ v1.5:
+ * Improved NetPlay code, now the NETopen can return -2 if something
+   changed in the netInfo, note that first the netInfo is set by
+   NETsetInfo and then NETopen is called, so if it returns -2 pcsx
+   will reload the plugins and the memcards, thanks to JNS (linuzappz)
+
+ * Fixed SW Ints over the Recompiler, thanks to Xeven (linuzappz)
+
+ * Small change in CdromCheck, now if CdromLabel[0] == ' '
+   the CdromId is copid to CdromLabel (linuzappz)
+
+ * Added Translations support (linuzappz)
+
+ * Fixed a RootCounter bug, single interrupt didn't 
+   interrupted :P, psxCounters.c (linuzappz)
+
+ * Fixed a Flushing problem in PsxDma.c (linuzappz)
+
+ * Fixed a bug within Sio.c, TX_EMPTY flag 
+   was being used incorrectly (linuzappz)
+
+ * Decode_XA.c now uses fixed point,
+   added NEGCON type to plugins.c/PsxBios.c,
+   and improved the mingw32 port (yokota)
+
+ * Added MacOSX code (Stefhane Conversy)
+
+ * Fixed bug in CreateMcd (kitaro)
+
+ * Added gettext code for translations (linuzappz)
+
+ * Fixed some pcsx behaviors while opening/closing plugins (linuzappz)
+
+ * Added a 'NO PIC' image (linuzappz) 
+
+ * Fixed a buf within the recompiler, it now counts better 
+   the ops by block (linuzappz)
+
+ * Pcsx now compiles without a recompiler ;) (linuzappz)
+
+ * Added code for NULL pointers with PSXM (linuzappz)
+
+ * Fixed intJALR, Rs is loaded before storing Rd (linuzappz)
+
+ * Implemented SWL/SWR in iR3000A.c (linuzappz)
+
+ * Pcsx is now compilable on mingw, thanks to yokota (linuzappz)
+
+ * Fixed small bug on SLTIU, PsxInterpreter.c (linuzappz)
+
+ * Fixed a bug within rcnt exceptions on PsxBios.c (linuzappz)
+
+ * Small speedup over PsxMem.c (linuzappz)
+
+ * Fixed RTPS/RTPT SXYP fifo issue, thanks to Xeven (linuzappz)
+
+ * Improved HLE loading cdrom (for files within dirs), 
+   and added LoadExec/Load syscalls (linuzappz)
+
+ * The HLE bios now support NetPlay (linuzappz)
+
+ * Fixed the seek flag stuff, CdRom.c/h (linuzappz)
+
+ v1.4:
+ * Added NetPlay support, the api is not the same for cyberpad (linuzappz)
+
+ * Errors on open/close/init are now only for negative values, 
+   plugin.c, plugins.c (linuzappz)
+
+ * Added GPUclearDynarec, for pec, plugins.c/h, plugin.c (linuzappz)
+
+ * Implemented Load Branch Delay stuff :), PsxInterpreter, iR300A.c, 
+   R3000A.h, thanks to Farfetch (linuzappz)
+
+ * Added States Menu WndMain.c, Misc.c/h (linuzappz)
+
+ * Fix on READ_ACK, StatP is ORed with 0x20 after now, CdRom.c (linuzappz)
+
+ * Fixed bug on iBrach for branchs on branch delay slots, iR3000A.c (linuzappz)
+
+ * Fixed Mcd Dialog in Windows, WndMain.c (jang2k)
+
+ * Added workaround in PsxCounters.c for "lost" vsync interrupts (linuzappz)
+
+ * Fixed small bug in PsxBios.c, rootcnt clear must be only when used an event,
+   also added SaveMcd on FCREAT (linuzappz)
+
+ * Fixes to PsxCounters.c, gives a bit more speed also (linuzappz)
+
+ * Added software interruption over PsxInterpreter.c, untested (linuzappz)
+
+ * Added sTitle in McdBlock Struct, Sio.c/h (linuzappz)
+
+ * Refixed a few lines on Gte.c, and some updates over pcsxdc (Mark Grilenkov)
+
+ * Finished RTPS/RTPT optimization, Gte.c (linuzappz)
+
+ * Added option for Parasite Eve 2, PsxCounters.c, ConfigurePlugins.c, WndMain.c (linuzappz)
+
+ * Removed SPUupdate support since it won't be needed anymore, plugins.c/h, 
+   PsxCounters.c/h (linuzappz)
+
+ * Changed BIAS to 2, and the cdReadTime is now 75 as it should be, PsxCommon.h, 
+   CdRom.c (linuzappz)
+
+ * Several optimizations on iR3000A.c,, ix86.c/h, added iGte.h (linuzappz)
+
+ * Largely optimized Gte.c, also optimized PsxMem.c for direct recClear (linuzappz)
+
+ * Rewritten LWL/LWR/SWL/SWR, PsxInterpreter.c (linuzappz)
+
+ * Added workaround for firstfile, PsxBios.c (linuzappz)
+
+ * Several optimizations over iR3000A.c, ix86.c/h, 10% faster (linuzappz)
+
+ * Removed CdTiming fix since it's not needed anymore, PsxCommon.h, CdRom.c (linuzappz)
+
+ * Fixed bios_write for stdout, PsxBios.c (linuzappz)
+
+ * Added DreamCast port, Dreamcast/sh4 dir, Sio.c, plugins.h, R3000A.c/h, PsxCommon.h,
+   CdRom.h, Misc.c (Mark Grilenkov)
+
+ * Small speedups over Decode_XA.c (linuzappz)
+
+ * Fixed bug in iR3000A.c, thanks to Mark Grilenkov (linuzappz)
+
+ * Small optimizations to iR3000A.c, ix86.c/h (linuzappz)
+
+ * Fixes for danger girl, legend of mana and tekken2, CdRom.c, and fix
+   for old pad plugins, ConfigurePlugins.c, thanks to jang2k (linuzappz)
+
+ * Fix for Parasite Eve 2, PsxCounters.c, thanks to psychojak (linuzappz)
+
+ v1.3:
+ * Fixed icon colors for 15/16bits, thanks to jang2k (linuzappz)
+
+ * Fix silly bug on PsxCounters.c for SPUasync (linuzappz)
+
+ * Refixed the mdecs, more correct. PsxHw.c, Mdec.c, and small fixes on
+   WndMain.c/Plugin.c, thanks to jang2k (linuzappz)
+
+ * Fix for some mdecs on MdecWrite1, Mdec.c, thanks to psychojak (linuzappz)
+
+ * CVGS Mcds now are detected by file size, also fixes to SaveMcd,
+   and added support for .gme mcds, Sio.c, thanks to jang2k (linuzappz)
+
+ * Fixed Pcsx title for some win32, small fix in Gte.c, and added
+   icons for win32 mcd dlg (still unanimated), WndMain.c, 
+   thanks to jang2k (linuzappz)
+
+ * Added rename syscall, PsxBios.c (linuzappz)
+
+ * Fixed bug in MTC2 in linux define, Gte.c (linuzappz)
+
+ * Minor fixes to GtkGui.c (linuzappz)
+
+ * More to PsxBios.c (linuzappz)
+
+ * Fixed bug when S_addr == 0 in Misc.c (linuzappz)
+
+ * Now won't close the plugins if the user press escape more than once, 
+   WinMain.c, plugin.c (linuzappz)
+
+ * Added SPUasync support, thanks to Andy and Iori (linuzappz)
+
+ * Removed the BREAK code, since the bios rom doens't handles it, 
+   thanks to psychojak (linuzappz)
+
+ * Some bugfixes to Gte.c, thanks to jang2k (linuzappz)
+
+ * "hokuto no ken" / "Crash Bandicot 2" ... fix, thanks to Taka (linuzappz)
+
+ * Renamed/rewrote some stuff for pcsx2 compat ;) (linuzappz)
+
+ * Small speedups for Mdec.c (linuzappz)
+
+ * Rewrote DisR3000A.c (linuzappz)
+
+ * Improved and rewrote partially HLE stuff (linuzappz)
+
+ * Rewrote the way we call syscalls (linuzappz)
+
+ * Added in Gte.c SUM_FLAG to opcodes that didn't have it, thanks to Taka (linuzappz)
+
+ * CdlPause Acknowledge irq timing changed to 0x40000, thanks to Taka (linuzappz)
+
+ * Fixed bug in recBLTZAL and recBGEZAL, thanks to Taka (linuzappz)
+
+ * Fixed bug in Sio.c, thanks to gunshinn (linuzappz)
+
+ * Fixed bug in Hw.c, thanks to bilgerat (linuzappz)
+
+ * Fixes to Gte.c, thanks to roor (shadow)
+
+ v1.2:
+ * Added Reg2 to cdrStruct, for Reg2 == 0x18 (non-interrupted cmds) (linuzappz)
+
+ * Fixed one bug in Counters, count < 0 (linuzappz)
+
+ * Now the cursor will be hidden in Win32 after OpenPlugins. (linuzappz)
+
+ * Refixed Getlocl (linuzappz) 
+
+ * Fixed recJALR, 31 for _Rd_ (linuzappz)
+
+ * Fixes to Gte.c (linuzappz)
+
+ * Optimized iR3000A.c for speed (linuzappz)
+
+ * Rewritten branch opcodes on iR3000A.c and removed cache stuff (linuzappz)
+
+ * PRevID changed to 0x2, thanks to shadow (linuzappz)
+
+ * Added PADstartPoll and PADpoll support, thanks to gunshinn (linuzappz)
+
+ * Speed improvements to iR3000A.c (linuzappz)
+
+ * Rewrote the cycles tests stuff, removed the workaround that reseted to 0x80000000
+   (linuzappz)
+
+ * CDRgetBufferSub and fixes to CDREAD stuff, CdRom.c, plugins.c/h (linuzappz
+
+ * Correct Mouse, AnalogJoystick and AnalogPad emulation, contributed by
+   gunshinn (linuzappz)
+
+ * MOVZX and MOVSX to ix86.h and iR3000A.h (linuzappz)
+
+ * Improved Memcard Dialog on Linux (linuzappz)
+
+ * Counters again use BIAS (linuzappz)
+
+ * Autodetect psx type should be fine now, Misc.c (linuzappz)
+
+ * Removed nasm stuff (linuzappz)
+
+ * Fixed VK_F10 in Plugin.c, WndMain.c (linuzappz)
+
+ * LWC2/SWC2 now in Gte.c/h, Interpreter.c, iR3000A.c (linuzappz)
+
+ * Fixed gte_Cxx in MVMVA, Gte.c (linuzappz)
+
+ * Fixed a bug within PIC stuff, Plugin.c (win32 and linux) (linuzappz)
+
+ * Rewrote bios_printf, Bios.c (linuzappz)
+
+ * gtk_widget_hide changed for gtk_widget_destroy, thanks to lu_zero (linuzappz)
+
+ * Fix for cpuIrq.cycle, now it won't freeze when reaching 0xffffffff, since
+   we now reset when reaches 0x80000000, Counters.c (linuzappz)
+
+ * Counters 1 and 2 (in mode 0x100) should be a little more accurate now (linuzappz)
+
+ * Made workaround for Gran Turismo, WndMain.c, ConfigurePlugins.c, LnxMain.c, 
+   Config.c, GtkGui.c (linuzappz)
+
+ * cp2NCLIP added in iGte.asm (linuzappz)
+
+ * Fixed some bugs on Memory.c (memset to memLUT) and ConfigurePlugins.c 
+   (strlen("HLE") + 1), thanks to Taka (linuzappz)
+
+ * Refixed XA quality, now should be perfect always, Decode_XA.c, and a bug on
+   the spu dma is now fixed, Dma.c, thanks to Iori for this (linuzappz)
+
+ * Fixed a bug in cp2MTC2 in iGte.asm, movsx now used (linuzappz)
+
+ * cdReadTime is now divided by 75, thanks to calb, and the CDREAD_INT is set
+   on a irq reset, CdRom.c/h (linuzappz)
+
+ v1.1:
+ * Fixed a bug in R3000A.c, hwReset() after the cpuIrq reset (linuzappz)
+
+ * Refixed RootCounters, still need to clean, Counters.c (linuzappz)
+
+ * Fixed XA quality, still in some games quality is not perfect (maybe cdrom bug)
+   Decode_XA.c (linuzappz)
+
+ * Reset var is now unused in CdRom.c, instead cdr.Ctrl is now used (linuzappz)
+
+ * Small speedup for Hw.c, Sio.c/h (linuzappz)
+
+ * Added cdrRead2 handling and fixed cddma, thanks to shunt, CdRom.c (linuzappz)
+
+ * Cleaned a bit Memory.c, R3000A.c and Hw.c (linuzappz)
+ 
+ * Support for VGS Memory Card Format (*.mem), Sio.c (linuzappz)
+
+ * Rewrote cdirq handling, CdRom.c/h, R3000A.c (linuzappz)
+
+ * Speed up on iR3000A.c code for cop2 (linuzappz)
+
+ * Improved cdrom decoder and cdirq handling, CdRom.c/h (linuzappz)
+
+ * Cleaned error checking on plugins.c/h (linuzappz)
+
+ * Improved SysPrintf as SysMessage, System.h, LnxMain.c, WndMain.c (linuzappz)
+
+ * Added sioInterrupt call, for cleaner code, Sio.c/h, R3000A.c (linuzappz)
+
+ * Cleaned a little initial regs, R3000A.c (linuzappz)
+
+ * Fixes to Dma stuff (HW_DMA_PCR is now used), hwDma3 set now only to
+   (chcr) 0x11000000 and 0x11400100, Hw.c, CdRom.c (linuzappz)
+
+ * Added status seek flag to SeekL and SeekP, CdRom.c (linuzappz)
+
+ * Icon animated support for McdDlg, GtkGui.c, Sio.c/h (linuzappz)
+
+ * Gettd now returns frame too, CdRom.c (linuzappz)
+
+ * Fixed bug in CdlPlay, CdRom.c (linuzappz)
+
+ * SPUupdate interface support Counters.c/h, plugins.c/h (linuzappz)
+
+ * Added CDRCMD_DEBUG flag in Debug.h, for CdRom.c cmd debug only (linuzappz)
+
+ * AUTOPAUSE stuff improved on Cdrom.c (linuzappz)
+
+ * Icon stuff and more on McdDlg, WndMain.c/GtkGui.c, Sio.c/h (linuzappz)
+
+ * Fixed PsxAuto buf in Misc.c (linuzappz)
+
+ * Memory Card Manager improved to handle blocks, still need
+   lotta work, WndMain.c/GtkGui.c, Sio.c/h (linuzappz)
+
+ * Fixed in LoadCdrom the System.cnf a bit more (linuzappz)
+
+ * Added Unused data to freeze functions and fixed LoadState to fail only for
+   STvX (linuzappz)
+
+ * More fixes to Gte.c, added another gte debug in Debug.h/WndMain.c
+
+ * Fixed a bug in RemoveCmdQueue, CdRom.c (linuzappz)
+
+ * Fixed Registry compatibility between versions in Win32, ConfigurePlugins.c
+   (linuzappz)
+
+ * Gte.c: total rewrite. Rage racer,Ridge racer,Bloady roar,Ridge racer 4 
+   now WORKS!!! (some small problems still althought ;p)
+   Bios.c: some more comment opcodes to biosInit.(i think that all exists now)
+   (shadow)
+
+ * Bios.c: fixed ResetEntryInt & HookEntryInt (hex was opposite)
+   add some names to BiosInit (commented)
+   A0:3b, A0:3c, A0:4a, A0:4c, added (shadow)
+
+ * Added LoadCdrom(), for HLE cdrom support, Misc.c, LnxMain.c, GtkGui.c,
+   WndMain.c (linuzappz)
+
+ * More to Bios.c: longjmp, mem2vram (thought that might fix some demos
+   but not. Maybe need a recheck..), InitPAD + biosInterrupt (some changes..
+   Not seems to work okay.. but dunno..), bios_GPU_dw (probably buggy need a
+   recheck), bios_atoi, bios_atol, bios_index, bios_rindex, bios_strchr,
+   bios_strrchr, bios_strpbrk, bios_strspn, bios_strcspn, bios_strtok,
+   bios_strstr.
+   And add some names of bios opcodes to the table.(commentted) (shadow)
+
+ * Bios.c, added: SendGPU, StartPAD, GPU_SendPackets, GPU_GetGPUStatus,
+   toupper, tolower, bcopy,  bzero, bcmp (shadow)
+
+ * Now you can change Bios and Plugins Path, in both Win32/Linux, 
+   ConfigurePlugins.c, Config.c, plugins.c, Wnd/LnxMain.c, Memory.c, (linuzappz)
+
+ * StatesC in Linux same as Win32, Plugin.c (linuzappz)
+
+ * Fixed rcntRcount, removed one BIAS, Counters.c (linuzappz)
+
+ * Added CheckCdrom() after you change a cdrom, Cdrom.c (linuzappz)
+
+ * Fixed iMdec.asm, still need to fix colours, they aren't 100% right (linuzappz)
+
+ * F8 now set to make a snapshot (linuzappz)
+
+ * Added bios syscalls names in Bios.c/R3000A.c (linuzappz)
+
+ * GetTD and GetTN cmds are now non-blocking and added error code,
+   CdRom.c (linuzappz)
+
+ * Simplified queuing code and now reads are done like cmds (instead of
+   using the synk stuff), CdRom.c/R3000A.c (linuzappz)
+
+ * Made a workaround for iso cdrom plugins, when they changed the dir,
+   Plugin.c/WndMain.c (linuzappz)
+
+ * Fixed bug in CdRom.c (gcc3 support) (linuzappz)
+
+ v1.0:
+ * First source code public release.
