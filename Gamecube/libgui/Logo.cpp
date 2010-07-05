@@ -152,7 +152,7 @@ void Logo::drawComponent(Graphics& gfx)
 	// move the logo out in front of us and rotate it
 	guMtxIdentity (m);
 
-	guMtxRotAxisDeg (tmp, &axisX, 100);			//change to isometric view
+	guMtxRotAxisDeg (tmp, &axisX, 115);			//change to isometric view
 	guMtxConcat (m, tmp, m);
 	guMtxRotAxisDeg (tmp, &axisX, -rotateY);
 	guMtxConcat (m, tmp, m);
