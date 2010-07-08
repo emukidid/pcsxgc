@@ -1221,25 +1221,25 @@ void psxBios_UnDeliverEvent() { // 0x20
 	pc0 = ra;
 }
 
-#define buopen(mcd) { \
-	strcpy(FDesc[1 + mcd].name, Ra0+5); \
-	FDesc[1 + mcd].offset = 0; \
-	FDesc[1 + mcd].mode   = a1; \
+#define buopen(slot) { \
+	strcpy(FDesc[1 + slot].name, Ra0+5); \
+	FDesc[1 + slot].offset = 0; \
+	FDesc[1 + slot].mode   = a1; \
  \
 	for (i=1; i<16; i++) { \
-		ptr = Mcd##mcd##Data + 128 * i; \
+		ptr = Mcd##slot##Data + 128 * i; \
 		if ((*ptr & 0xF0) != 0x50) continue; \
-		if (strcmp(FDesc[1 + mcd].name, ptr+0xa)) continue; \
-		FDesc[1 + mcd].mcfile = i; \
+		if (strcmp(FDesc[1 + slot].name, ptr+0xa)) continue; \
+		FDesc[1 + slot].mcfile = i; \
 		SysPrintf("open %s\n", ptr+0xa); \
-		v0 = 1 + mcd; \
+		v0 = 1 + slot; \
 		break; \
 	} \
 	if (a1 & 0x200 && (s32)v0 == -1) { /* FCREAT */ \
 		for (i=1; i<16; i++) { \
 			int j, xor = 0; \
  \
-			ptr = Mcd##mcd##Data + 128 * i; \
+			ptr = Mcd##slot##Data + 128 * i; \
 			if ((*ptr & 0xF0) == 0x50) continue; \
 			ptr[0] = 0x50 | (u8)(a1 >> 16); \
 			ptr[4] = 0x00; \
@@ -1248,12 +1248,13 @@ void psxBios_UnDeliverEvent() { // 0x20
 			ptr[7] = 0x00; \
 			ptr[8] = 'B'; \
 			ptr[9] = 'I'; \
-			strcpy(ptr+0xa, FDesc[1 + mcd].name); \
+			strcpy(ptr+0xa, FDesc[1 + slot].name); \
 			for (j=0; j<127; j++) xor^= ptr[j]; \
 			ptr[127] = xor; \
-			FDesc[1 + mcd].mcfile = i; \
+			FDesc[1 + slot].mcfile = i; \
 			SysPrintf("openC %s\n", ptr); \
-			v0 = 1 + mcd; \
+			v0 = 1 + slot; \
+			mcd##slot##Written = true; \
 			break; \
 		} \
 	} \
@@ -1341,12 +1342,13 @@ void psxBios_read() { // 0x34
 	pc0 = ra;
 }
 
-#define buwrite(mcd) { \
-	u32 offset =  + 8192 * FDesc[1 + mcd].mcfile + FDesc[1 + mcd].offset; \
-	SysPrintf("write %d: %x,%x\n", FDesc[1 + mcd].mcfile, FDesc[1 + mcd].offset, a2); \
-	ptr = Mcd##mcd##Data + offset; \
+#define buwrite(slot) { \
+	u32 offset =  + 8192 * FDesc[1 + slot].mcfile + FDesc[1 + slot].offset; \
+	SysPrintf("write %d: %x,%x\n", FDesc[1 + slot].mcfile, FDesc[1 + slot].offset, a2); \
+	ptr = Mcd##slot##Data + offset; \
 	memcpy(ptr, Ra1, a2); \
-	if (FDesc[1 + mcd].mode & 0x8000) v0 = 0; \
+	mcd##slot##Written = true; \
+	if (FDesc[1 + slot].mode & 0x8000) v0 = 0; \
 	else v0 = a2; \
 	DeliverEvent(0x11, 0x2); /* 0xf0000011, 0x0004 */ \
 	DeliverEvent(0x81, 0x2); /* 0xf4000001, 0x0004 */ \
@@ -1374,8 +1376,8 @@ void psxBios_write() { // 0x35/0x03
 	v0 = -1;
 
 	switch (a0) {
-		case 2: buwrite(1); mcd1Written = 1; break;
-		case 3: buwrite(2); mcd2Written = 1; break;
+		case 2: buwrite(1); break;
+		case 3: buwrite(2); break;
 	}
   		
 	pc0 = ra;
@@ -1496,13 +1498,14 @@ void psxBios_nextfile() { // 43
 	pc0 = ra;
 }
 
-#define budelete(mcd) { \
+#define budelete(slot) { \
 	for (i=1; i<16; i++) { \
-		ptr = Mcd##mcd##Data + 128 * i; \
+		ptr = Mcd##slot##Data + 128 * i; \
 		if ((*ptr & 0xF0) != 0x50) continue; \
 		if (strcmp(Ra0+5, ptr+0xa)) continue; \
 		*ptr = (*ptr & 0xf) | 0xA0; \
 		SysPrintf("delete %s\n", ptr+0xa); \
+		mcd##slot##Written = true; \
 		v0 = 1; \
 		break; \
 	} \
