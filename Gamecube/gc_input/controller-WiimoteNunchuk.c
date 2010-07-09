@@ -106,7 +106,9 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config,
 	WPADData* wpad = WPAD_Data(Control);
 	BUTTONS* c = Keys;
 	memset(c, 0, sizeof(BUTTONS));
-	c->btns.All = 0xFFFF;  //needed
+	//Reset buttons & sticks
+	c->btns.All = 0xFFFF;
+	c->leftStickX = c->leftStickY = c->rightStickX = c->rightStickY = 128;
 
 	// Only use a connected nunchuck controller
 	if(!available(Control))

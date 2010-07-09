@@ -42,32 +42,32 @@
 #include "wiiSXconfig.h"
 #include "PadSSSPSX.h"
 
-static BUTTONS PAD_1;
-static BUTTONS PAD_2;
+//static BUTTONS PAD_1;
+//static BUTTONS PAD_2;
 extern PadDataS lastport1;
 extern PadDataS lastport2;
 static int pad_initialized = 0;
 
 static struct
 {
-	SSSConfig config;
-	int devcnt;
+	SSSConfig config;	//unused?
+	int devcnt;			//unused?
 	u16 padStat[2];		//Digital Buttons
 	int padID[2];
 	int padMode1[2];	//0 = digital, 1 = analog
 	int padMode2[2];	
-	int padModeE[2];
+	int padModeE[2];	//Config/Escape mode??
 	int padModeC[2];
 	int padModeF[2];
-	int padVib0[2];
-	int padVib1[2];
-	int padVibF[2][4];
-	int padVibC[2];
-	u64 padPress[2][16];
-	int curPad;
-	int curByte;
-	int curCmd;
-	int cmdLen;
+	int padVib0[2];		//Command byte for small motor
+	int padVib1[2];		//Command byte for large motor
+	int padVibF[2][4];	//Sm motor value; Big motor value; Sm motor running?; Big motor running?
+	int padVibC[2];		//unused?
+	u64 padPress[2][16];//unused?
+	int curPad;			//0=pad1; 1=pad2
+	int curByte;		//current command/data byte
+	int curCmd;			//current command from PSX/PS2
+	int cmdLen;			//# of bytes in pad reply
 } global;
 
 extern void SysPrintf(char *fmt, ...);
@@ -97,13 +97,14 @@ static void PADsetMode (const int pad, const int mode)	//mode = 0 (digital) or 1
 	global.padID[pad] = padID[global.padMode2[pad] * 2 + mode];
 }
 
-static void UpdateState (const int pad)
+static void UpdateState (const int pad) //Note: pad = 0 or 1
 {
 	const int vib0 = global.padVibF[pad][0] ? 1 : 0;
 	const int vib1 = global.padVibF[pad][1] ? 1 : 0;
+	static BUTTONS PAD_Data;
 
-	//TODO: Rework the 4 calls to GetKeys to reuse the same code & reset BUTTONS when no controller in use
-	int Control = 0;
+	//TODO: Rework/simplify the following code & reset BUTTONS when no controller in use
+	int Control = pad;
 #if defined(WII) && !defined(NO_BT)
 	//Need to switch between Classic and WiimoteNunchuck if user swapped extensions
 	if (padType[virtualControllers[Control].number] == PADTYPE_WII)
@@ -118,43 +119,37 @@ static void UpdateState (const int pad)
 			assign_controller(Control, &controller_Classic, virtualControllers[Control].number);
 	}
 #endif
+
+	if (global.padMode1[pad] != controllerType)
+		PADsetMode( pad, controllerType == CONTROLLERTYPE_ANALOG ? 1 : 0);
+
 	if(virtualControllers[Control].inUse)
-		if(DO_CONTROL(Control, GetKeys, (BUTTONS*)&PAD_1, virtualControllers[Control].config))
-			stop = 1;
-
-	lastport1.leftJoyX = PAD_1.leftStickX; lastport1.leftJoyY = PAD_1.leftStickY;
-	lastport1.rightJoyX = PAD_1.rightStickX; lastport1.rightJoyY = PAD_1.rightStickY;
-
-	Control = 1;
-#if defined(WII) && !defined(NO_BT)
-	//Need to switch between Classic and WiimoteNunchuck if user swapped extensions
-	if (padType[virtualControllers[Control].number] == PADTYPE_WII)
 	{
-		if (virtualControllers[Control].control == &controller_Classic &&
-			!controller_Classic.available[virtualControllers[Control].number] &&
-			controller_WiimoteNunchuk.available[virtualControllers[Control].number])
-			assign_controller(Control, &controller_WiimoteNunchuk, virtualControllers[Control].number);
-		else if (virtualControllers[Control].control == &controller_WiimoteNunchuk &&
-			!controller_WiimoteNunchuk.available[virtualControllers[Control].number] &&
-			controller_Classic.available[virtualControllers[Control].number])
-			assign_controller(Control, &controller_Classic, virtualControllers[Control].number);
-	}
-#endif
-	if(virtualControllers[Control].inUse)
-		if(DO_CONTROL(Control, GetKeys, (BUTTONS*)&PAD_2, virtualControllers[Control].config))
+		if(DO_CONTROL(Control, GetKeys, (BUTTONS*)&PAD_Data, virtualControllers[Control].config))
 			stop = 1;
+	}
+	else
+	{	//TODO: Emulate no controller present in this case.
+		//Reset buttons & sticks if PAD is not in use
+		PAD_Data.btns.All = 0xFFFF;
+		PAD_Data.leftStickX = PAD_Data.leftStickY = PAD_Data.rightStickX = PAD_Data.rightStickY = 128;
+	}
 
-	lastport2.leftJoyX = PAD_2.leftStickX; lastport2.leftJoyY = PAD_2.leftStickY;
-	lastport2.rightJoyX = PAD_2.rightStickX; lastport2.rightJoyY = PAD_2.rightStickY;
+	global.padStat[pad] = (((PAD_Data.btns.All>>8)&0xFF) | ( (PAD_Data.btns.All<<8) & 0xFF00 )) &0xFFFF;
+
+	if (pad==0)
+	{
+		lastport1.leftJoyX = PAD_Data.leftStickX; lastport1.leftJoyY = PAD_Data.leftStickY;
+		lastport1.rightJoyX = PAD_Data.rightStickX; lastport1.rightJoyY = PAD_Data.rightStickY;
+		lastport1.buttonStatus = global.padStat[pad];
+	}
+	else
+	{
+		lastport2.leftJoyX = PAD_Data.leftStickX; lastport2.leftJoyY = PAD_Data.leftStickY;
+		lastport2.rightJoyX = PAD_Data.rightStickX; lastport2.rightJoyY = PAD_Data.rightStickY;
+		lastport2.buttonStatus = global.padStat[pad];
+	}
 	
-	PADsetMode( 0, controllerType == CONTROLLERTYPE_ANALOG ? 1 : 0);
-	global.padStat[0] = (((PAD_1.btns.All>>8)&0xFF) | ( (PAD_1.btns.All<<8) & 0xFF00 )) &0xFFFF;
-	PADsetMode( 1, controllerType == CONTROLLERTYPE_ANALOG ? 1 : 0);
-	global.padStat[1] = (((PAD_2.btns.All>>8)&0xFF) | ( (PAD_2.btns.All<<8) & 0xFF00 )) &0xFFFF;
-  
-	lastport1.buttonStatus = global.padStat[0];
-	lastport2.buttonStatus = global.padStat[1];
-
 	/* Small Motor */
 	if ((global.padVibF[pad][2] != vib0) )
 	{
@@ -167,7 +162,6 @@ static void UpdateState (const int pad)
 		global.padVibF[pad][3] = vib1;
 		DO_CONTROL(pad, rumble, global.padVibF[pad][1]);
 	}
-
 }
 
 long SSS_PADopen (void *p)
@@ -179,8 +173,8 @@ long SSS_PADopen (void *p)
 		memset( &lastport2, 0, sizeof(lastport2) ) ;
 		global.padStat[0] = 0xffff;
 		global.padStat[1] = 0xffff;
-		PADsetMode (0, 1);  //port 0, analog
-		PADsetMode (1, 1);  //port 1, analog
+		PADsetMode (0, controllerType == CONTROLLERTYPE_ANALOG ? 1 : 0);  //port 0, analog
+		PADsetMode (1, controllerType == CONTROLLERTYPE_ANALOG ? 1 : 0);  //port 1, analog
 	}
 	return 0;
 }
@@ -209,36 +203,38 @@ static const u8 cmd40[8] =
 {
 	0xff, 0x5a, 0x00, 0x00, 0x02, 0x00, 0x00, 0x5a
 };
-static const u8 cmd41[8] =
+static const u8 cmd41[8] = //Find out what buttons are included in poll response
 {
 	0xff, 0x5a, 0xff, 0xff, 0x03, 0x00, 0x00, 0x5a,
 };
-static const u8 cmd44[8] =
+static const u8 cmd44[8] = //Switch modes between digital and analog
 {
 	0xff, 0x5a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
-static const u8 cmd45[8] =
-{
+static const u8 cmd45[8] = //Get more status info
+{	//          DS         LED ON
 	0xff, 0x5a, 0x03, 0x02, 0x01, 0x02, 0x01, 0x00,
 };
-static const u8 cmd46[8] =
-{
+// Following commands always issued in sequence: 46, 46, 47, 4C, 4C; Also, only works in config mode (0xF3)
+static const u8 cmd46[8] = //Read unknown constant value from controller (called twice)
+{	//Note this is the first 5 bytes for Katana Wireless pad. 
+	//May need to change or implement 2nd response, which is indicated by 4th command byte
 	0xff, 0x5a, 0x00, 0x00, 0x01, 0x02, 0x00, 0x0a,
 };
-static const u8 cmd47[8] =
-{
+static const u8 cmd47[8] = //Read unknown constant value from controller (called once)
+{	//Note this is response for Katana Wireless pad
 	0xff, 0x5a, 0x00, 0x00, 0x02, 0x00, 0x01, 0x00,
 };
-static const u8 cmd4c[8] =
-{
+static const u8 cmd4c[8] = //Read unknown constant value from controller (called twice)
+{	//Note this response seems to be incorrect. May also need to implement 1st/2nd responses
 	0xff, 0x5a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
-static const u8 cmd4d[8] =
-{
+static const u8 cmd4d[8] = //Map bytes in 42 command to actuate motors; only works in config mode (0xF3)
+{	//These data bytes should be changed to 00 or 01 if currently mapped to a motor
 	0xff, 0x5a, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 };
-static const u8 cmd4f[8] =
-{
+static const u8 cmd4f[8] = //Enable/disable digital/analog responses bits; only works in config mode (0xF3)
+{	//            FF    FF    03 <- each bit here corresponds to response byte
 	0xff, 0x5a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5a,
 };
 
@@ -332,15 +328,15 @@ unsigned char SSS_PADpoll (const unsigned char value)
 	case 0x43:
 		if (cur == 2)
 		{
-			global.padModeE[pad] = value;
+			global.padModeE[pad] = value; // cmd[3]==1 ? enter : exit escape mode
 			global.padModeC[pad] = 0;
 		}
 		break;
 	case 0x44:
 		if (cur == 2)
-			PADsetMode (pad, value);
+			PADsetMode (pad, value);	// cmd[3]==1 ? analog : digital
 		if (cur == 3)
-			global.padModeF[pad] = (value == 3);
+			global.padModeF[pad] = (value == 3); //cmd[4]==3 ? lock : don't log analog/digital button
 		break;
 	case 0x46:
 		if (cur == 2)
@@ -398,7 +394,8 @@ unsigned char SSS_PADpoll (const unsigned char value)
 
 long SSS_PADreadPort1 (PadDataS* pads)
 {
-
+	//#PADreadPort1 not used in PCSX
+/*
 	pads->buttonStatus = global.padStat[0];
  
 	memset (pads, 0, sizeof (PadDataS));
@@ -434,13 +431,14 @@ long SSS_PADreadPort1 (PadDataS* pads)
 	}
 
 	memcpy( &lastport1, pads, sizeof( lastport1 ) ) ;
-
+*/
 	return 0;
 }
 
 long SSS_PADreadPort2 (PadDataS* pads)
 {
-
+	//#PADreadPort2 not used in PCSX
+/*
 	pads->buttonStatus = global.padStat[1];
 
 	memset (pads, 0, sizeof (PadDataS));
@@ -476,5 +474,6 @@ long SSS_PADreadPort2 (PadDataS* pads)
 	}
 
 	memcpy( &lastport2, pads, sizeof( lastport1 ) ) ;
+*/
 	return 0;
 }

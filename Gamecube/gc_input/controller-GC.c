@@ -111,8 +111,10 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
 	if(padNeedScan){ gc_connected = PAD_ScanPads(); padNeedScan = 0; }
 	BUTTONS* c = Keys;
 	memset(c, 0, sizeof(BUTTONS));
-	c->btns.All = 0xFFFF;  //needed
-	
+	//Reset buttons & sticks
+	c->btns.All = 0xFFFF;
+	c->leftStickX = c->leftStickY = c->rightStickX = c->rightStickY = 128;
+
 	controller_GC.available[Control] = (gc_connected & (1<<Control)) ? 1 : 0;
 	if (!controller_GC.available[Control]) return 0;
 
