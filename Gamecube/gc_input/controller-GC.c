@@ -146,52 +146,24 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
 	//adjust values by 128 cause PSX sticks range 0-255 with a 128 center pos
 	if(config->analogL->mask == ANALOG_AS_ANALOG){
 		c->leftStickX   = (u8)(PAD_StickX(Control)+127)    & 0xFF;
-		c->leftStickY   = (u8)(PAD_StickY(Control)+127)    & 0xFF;
+		c->leftStickY   = (u8)(-PAD_StickY(Control)+127)    & 0xFF;
 	} else if(config->analogL->mask == C_STICK_AS_ANALOG){
 		c->leftStickX  = (u8)(PAD_SubStickX(Control)+127) & 0xFF;
-		c->leftStickY  = (u8)(PAD_SubStickY(Control)+127) & 0xFF;
+		c->leftStickY  = (u8)(-PAD_SubStickY(Control)+127) & 0xFF;
 	}
 	if(config->invertedYL) c->leftStickY = (u8)(127-((int)c->leftStickY-127));
 
 	if(config->analogR->mask == ANALOG_AS_ANALOG){
 		c->rightStickX   = (u8)(PAD_StickX(Control)+127)    & 0xFF;
-		c->rightStickY   = (u8)(PAD_StickY(Control)+127)    & 0xFF;
+		c->rightStickY   = (u8)(-PAD_StickY(Control)+127)    & 0xFF;
 	} else if(config->analogR->mask == C_STICK_AS_ANALOG){
 		c->rightStickX  = (u8)(PAD_SubStickX(Control)+127) & 0xFF;
-		c->rightStickY  = (u8)(PAD_SubStickY(Control)+127) & 0xFF;
+		c->rightStickY  = (u8)(-PAD_SubStickY(Control)+127) & 0xFF;
 	}
 	if(config->invertedYR) c->rightStickY = (u8)(127-((int)c->rightStickY-127));
 
 	// Return 1 if whether the exit button(s) are pressed
 	return isHeld(config->exit) ? 0 : 1;
-
-	/* Previous method
-	c->btns.R_DPAD       = (b & PAD_BUTTON_RIGHT) ? 0 : 1;
-	c->btns.L_DPAD       = (b & PAD_BUTTON_LEFT)  ? 0 : 1;
-	c->btns.D_DPAD       = (b & PAD_BUTTON_DOWN)  ? 0 : 1;
-	c->btns.U_DPAD       = (b & PAD_BUTTON_UP)    ? 0 : 1;
-	
-	c->btns.SQUARE_BUTTON    = (b & PAD_BUTTON_B)     ? 0 : 1;
-	c->btns.CROSS_BUTTON     = (b & PAD_BUTTON_A)     ? 0 : 1;
-	c->btns.CIRCLE_BUTTON    = (b & PAD_BUTTON_X)     ? 0 : 1;
-	c->btns.TRIANGLE_BUTTON  = (b & PAD_BUTTON_Y)     ? 0 : 1;
-  
-	c->btns.START_BUTTON  = ((b & PAD_BUTTON_START) && (!(b & PAD_TRIGGER_Z))) ? 0 : 1;
-	c->btns.SELECT_BUTTON = ((b & PAD_BUTTON_START) && ((b & PAD_TRIGGER_Z)))  ? 0 : 1;
-	c->btns.R1_BUTTON    = ((b & PAD_TRIGGER_R) && (!(b & PAD_TRIGGER_Z)))     ? 0 : 1;
-	c->btns.L1_BUTTON    = ((b & PAD_TRIGGER_L) && (!(b & PAD_TRIGGER_Z)))     ? 0 : 1;
-	c->btns.R2_BUTTON    = ((b & PAD_TRIGGER_R) && ((b & PAD_TRIGGER_Z)))      ? 0 : 1;
-	c->btns.L2_BUTTON    = ((b & PAD_TRIGGER_L) && ((b & PAD_TRIGGER_Z)))      ? 0 : 1;
-
-	//adjust values by 128 cause PSX sticks range 0-255 with a 128 center pos
-	c->rightStickX  = (u8)(PAD_SubStickX(Control)+127) & 0xFF;
-	c->rightStickY  = (u8)(PAD_SubStickY(Control)+127) & 0xFF;
-	c->leftStickX   = (u8)(PAD_StickX(Control)+127)    & 0xFF;
-	c->leftStickY   = (u8)(-PAD_StickY(Control)+127)   & 0xFF;
-
-	// X+Y quits to menu
-	return (b & PAD_BUTTON_X) && (b & PAD_BUTTON_Y);
-	*/
 }
 
 static void pause(int Control){

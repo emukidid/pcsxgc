@@ -139,6 +139,7 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config,
 	c->btns.L3_BUTTON    = isHeld(config->L3);
 	c->btns.SELECT_BUTTON = isHeld(config->SELECT);
 
+	//adjust values by 128 cause PSX sticks range 0-255 with a 128 center pos
 	s8 stickX = 0;
 	s8 stickY = 0;
 	if(config->analogL->mask == NUNCHUK_AS_ANALOG){
@@ -160,8 +161,8 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config,
 		stickY = wpad->accel.z - 512;
 	}
 	c->leftStickX  = (u8)(stickX+127) & 0xFF;
-	if(config->invertedYL)	c->leftStickY = (u8)(-stickX+127) & 0xFF;
-	else					c->leftStickY = (u8)(stickX+127) & 0xFF;
+	if(config->invertedYL)	c->leftStickY = (u8)(stickY+127) & 0xFF;
+	else					c->leftStickY = (u8)(-stickY+127) & 0xFF;
 
 	stickX = 0;
 	stickY = 0;
@@ -184,8 +185,8 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config,
 		stickY = wpad->accel.z - 512;
 	}
 	c->rightStickX  = (u8)(stickX+127) & 0xFF;
-	if(config->invertedYR)	c->rightStickY = (u8)(-stickX+127) & 0xFF;
-	else					c->rightStickY = (u8)(stickX+127) & 0xFF;
+	if(config->invertedYR)	c->rightStickY = (u8)(stickY+127) & 0xFF;
+	else					c->rightStickY = (u8)(-stickY+127) & 0xFF;
 
 	// Return 1 if whether the exit button(s) are pressed
 	return isHeld(config->exit) ? 0 : 1;

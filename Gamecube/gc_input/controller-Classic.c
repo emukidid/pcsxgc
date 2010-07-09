@@ -185,55 +185,32 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
 	c->btns.SELECT_BUTTON = isHeld(config->SELECT);
 
 	//adjust values by 128 cause PSX sticks range 0-255 with a 128 center pos
+	s8 stickX = 0;
+	s8 stickY = 0;
 	if(config->analogL->mask == L_STICK_AS_ANALOG){
-		c->leftStickX = getStickValue(&wpad->exp.classic.ljs, STICK_X, 127);
-		c->leftStickY = getStickValue(&wpad->exp.classic.ljs, STICK_Y, 127);
+		stickX = getStickValue(&wpad->exp.classic.ljs, STICK_X, 127);
+		stickY = getStickValue(&wpad->exp.classic.ljs, STICK_Y, 127);
 	} else if(config->analogL->mask == R_STICK_AS_ANALOG){
-		c->leftStickX = getStickValue(&wpad->exp.classic.rjs, STICK_X, 127);
-		c->leftStickY = getStickValue(&wpad->exp.classic.rjs, STICK_Y, 127);
+		stickX = getStickValue(&wpad->exp.classic.rjs, STICK_X, 127);
+		stickY = getStickValue(&wpad->exp.classic.rjs, STICK_Y, 127);
 	}
-	if(config->invertedYL) c->leftStickY = (u8)(127-((int)c->leftStickY-127));
+	c->leftStickX  = (u8)(stickX+127) & 0xFF;
+	if(config->invertedYL)	c->leftStickY = (u8)(stickY+127) & 0xFF;
+	else					c->leftStickY = (u8)(-stickY+127) & 0xFF;
 
 	if(config->analogR->mask == L_STICK_AS_ANALOG){
-		c->rightStickX = getStickValue(&wpad->exp.classic.ljs, STICK_X, 127);
-		c->rightStickY = getStickValue(&wpad->exp.classic.ljs, STICK_Y, 127);
+		stickX = getStickValue(&wpad->exp.classic.ljs, STICK_X, 127);
+		stickY = getStickValue(&wpad->exp.classic.ljs, STICK_Y, 127);
 	} else if(config->analogR->mask == R_STICK_AS_ANALOG){
-		c->rightStickX = getStickValue(&wpad->exp.classic.rjs, STICK_X, 127);
-		c->rightStickY = getStickValue(&wpad->exp.classic.rjs, STICK_Y, 127);
+		stickX = getStickValue(&wpad->exp.classic.rjs, STICK_X, 127);
+		stickY = getStickValue(&wpad->exp.classic.rjs, STICK_Y, 127);
 	}
-	if(config->invertedYR) c->rightStickY = (u8)(127-((int)c->rightStickY-127));
+	c->rightStickX  = (u8)(stickX+127) & 0xFF;
+	if(config->invertedYR)	c->rightStickY = (u8)(stickY+127) & 0xFF;
+	else					c->rightStickY = (u8)(-stickY+127) & 0xFF;
 
 	// Return 1 if whether the exit button(s) are pressed
 	return isHeld(config->exit) ? 0 : 1;
-
-/*	Previous code
-	c->btns.R_DPAD          = (b & CLASSIC_CTRL_BUTTON_RIGHT) ? 0 : 1;
-	c->btns.L_DPAD          = (b & CLASSIC_CTRL_BUTTON_LEFT)  ? 0 : 1;
-	c->btns.D_DPAD          = (b & CLASSIC_CTRL_BUTTON_DOWN)  ? 0 : 1;
-	c->btns.U_DPAD          = (b & CLASSIC_CTRL_BUTTON_UP)    ? 0 : 1;
-	c->btns.START_BUTTON    = (b & CLASSIC_CTRL_BUTTON_PLUS)  ? 0 : 1;
-	c->btns.SELECT_BUTTON   = (b & CLASSIC_CTRL_BUTTON_MINUS) ? 0 : 1;
-	
-	c->btns.SQUARE_BUTTON   = (b & CLASSIC_CTRL_BUTTON_Y)  ? 0 : 1;
-	c->btns.CROSS_BUTTON    = (b & CLASSIC_CTRL_BUTTON_B)  ? 0 : 1;
-	c->btns.CIRCLE_BUTTON   = (b & CLASSIC_CTRL_BUTTON_A)  ? 0 : 1;
-	c->btns.TRIANGLE_BUTTON = (b & CLASSIC_CTRL_BUTTON_X)  ? 0 : 1;
-	
-	c->btns.R1_BUTTON       = (b & CLASSIC_CTRL_BUTTON_ZR)  ? 0 : 1;
-	c->btns.L1_BUTTON       = (b & CLASSIC_CTRL_BUTTON_ZL)  ? 0 : 1;
-	c->btns.R2_BUTTON       = (b & CLASSIC_CTRL_BUTTON_FULL_R)  ? 0 : 1;
-	c->btns.L2_BUTTON       = (b & CLASSIC_CTRL_BUTTON_FULL_L)  ? 0 : 1;
-
-	s8 substickX = getStickValue(&wpad->exp.classic.rjs, STICK_X, 7);
-	s8 substickY = getStickValue(&wpad->exp.classic.rjs, STICK_Y, 7);
-	c->rightStickX  = (u8)(substickX+127) & 0xFF;
-	c->rightStickY  = (u8)(substickY+127) & 0xFF;
-	c->leftStickX   = (u8)(getStickValue(&wpad->exp.classic.ljs, STICK_X, 127)+127)    & 0xFF;
-	c->leftStickY   = (u8)(-getStickValue(&wpad->exp.classic.ljs, STICK_Y, 127)+127)   & 0xFF;
-
-	// X+Y quits to menu
-	return (b & CLASSIC_CTRL_BUTTON_X) && (b & CLASSIC_CTRL_BUTTON_Y);
-*/
 }
 
 static void pause(int Control){
