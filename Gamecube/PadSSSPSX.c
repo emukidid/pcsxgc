@@ -390,8 +390,6 @@ unsigned char SSS_PADpoll (const unsigned char value)
 	return buf[global.curByte++];
 }
 
-
-
 long SSS_PADreadPort1 (PadDataS* pads)
 {
 	//#PADreadPort1 not used in PCSX
