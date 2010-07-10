@@ -249,14 +249,14 @@ controller_t controller_Classic =
 	  analog_sources,
 	  sizeof(menu_combos)/sizeof(menu_combos[0]),
 	  menu_combos,
-	  { .SQU        = &buttons[10], // B
-	    .CRO        = &buttons[9],  // A
-	    .CIR        = &buttons[11], // X
-	    .TRI        = &buttons[12], // Y
-	    .R1         = &buttons[8],  // Right Z
-	    .L1         = &buttons[7],  // Left Z
-	    .R2         = &buttons[6],  // Full R
-	    .L2         = &buttons[5],  // Full L
+	  { .SQU        = &buttons[12], // Y
+	    .CRO        = &buttons[10], // B
+	    .CIR        = &buttons[9],  // A
+	    .TRI        = &buttons[11], // X
+	    .R1         = &buttons[6],  // Full R
+	    .L1         = &buttons[5],  // Full Z
+	    .R2         = &buttons[8],  // Right R
+	    .L2         = &buttons[7],  // Left Z
 	    .R3         = &buttons[0],  // None
 	    .L3         = &buttons[0],  // None
 	    .DL         = &buttons[2],  // D-Pad Left
