@@ -1254,7 +1254,7 @@ void psxBios_UnDeliverEvent() { // 0x20
 			FDesc[1 + slot].mcfile = i; \
 			SysPrintf("openC %s\n", ptr); \
 			v0 = 1 + slot; \
-			mcd##slot##Written = true; \
+			mcd##slot##Written = 1; \
 			break; \
 		} \
 	} \
@@ -1347,7 +1347,7 @@ void psxBios_read() { // 0x34
 	SysPrintf("write %d: %x,%x\n", FDesc[1 + slot].mcfile, FDesc[1 + slot].offset, a2); \
 	ptr = Mcd##slot##Data + offset; \
 	memcpy(ptr, Ra1, a2); \
-	mcd##slot##Written = true; \
+	mcd##slot##Written = 1; \
 	if (FDesc[1 + slot].mode & 0x8000) v0 = 0; \
 	else v0 = a2; \
 	DeliverEvent(0x11, 0x2); /* 0xf0000011, 0x0004 */ \
@@ -1505,7 +1505,7 @@ void psxBios_nextfile() { // 43
 		if (strcmp(Ra0+5, ptr+0xa)) continue; \
 		*ptr = (*ptr & 0xf) | 0xA0; \
 		SysPrintf("delete %s\n", ptr+0xa); \
-		mcd##slot##Written = true; \
+		mcd##slot##Written = 1; \
 		v0 = 1; \
 		break; \
 	} \
