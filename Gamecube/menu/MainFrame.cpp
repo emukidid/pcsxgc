@@ -242,9 +242,10 @@ void Func_PlayGame()
 	menu::Focus::getInstance().setFreezeAction(false);
 
 	menu::Gui::getInstance().gfx->clearEFB((GXColor){0, 0, 0, 0xFF}, 0x000000);
-
+#ifdef HW_RVL
 	pause_netinit_thread();
 	pauseRemovalThread();
+#endif
 	resumeAudio();
 	resumeInput();
 	menuActive = 0;
@@ -313,8 +314,10 @@ void Func_PlayGame()
       
     }
   }
+#ifdef HW_RVL
   continueRemovalThread();
   resume_netinit_thread();
+#endif
 	FRAME_BUTTONS[5].buttonString = FRAME_STRINGS[6];
 	menu::Cursor::getInstance().clearCursorFocus();
 }

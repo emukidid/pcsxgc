@@ -35,7 +35,7 @@ CXXFLAGS	=	$(CFLAGS)
 
 ASFLAGS := -DHW_DOL
 
-LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
+LDFLAGS	=	-g $(MACHDEP) -mogc -Wl,-Map,$(notdir $@).map
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
