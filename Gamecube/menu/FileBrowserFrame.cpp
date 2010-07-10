@@ -34,6 +34,7 @@ extern "C" {
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-DVD.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
+#include "../fileBrowser/fileBrowser-SMB.h"
 extern long Mooby2CDRgetTN(unsigned char *buffer);
 }
 
@@ -150,7 +151,7 @@ static int				current_page;
 static int				max_page;
 
 void fileBrowserFrame_OpenDirectory(fileBrowser_file* dir);
-void fileBrowserFrame_Error(fileBrowser_file* dir);
+void fileBrowserFrame_Error(fileBrowser_file* dir, int error_code);
 void fileBrowserFrame_FillPage();
 void fileBrowserFrame_LoadFile(int i);
 
@@ -340,7 +341,7 @@ void fileBrowserFrame_OpenDirectory(fileBrowser_file* dir)
 	if(num_entries <= 0)
 	{ 
 		if(dir_entries) { free(dir_entries); dir_entries = NULL; } 
-		fileBrowserFrame_Error(dir); 
+		fileBrowserFrame_Error(dir, num_entries); 
 		return;
 	}
 	
@@ -352,7 +353,7 @@ void fileBrowserFrame_OpenDirectory(fileBrowser_file* dir)
 	fileBrowserFrame_FillPage();
 }
 
-void fileBrowserFrame_Error(fileBrowser_file* dir)
+void fileBrowserFrame_Error(fileBrowser_file* dir, int error_code)
 {
 	char feedback_string[256];
 	//disable all buttons
@@ -360,8 +361,17 @@ void fileBrowserFrame_Error(fileBrowser_file* dir)
 		FRAME_BUTTONS[i].button->setActive(false);
 	for (int i = 0; i<NUM_FILE_SLOTS; i++)
 		FRAME_BUTTONS[i+2].buttonString = FRAME_STRINGS[2];
+	if(error_code == SMB_NETINITERR) {
+  	sprintf(feedback_string,"Network not yet initialized");
+	}
+	else if(error_code == SMB_SMBCFGERR) {
+  	sprintf(feedback_string,"SMB not configured");
+	}
+	else if(error_code == SMB_SMBERR) {
+  	sprintf(feedback_string,"SMB failed to connect");
+	}
 	//set first entry to read 'error' and return to main menu
-	if(dir->name)
+	else if(dir->name)
 	  sprintf(feedback_string,"Error opening directory \"%s\"",&dir->name[0]);
 	else
 	  strcpy(feedback_string,"An error occured");

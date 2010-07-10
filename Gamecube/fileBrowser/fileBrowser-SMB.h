@@ -26,6 +26,11 @@
 
 #include "fileBrowser.h"
 
+// error codes
+#define SMB_NETINITERR -3
+#define SMB_SMBCFGERR  -2
+#define SMB_SMBERR -1
+
 extern fileBrowser_file topLevel_SMB;
 
 int fileBrowser_SMB_readDir(fileBrowser_file*, fileBrowser_file**);
@@ -34,6 +39,10 @@ int fileBrowser_SMB_readFile(fileBrowser_file*, void*, unsigned int);
 int fileBrowser_SMB_seekFile(fileBrowser_file*, unsigned int, unsigned int);
 int fileBrowser_SMB_init(fileBrowser_file* file);
 int fileBrowser_SMB_deinit(fileBrowser_file* file);
+
+void init_network_thread();
+void pause_netinit_thread();
+void resume_netinit_thread();
 
 #endif
 

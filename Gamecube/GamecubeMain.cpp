@@ -41,6 +41,7 @@ extern "C" {
 #include "fileBrowser/fileBrowser-libfat.h"
 #include "fileBrowser/fileBrowser-DVD.h"
 #include "fileBrowser/fileBrowser-CARD.h"
+#include "fileBrowser/fileBrowser-SMB.h"
 #include "gc_input/controller.h"
 }
 
@@ -355,6 +356,13 @@ int main(int argc, char *argv[])
 	// Start up AESND (inited here because its used in SPU and CD)
 	AESND_Init();
 
+#ifdef HW_RVL
+	// Initialize the network if the user has specified something in their SMB settings
+	if(strlen(&smbShareName[0]) && strlen(&smbIpAddr[0])) {
+	  init_network_thread();
+  }
+#endif
+	
 	while (menu->isRunning()) {}
 	
 	// Shut down AESND

@@ -26,13 +26,20 @@
 #include <unistd.h>
 #include <malloc.h>
 #include <network.h>
+#include <ogcsys.h>
 #include <smb.h>
+#include "../wiiSXconfig.h"
 #include "fileBrowser.h"
 #include "fileBrowser-libfat.h"
+#include "fileBrowser-SMB.h"
 
 /* SMB Globals */
 int net_initialized = 0;
 int smb_initialized = 0;
+// net init thread
+static lwp_t initnetthread = LWP_THREAD_NULL;
+static int netInitHalted = 0;
+static int netInitPending = 0;
 
 extern char smbUserName[];
 extern char smbPassWord[];
@@ -47,23 +54,71 @@ fileBrowser_file topLevel_SMB =
 	  FILE_BROWSER_ATTR_DIR
 	};
  
+void resume_netinit_thread() {
+  if(initnetthread != LWP_THREAD_NULL) {
+    netInitHalted = 0;
+    LWP_ResumeThread(initnetthread);
+  }
+}
+
+void pause_netinit_thread() {
+  if(initnetthread != LWP_THREAD_NULL) {
+    netInitHalted = 1;
+    
+    if(netInitPending) {
+      return;
+    }
+  
+    // until it's completed for this iteration.
+    while(!LWP_ThreadIsSuspended(initnetthread)) {
+      usleep(100);
+    }
+  }
+}
+
+	
 // Init the GC/Wii net interface (wifi/bba/etc)
-void init_network() {
+static void* init_network(void *args) {
  
   char ip[16];
-  int res = 0;
+  int res = 0, netsleep = 1*1000*1000;
   
-  if(net_initialized) {
-    return;
+  while(netsleep > 0) {
+      if(netInitHalted) {
+        LWP_SuspendThread(initnetthread);
+      }
+        usleep(100);
+        netsleep -= 100;
   }
-  
-  res = if_config(ip, NULL, NULL, true);
-  if(res >= 0) {
-    net_initialized = 1;
+
+  while(1) {
+
+    if(!net_initialized) {
+      netInitPending = 1;
+      res = if_config(ip, NULL, NULL, true);
+      if(res >= 0) {
+        net_initialized = 1;
+      }
+      else {
+        net_initialized = 0;
+      }
+      netInitPending = 0;
+    }
+
+    netsleep = 1000*1000; // 1 sec
+    while(netsleep > 0) {
+      if(netInitHalted) {
+        LWP_SuspendThread(initnetthread);
+      }
+      usleep(100);
+      netsleep -= 100;
+    }
   }
-  else {
-    net_initialized = 0;
-  }
+  return NULL;
+}
+
+void init_network_thread() {
+  LWP_CreateThread (&initnetthread, init_network, NULL, NULL, 0, 40);
 }
 
 // Connect to the share specified in settings.cfg
@@ -88,20 +143,17 @@ int fileBrowser_SMB_readDir(fileBrowser_file* ffile, fileBrowser_file** dir){
    
   // We need at least a share name and ip addr in the settings filled out
   if(!strlen(&smbShareName[0]) || !strlen(&smbIpAddr[0])) {
-    return -1;
+    return SMB_SMBCFGERR;
   }
   
   if(!net_initialized) {       //Init if we have to
-    init_network();
-    if(!net_initialized) {
-      return net_initialized; //fail
-    }
+    return SMB_NETINITERR;
   } 
   
   if(!smb_initialized) {       //Connect to the share
     init_samba();
     if(!smb_initialized) {
-      return smb_initialized; //fail
+      return SMB_SMBERR; //fail
     }
   }
 		
