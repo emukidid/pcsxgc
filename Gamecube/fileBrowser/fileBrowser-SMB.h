@@ -27,9 +27,9 @@
 #include "fileBrowser.h"
 
 // error codes
-#define SMB_NETINITERR -3
-#define SMB_SMBCFGERR  -2
-#define SMB_SMBERR -1
+#define SMB_NETINITERR -110
+#define SMB_SMBCFGERR  -111
+#define SMB_SMBERR -112
 
 extern fileBrowser_file topLevel_SMB;
 
