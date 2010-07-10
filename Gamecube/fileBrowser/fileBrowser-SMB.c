@@ -86,8 +86,8 @@ void init_samba() {
 	
 int fileBrowser_SMB_readDir(fileBrowser_file* ffile, fileBrowser_file** dir){	
    
-  // We need all the settings filled out
-  if(!strlen(&smbUserName[0]) || !strlen(&smbPassWord[0]) || !strlen(&smbShareName[0]) || !strlen(&smbIpAddr[0])) {
+  // We need at least a share name and ip addr in the settings filled out
+  if(!strlen(&smbShareName[0]) || !strlen(&smbIpAddr[0])) {
     return -1;
   }
   
