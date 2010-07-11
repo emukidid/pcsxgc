@@ -104,6 +104,7 @@ char autoSave;
 signed char autoSaveLoaded = 0;
 char screenMode = 0;
 char videoMode = 0;
+char fileSortMode = 1;
 char padAutoAssign;
 char padType[2];
 char padAssign[2];
@@ -134,6 +135,7 @@ static struct {
 //  { "Debug", &printToScreen, DEBUG_HIDE, DEBUG_SHOW },
   { "ScreenMode", &screenMode, SCREENMODE_4x3, SCREENMODE_16x9_PILLARBOX },
   { "VideoMode", &videoMode, VIDEOMODE_AUTO, VIDEOMODE_PROGRESSIVE },
+  { "FileSortMode", &fileSortMode, FILESORT_DIRS_MIXED, FILESORT_DIRS_FIRST },
   { "Core", &dynacore, DYNACORE_DYNAREC, DYNACORE_INTERPRETER },
   { "NativeDevice", &nativeSaveDevice, NATIVESAVEDEVICE_SD, NATIVESAVEDEVICE_CARDB },
   { "StatesDevice", &saveStateDevice, SAVESTATEDEVICE_SD, SAVESTATEDEVICE_USB },
@@ -183,6 +185,7 @@ void loadSettings(int argc, char *argv[])
 	dynacore         = 0; // Dynarec
 	screenMode		 = 0; // Stretch FB horizontally
 	videoMode		 = VIDEOMODE_AUTO;
+	fileSortMode	 = FILESORT_DIRS_FIRST;
 	padAutoAssign	 = PADAUTOASSIGN_AUTOMATIC;
 	padType[0]		 = PADTYPE_NONE;
 	padType[1]		 = PADTYPE_NONE;

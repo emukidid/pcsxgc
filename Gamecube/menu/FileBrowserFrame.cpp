@@ -154,6 +154,7 @@ void fileBrowserFrame_OpenDirectory(fileBrowser_file* dir);
 void fileBrowserFrame_Error(fileBrowser_file* dir, int error_code);
 void fileBrowserFrame_FillPage();
 void fileBrowserFrame_LoadFile(int i);
+static int dir_comparator(const void* _x, const void* _y);
 
 void FileBrowserFrame::drawChildren(menu::Graphics &gfx)
 {
@@ -169,7 +170,18 @@ void FileBrowserFrame::drawChildren(menu::Graphics &gfx)
 			{
 				u16 currentButtonsDownGC = (currentButtonsGC ^ previousButtonsGC[i]) & currentButtonsGC;
 				previousButtonsGC[i] = currentButtonsGC;
-				if (currentButtonsDownGC & PAD_TRIGGER_R)
+				if (currentButtonsDownGC & PAD_TRIGGER_Z)
+				{
+					// Change sort method
+					fileSortMode ^= 1;
+					// Resort the list
+					qsort(dir_entries, num_entries, sizeof(fileBrowser_file), dir_comparator);
+					current_page = 0;
+					fileBrowserFrame_FillPage();
+					menu::Focus::getInstance().clearPrimaryFocus();
+					break;
+				}
+				else if (currentButtonsDownGC & PAD_TRIGGER_R)
 				{
 					//move to next set & return
 					current_page = (current_page + 1) % max_page;
@@ -193,7 +205,18 @@ void FileBrowserFrame::drawChildren(menu::Graphics &gfx)
 				previousButtonsWii[i] = wiiPad[i].btns_h;
 				if (wiiPad[i].exp.type == WPAD_EXP_CLASSIC)
 				{
-					if (currentButtonsDownWii & WPAD_CLASSIC_BUTTON_FULL_R)
+					if (currentButtonsDownWii & CLASSIC_CTRL_BUTTON_ZR)
+					{
+						// Change sort method
+						fileSortMode ^= 1;
+						// Resort the list
+						qsort(dir_entries, num_entries, sizeof(fileBrowser_file), dir_comparator);
+						current_page = 0;
+						fileBrowserFrame_FillPage();
+						menu::Focus::getInstance().clearPrimaryFocus();
+						break;
+					}
+					else if (currentButtonsDownWii & WPAD_CLASSIC_BUTTON_FULL_R)
 					{
 						//move to next set & return
 						current_page = (current_page + 1) % max_page;
@@ -212,7 +235,18 @@ void FileBrowserFrame::drawChildren(menu::Graphics &gfx)
 				}
 				else
 				{
-					if (currentButtonsDownWii & WPAD_BUTTON_PLUS)
+					if (currentButtonsDownWii & WPAD_BUTTON_1)
+					{
+						// Change sort method
+						fileSortMode ^= 1;
+						// Resort the list
+						qsort(dir_entries, num_entries, sizeof(fileBrowser_file), dir_comparator);
+						current_page = 0;
+						fileBrowserFrame_FillPage();
+						menu::Focus::getInstance().clearPrimaryFocus();
+						break;
+					}
+					else if (currentButtonsDownWii & WPAD_BUTTON_PLUS)
 					{
 						//move to next set & return
 						if(current_page+1 < max_page) 
@@ -307,7 +341,7 @@ static int dir_comparator(const void* _x, const void* _y){
 	int xIsDir = x->attr & FILE_BROWSER_ATTR_DIR;
 	int yIsDir = y->attr & FILE_BROWSER_ATTR_DIR;
 	// Directories go on top, otherwise alphabetical
-	if(xIsDir != yIsDir)
+	if(fileSortMode && xIsDir != yIsDir)
 		return yIsDir - xIsDir;
 	else
 		return stricmp(x->name, y->name);

@@ -165,6 +165,13 @@ enum videoMode
 	VIDEOMODE_PROGRESSIVE
 };
 
+extern char fileSortMode;
+enum fileSortMode
+{
+	FILESORT_DIRS_MIXED=0,
+	FILESORT_DIRS_FIRST
+};
+
 extern char padAutoAssign;
 enum padAutoAssign
 {
