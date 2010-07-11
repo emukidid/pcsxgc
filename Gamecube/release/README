@@ -1,5 +1,5 @@
 README : WiiSX / CubeSX
-Beta 2
+Beta 2.1
 
 LICENSE:
     This software is licensed under the GNU General Public License v2
@@ -22,7 +22,7 @@ QUICK USAGE:
       (Note: to go up a directory select '..', B will exit the file browser)
  * Select 'Play Game' to play
    The game can be exited any time by pressing a configurable key combination together 
-   on a GC pad (START & X), Classic Controller (ZL & ZR), Wiimote (- & +), 
+   on a GC pad (START & X), Classic Controller (HOME), Wiimote (- & +), 
    Wiimote+Nunchuck (1 & 2), or the reset button
      (Note: this must be done to save your game; it will not be done automatically)
 
@@ -81,6 +81,21 @@ CREDITS:
  * Visit us on www.emulatemii.com and http://code.google.com/p/pcsxgc
 
 CHANGE LOG:
+Beta 2.1:
+   * Compiled with devkitPPC r21 / libOGC SVN
+   * Compiled with new libDI / DVDx V2
+   * Saving improvements
+     * Fixed issues where save was not written to memcard
+     + Audio state saved/loaded for save states
+   * Controller improvements
+     * Fixed inverted Y-axis on analog input
+     * Fixed rumble
+     * Fixed button presses on unused input port
+     + Added “Home” button as a menu combo for CC
+     + Added disable rumble setting
+   * Network improvements
+     * SMB correction to allow anonymous user and password
+     + Threaded network init and proper error messages when it fails
 Beta 2:
    * Compiled with devkitPPC r21 / libOGC SVN
    * Compiled with new libDI / DVDx V2
