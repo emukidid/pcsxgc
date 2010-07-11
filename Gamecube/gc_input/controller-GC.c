@@ -28,6 +28,7 @@
 #include <string.h>
 #include <ogc/pad.h>
 #include "controller.h"
+#include "../wiiSXconfig.h"
 
 enum {
 	ANALOG_AS_ANALOG = 1, C_STICK_AS_ANALOG = 2,
@@ -173,7 +174,7 @@ static void pause(int Control){
 static void resume(int Control){ }
 
 static void rumble(int Control, int rumble){
-	PAD_ControlMotor(Control, rumble ? PAD_MOTOR_RUMBLE : PAD_MOTOR_STOP);
+	PAD_ControlMotor(Control, (rumble && rumbleEnabled) ? PAD_MOTOR_RUMBLE : PAD_MOTOR_STOP);
 }
 
 static void configure(int Control, controller_config_t* config){

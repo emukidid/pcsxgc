@@ -196,6 +196,13 @@ enum padAssign
 	PADASSIGN_INPUT3
 };
 
+extern char rumbleEnabled;
+enum rumbleEnabled
+{
+	RUMBLE_DISABLE=0,
+	RUMBLE_ENABLE
+};
+
 extern char loadButtonSlot;
 enum loadButtonSlot
 {

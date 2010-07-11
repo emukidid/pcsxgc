@@ -28,6 +28,7 @@
 #include <math.h>
 #include <wiiuse/wpad.h>
 #include "controller.h"
+#include "../wiiSXconfig.h"
 
 #ifndef PI
 #define PI 3.14159f
@@ -265,7 +266,7 @@ static void pause(int Control){
 static void resume(int Control){ }
 
 static void rumble(int Control, int rumble){
-	WPAD_Rumble(Control, rumble ? 1 : 0);
+	WPAD_Rumble(Control, (rumble && rumbleEnabled) ? 1 : 0);
 }
 
 static void configure(int Control, controller_config_t* config){

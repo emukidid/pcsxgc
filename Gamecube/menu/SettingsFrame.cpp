@@ -75,10 +75,8 @@ void Func_ConfigureInput();
 void Func_ConfigureButtons();
 void Func_PsxTypeStandard();
 void Func_PsxTypeAnalog();
-void Func_PsxTypeLightGun();
-void Func_NumMultitaps0();
-void Func_NumMultitaps1();
-void Func_NumMultitaps2();
+void Func_DisableRumbleYes();
+void Func_DisableRumbleNo();
 void Func_SaveButtonsSD();
 void Func_SaveButtonsUSB();
 void Func_ToggleButtonLoad();
@@ -117,7 +115,7 @@ void pauseAudio(void);  void pauseInput(void);
 void resumeAudio(void); void resumeInput(void);
 }
 
-#define NUM_FRAME_BUTTONS 56
+#define NUM_FRAME_BUTTONS 54
 #define NUM_TAB_BUTTONS 5
 #define FRAME_BUTTONS settingsFrameButtons
 #define FRAME_STRINGS settingsFrameStrings
@@ -159,7 +157,7 @@ Auto Save Memcards: Yes; No
 Save States Device: SD; USB
 */
 
-static char FRAME_STRINGS[60][24] =
+static char FRAME_STRINGS[56][24] =
 	{ "General",
 	  "Video",
 	  "Input",
@@ -179,7 +177,7 @@ static char FRAME_STRINGS[60][24] =
 	  "DVD",
 	  "Yes",
 	  "No",
-	//Strings for Video tab (starting at FRAME_STRINGS[18])..was[17])
+	//Strings for Video tab (starting at FRAME_STRINGS[18])..was[])
 	  "Show FPS",
 	  "Limit FPS",
 	  "Frame Skip",
@@ -196,21 +194,17 @@ static char FRAME_STRINGS[60][24] =
 	  "2xSaI",
 	  "Default",
 	  "Always",
-	//Strings for Input tab (starting at FRAME_STRINGS[34]..was[32])
+	//Strings for Input tab (starting at FRAME_STRINGS[34]..was[])
 	  "Configure Input",
 	  "Configure Buttons",
 	  "PSX Controller Type",
-	  "Number of Multitaps",
+	  "Disable Rumble",
 	  "Standard",
 	  "Analog",
-	  "Gun",
-	  "0",
-	  "1",
-	  "2",
 	  "Save Button Configs",
 	  "Auto Load Slot:",
 	  "Default",
-	//Strings for Audio tab (starting at FRAME_STRINGS[47]) ..was[42]
+	//Strings for Audio tab (starting at FRAME_STRINGS[43]) ..was[47]
 	  "Disable Audio",
 	  "Disable XA",
 	  "Disable CDDA",
@@ -219,7 +213,7 @@ static char FRAME_STRINGS[60][24] =
 	  "loud",
 	  "medium",
 	  "low",		//iVolume=4
-	//Strings for Saves tab (starting at FRAME_STRINGS[55]) ..was[50]
+	//Strings for Saves tab (starting at FRAME_STRINGS[51]) ..was[55]
 	  "Memcard Save Device",
 	  "Auto Save Memcards",
 	  "Save States Device",
@@ -280,32 +274,30 @@ struct ButtonInfo
 	//Buttons for Input Tab (starts at button[30])
 	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[34],	 90.0,	100.0,	220.0,	56.0,	 2,	32,	31,	31,	Func_ConfigureInput,	Func_ReturnFromSettingsFrame }, // Configure Input Assignment
 	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[35],	325.0,	100.0,	235.0,	56.0,	 2,	32,	30,	30,	Func_ConfigureButtons,	Func_ReturnFromSettingsFrame }, // Configure Button Mappings
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[38],	285.0,	170.0,	130.0,	56.0,	30,	35,	34,	33,	Func_PsxTypeStandard,	Func_ReturnFromSettingsFrame }, // PSX Controller Type: Standard
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[39],	425.0,	170.0,	110.0,	56.0,	31,	37,	32,	34,	Func_PsxTypeAnalog,		Func_ReturnFromSettingsFrame }, // PSX Controller Type: Analog
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[40],	545.0,	170.0,	 60.0,	56.0,	31,	37,	33,	32,	Func_PsxTypeLightGun,	Func_ReturnFromSettingsFrame }, // PSX Controller Type: Light Gun
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[41],	285.0,	240.0,	 50.0,	56.0,	32,	38,	37,	36,	Func_NumMultitaps0,		Func_ReturnFromSettingsFrame }, // Number of Multitaps: 0
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[42],	345.0,	240.0,	 50.0,	56.0,	32,	39,	35,	37,	Func_NumMultitaps1,		Func_ReturnFromSettingsFrame }, // Number of Multitaps: 1
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[43],	405.0,	240.0,	 50.0,	56.0,	33,	39,	36,	35,	Func_NumMultitaps2,		Func_ReturnFromSettingsFrame }, // Number of Multitaps: 2
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[13],	285.0,	310.0,	 55.0,	56.0,	35,	40,	39,	39,	Func_SaveButtonsSD,		Func_ReturnFromSettingsFrame }, // Save Button Mappings: SD
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[14],	350.0,	310.0,	 70.0,	56.0,	36,	40,	38,	38,	Func_SaveButtonsUSB,	Func_ReturnFromSettingsFrame }, // Save Button Mappings: USB
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[46],	285.0,	380.0,	135.0,	56.0,	38,	 2,	-1,	-1,	Func_ToggleButtonLoad,	Func_ReturnFromSettingsFrame }, // Auto Load Button Config Slot: Default,1,2,3,4
-	//Buttons for Audio Tab (starts at button[41]) ..was[31]
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	345.0,	100.0,	 75.0,	56.0,	 3,	43,	42,	42,	Func_DisableAudioYes,	Func_ReturnFromSettingsFrame }, // Disable Audio: Yes
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	440.0,	100.0,	 75.0,	56.0,	 3,	44,	41,	41,	Func_DisableAudioNo,	Func_ReturnFromSettingsFrame }, // Disable Audio: No
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	345.0,	170.0,	 75.0,	56.0,	41,	45,	44,	44,	Func_DisableXaYes,		Func_ReturnFromSettingsFrame }, // Disable XA: Yes
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	440.0,	170.0,	 75.0,	56.0,	42,	46,	43,	43,	Func_DisableXaNo,		Func_ReturnFromSettingsFrame }, // Disable XA: No
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	345.0,	240.0,	 75.0,	56.0,	43,	47,	46,	46,	Func_DisableCddaYes,	Func_ReturnFromSettingsFrame }, // Disable CDDA: Yes
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	440.0,	240.0,	 75.0,	56.0,	44,	47,	45,	45,	Func_DisableCddaNo,		Func_ReturnFromSettingsFrame }, // Disable CDDA: No
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[51],	345.0,	310.0,	170.0,	56.0,	45,	 3,	-1,	-1,	Func_VolumeToggle,		Func_ReturnFromSettingsFrame }, // Volume: low/medium/loud/loudest
-	//Buttons for Saves Tab (starts at button[48]) ..was[38]
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[13],	295.0,	100.0,	 55.0,	56.0,	 4,	52,	51,	49,	Func_MemcardSaveSD,		Func_ReturnFromSettingsFrame }, // Memcard Save: SD
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[14],	360.0,	100.0,	 70.0,	56.0,	 4,	53,	48,	50,	Func_MemcardSaveUSB,	Func_ReturnFromSettingsFrame }, // Memcard Save: USB
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[58],	440.0,	100.0,	 90.0,	56.0,	 4,	53,	49,	51,	Func_MemcardSaveCardA,	Func_ReturnFromSettingsFrame }, // Memcard Save: Card A
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[59],	540.0,	100.0,	 90.0,	56.0,	 4,	53,	50,	48,	Func_MemcardSaveCardB,	Func_ReturnFromSettingsFrame }, // Memcard Save: Card B
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	295.0,	170.0,	 75.0,	56.0,	48,	54,	53,	53,	Func_AutoSaveYes,		Func_ReturnFromSettingsFrame }, // Auto Save Memcards: Yes
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	380.0,	170.0,	 75.0,	56.0,	49,	55,	52,	52,	Func_AutoSaveNo,		Func_ReturnFromSettingsFrame }, // Auto Save Memcards: No
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[13],	295.0,	240.0,	 55.0,	56.0,	52,	 4,	55,	55,	Func_SaveStateSD,		Func_ReturnFromSettingsFrame }, // Save State: SD
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[14],	360.0,	240.0,	 70.0,	56.0,	53,	 4,	54,	54,	Func_SaveStateUSB,		Func_ReturnFromSettingsFrame }, // Save State: USB
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[38],	285.0,	170.0,	130.0,	56.0,	30,	34,	33,	33,	Func_PsxTypeStandard,	Func_ReturnFromSettingsFrame }, // PSX Controller Type: Standard
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[39],	425.0,	170.0,	110.0,	56.0,	31,	35,	32,	32,	Func_PsxTypeAnalog,		Func_ReturnFromSettingsFrame }, // PSX Controller Type: Analog
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	285.0,	240.0,	 75.0,	56.0,	32,	36,	35,	35,	Func_DisableRumbleYes,	Func_ReturnFromSettingsFrame }, // Disable Rumble: Yes
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	380.0,	240.0,	 75.0,	56.0,	33,	37,	34,	34,	Func_DisableRumbleNo,	Func_ReturnFromSettingsFrame }, // Disable Rumble: No
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[13],	285.0,	310.0,	 55.0,	56.0,	34,	38,	37,	37,	Func_SaveButtonsSD,		Func_ReturnFromSettingsFrame }, // Save Button Mappings: SD
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[14],	350.0,	310.0,	 70.0,	56.0,	35,	38,	36,	36,	Func_SaveButtonsUSB,	Func_ReturnFromSettingsFrame }, // Save Button Mappings: USB
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[42],	285.0,	380.0,	135.0,	56.0,	36,	 2,	-1,	-1,	Func_ToggleButtonLoad,	Func_ReturnFromSettingsFrame }, // Auto Load Button Config Slot: Default,1,2,3,4
+	//Buttons for Audio Tab (starts at button[39]) ..was[41]
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	345.0,	100.0,	 75.0,	56.0,	 3,	41,	40,	40,	Func_DisableAudioYes,	Func_ReturnFromSettingsFrame }, // Disable Audio: Yes
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	440.0,	100.0,	 75.0,	56.0,	 3,	42,	39,	39,	Func_DisableAudioNo,	Func_ReturnFromSettingsFrame }, // Disable Audio: No
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	345.0,	170.0,	 75.0,	56.0,	39,	43,	42,	42,	Func_DisableXaYes,		Func_ReturnFromSettingsFrame }, // Disable XA: Yes
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	440.0,	170.0,	 75.0,	56.0,	40,	44,	41,	41,	Func_DisableXaNo,		Func_ReturnFromSettingsFrame }, // Disable XA: No
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	345.0,	240.0,	 75.0,	56.0,	41,	45,	44,	44,	Func_DisableCddaYes,	Func_ReturnFromSettingsFrame }, // Disable CDDA: Yes
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	440.0,	240.0,	 75.0,	56.0,	42,	45,	43,	43,	Func_DisableCddaNo,		Func_ReturnFromSettingsFrame }, // Disable CDDA: No
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[47],	345.0,	310.0,	170.0,	56.0,	43,	 3,	-1,	-1,	Func_VolumeToggle,		Func_ReturnFromSettingsFrame }, // Volume: low/medium/loud/loudest
+	//Buttons for Saves Tab (starts at button[46]) ..was[48]
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[13],	295.0,	100.0,	 55.0,	56.0,	 4,	50,	49,	47,	Func_MemcardSaveSD,		Func_ReturnFromSettingsFrame }, // Memcard Save: SD
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[14],	360.0,	100.0,	 70.0,	56.0,	 4,	51,	46,	48,	Func_MemcardSaveUSB,	Func_ReturnFromSettingsFrame }, // Memcard Save: USB
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[54],	440.0,	100.0,	 90.0,	56.0,	 4,	51,	47,	49,	Func_MemcardSaveCardA,	Func_ReturnFromSettingsFrame }, // Memcard Save: Card A
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[55],	540.0,	100.0,	 90.0,	56.0,	 4,	51,	48,	46,	Func_MemcardSaveCardB,	Func_ReturnFromSettingsFrame }, // Memcard Save: Card B
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	295.0,	170.0,	 75.0,	56.0,	46,	52,	51,	51,	Func_AutoSaveYes,		Func_ReturnFromSettingsFrame }, // Auto Save Memcards: Yes
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	380.0,	170.0,	 75.0,	56.0,	47,	53,	50,	50,	Func_AutoSaveNo,		Func_ReturnFromSettingsFrame }, // Auto Save Memcards: No
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[13],	295.0,	240.0,	 55.0,	56.0,	50,	 4,	53,	53,	Func_SaveStateSD,		Func_ReturnFromSettingsFrame }, // Save State: SD
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[14],	360.0,	240.0,	 70.0,	56.0,	51,	 4,	52,	52,	Func_SaveStateUSB,		Func_ReturnFromSettingsFrame }, // Save State: USB
 };
 
 struct TextBoxInfo
@@ -332,18 +324,18 @@ struct TextBoxInfo
 	{	NULL,	FRAME_STRINGS[23],	190.0,	478.0,	 1.0,	true }, // Scaling: None/2xSai
 	//TextBoxes for Input Tab (starts at textBox[10])
 	{	NULL,	FRAME_STRINGS[36],	145.0,	198.0,	 1.0,	true }, // PSX Controller Type: Analog/Digital/Light Gun
-	{	NULL,	FRAME_STRINGS[37],	145.0,	268.0,	 1.0,	true }, // Number of Multitaps: 0/1/2
-	{	NULL,	FRAME_STRINGS[44],	145.0,	338.0,	 1.0,	true }, // Save Button Configs: SD/USB
-	{	NULL,	FRAME_STRINGS[45],	145.0,	408.0,	 1.0,	true }, // Auto Load Slot: Default/1/2/3/4
+	{	NULL,	FRAME_STRINGS[37],	145.0,	268.0,	 1.0,	true }, // Disable Rumble: Yes/No
+	{	NULL,	FRAME_STRINGS[40],	145.0,	338.0,	 1.0,	true }, // Save Button Configs: SD/USB
+	{	NULL,	FRAME_STRINGS[41],	145.0,	408.0,	 1.0,	true }, // Auto Load Slot: Default/1/2/3/4
 	//TextBoxes for Audio Tab (starts at textBox[14]) ..was[12]
-	{	NULL,	FRAME_STRINGS[47],	210.0,	128.0,	 1.0,	true }, // Disable Audio: Yes/No
-	{	NULL,	FRAME_STRINGS[48],	210.0,	198.0,	 1.0,	true }, // Disable XA Audio: Yes/No
-	{	NULL,	FRAME_STRINGS[49],	210.0,	268.0,	 1.0,	true }, // Disable CDDA Audio: Yes/No
-	{	NULL,	FRAME_STRINGS[50],	210.0,	338.0,	 1.0,	true }, // Volume: low/medium/loud/loudest
+	{	NULL,	FRAME_STRINGS[43],	210.0,	128.0,	 1.0,	true }, // Disable Audio: Yes/No
+	{	NULL,	FRAME_STRINGS[44],	210.0,	198.0,	 1.0,	true }, // Disable XA Audio: Yes/No
+	{	NULL,	FRAME_STRINGS[45],	210.0,	268.0,	 1.0,	true }, // Disable CDDA Audio: Yes/No
+	{	NULL,	FRAME_STRINGS[46],	210.0,	338.0,	 1.0,	true }, // Volume: low/medium/loud/loudest
 	//TextBoxes for Saves Tab (starts at textBox[18]) ..was[16]
-	{	NULL,	FRAME_STRINGS[55],	150.0,	128.0,	 1.0,	true }, // Memcard Save Device: SD/USB/CardA/CardB
-	{	NULL,	FRAME_STRINGS[56],	150.0,	198.0,	 1.0,	true }, // Auto Save Memcards: Yes/No
-	{	NULL,	FRAME_STRINGS[57],	150.0,	268.0,	 1.0,	true }, // Save State Device: SD/USB
+	{	NULL,	FRAME_STRINGS[51],	150.0,	128.0,	 1.0,	true }, // Memcard Save Device: SD/USB/CardA/CardB
+	{	NULL,	FRAME_STRINGS[52],	150.0,	198.0,	 1.0,	true }, // Auto Save Memcards: Yes/No
+	{	NULL,	FRAME_STRINGS[53],	150.0,	268.0,	 1.0,	true }, // Save State Device: SD/USB
 };
 
 SettingsFrame::SettingsFrame()
@@ -392,7 +384,6 @@ SettingsFrame::~SettingsFrame()
 		menu::Cursor::getInstance().removeComponent(this, FRAME_BUTTONS[i].button);
 		delete FRAME_BUTTONS[i].button;
 	}
-
 }
 
 void SettingsFrame::activateSubmenu(int submenu)
@@ -470,22 +461,18 @@ void SettingsFrame::activateSubmenu(int submenu)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
 				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, FRAME_BUTTONS[30].button);
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[40].button);
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[38].button);
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
 			for (int i = 10; i < 14; i++)
 				FRAME_TEXTBOXES[i].textBox->setVisible(true);
 			FRAME_BUTTONS[2].button->setSelected(true);
 			FRAME_BUTTONS[32+controllerType].button->setSelected(true);
-			FRAME_BUTTONS[35+numMultitaps].button->setSelected(true);
-			for (int i = 30; i < 41; i++)
+			FRAME_BUTTONS[34+rumbleEnabled].button->setSelected(true);
+			for (int i = 30; i < 39; i++)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
 				FRAME_BUTTONS[i].button->setActive(true);
-			}
-			for (int i = 34; i <= 37; i++)	//disable light gun & multitap buttons
-			{
-				FRAME_BUTTONS[i].button->setActive(false);
 			}
 			break;
 		case SUBMENU_AUDIO:
@@ -493,26 +480,26 @@ void SettingsFrame::activateSubmenu(int submenu)
 			for (int i = 0; i < NUM_TAB_BUTTONS; i++)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, FRAME_BUTTONS[41].button);
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[47].button);
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, FRAME_BUTTONS[39].button);
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[45].button);
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
 			for (int i = 14; i < 18; i++)
 				FRAME_TEXTBOXES[i].textBox->setVisible(true);
 			FRAME_BUTTONS[3].button->setSelected(true);
-			if (audioEnabled == AUDIO_DISABLE)	FRAME_BUTTONS[41].button->setSelected(true);
+			if (audioEnabled == AUDIO_DISABLE)	FRAME_BUTTONS[39].button->setSelected(true);
+			else								FRAME_BUTTONS[40].button->setSelected(true);
+			if (Config.Xa == XA_DISABLE)		FRAME_BUTTONS[41].button->setSelected(true);
 			else								FRAME_BUTTONS[42].button->setSelected(true);
-			if (Config.Xa == XA_DISABLE)		FRAME_BUTTONS[43].button->setSelected(true);
+			if (Config.Cdda == CDDA_DISABLE)	FRAME_BUTTONS[43].button->setSelected(true);
 			else								FRAME_BUTTONS[44].button->setSelected(true);
-			if (Config.Cdda == CDDA_DISABLE)	FRAME_BUTTONS[45].button->setSelected(true);
-			else								FRAME_BUTTONS[46].button->setSelected(true);
-			FRAME_BUTTONS[47].buttonString = FRAME_STRINGS[50+iVolume];
-			for (int i = 41; i < 48; i++)
+			FRAME_BUTTONS[45].buttonString = FRAME_STRINGS[46+iVolume];
+			for (int i = 39; i < 46; i++)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
-			for (int i = 45; i <= 46; i++)	//disable CDDA buttons
+			for (int i = 43; i <= 44; i++)	//disable CDDA buttons
 			{
 				FRAME_BUTTONS[i].button->setActive(false);
 			}
@@ -522,19 +509,19 @@ void SettingsFrame::activateSubmenu(int submenu)
 			for (int i = 0; i < NUM_TAB_BUTTONS; i++)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, FRAME_BUTTONS[48].button);
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[54].button);
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, FRAME_BUTTONS[46].button);
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[52].button);
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
 			for (int i = 18; i < 21; i++)
 				FRAME_TEXTBOXES[i].textBox->setVisible(true);
 			FRAME_BUTTONS[4].button->setSelected(true);
-			FRAME_BUTTONS[48+nativeSaveDevice].button->setSelected(true);
-			if (autoSave == AUTOSAVE_ENABLE)	FRAME_BUTTONS[52].button->setSelected(true);
-			else								FRAME_BUTTONS[53].button->setSelected(true);
-			if (saveStateDevice == SAVESTATEDEVICE_SD)	FRAME_BUTTONS[54].button->setSelected(true);
-			else										FRAME_BUTTONS[55].button->setSelected(true);
-			for (int i = 48; i < NUM_FRAME_BUTTONS; i++)
+			FRAME_BUTTONS[46+nativeSaveDevice].button->setSelected(true);
+			if (autoSave == AUTOSAVE_ENABLE)	FRAME_BUTTONS[50].button->setSelected(true);
+			else								FRAME_BUTTONS[51].button->setSelected(true);
+			if (saveStateDevice == SAVESTATEDEVICE_SD)	FRAME_BUTTONS[52].button->setSelected(true);
+			else										FRAME_BUTTONS[53].button->setSelected(true);
+			for (int i = 46; i < NUM_FRAME_BUTTONS; i++)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
 				FRAME_BUTTONS[i].button->setActive(true);
@@ -1018,7 +1005,7 @@ void Func_ConfigureButtons()
 
 void Func_PsxTypeStandard()
 {
-	for (int i = 32; i <= 34; i++)
+	for (int i = 32; i <= 33; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[32].button->setSelected(true);
 	controllerType = CONTROLLERTYPE_STANDARD;
@@ -1026,45 +1013,26 @@ void Func_PsxTypeStandard()
 
 void Func_PsxTypeAnalog()
 {
-	for (int i = 32; i <= 34; i++)
+	for (int i = 32; i <= 33; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[33].button->setSelected(true);
 	controllerType = CONTROLLERTYPE_ANALOG;
 }
 
-void Func_PsxTypeLightGun()
+void Func_DisableRumbleYes()
 {
-/*	for (int i = 32; i <= 34; i++)
+	for (int i = 34; i <= 35; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[34].button->setSelected(true);
-	controllerType = CONTROLLERTYPE_LIGHTGUN;*/
-	menu::MessageBox::getInstance().setMessage("Light Gun not implemented");
+	rumbleEnabled = RUMBLE_DISABLE;
 }
 
-void Func_NumMultitaps0()
+void Func_DisableRumbleNo()
 {
-	for (int i = 35; i <= 37; i++)
+	for (int i = 34; i <= 35; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[35].button->setSelected(true);
-	numMultitaps = MULTITAPS_NONE;
-}
-
-void Func_NumMultitaps1()
-{
-/*	for (int i = 35; i <= 37; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[36].button->setSelected(true);
-	numMultitaps = MULTITAPS_ONE;*/
-	menu::MessageBox::getInstance().setMessage("Multitaps are not implemented");
-}
-
-void Func_NumMultitaps2()
-{
-/*	for (int i = 35; i <= 37; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[37].button->setSelected(true);
-	numMultitaps = MULTITAPS_TWO;*/
-	menu::MessageBox::getInstance().setMessage("Multitaps are not implemented");
+	rumbleEnabled = RUMBLE_ENABLE;
 }
 
 void Func_SaveButtonsSD()
@@ -1151,56 +1119,56 @@ void Func_ToggleButtonLoad()
 {
 	loadButtonSlot = (loadButtonSlot + 1) % 5;
 	if (loadButtonSlot == LOADBUTTON_DEFAULT)
-		strcpy(FRAME_STRINGS[46], "Default");
+		strcpy(FRAME_STRINGS[42], "Default");
 	else
-		sprintf(FRAME_STRINGS[46], "Slot %d", loadButtonSlot+1);
+		sprintf(FRAME_STRINGS[42], "Slot %d", loadButtonSlot+1);
 }
 
 void Func_DisableAudioYes()
 {
-	for (int i = 41; i <= 42; i++)
+	for (int i = 39; i <= 40; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[41].button->setSelected(true);
+	FRAME_BUTTONS[39].button->setSelected(true);
 	audioEnabled = AUDIO_DISABLE;
 }
 
 void Func_DisableAudioNo()
 {
-	for (int i = 41; i <= 42; i++)
+	for (int i = 39; i <= 40; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[42].button->setSelected(true);
+	FRAME_BUTTONS[40].button->setSelected(true);
 	audioEnabled = AUDIO_ENABLE;
 }
 
 void Func_DisableXaYes()
 {
-	for (int i = 43; i <= 44; i++)
+	for (int i = 41; i <= 42; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[43].button->setSelected(true);
+	FRAME_BUTTONS[41].button->setSelected(true);
 	Config.Xa = XA_DISABLE;
 }
 
 void Func_DisableXaNo()
 {
-	for (int i = 43; i <= 44; i++)
+	for (int i = 41; i <= 42; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[44].button->setSelected(true);
+	FRAME_BUTTONS[42].button->setSelected(true);
 	Config.Xa = XA_ENABLE;
 }
 
 void Func_DisableCddaYes()
 {
-	for (int i = 45; i <= 46; i++)
+	for (int i = 43; i <= 44; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[45].button->setSelected(true);
+	FRAME_BUTTONS[43].button->setSelected(true);
 	Config.Cdda = CDDA_DISABLE;
 }
 
 void Func_DisableCddaNo()
 {
-/*	for (int i = 45; i <= 46; i++)
+/*	for (int i = 43; i <= 44; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[46].button->setSelected(true);
+	FRAME_BUTTONS[44].button->setSelected(true);
 	Config.Cdda = CDDA_ENABLE;*/
 	menu::MessageBox::getInstance().setMessage("CDDA audio is not implemented");
 }
@@ -1212,72 +1180,72 @@ void Func_VolumeToggle()
 	iVolume--;
 	if (iVolume<1)
 		iVolume = 4;
-	FRAME_BUTTONS[47].buttonString = FRAME_STRINGS[50+iVolume];
+	FRAME_BUTTONS[45].buttonString = FRAME_STRINGS[46+iVolume];
 	volume = iVolume;
 	SetVolume();
 }
 
 void Func_MemcardSaveSD()
 {
-	for (int i = 48; i <= 51; i++)
+	for (int i = 46; i <= 49; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[48].button->setSelected(true);
+	FRAME_BUTTONS[46].button->setSelected(true);
 	nativeSaveDevice = NATIVESAVEDEVICE_SD;
 }
 
 void Func_MemcardSaveUSB()
 {
-	for (int i = 48; i <= 51; i++)
+	for (int i = 46; i <= 49; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[49].button->setSelected(true);
+	FRAME_BUTTONS[47].button->setSelected(true);
 	nativeSaveDevice = NATIVESAVEDEVICE_USB;
 }
 
 void Func_MemcardSaveCardA()
 {
-	for (int i = 48; i <= 51; i++)
+	for (int i = 46; i <= 49; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[50].button->setSelected(true);
+	FRAME_BUTTONS[48].button->setSelected(true);
 	nativeSaveDevice = NATIVESAVEDEVICE_CARDA;
 }
 
 void Func_MemcardSaveCardB()
 {
-	for (int i = 48; i <= 51; i++)
+	for (int i = 46; i <= 49; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[51].button->setSelected(true);
+	FRAME_BUTTONS[49].button->setSelected(true);
 	nativeSaveDevice = NATIVESAVEDEVICE_CARDB;
 }
 
 void Func_AutoSaveYes()
 {
-	for (int i = 52; i <= 53; i++)
+	for (int i = 50; i <= 51; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[52].button->setSelected(true);
+	FRAME_BUTTONS[50].button->setSelected(true);
 	autoSave = AUTOSAVE_ENABLE;
 }
 
 void Func_AutoSaveNo()
 {
-	for (int i = 52; i <= 53; i++)
+	for (int i = 50; i <= 51; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[53].button->setSelected(true);
+	FRAME_BUTTONS[51].button->setSelected(true);
 	autoSave = AUTOSAVE_DISABLE;
 }
 
 void Func_SaveStateSD()
 {
-	for (int i = 54; i <= 55; i++)
+	for (int i = 52; i <= 53; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[54].button->setSelected(true);
+	FRAME_BUTTONS[52].button->setSelected(true);
 	saveStateDevice = SAVESTATEDEVICE_SD;
 }
 
 void Func_SaveStateUSB()
 {
-	for (int i = 54; i <= 55; i++)
+	for (int i = 52; i <= 53; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[55].button->setSelected(true);
+	FRAME_BUTTONS[53].button->setSelected(true);
 	saveStateDevice = SAVESTATEDEVICE_USB;
 }
 
