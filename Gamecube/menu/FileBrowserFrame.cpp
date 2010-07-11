@@ -172,23 +172,17 @@ void FileBrowserFrame::drawChildren(menu::Graphics &gfx)
 				if (currentButtonsDownGC & PAD_TRIGGER_R)
 				{
 					//move to next set & return
-					if(current_page+1 < max_page) 
-					{
-						current_page +=1;
-						fileBrowserFrame_FillPage();
-						menu::Focus::getInstance().clearPrimaryFocus();
-					}
+					current_page = (current_page + 1) % max_page;
+					fileBrowserFrame_FillPage();
+					menu::Focus::getInstance().clearPrimaryFocus();
 					break;
 				}
 				else if (currentButtonsDownGC & PAD_TRIGGER_L)
 				{
 					//move to the previous set & return
-					if(current_page > 0) 
-					{
-						current_page -= 1;
-						fileBrowserFrame_FillPage();
-						menu::Focus::getInstance().clearPrimaryFocus();
-					}
+					current_page = (max_page + current_page - 1) % max_page;
+					fileBrowserFrame_FillPage();
+					menu::Focus::getInstance().clearPrimaryFocus();
 					break;
 				}
 			}
@@ -202,23 +196,17 @@ void FileBrowserFrame::drawChildren(menu::Graphics &gfx)
 					if (currentButtonsDownWii & WPAD_CLASSIC_BUTTON_FULL_R)
 					{
 						//move to next set & return
-						if(current_page+1 < max_page) 
-						{
-							current_page +=1;
-							fileBrowserFrame_FillPage();
-							menu::Focus::getInstance().clearPrimaryFocus();
-						}
+						current_page = (current_page + 1) % max_page;
+						fileBrowserFrame_FillPage();
+						menu::Focus::getInstance().clearPrimaryFocus();
 						break;
 					}
 					else if (currentButtonsDownWii & WPAD_CLASSIC_BUTTON_FULL_L)
 					{
 						//move to the previous set & return
-						if(current_page > 0) 
-						{
-							current_page -= 1;
-							fileBrowserFrame_FillPage();
-							menu::Focus::getInstance().clearPrimaryFocus();
-						}
+						current_page = (max_page + current_page - 1) % max_page;
+						fileBrowserFrame_FillPage();
+						menu::Focus::getInstance().clearPrimaryFocus();
 						break;
 					}
 				}
@@ -228,22 +216,17 @@ void FileBrowserFrame::drawChildren(menu::Graphics &gfx)
 					{
 						//move to next set & return
 						if(current_page+1 < max_page) 
-						{
-							current_page +=1;
-							fileBrowserFrame_FillPage();
-							menu::Focus::getInstance().clearPrimaryFocus();
-						}
+						current_page = (current_page + 1) % max_page;
+						fileBrowserFrame_FillPage();
+						menu::Focus::getInstance().clearPrimaryFocus();
 						break;
 					}
 					else if (currentButtonsDownWii & WPAD_BUTTON_MINUS)
 					{
 						//move to the previous set & return
-						if(current_page > 0) 
-						{
-							current_page -= 1;
-							fileBrowserFrame_FillPage();
-							menu::Focus::getInstance().clearPrimaryFocus();
-						}
+						current_page = (max_page + current_page - 1) % max_page;
+						fileBrowserFrame_FillPage();
+						menu::Focus::getInstance().clearPrimaryFocus();
 						break;
 					}
 				}
