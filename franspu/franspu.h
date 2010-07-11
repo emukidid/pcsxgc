@@ -228,7 +228,7 @@ extern short *  pS;
 ///////////////////////////////////////////////////////////
 // XA.C globals
 ///////////////////////////////////////////////////////////
-
+extern xa_decode_t   * xapGlobal;
 extern unsigned long * XAFeed;
 extern unsigned long * XAPlay;
 extern unsigned long * XAStart;

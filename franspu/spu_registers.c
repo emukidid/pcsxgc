@@ -152,7 +152,7 @@ void FRAN_SPU_writeRegister(unsigned long reg, unsigned short val)
        				break;
      			case 8:								// level with pre-calcs
        			{
-        			const unsigned long lval=val;unsigned long lx;
+        			const unsigned long lval=val;
         			s_chan[ch].ADSRX.AttackModeExp=(lval&0x8000)?1:0; 
         			s_chan[ch].ADSRX.AttackRate = ((lval>>8) & 0x007f)^0x7f;
         			s_chan[ch].ADSRX.DecayRate = 4*(((lval>>4) & 0x000f)^0x1f);
@@ -161,7 +161,7 @@ void FRAN_SPU_writeRegister(unsigned long reg, unsigned short val)
        			}
      			case 10:							// adsr times with pre-calcs
       			{
-       				const unsigned long lval=val;unsigned long lx;
+       				const unsigned long lval=val;
        				s_chan[ch].ADSRX.SustainModeExp = (lval&0x8000)?1:0;
        				s_chan[ch].ADSRX.SustainIncrease= (lval&0x4000)?0:1;
        				s_chan[ch].ADSRX.SustainRate = ((lval>>6) & 0x007f)^0x7f;

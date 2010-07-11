@@ -40,6 +40,19 @@ typedef struct
 	xa_decode_t   xaS;     
 } SPUFreeze_t;
 
+typedef struct
+{
+ unsigned short  spuIrq;
+ unsigned long   pSpuIrq;
+ unsigned long   dummy0;
+ unsigned long   dummy1;
+ unsigned long   dummy2;
+ unsigned long   dummy3;
+
+ SPUCHAN  s_chan[MAXCHAN];   
+
+} SPUOSSFreeze_t;
+
 // user settings          
 int	iUseXA=1;
 int	iSoundMuted=0;
@@ -62,6 +75,8 @@ int SSumR[NSSIZE];
 int SSumL[NSSIZE];
 int iFMod[NSSIZE];
 short * pS;
+
+extern void FRAN_SPU_writeRegister(unsigned long reg, unsigned short val);
 
 // START SOUND... called by main thread to setup a new sound on a channel
 void StartSound(SPUCHAN * pChannel)
@@ -402,10 +417,157 @@ long FRAN_SPU_shutdown(void)
 	return PSE_SPU_ERR_SUCCESS;
 }
 
-// SPUFREEZE: Used for savestates. Dummy.
+void LoadStateV5(SPUFreeze_t * pF)
+{
+  int i;SPUOSSFreeze_t * pFO;
+  
+  pFO=(SPUOSSFreeze_t *)(pF+1);
+  
+  spuIrq   = pFO->spuIrq;
+  if(pFO->pSpuIrq)  {
+    pSpuIrq  = pFO->pSpuIrq+spuMemC;
+  }  
+  else {
+    pSpuIrq=0;
+  }
+  
+  for(i=0;i<MAXCHAN;i++) {
+    memcpy((void *)&s_chan[i],(void *)&pFO->s_chan[i],sizeof(SPUCHAN));
+    
+    s_chan[i].pStart+=(unsigned long)spuMemC;
+    s_chan[i].pCurr+=(unsigned long)spuMemC;
+    s_chan[i].pLoop+=(unsigned long)spuMemC;
+    s_chan[i].iIrqDone=0;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////
+
+void LoadStateUnknown(SPUFreeze_t * pF)
+{
+  int i;
+  
+  for(i=0;i<MAXCHAN;i++) {
+    s_chan[i].bOn=0;
+    s_chan[i].bNew=0;
+    s_chan[i].bStop=0;
+    s_chan[i].ADSR.lVolume=0;
+    s_chan[i].pLoop=spuMemC;
+    s_chan[i].pStart=spuMemC;
+    s_chan[i].pLoop=spuMemC;
+    s_chan[i].iIrqDone=0;
+  }
+
+  pSpuIrq=0;
+  
+  for(i=0;i<0xc0;i++) {
+    FRAN_SPU_writeRegister(0x1f801c00+i*2,regArea[i]);
+  }
+}
+
+/*
+SPUFREEZE: Used for savestates 
+  ulFreezeMode types:
+   Info mode == 2
+   Save mode == 1
+   Load mode == 0
+*/
 long FRAN_SPU_freeze(unsigned long ulFreezeMode,SPUFreeze_t * pF)
 {
-	return 1;
+  int i;SPUOSSFreeze_t * pFO;
+  if(!pF) return 0;                                     // first check
+  
+  if(ulFreezeMode) {                                      // info or save?
+    if(ulFreezeMode==1) {
+      memset(pF,0,sizeof(SPUFreeze_t)+sizeof(SPUOSSFreeze_t));
+    }
+    strcpy(pF->szSPUName,"PBOSS");
+    pF->ulFreezeVersion=5;
+    pF->ulFreezeSize=sizeof(SPUFreeze_t)+sizeof(SPUOSSFreeze_t);
+
+    if(ulFreezeMode==2) {
+      return 1;                       // info mode? ok, bye
+    }
+    // Save State Mode
+    memcpy(pF->cSPUPort,regArea,0x200);
+    
+    // some xa
+    if(xapGlobal && XAPlay!=XAFeed) {                    
+      pF->xaS=*xapGlobal;     
+    }
+    else {
+      memset(&pF->xaS,0,sizeof(xa_decode_t));           // or clean xa
+    }
+   
+    pFO=(SPUOSSFreeze_t *)(pF+1);                       // store special stuff
+    pFO->spuIrq=spuIrq;
+   
+    if(pSpuIrq) {
+      pFO->pSpuIrq  = (unsigned long)pSpuIrq-(unsigned long)spuMemC;
+    }
+
+    for(i=0;i<MAXCHAN;i++) {
+      memcpy((void *)&pFO->s_chan[i],(void *)&s_chan[i],sizeof(SPUCHAN));
+      if(pFO->s_chan[i].pStart) {
+        pFO->s_chan[i].pStart-=(unsigned long)spuMemC;
+      }
+      if(pFO->s_chan[i].pCurr) {
+        pFO->s_chan[i].pCurr-=(unsigned long)spuMemC;
+      }
+      if(pFO->s_chan[i].pLoop) {
+        pFO->s_chan[i].pLoop-=(unsigned long)spuMemC;
+      }
+    }
+
+   return 1;
+  }
+                                                       
+ if(ulFreezeMode!=0) { 
+   return 0;                         // bad mode? bye
+ }
+ 
+  // Load State Mode
+  //memcpy(spuMem,pF->cSPURam,0x80000);                   // get ram (done in Misc.c)
+  memcpy(regArea,pF->cSPUPort,0x200);
+
+  if(pF->xaS.nsamples<=4032) {                           // start xa again
+    FRAN_SPU_playADPCMchannel(&pF->xaS);
+  }
+
+  xapGlobal=0;
+
+  if(!strcmp(pF->szSPUName,"PBOSS") && pF->ulFreezeVersion==5) {
+      LoadStateV5(pF);
+  }
+  else {
+    LoadStateUnknown(pF);
+  }
+
+  // repair some globals
+  for(i=0;i<=62;i+=2) {
+    FRAN_SPU_writeRegister(H_Reverb+i,regArea[(H_Reverb+i-0xc00)>>1]);
+  }
+  FRAN_SPU_writeRegister(H_SPUReverbAddr,regArea[(H_SPUReverbAddr-0xc00)>>1]);
+  FRAN_SPU_writeRegister(H_SPUrvolL,regArea[(H_SPUrvolL-0xc00)>>1]);
+  FRAN_SPU_writeRegister(H_SPUrvolR,regArea[(H_SPUrvolR-0xc00)>>1]);
+ 
+  FRAN_SPU_writeRegister(H_SPUctrl,(unsigned short)(regArea[(H_SPUctrl-0xc00)>>1]|0x4000));
+  FRAN_SPU_writeRegister(H_SPUstat,regArea[(H_SPUstat-0xc00)>>1]);
+  FRAN_SPU_writeRegister(H_CDLeft,regArea[(H_CDLeft-0xc00)>>1]);
+  FRAN_SPU_writeRegister(H_CDRight,regArea[(H_CDRight-0xc00)>>1]);
+
+  // fix to prevent new interpolations from crashing
+  for(i=0;i<MAXCHAN;i++) {
+    s_chan[i].SB[28]=0;
+  }
+
+ // repair LDChen's ADSR changes
+  for(i=0;i<24;i++) {
+    FRAN_SPU_writeRegister(0x1f801c00+(i<<4)+0xc8,regArea[(i<<3)+0x64]);
+    FRAN_SPU_writeRegister(0x1f801c00+(i<<4)+0xca,regArea[(i<<3)+0x65]);
+  }
+
+  return 1;
 }
 
 void FRAN_SPU_setConfigFile(char *cfgfile) {

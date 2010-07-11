@@ -4,6 +4,8 @@
 
 #include "franspu.h"
 
+xa_decode_t   * xapGlobal=0;
+
 unsigned long * XAFeed  = NULL;
 unsigned long * XAPlay  = NULL;
 unsigned long * XAStart = NULL;
@@ -49,6 +51,7 @@ void FeedXA(xa_decode_t *xap)
 	
 	if(!bSPUIsOpen) return;
 	
+	xapGlobal = xap;                                      // store info for save states
 	XARepeat  = 100;                                      // set up repeat
 	
 	iSize=((44100*xap->nsamples)/xap->freq);              // get size
