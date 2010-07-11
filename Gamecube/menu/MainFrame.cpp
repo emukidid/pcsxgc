@@ -164,9 +164,9 @@ void Func_Credits()
 {
 	char CreditsInfo[512] = "";
 #ifdef HW_RVL
-	strcat(CreditsInfo,"WiiSX Beta 2 - www.emulatemii.com\n");
+	strcat(CreditsInfo,"WiiSX Beta 2.1 - www.emulatemii.com\n");
 #else
-	strcat(CreditsInfo,"CubeSX Beta 2 - www.emulatemii.com\n");
+	strcat(CreditsInfo,"CubeSX Beta 2.1 - www.emulatemii.com\n");
 #endif
 	strcat(CreditsInfo,"\n");
 	strcat(CreditsInfo,"Wii64 Team:\n");
