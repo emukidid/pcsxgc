@@ -12,7 +12,7 @@ LICENSE:
 
 QUICK USAGE:
  * ISOs can be .bin/.cue (Make sure .cue contains _relative_ directory!), .img, or .iso format
- * To install: Extract the contents of wiiSX-beta2.zip to the root of your SD card
+ * To install: Extract the contents of wiiSX-beta2.1.zip to the root of your SD card
  * For SD/USB: Put ISOs (.bin/.cue or other formats) in the directory named /wiisx/isos,
     All save types will automatically be placed in /wiisx/saves
  * For DVD: ISOs may be anywhere on the disc (requires DVDxV2 on Wii)
