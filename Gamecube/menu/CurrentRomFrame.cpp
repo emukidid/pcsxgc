@@ -298,7 +298,7 @@ void Func_SaveGame()
   result += SaveMcd(2,saveFile_dir);
   saveFile_deinit(saveFile_dir);
 
-	if (result==amountSaves) {	
+	if (result>=amountSaves) {	
 		switch (nativeSaveDevice)
 		{
 			case NATIVESAVEDEVICE_SD:

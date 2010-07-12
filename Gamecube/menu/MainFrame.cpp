@@ -290,7 +290,7 @@ void Func_PlayGame()
       result += SaveMcd(1,saveFile_dir);
       result += SaveMcd(2,saveFile_dir);
       saveFile_deinit(saveFile_dir);
-    	if (result==amountSaves) {  //saved all of them ok	
+    	if (result>=amountSaves) {  //saved all of them ok	
     		switch (nativeSaveDevice)
     		{
     			case NATIVESAVEDEVICE_SD:
