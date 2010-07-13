@@ -107,6 +107,13 @@ static unsigned int getButtons(int Control)
 	return b;
 }
 
+static inline u8 GCtoPSXAnalog(int a)
+{
+	a = a * 4 / 3; // GC ranges -96 ~ 96 (192 values, PSX has 256)
+	if(a >= 128) a = 127; else if(a < -128) a = -128; // clamp
+	return a + 128; // PSX controls range 0-255
+}
+
 static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
 {
 	if(padNeedScan){ gc_connected = PAD_ScanPads(); padNeedScan = 0; }
@@ -145,23 +152,26 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
 	c->btns.SELECT_BUTTON = isHeld(config->SELECT);
 
 	//adjust values by 128 cause PSX sticks range 0-255 with a 128 center pos
+	int stickX = 0, stickY = 0;
 	if(config->analogL->mask == ANALOG_AS_ANALOG){
-		c->leftStickX   = (u8)(PAD_StickX(Control)+127)    & 0xFF;
-		c->leftStickY   = (u8)(-PAD_StickY(Control)+127)    & 0xFF;
+		stickX = PAD_StickX(Control);
+		stickY = PAD_StickY(Control);
 	} else if(config->analogL->mask == C_STICK_AS_ANALOG){
-		c->leftStickX  = (u8)(PAD_SubStickX(Control)+127) & 0xFF;
-		c->leftStickY  = (u8)(-PAD_SubStickY(Control)+127) & 0xFF;
+		stickX = PAD_SubStickX(Control);
+		stickY = PAD_SubStickY(Control);
 	}
-	if(config->invertedYL) c->leftStickY = (u8)(127-((int)c->leftStickY-127));
+	c->leftStickX = GCtoPSXAnalog(stickX);
+	c->leftStickY = GCtoPSXAnalog(config->invertedYL ? stickY : -stickY);
 
 	if(config->analogR->mask == ANALOG_AS_ANALOG){
-		c->rightStickX   = (u8)(PAD_StickX(Control)+127)    & 0xFF;
-		c->rightStickY   = (u8)(-PAD_StickY(Control)+127)    & 0xFF;
+		stickX = PAD_StickX(Control);
+		stickY = PAD_StickY(Control);
 	} else if(config->analogR->mask == C_STICK_AS_ANALOG){
-		c->rightStickX  = (u8)(PAD_SubStickX(Control)+127) & 0xFF;
-		c->rightStickY  = (u8)(-PAD_SubStickY(Control)+127) & 0xFF;
+		stickX = PAD_SubStickX(Control);
+		stickY = PAD_SubStickY(Control);
 	}
-	if(config->invertedYR) c->rightStickY = (u8)(127-((int)c->rightStickY-127));
+	c->rightStickX = GCtoPSXAnalog(stickX);
+	c->rightStickY = GCtoPSXAnalog(config->invertedYR ? stickY : -stickY);
 
 	// Return 1 if whether the exit button(s) are pressed
 	return isHeld(config->exit) ? 0 : 1;
