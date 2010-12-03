@@ -499,10 +499,6 @@ void SettingsFrame::activateSubmenu(int submenu)
 				FRAME_BUTTONS[i].button->setVisible(true);
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
-			for (int i = 43; i <= 44; i++)	//disable CDDA buttons
-			{
-				FRAME_BUTTONS[i].button->setActive(false);
-			}
 			break;
 		case SUBMENU_SAVES:
 			setDefaultFocus(FRAME_BUTTONS[4].button);
@@ -1166,11 +1162,10 @@ void Func_DisableCddaYes()
 
 void Func_DisableCddaNo()
 {
-/*	for (int i = 43; i <= 44; i++)
+	for (int i = 43; i <= 44; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[44].button->setSelected(true);
-	Config.Cdda = CDDA_ENABLE;*/
-	menu::MessageBox::getInstance().setMessage("CDDA audio is not implemented");
+	Config.Cdda = CDDA_ENABLE;
 }
 
 extern "C" void SetVolume(void);

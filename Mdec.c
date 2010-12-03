@@ -1,6 +1,6 @@
 /***************************************************************************
+ *   Copyright (C) 2010 Gabriele Gorla                                     *
  *   Copyright (C) 2007 Ryan Schultz, PCSX-df Team, PCSX team              *
- *   schultz.ryan@gmail.com, http://rschultz.ath.cx/code.php               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -15,527 +15,599 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin Street, Fifth Floor, Boston, MA 02111-1307 USA.           *
  ***************************************************************************/
 
-/*
-* Movie decoder. Based on the FPSE v0.08 Mdec decoder.
-*/
+#include "mdec.h"
 
-#include "Mdec.h"
 
-#define _FIXED
+#define MDEC_BIAS 2.0f
 
-#define CONST_BITS  8
-#define PASS1_BITS  2
 
-#define FIX_1_082392200  (277)
-#define FIX_1_414213562  (362)
-#define FIX_1_847759065  (473)
-#define FIX_2_613125930  (669)
+#define DSIZE			8
+#define DSIZE2			(DSIZE * DSIZE)
 
-#define MULTIPLY(var,const)  (DESCALE((var) * (const), CONST_BITS))
+#define SCALE(x, n)		((x) >> (n))
+#define SCALER(x, n)	(((x) + ((1 << (n)) >> 1)) >> (n))
 
-#define DEQUANTIZE(coef,quantval)  (coef)
+#define AAN_CONST_BITS			12
+#define AAN_PRESCALE_BITS		16
 
-#define DESCALE(x,n)  ((x)>>(n))
-#define	RANGE(n)	(n)
+#define AAN_CONST_SIZE			24
+#define AAN_CONST_SCALE			(AAN_CONST_SIZE - AAN_CONST_BITS)
 
-#define	DCTSIZE	8
-#define	DCTSIZE2	64
+#define AAN_PRESCALE_SIZE		20
+#define AAN_PRESCALE_SCALE		(AAN_PRESCALE_SIZE-AAN_PRESCALE_BITS)
+#define AAN_EXTRA				12
 
-static void idct1(int *block)
-{
-	int val = RANGE(DESCALE(block[0], PASS1_BITS+3));
+#define FIX_1_082392200		SCALER(18159528, AAN_CONST_SCALE) // B6
+#define FIX_1_414213562		SCALER(23726566, AAN_CONST_SCALE) // A4
+#define FIX_1_847759065		SCALER(31000253, AAN_CONST_SCALE) // A2
+#define FIX_2_613125930		SCALER(43840978, AAN_CONST_SCALE) // B2
+
+#define MULS(var, const)	(SCALE((var) * (const), AAN_CONST_BITS))
+
+#define	RLE_RUN(a)	((a) >> 10)
+#define	RLE_VAL(a)	(((int)(a) << (sizeof(int) * 8 - 10)) >> (sizeof(int) * 8 - 10))
+
+#if 0
+static void printmatrixu8(u8 *m) {
 	int i;
-	for(i=0;i<DCTSIZE2;i++) block[i]=val;
+	for(i = 0; i < DSIZE2; i++) {
+		printf("%3d ",m[i]);
+		if((i+1) % 8 == 0) printf("\n");
+	}
+}
+#endif
+
+static inline void fillcol(int *blk, int val) {
+	blk[0 * DSIZE] = blk[1 * DSIZE] = blk[2 * DSIZE] = blk[3 * DSIZE]
+		= blk[4 * DSIZE] = blk[5 * DSIZE] = blk[6 * DSIZE] = blk[7 * DSIZE] = val;
 }
 
-void idct(int *block,int k)
-{
-  int tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
-  int z5, z10, z11, z12, z13;
-  int *ptr;
-  int i;
-
-  if (!k) { idct1(block); return; }
-
-  ptr = block;
-  for (i = 0; i< DCTSIZE; i++,ptr++) {
-    
-    if ((ptr[DCTSIZE*1] | ptr[DCTSIZE*2] | ptr[DCTSIZE*3] |
-	 ptr[DCTSIZE*4] | ptr[DCTSIZE*5] | ptr[DCTSIZE*6] |
-	 ptr[DCTSIZE*7]) == 0) {
-      ptr[DCTSIZE*0] =
-      ptr[DCTSIZE*1] = 
-      ptr[DCTSIZE*2] = 
-      ptr[DCTSIZE*3] = 
-      ptr[DCTSIZE*4] = 
-      ptr[DCTSIZE*5] = 
-      ptr[DCTSIZE*6] = 
-      ptr[DCTSIZE*7] = 
-      	ptr[DCTSIZE*0];
-      
-      continue;
-    }
-    
-    z10 = ptr[DCTSIZE*0] + ptr[DCTSIZE*4];
-    z11 = ptr[DCTSIZE*0] - ptr[DCTSIZE*4];
-    z13 = ptr[DCTSIZE*2] + ptr[DCTSIZE*6];
-    z12 = MULTIPLY(ptr[DCTSIZE*2] - ptr[DCTSIZE*6], FIX_1_414213562) - z13;
-
-    tmp0 = z10 + z13;
-    tmp3 = z10 - z13;
-    tmp1 = z11 + z12;
-    tmp2 = z11 - z12;
-    
-    z13 = ptr[DCTSIZE*3] + ptr[DCTSIZE*5];
-    z10 = ptr[DCTSIZE*3] - ptr[DCTSIZE*5];
-    z11 = ptr[DCTSIZE*1] + ptr[DCTSIZE*7];
-    z12 = ptr[DCTSIZE*1] - ptr[DCTSIZE*7];
-
-    z5 = MULTIPLY(z12 - z10, FIX_1_847759065);
-    tmp7 = z11 + z13;
-    tmp6 = MULTIPLY(z10, FIX_2_613125930) + z5 - tmp7;
-    tmp5 = MULTIPLY(z11 - z13, FIX_1_414213562) - tmp6;
-    tmp4 = MULTIPLY(z12, FIX_1_082392200) - z5 + tmp5;
-
-    ptr[DCTSIZE*0] = (tmp0 + tmp7);
-    ptr[DCTSIZE*7] = (tmp0 - tmp7);
-    ptr[DCTSIZE*1] = (tmp1 + tmp6);
-    ptr[DCTSIZE*6] = (tmp1 - tmp6);
-    ptr[DCTSIZE*2] = (tmp2 + tmp5);
-    ptr[DCTSIZE*5] = (tmp2 - tmp5);
-    ptr[DCTSIZE*4] = (tmp3 + tmp4);
-    ptr[DCTSIZE*3] = (tmp3 - tmp4);
-
-  }
-  
-  ptr = block;
-  for (i = 0; i < DCTSIZE; i++ ,ptr+=DCTSIZE) {
-    
-    if ((ptr[1] | ptr[2] | ptr[3] | ptr[4] | ptr[5] | ptr[6] |
-	 ptr[7]) == 0) {
-      ptr[0] =
-      ptr[1] = 
-      ptr[2] = 
-      ptr[3] = 
-      ptr[4] = 
-      ptr[5] = 
-      ptr[6] = 
-      ptr[7] = 
-      	RANGE(DESCALE(ptr[0], PASS1_BITS+3));;
-
-      continue;
-    }
-
-    z10 = ptr[0] + ptr[4];
-    z11 = ptr[0] - ptr[4];
-    z13 = ptr[2] + ptr[6];
-    z12 = MULTIPLY(ptr[2] - ptr[6], FIX_1_414213562) - z13;
-
-    tmp0 = z10 + z13;
-    tmp3 = z10 - z13;
-    tmp1 = z11 + z12;
-    tmp2 = z11 - z12;
-
-    z13 = ptr[3] + ptr[5];
-    z10 = ptr[3] - ptr[5];
-    z11 = ptr[1] + ptr[7];
-    z12 = ptr[1] - ptr[7];
-
-    z5 = MULTIPLY(z12 - z10, FIX_1_847759065);
-    tmp7 = z11 + z13;
-    tmp6 = MULTIPLY(z10, FIX_2_613125930) + z5 - tmp7;
-    tmp5 = MULTIPLY(z11 - z13, FIX_1_414213562) - tmp6;
-    tmp4 = MULTIPLY(z12, FIX_1_082392200) - z5 + tmp5;
-
-    ptr[0] = RANGE(DESCALE(tmp0 + tmp7, PASS1_BITS+3));;
-    ptr[7] = RANGE(DESCALE(tmp0 - tmp7, PASS1_BITS+3));;
-    ptr[1] = RANGE(DESCALE(tmp1 + tmp6, PASS1_BITS+3));;
-    ptr[6] = RANGE(DESCALE(tmp1 - tmp6, PASS1_BITS+3));;
-    ptr[2] = RANGE(DESCALE(tmp2 + tmp5, PASS1_BITS+3));;
-    ptr[5] = RANGE(DESCALE(tmp2 - tmp5, PASS1_BITS+3));;
-    ptr[4] = RANGE(DESCALE(tmp3 + tmp4, PASS1_BITS+3));;
-    ptr[3] = RANGE(DESCALE(tmp3 - tmp4, PASS1_BITS+3));;
-
-  }
+static inline void fillrow(int *blk, int val) {
+	blk[0] = blk[1] = blk[2] = blk[3]
+		= blk[4] = blk[5] = blk[6] = blk[7] = val;
 }
 
-unsigned short* rl2blk(int *blk,unsigned short *mdec_rl);
-void iqtab_init(int *iqtab,unsigned char *iq_y);
-void round_init(void);
-void yuv2rgb24(int *blk,unsigned char *image);
-void yuv2rgb15(int *blk,unsigned short *image);
+void idct(int *block,int used_col) {
+	int tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
+	int z5, z10, z11, z12, z13;
+	int *ptr;
+	int i;
+
+	// the block has only the DC coefficient
+	if (used_col == -1) { 
+		int v = block[0];
+		for (i = 0; i < DSIZE2; i++) block[i] = v;
+		return;
+	}
+
+	// last_col keeps track of the highest column with non zero coefficients
+	ptr = block;
+	for (i = 0; i < DSIZE; i++, ptr++) {
+		if ((used_col & (1 << i)) == 0) {
+			// the column is empty or has only the DC coefficient
+			if (ptr[DSIZE * 0]) {
+				fillcol(ptr, ptr[0]);
+				used_col |= (1 << i);
+			}
+			continue;
+		}
+
+		// further optimization could be made by keeping track of 
+		// last_row in rl2blk
+		z10 = ptr[DSIZE * 0] + ptr[DSIZE * 4]; // s04
+		z11 = ptr[DSIZE * 0] - ptr[DSIZE * 4]; // d04
+		z13 = ptr[DSIZE * 2] + ptr[DSIZE * 6]; // s26
+		z12 = MULS(ptr[DSIZE * 2] - ptr[DSIZE * 6], FIX_1_414213562) - z13; 
+		//^^^^  d26=d26*2*A4-s26
+
+		tmp0 = z10 + z13; // os07 = s04 + s26
+		tmp3 = z10 - z13; // os34 = s04 - s26
+		tmp1 = z11 + z12; // os16 = d04 + d26
+		tmp2 = z11 - z12; // os25 = d04 - d26
+
+		z13 = ptr[DSIZE * 3] + ptr[DSIZE * 5]; //s53
+		z10 = ptr[DSIZE * 3] - ptr[DSIZE * 5]; //-d53 
+		z11 = ptr[DSIZE * 1] + ptr[DSIZE * 7]; //s17
+		z12 = ptr[DSIZE * 1] - ptr[DSIZE * 7]; //d17
+
+		tmp7 = z11 + z13; // od07 = s17 + s53
+
+		z5 = (z12 - z10) * (FIX_1_847759065); 
+		tmp6 = SCALE(z10*(FIX_2_613125930) + z5, AAN_CONST_BITS) - tmp7; 
+		tmp5 = MULS(z11 - z13, FIX_1_414213562) - tmp6;
+		tmp4 = SCALE(z12*(FIX_1_082392200) - z5, AAN_CONST_BITS) + tmp5; 
+
+		// path #1
+		//z5 = (z12 - z10)* FIX_1_847759065; 
+		// tmp0 = (d17 + d53) * 2*A2
+
+		//tmp6 = DESCALE(z10*FIX_2_613125930 + z5, CONST_BITS) - tmp7; 
+		// od16 = (d53*-2*B2 + tmp0) - od07
+
+		//tmp4 = DESCALE(z12*FIX_1_082392200 - z5, CONST_BITS) + tmp5; 
+		// od34 = (d17*2*B6 - tmp0) + od25
+
+		// path #2
+
+		// od34 = d17*2*(B6-A2) - d53*2*A2
+		// od16 = d53*2*(A2-B2) + d17*2*A2
+
+		// end
+
+		//    tmp5 = MULS(z11 - z13, FIX_1_414213562) - tmp6;
+		// od25 = (s17 - s53)*2*A4 - od16
+
+		ptr[DSIZE * 0] = (tmp0 + tmp7); // os07 + od07
+		ptr[DSIZE * 7] = (tmp0 - tmp7); // os07 - od07
+		ptr[DSIZE * 1] = (tmp1 + tmp6); // os16 + od16
+		ptr[DSIZE * 6] = (tmp1 - tmp6); // os16 - od16
+		ptr[DSIZE * 2] = (tmp2 + tmp5); // os25 + od25
+		ptr[DSIZE * 5] = (tmp2 - tmp5); // os25 - od25
+		ptr[DSIZE * 4] = (tmp3 + tmp4); // os34 + od34
+		ptr[DSIZE * 3] = (tmp3 - tmp4); // os34 - od34
+	}
+
+	ptr = block;
+	if (used_col == 1) {
+		for (i = 0; i < DSIZE; i++)
+			fillrow(block + DSIZE * i, block[DSIZE * i]);    
+	} else {
+		for (i = 0; i < DSIZE; i++, ptr += DSIZE) {
+			z10 = ptr[0] + ptr[4];
+			z11 = ptr[0] - ptr[4];
+			z13 = ptr[2] + ptr[6];
+			z12 = MULS(ptr[2] - ptr[6], FIX_1_414213562) - z13;
+
+			tmp0 = z10 + z13;
+			tmp3 = z10 - z13;
+			tmp1 = z11 + z12;
+			tmp2 = z11 - z12;
+			
+			z13 = ptr[3] + ptr[5];
+			z10 = ptr[3] - ptr[5];
+			z11 = ptr[1] + ptr[7];
+			z12 = ptr[1] - ptr[7];
+
+			tmp7 = z11 + z13;
+			z5 = (z12 - z10) * FIX_1_847759065; 
+			tmp6 = SCALE(z10 * FIX_2_613125930 + z5, AAN_CONST_BITS) - tmp7;
+			tmp5 = MULS(z11 - z13, FIX_1_414213562) - tmp6;
+			tmp4 = SCALE(z12 * FIX_1_082392200 - z5, AAN_CONST_BITS) + tmp5;
+
+			ptr[0] = tmp0 + tmp7;
+
+			ptr[7] = tmp0 - tmp7;
+			ptr[1] = tmp1 + tmp6;
+			ptr[6] = tmp1 - tmp6;
+			ptr[2] = tmp2 + tmp5;
+			ptr[5] = tmp2 - tmp5;
+			ptr[4] = tmp3 + tmp4;
+			ptr[3] = tmp3 - tmp4;
+		}
+	}
+}
+
+// mdec0: command register
+#define MDEC0_STP			0x02000000
+#define MDEC0_RGB24			0x08000000
+#define MDEC0_SIZE_MASK		0x0000FFFF
+
+// mdec1: status register
+#define MDEC1_BUSY			0x20000000
+#define MDEC1_DREQ			0x18000000
+#define MDEC1_FIFO			0xc0000000
+#define MDEC1_RGB24			0x02000000
+#define MDEC1_STP			0x00800000
+#define MDEC1_RESET			0x80000000
+
+struct _pending_dma1 {
+	u32 adr;
+	u32 bcr;
+	u32 chcr;
+};
 
 struct {
-	u32 command;
-	u32 status;
-	unsigned short *rl;
-	int rlsize;
+	u32 reg0;
+	u32 reg1;
+	u16 * rl;
+	u16 * rl_end;
+	struct _pending_dma1 pending_dma1;
 } mdec;
 
-int iq_y[DCTSIZE2],iq_uv[DCTSIZE2];
+static int iq_y[DSIZE2], iq_uv[DSIZE2];
+
+static int zscan[DSIZE2] = {
+	0 , 1 , 8 , 16, 9 , 2 , 3 , 10,
+	17, 24, 32, 25, 18, 11, 4 , 5 ,
+	12, 19, 26, 33, 40, 48, 41, 34,
+	27, 20, 13, 6 , 7 , 14, 21, 28,
+	35, 42, 49, 56, 57, 50, 43, 36,
+	29, 22, 15, 23, 30, 37, 44, 51,
+	58, 59, 52, 45, 38, 31, 39, 46,
+	53, 60, 61, 54, 47, 55, 62, 63
+};
+
+static int aanscales[DSIZE2] = {
+	1048576, 1454417, 1370031, 1232995, 1048576,  823861, 567485, 289301,
+	1454417, 2017334, 1900287, 1710213, 1454417, 1142728, 787125, 401273,
+	1370031, 1900287, 1790031, 1610986, 1370031, 1076426, 741455, 377991,
+	1232995, 1710213, 1610986, 1449849, 1232995,  968758, 667292, 340183,
+	1048576, 1454417, 1370031, 1232995, 1048576,  823861, 567485, 289301,
+	823861,  1142728, 1076426, 968758,  823861,  647303, 445870, 227303,
+	567485,  787125,  741455,  667292,  567485,  445870, 307121, 156569,
+	289301,  401273,  377991,  340183,  289301,  227303, 156569,  79818
+};
+
+static void iqtab_init(int *iqtab, unsigned char *iq_y) {
+	int i;
+
+	for (i = 0; i < DSIZE2; i++) {
+		iqtab[i] = (iq_y[i] * SCALER(aanscales[zscan[i]], AAN_PRESCALE_SCALE));
+	}
+}
+
+#define	MDEC_END_OF_DATA	0xfe00
+
+unsigned short *rl2blk(int *blk, unsigned short *mdec_rl) {
+	int i, k, q_scale, rl, used_col;
+ 	int *iqtab;
+
+	memset(blk, 0, 6 * DSIZE2 * sizeof(int));
+	iqtab = iq_uv;
+	for (i = 0; i < 6; i++) {
+		// decode blocks (Cr,Cb,Y1,Y2,Y3,Y4)
+		if (i == 2) iqtab = iq_y;
+
+		rl = SWAP16(*mdec_rl); mdec_rl++;
+		q_scale = RLE_RUN(rl);
+		blk[0] = SCALER(iqtab[0] * RLE_VAL(rl), AAN_EXTRA - 3);
+		for (k = 0, used_col = 0;;) {
+			rl = SWAP16(*mdec_rl); mdec_rl++;
+			if (rl == MDEC_END_OF_DATA) break;
+			k += RLE_RUN(rl) + 1;	// skip zero-coefficients
+
+			if (k > 63) {
+				// printf("run lenght exceeded 64 enties\n");
+				break;
+			}
+
+			// zigzag transformation
+			blk[zscan[k]] = SCALER(RLE_VAL(rl) * iqtab[k] * q_scale, AAN_EXTRA);
+			// keep track of used columns to speed up the idtc
+			used_col |= (zscan[k] > 7) ? 1 << (zscan[k] & 7) : 0;
+		}
+
+		if (k == 0) used_col = -1;
+		// used_col is -1 for blocks with only the DC coefficient
+		// any other value is a bitmask of the columns that have 
+		// at least one non zero cofficient in the rows 1-7
+		// single coefficients in row 0 are treted specially 
+		// in the idtc function
+		idct(blk, used_col);
+		blk += DSIZE2;
+	}
+	return mdec_rl;
+}
+
+// full scale (JPEG)
+// Y/Cb/Cr[0...255] -> R/G/B[0...255]
+// R = 1.000 * (Y) + 1.400 * (Cr - 128)
+// G = 1.000 * (Y) - 0.343 * (Cb - 128) - 0.711 (Cr - 128)
+// B = 1.000 * (Y) + 1.765 * (Cb - 128)
+#define	MULR(a)			((1434 * (a))) 
+#define	MULB(a)			((1807 * (a))) 
+#define	MULG2(a, b)		((-351 * (a) - 728 * (b)))
+#define MULY(a)			((a) << 10)
+
+#define	MAKERGB15(r, g, b, a)	(SWAP16(a | ((b) << 10) | ((g) << 5) | (r)))
+#define	SCALE8(c)				SCALER(c, 20) 
+#define SCALE5(c)				SCALER(c, 23)
+
+#define CLAMP5(c)	( ((c) < -16) ? 0 : (((c) > (31 - 16)) ? 31 : ((c) + 16)) )
+#define CLAMP8(c)	( ((c) < -128) ? 0 : (((c) > (255 - 128)) ? 255 : ((c) + 128)) )
+
+#define CLAMP_SCALE8(a)   (CLAMP8(SCALE8(a)))
+#define CLAMP_SCALE5(a)   (CLAMP5(SCALE5(a)))
+
+static inline void putlinebw15(unsigned short *image, int *Yblk) {
+	int i;
+	int A = (mdec.reg0 & MDEC0_STP) ? 0x8000 : 0;
+
+	for (i = 0; i < 8; i++, Yblk++) {
+		int Y = *Yblk;
+		// missing rounding
+		image[i] = SWAP16((CLAMP5(Y >> 3) * 0x421) | A);
+	}
+}
+
+static void putquadrgb15(unsigned short *image, int *Yblk, int Cr, int Cb) {
+	int Y, R, G, B;
+	int A = (mdec.reg0 & MDEC0_STP) ? 0x8000 : 0;
+	R = MULR(Cr);
+	G = MULG2(Cb, Cr);
+	B = MULB(Cb);
+
+	// added transparency
+	Y = MULY(Yblk[0]);
+	image[0] = MAKERGB15(CLAMP_SCALE5(Y + R), CLAMP_SCALE5(Y + G), CLAMP_SCALE5(Y + B), A);
+	Y = MULY(Yblk[1]);
+	image[1] = MAKERGB15(CLAMP_SCALE5(Y + R), CLAMP_SCALE5(Y + G), CLAMP_SCALE5(Y + B), A);
+	Y = MULY(Yblk[8]);
+	image[16] = MAKERGB15(CLAMP_SCALE5(Y + R), CLAMP_SCALE5(Y + G), CLAMP_SCALE5(Y + B), A);
+	Y = MULY(Yblk[9]);
+	image[17] = MAKERGB15(CLAMP_SCALE5(Y + R), CLAMP_SCALE5(Y + G), CLAMP_SCALE5(Y + B), A);
+}
+
+static void yuv2rgb15(int *blk, unsigned short *image) {
+	int x, y;
+	int *Yblk = blk + DSIZE2 * 2;
+	int *Crblk = blk;
+	int *Cbblk = blk + DSIZE2;
+
+	if (!Config.Mdec) {
+		for (y = 0; y < 16; y += 2, Crblk += 4, Cbblk += 4, Yblk += 8, image += 24) {
+			if (y == 8) Yblk += DSIZE2;
+			for (x = 0; x < 4; x++, image += 2, Crblk++, Cbblk++, Yblk += 2) {
+				putquadrgb15(image, Yblk, *Crblk, *Cbblk);
+				putquadrgb15(image + 8, Yblk + DSIZE2, *(Crblk + 4), *(Cbblk + 4));
+			}
+		} 
+	} else {
+		for (y = 0; y < 16; y++, Yblk += 8, image += 16) {
+			if (y == 8) Yblk += DSIZE2;
+			putlinebw15(image, Yblk);
+			putlinebw15(image + 8, Yblk + DSIZE2);
+		}
+	}
+}
+
+static inline void putlinebw24(unsigned char *image, int *Yblk) {
+	int i;
+	unsigned char Y;
+	for (i = 0; i < 8 * 3; i += 3, Yblk++) {
+		Y = CLAMP8(*Yblk);
+		image[i + 0] = Y;
+		image[i + 1] = Y;
+		image[i + 2] = Y;
+	}
+}
+
+static void putquadrgb24(unsigned char *image, int *Yblk, int Cr, int Cb) {
+	int Y, R, G, B;
+
+	R = MULR(Cr);
+	G = MULG2(Cb,Cr);
+	B = MULB(Cb);
+
+	Y = MULY(Yblk[0]);
+	image[0 * 3 + 0] = CLAMP_SCALE8(Y + R);
+	image[0 * 3 + 1] = CLAMP_SCALE8(Y + G);
+	image[0 * 3 + 2] = CLAMP_SCALE8(Y + B);
+	Y = MULY(Yblk[1]);
+	image[1 * 3 + 0] = CLAMP_SCALE8(Y + R);
+	image[1 * 3 + 1] = CLAMP_SCALE8(Y + G);
+	image[1 * 3 + 2] = CLAMP_SCALE8(Y + B);
+	Y = MULY(Yblk[8]);
+	image[16 * 3 + 0] = CLAMP_SCALE8(Y + R);
+	image[16 * 3 + 1] = CLAMP_SCALE8(Y + G);
+	image[16 * 3 + 2] = CLAMP_SCALE8(Y + B);
+	Y = MULY(Yblk[9]);
+	image[17 * 3 + 0] = CLAMP_SCALE8(Y + R);
+	image[17 * 3 + 1] = CLAMP_SCALE8(Y + G);
+	image[17 * 3 + 2] = CLAMP_SCALE8(Y + B);
+}
+
+static void yuv2rgb24(int *blk, unsigned char *image) {
+	int x, y;
+	int *Yblk = blk + DSIZE2 * 2;
+	int *Crblk = blk;
+	int *Cbblk = blk + DSIZE2;
+
+	if (!Config.Mdec) {
+		for (y = 0; y < 16; y += 2, Crblk += 4, Cbblk += 4, Yblk += 8, image += 24 * 3) {
+			if (y == 8) Yblk += DSIZE2;
+			for (x = 0; x < 4; x++, image += 6, Crblk++, Cbblk++, Yblk += 2) {
+				putquadrgb24(image, Yblk, *Crblk, *Cbblk);
+				putquadrgb24(image + 8 * 3, Yblk + DSIZE2, *(Crblk + 4), *(Cbblk + 4));
+			}
+		}
+	} else {
+		for (y = 0; y < 16; y++, Yblk += 8, image += 16 * 3) {
+			if (y == 8) Yblk += DSIZE2;
+			putlinebw24(image, Yblk);
+			putlinebw24(image + 8 * 3, Yblk + DSIZE2);
+		}
+	}
+}
 
 void mdecInit(void) {
-	mdec.rl = (u16*)&psxM[0x100000];
-	mdec.command = 0;
-	mdec.status = 0;
-	round_init();
+	mdec.rl = (u16 *)&psxM[0x100000];
+	mdec.reg0 = 0;
+	mdec.reg1 = 0;
 }
 
-
+// command register
 void mdecWrite0(u32 data) {
-#ifdef CDR_LOG
-	CDR_LOG("mdec0 write %lx\n", data);
-#endif
-	mdec.command = data;
-	if ((data&0xf5ff0000)==0x30000000) {
-		mdec.rlsize = data&0xffff;
-	}
-}
-
-void mdecWrite1(u32 data) {
-#ifdef CDR_LOG
-	CDR_LOG("mdec1 write %lx\n", data);
-#endif
-	if (data&0x80000000) { // mdec reset
-		mdec.command = 0;
-		mdec.status = 0;
-	}
+	mdec.reg0 = data;
 }
 
 u32 mdecRead0(void) {
-#ifdef CDR_LOG
-	CDR_LOG("mdec0 read %lx\n", mdec.command);
-#endif
-	return mdec.command;
+	return mdec.reg0;
 }
 
-// mdec status:
-#define MDEC_BUSY	0x20000000
-#define MDEC_DREQ	0x18000000
-#define MDEC_FIFO	0xc0000000
-#define MDEC_RGB24	0x02000000
-#define MDEC_STP	0x00800000
+// status register
+void mdecWrite1(u32 data) {
+	if (data & MDEC1_RESET) { // mdec reset
+		mdec.reg0 = 0;
+		mdec.reg1 = 0;
+		mdec.pending_dma1.adr = 0;
+	}
+}
 
 u32 mdecRead1(void) {
-#ifdef CDR_LOG
-	CDR_LOG("mdec1 read %lx\n", mdec.status);
-#endif
-	return mdec.status;
+	u32 v = mdec.reg1;
+	return v;
 }
 
 void psxDma0(u32 adr, u32 bcr, u32 chcr) {
-	int cmd = mdec.command;
+	int cmd = mdec.reg0;
 	int size;
 
-#ifdef CDR_LOG
-	CDR_LOG("DMA0 %lx %lx %lx\n", adr, bcr, chcr);
-#endif
-
-	if (chcr!=0x01000201) return;
-
-	size = (bcr>>16)*(bcr&0xffff);
-
-	if (cmd==0x60000000) {
-	} else
-	if (cmd==0x40000001) {
-		u8 *p = (u8*)PSXM(adr);
-		iqtab_init(iq_y,p);
-		iqtab_init(iq_uv,p+64);
-	} else
-	if ((cmd&0xf5ff0000)==0x30000000) {
-		mdec.rl = (u16*)PSXM(adr);
+	if (chcr != 0x01000201) {
+		return;
 	}
-	else {
+
+	/* mdec is STP till dma0 is released */
+	mdec.reg1 |= MDEC1_STP;
+
+	size = (bcr >> 16) * (bcr & 0xffff);
+
+	switch (cmd >> 28) {
+		case 0x3: // decode
+			mdec.rl = (u16 *) PSXM(adr);
+			/* now the mdec is busy till all data are decoded */
+			mdec.reg1 |= MDEC1_BUSY;
+			/* detect the end of decoding */
+			mdec.rl_end = mdec.rl + (size * 2);
+
+			/* sanity check */
+			if(mdec.rl_end <= mdec.rl) {
+				MDECINDMA_INT( size / 4 );
+				return;
+			}
+
+			/* process the pending dma1 */
+			if(mdec.pending_dma1.adr){
+				psxDma1(mdec.pending_dma1.adr, mdec.pending_dma1.bcr, mdec.pending_dma1.chcr);
+			}
+			mdec.pending_dma1.adr = 0;
+			return;
+			
+
+		case 0x4: // quantization table upload
+			{
+				u8 *p = (u8 *)PSXM(adr);
+				// printf("uploading new quantization table\n");
+				// printmatrixu8(p);
+				// printmatrixu8(p + 64);
+				iqtab_init(iq_y, p);
+				iqtab_init(iq_uv, p + 64);
+			}
+
+			MDECINDMA_INT( size / 4 );
+      return;
+
+		case 0x6: // cosine table
+			// printf("mdec cosine table\n");
+
+			MDECINDMA_INT( size / 4 );
+      return;
+
+		default:
+			// printf("mdec unknown command\n");
+			break;
 	}
 
 	HW_DMA0_CHCR &= SWAP32(~0x01000000);
 	DMA_INTERRUPT(0);
 }
 
+void mdec0Interrupt()
+{
+	HW_DMA0_CHCR &= SWAP32(~0x01000000);
+	DMA_INTERRUPT(0);
+}
+
 void psxDma1(u32 adr, u32 bcr, u32 chcr) {
-	int blk[DCTSIZE2*6];
+	int blk[DSIZE2 * 6];
 	unsigned short *image;
-	int size;
+	int size, dmacnt;
 
-#ifdef CDR_LOG
-	CDR_LOG("DMA1 %lx %lx %lx (cmd = %lx)\n", adr, bcr, chcr, mdec.command);
-#endif
+	if (chcr != 0x01000200) return;
 
-	if (chcr!=0x01000200) return;
+	size = (bcr >> 16) * (bcr & 0xffff);
 
-	size = (bcr>>16)*(bcr&0xffff);
-
-    image = (u16*)PSXM(adr);
-	if (mdec.command&0x08000000) {
-//		MDECOUTDMA_INT(((size * (1000000 / 9000)) / 4) /** 4*/ / BIAS);
-		MDECOUTDMA_INT((size / 4) / BIAS);
-		size = size / ((16*16)/2);
-		for (;size>0;size--,image+=(16*16)) {
-			mdec.rl = rl2blk(blk,mdec.rl);
-			yuv2rgb15(blk,image);
-		}
+	if (!(mdec.reg1 & MDEC1_BUSY)) {
+		/* add to pending */
+		mdec.pending_dma1.adr = adr;
+		mdec.pending_dma1.bcr = bcr;
+		mdec.pending_dma1.chcr = chcr;
+		/* do not free the dma */
 	} else {
-//		MDECOUTDMA_INT(((size * (1000000 / 9000)) / 4) /** 4*/ / BIAS);
-		MDECOUTDMA_INT((size / 4) / BIAS);
-		size = size / ((24*16)/2);
-		for (;size>0;size--,image+=(24*16)) {
-			mdec.rl = rl2blk(blk,mdec.rl);
-			yuv2rgb24(blk,(u8 *)image);
+
+	image = (u16 *)PSXM(adr);
+
+	if (mdec.reg0 & MDEC0_RGB24) { // 15-b decoding
+		size = size / ((16 * 16) / 2);
+		dmacnt = size * (16 * 16 * 2);
+		for (; size > 0; size--, image += (16 * 16)) {
+			mdec.rl = rl2blk(blk, mdec.rl);
+			yuv2rgb15(blk, image);
+		}
+	} else { // 24-b decoding
+		size = size / ((24 * 16) / 2);
+		dmacnt = size * (16 * 16 * 3);
+		for (; size > 0; size--, image += (24 * 16)) {
+			mdec.rl = rl2blk(blk, mdec.rl);
+			yuv2rgb24(blk, (u8 *)image);
 		}
 	}
-	mdec.status|= MDEC_BUSY;
+	
+	/* define the power of mdec */
+	MDECOUTDMA_INT((int) (dmacnt * MDEC_BIAS));
+	}
 }
 
 void mdec1Interrupt() {
-#ifdef CDR_LOG
-	CDR_LOG("mdec1Interrupt\n");
-#endif
-	if (HW_DMA1_CHCR & SWAP32(0x01000000)) {
-    // Set a fixed value totaly arbitrarie
-    // another sound value is PSXCLK / 60 or
-    // PSXCLK / 50 since the bug happend
-    // at end of frame. PSXCLK / 1000 seems
-    // good for FF9.
-    // (for FF9 need < ~28000)
-    // CAUTION: commented interrupt-handling may lead to problems, keep an eye ;-)
-		MDECOUTDMA_INT(PSXCLK / 1000);
-    	//psxRegs.interrupt|= 0x02000000;
-		//psxRegs.intCycle[5+24+1] *= 8;
-		//psxRegs.intCycle[5+24] = psxRegs.cycle;
-		HW_DMA1_CHCR&= SWAP32(~0x01000000);
-		DMA_INTERRUPT(1);
-	} else {
-		mdec.status&= ~MDEC_BUSY;
+	/* Author : gschwind
+	 *
+	 * in that case we have done all decoding stuff
+	 * Note that : each block end with 0xfe00 flags
+	 * the list of blocks end with the same 0xfe00 flags
+	 * data loock like :
+	 *
+	 *  data block ...
+	 *  0xfe00
+	 *  data block ...
+	 *  0xfe00
+	 *  a lost of block ..
+	 *
+	 *  0xfe00
+	 *  the last block
+	 *  0xfe00
+	 *  0xfe00
+	 *
+	 * OR
+	 *
+	 * if the 0xfe00 is not present the data size is important.
+	 *
+	 */
+
+	/* this else if avoid to read outside memory */
+	if(mdec.rl >= mdec.rl_end) {
+		mdec.reg1 &= ~MDEC1_STP;
+		HW_DMA0_CHCR &= SWAP32(~0x01000000);
+		DMA_INTERRUPT(0);
+		mdec.reg1 &= ~MDEC1_BUSY;
+	} else if (SWAP16(*(mdec.rl)) == MDEC_END_OF_DATA) {
+		mdec.reg1 &= ~MDEC1_STP;
+		HW_DMA0_CHCR &= SWAP32(~0x01000000);
+		DMA_INTERRUPT(0);
+		mdec.reg1 &= ~MDEC1_BUSY;
 	}
-}
 
-#define	RUNOF(a)	((a)>>10)
-#define	VALOF(a)	(((int)(a)<<(32-10))>>(32-10))
-
-static int zscan[DCTSIZE2] = {
-	0 ,1 ,8 ,16,9 ,2 ,3 ,10,
-	17,24,32,25,18,11,4 ,5 ,
-	12,19,26,33,40,48,41,34,
-	27,20,13,6 ,7 ,14,21,28,
-	35,42,49,56,57,50,43,36,
-	29,22,15,23,30,37,44,51,
-	58,59,52,45,38,31,39,46,
-	53,60,61,54,47,55,62,63
-};
-
-static int aanscales[DCTSIZE2] = {
-	  16384, 22725, 21407, 19266, 16384, 12873,  8867,  4520,
-	  22725, 31521, 29692, 26722, 22725, 17855, 12299,  6270,
-	  21407, 29692, 27969, 25172, 21407, 16819, 11585,  5906,
-	  19266, 26722, 25172, 22654, 19266, 15137, 10426,  5315,
-	  16384, 22725, 21407, 19266, 16384, 12873,  8867,  4520,
-	  12873, 17855, 16819, 15137, 12873, 10114,  6967,  3552,
-	   8867, 12299, 11585, 10426,  8867,  6967,  4799,  2446,
-	   4520,  6270,  5906,  5315,  4520,  3552,  2446,  1247
-};
-
-void iqtab_init(int *iqtab,unsigned char *iq_y) {
-#define CONST_BITS14 14
-#define	IFAST_SCALE_BITS 2
-	int i;
-
-	for(i=0;i<DCTSIZE2;i++) {
-		iqtab[i] =iq_y[i] *aanscales[zscan[i]]>>(CONST_BITS14-IFAST_SCALE_BITS);
-	}
-}
-
-#define	NOP	0xfe00
-unsigned short* rl2blk(int *blk,unsigned short *mdec_rl) {
-	int i,k,q_scale,rl;
-	int *iqtab;
-
-	memset (blk, 0, 6*DCTSIZE2*4);
-	iqtab = iq_uv;
-	for(i=0;i<6;i++) {	// decode blocks (Cr,Cb,Y1,Y2,Y3,Y4)
-		if (i>1) iqtab = iq_y;
-
-		// zigzag transformation
-		rl = SWAP16(*mdec_rl); mdec_rl++;
-		q_scale = RUNOF(rl);
-		blk[0] = iqtab[0]*VALOF(rl);
-		for(k = 0;;) {
-			rl = SWAP16(*mdec_rl); mdec_rl++;
-			if (rl==NOP) break;
-			k += RUNOF(rl)+1;	// skip level zero-coefficients
-			if (k > 63) break;
-			blk[zscan[k]] = (VALOF(rl) * iqtab[k] * q_scale) / 8; // / 16;
-		}
-//		blk[0] = (blk[0] * iq_t[0] * 8) / 16;
-//		for(int j=1;j<64;j++)
-//			blk[j] = blk[j] * iq_t[j] * q_scale;
-
-		// idct
-		idct(blk,k+1);
-
-		blk+=DCTSIZE2;
-	}
-	return mdec_rl;
-}
-
-#ifdef _FIXED
-#define	MULR(a)		((((int)0x0000059B) * (a)) >> 10)
-#define	MULG(a)		((((int)0xFFFFFEA1) * (a)) >> 10)
-#define	MULG2(a)	((((int)0xFFFFFD25) * (a)) >> 10)
-#define	MULB(a)		((((int)0x00000716) * (a)) >> 10)
-#else
-#define	MULR(a)		((int)((float)1.40200 * (a)))
-#define	MULG(a)		((int)((float)-0.3437 * (a)))
-#define	MULG2(a)	((int)((float)-0.7143 * (a)))
-#define	MULB(a)		((int)((float)1.77200 * (a)))
-#endif
-
-#define	MAKERGB15(r,g,b)	( SWAP16((((r)>>3)<<10)|(((g)>>3)<<5)|((b)>>3)) )
-#define	ROUND(c)	roundtbl[((c)+128+256)]//&0x3ff]
-/*#define ROUND(c)	round(c+128)
-int round(int r) {
-	if (r<0) return 0;
-	if (r>255) return 255;
-	return r;
-}*/
-
-#define RGB15(n, Y) \
-	image[n] = MAKERGB15(ROUND(Y + R),ROUND(Y + G),ROUND(Y + B));
-
-#define RGB15BW(n, Y) \
-	image[n] = MAKERGB15(ROUND(Y),ROUND(Y),ROUND(Y));
-
-#define RGB24(n, Y) \
-	image[n+2] = ROUND(Y + R); \
-	image[n+1] = ROUND(Y + G); \
-	image[n+0] = ROUND(Y + B);
-
-#define RGB24BW(n, Y) \
-	image[n+2] = ROUND(Y); \
-	image[n+1] = ROUND(Y); \
-	image[n+0] = ROUND(Y);
-
-unsigned char roundtbl[256*3];
-
-void round_init(void) {
-	int i;
-	for(i=0;i<256;i++) {
-		roundtbl[i]=0;
-		roundtbl[i+256]=i;
-		roundtbl[i+512]=255;
-	}
-}
-
-void yuv2rgb15(int *blk,unsigned short *image) {
-	int x,y;
-	int *Yblk = blk+DCTSIZE2*2;
-	int Cb,Cr,R,G,B;
-	int *Cbblk = blk;
-	int *Crblk = blk+DCTSIZE2;
-
-	if (!Config.Mdec)
-	for (y=0;y<16;y+=2,Crblk+=4,Cbblk+=4,Yblk+=8,image+=24) {
-		if (y==8) Yblk+=DCTSIZE2;
-		for (x=0;x<4;x++,image+=2,Crblk++,Cbblk++,Yblk+=2) {
-			Cr = *Crblk;
-			Cb = *Cbblk;
-			R = MULR(Cr);
-			G = MULG(Cb) + MULG2(Cr);
-			B = MULB(Cb);
-
-			RGB15(0, Yblk[0]);
-			RGB15(1, Yblk[1]);
-			RGB15(16, Yblk[8]);
-			RGB15(17, Yblk[9]);
-
-			Cr = *(Crblk+4);
-			Cb = *(Cbblk+4);
-			R = MULR(Cr);
-			G = MULG(Cb) + MULG2(Cr);
-			B = MULB(Cb);
-
-			RGB15(8, Yblk[DCTSIZE2+0]);
-			RGB15(9, Yblk[DCTSIZE2+1]);
-			RGB15(24, Yblk[DCTSIZE2+8]);
-			RGB15(25, Yblk[DCTSIZE2+9]);
-		}
-	} else
-	for (y=0;y<16;y+=2,Yblk+=8,image+=24) {
-		if (y==8) Yblk+=DCTSIZE2;
-		for (x=0;x<4;x++,image+=2,Yblk+=2) {
-			RGB15BW(0, Yblk[0]);
-			RGB15BW(1, Yblk[1]);
-			RGB15BW(16, Yblk[8]);
-			RGB15BW(17, Yblk[9]);
-
-			RGB15BW(8, Yblk[DCTSIZE2+0]);
-			RGB15BW(9, Yblk[DCTSIZE2+1]);
-			RGB15BW(24, Yblk[DCTSIZE2+8]);
-			RGB15BW(25, Yblk[DCTSIZE2+9]);
-		}
-	}
-}
-
-void yuv2rgb24(int *blk,unsigned char *image) {
-	int x,y;
-	int *Yblk = blk+DCTSIZE2*2;
-	int Cb,Cr,R,G,B;
-	int *Cbblk = blk;
-	int *Crblk = blk+DCTSIZE2;
-
-	if (!Config.Mdec)
-	for (y=0;y<16;y+=2,Crblk+=4,Cbblk+=4,Yblk+=8,image+=24*3) {
-		if (y==8) Yblk+=DCTSIZE2;
-		for (x=0;x<4;x++,image+=6,Crblk++,Cbblk++,Yblk+=2) {
-			Cr = *Crblk;
-			Cb = *Cbblk;
-			R = MULR(Cr);
-			G = MULG(Cb) + MULG2(Cr);
-			B = MULB(Cb);
-
-			RGB24(0, Yblk[0]);
-			RGB24(1*3, Yblk[1]);
-			RGB24(16*3, Yblk[8]);
-			RGB24(17*3, Yblk[9]);
-
-			Cr = *(Crblk+4);
-			Cb = *(Cbblk+4);
-			R = MULR(Cr);
-			G = MULG(Cb) + MULG2(Cr);
-			B = MULB(Cb);
-
-			RGB24(8*3, Yblk[DCTSIZE2+0]);
-			RGB24(9*3, Yblk[DCTSIZE2+1]);
-			RGB24(24*3, Yblk[DCTSIZE2+8]);
-			RGB24(25*3, Yblk[DCTSIZE2+9]);
-		}
-	} else
-	for (y=0;y<16;y+=2,Yblk+=8,image+=24*3) {
-		if (y==8) Yblk+=DCTSIZE2;
-		for (x=0;x<4;x++,image+=6,Yblk+=2) {
-			RGB24BW(0, Yblk[0]);
-			RGB24BW(1*3, Yblk[1]);
-			RGB24BW(16*3, Yblk[8]);
-			RGB24BW(17*3, Yblk[9]);
-
-			RGB24BW(8*3, Yblk[DCTSIZE2+0]);
-			RGB24BW(9*3, Yblk[DCTSIZE2+1]);
-			RGB24BW(24*3, Yblk[DCTSIZE2+8]);
-			RGB24BW(25*3, Yblk[DCTSIZE2+9]);
-		}
-	}
+	HW_DMA1_CHCR &= SWAP32(~0x01000000);
+	DMA_INTERRUPT(1);
+	return;
 }
 
 int mdecFreeze(gzFile f, int Mode) {
-	char Unused[4096];
-
 	gzfreeze(&mdec, sizeof(mdec));
-	gzfreezel(iq_y);
-	gzfreezel(iq_uv);
-	gzfreezel(Unused);
+	gzfreeze(iq_y, sizeof(iq_y));
+	gzfreeze(iq_uv, sizeof(iq_uv));
 
 	return 0;
 }
-

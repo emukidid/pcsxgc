@@ -1,7 +1,5 @@
 /***************************************************************************
- *   PCSX-Revolution - PlayStation Emulator for Nintendo Wii               *
- *   Copyright (C) 2009-2010  PCSX-Revolution Dev Team                     *
- *   <http://code.google.com/p/pcsx-revolution/>                           *
+ *   Copyright (C) 2007 Ryan Schultz, PCSX-df Team, PCSX team              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,47 +17,60 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA 02111-1307 USA.           *
  ***************************************************************************/
 
-#ifndef __GTE_H__
-#define __GTE_H__
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "psxcommon.h"
 #include "r3000a.h"
+#include "psxbios.h"
 
-void gteMFC2();
-void gteCFC2();
-void gteMTC2();
-void gteCTC2();
-void gteLWC2();
-void gteSWC2();
+#include "cheat.h"
+#include "ppf.h"
 
-void gteRTPS();
-void gteOP();
-void gteNCLIP();
-void gteDPCS();
-void gteINTPL();
-void gteMVMVA();
-void gteNCDS();
-void gteNCDT();
-void gteCDP();
-void gteNCCS();
-void gteCC();
-void gteNCS();
-void gteNCT();
-void gteSQR();
-void gteDCPL();
-void gteDPCT();
-void gteAVSZ3();
-void gteAVSZ4();
-void gteRTPT();
-void gteGPF();
-void gteGPL();
-void gteNCCT();
+PcsxConfig Config;
+boolean NetOpened = FALSE;
 
-#ifdef __cplusplus
+int Log = 0;
+FILE *emuLog = NULL;
+
+int EmuInit() {
+	return psxInit();
 }
+
+void EmuReset() {
+	FreeCheatSearchResults();
+	FreeCheatSearchMem();
+
+	psxReset();
+}
+
+void EmuShutdown() {
+	ClearAllCheats();
+	FreeCheatSearchResults();
+	FreeCheatSearchMem();
+
+	FreePPFCache();
+
+	psxShutdown();
+}
+
+void EmuUpdate() {
+	// Do not allow hotkeys inside a softcall from HLE BIOS
+	if (!Config.HLE || !hleSoftCall)
+		SysUpdate();
+
+	ApplyCheats();
+}
+
+void __Log(char *fmt, ...) {
+	va_list list;
+#ifdef LOG_STDOUT
+	char tmp[1024];
 #endif
+
+	va_start(list, fmt);
+#ifndef LOG_STDOUT
+	vfprintf(emuLog, fmt, list);
+#else
+	vsprintf(tmp, fmt, list);
+	SysPrintf(tmp);
 #endif
+	va_end(list);
+}

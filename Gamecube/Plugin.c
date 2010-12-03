@@ -159,8 +159,6 @@ void SignalExit(int sig) {
 
 void SPUirq(void);
 
-int NetOpened = 0;
-
 #define PARSEPATH(dst, src) \
 	ptr = src + strlen(src); \
 	while (*ptr != '\\' && ptr != src) ptr--; \

@@ -35,7 +35,7 @@ extern "C" {
 #include "../fileBrowser/fileBrowser-DVD.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
 #include "../fileBrowser/fileBrowser-SMB.h"
-extern long Mooby2CDRgetTN(unsigned char *buffer);
+extern long CDR_getTN(unsigned char *buffer);
 }
 
 void Func_PrevPage();
@@ -488,10 +488,10 @@ void fileBrowserFrame_LoadFile(int i)
 			strcat(RomInfo,buffer);
 			sprintf(buffer,"BIOS: %s\n",(Config.HLE==BIOS_USER_DEFINED) ? "USER DEFINED":"HLE");
 			strcat(RomInfo,buffer);
-			unsigned char tracks[2];
-      Mooby2CDRgetTN(&tracks[0]);
-      sprintf(buffer,"Number of tracks %i\n", tracks[1]);
-			strcat(RomInfo,buffer);
+			/*unsigned char tracks[2];
+      		CDR_getTN(&tracks[0]);
+      		sprintf(buffer,"Number of tracks %i\n", tracks[1]);
+			strcat(RomInfo,buffer);*/
     		
 			
 			switch (autoSaveLoaded)
@@ -529,6 +529,7 @@ void fileBrowserFrame_LoadFile(int i)
 			    break;
 		  }
 */
+			sprintf(feedback_string, "%s\n%s",feedback_string,dir_entries[i].name);
 			menu::MessageBox::getInstance().setMessage(feedback_string);
 		}
 

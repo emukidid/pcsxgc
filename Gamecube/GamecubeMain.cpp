@@ -389,6 +389,8 @@ int loadISOSwap(fileBrowser_file* file) {
 	
 	memcpy(&isoFile, file, sizeof(fileBrowser_file) );
 	
+	CDR_close();
+	SetIsoFile(&file->name[0]);
 	//might need to insert code here to trigger a lid open/close interrupt
 	if(CDR_open() < 0)
 		return -1;
@@ -412,6 +414,8 @@ int loadISO(fileBrowser_file* file)
 		SysClose();	
 		hasLoadedISO = FALSE;
 	}
+	SetIsoFile(&file->name[0]);
+		
 	if(SysInit() < 0)
 		return -1;
 	hasLoadedISO = TRUE;

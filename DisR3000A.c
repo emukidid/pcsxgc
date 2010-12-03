@@ -1,6 +1,5 @@
 /***************************************************************************
  *   Copyright (C) 2007 Ryan Schultz, PCSX-df Team, PCSX team              *
- *   schultz.ryan@gmail.com, http://rschultz.ath.cx/code.php               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -15,14 +14,14 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin Street, Fifth Floor, Boston, MA 02111-1307 USA.           *
  ***************************************************************************/
 
 /* 
 * R3000A disassembler.
 */
 
-#include "PsxCommon.h"
+#include "psxcommon.h"
 
 char ostr[256];
 
@@ -48,7 +47,7 @@ typedef char* (*TdisR3000AF)(u32 code, u32 pc);
 #define MakeDisFg(fn, b) char* fn(u32 code, u32 pc) { b; return ostr; }
 #define MakeDisF(fn, b) \
 	static char* fn(u32 code, u32 pc) { \
-		sprintf (ostr, "%08x %08x:", pc, code); \
+		sprintf (ostr, "%8.8x %8.8x:", pc, code); \
 		b; /*ostr[(strlen(ostr) - 1)] = 0;*/ return ostr; \
 	}
 
@@ -75,16 +74,16 @@ typedef char* (*TdisR3000AF)(u32 code, u32 pc);
 #define _OfB_     _Im_, _nRs_
 
 #define dName(i)	sprintf(ostr, "%s %-7s,", ostr, i)
-#define dGPR(i)		sprintf(ostr, "%s %08x (%s),", ostr, psxRegs.GPR.r[i], disRNameGPR[i])
-#define dCP0(i)		sprintf(ostr, "%s %08x (%s),", ostr, psxRegs.CP0.r[i], disRNameCP0[i])
-#define dHI()		sprintf(ostr, "%s %08x (%s),", ostr, psxRegs.GPR.n.hi, "hi")
-#define dLO()		sprintf(ostr, "%s %08x (%s),", ostr, psxRegs.GPR.n.lo, "lo")
-#define dImm()		sprintf(ostr, "%s %08x (%08x),", ostr, _Im_, _Im_)
-#define dTarget()	sprintf(ostr, "%s %08x,", ostr, _Target_)
-#define dSa()		sprintf(ostr, "%s %08x (%08x),", ostr, _Sa_, _Sa_)
-#define dOfB()		sprintf(ostr, "%s %08x (%08x (%s)),", ostr, _Im_, psxRegs.GPR.r[_Rs_], disRNameGPR[_Rs_])
-#define dOffset()	sprintf(ostr, "%s %08x,", ostr, _Branch_)
-#define dCode()		sprintf(ostr, "%s %08x,", ostr, (code >> 6) & 0xffffff)
+#define dGPR(i)		sprintf(ostr, "%s %8.8x (%s),", ostr, psxRegs.GPR.r[i], disRNameGPR[i])
+#define dCP0(i)		sprintf(ostr, "%s %8.8x (%s),", ostr, psxRegs.CP0.r[i], disRNameCP0[i])
+#define dHI()		sprintf(ostr, "%s %8.8x (%s),", ostr, psxRegs.GPR.n.hi, "hi")
+#define dLO()		sprintf(ostr, "%s %8.8x (%s),", ostr, psxRegs.GPR.n.lo, "lo")
+#define dImm()		sprintf(ostr, "%s %4.4x (%d),", ostr, _Im_, _Im_)
+#define dTarget()	sprintf(ostr, "%s %8.8x,", ostr, _Target_)
+#define dSa()		sprintf(ostr, "%s %2.2x (%d),", ostr, _Sa_, _Sa_)
+#define dOfB()		sprintf(ostr, "%s %4.4x (%8.8x (%s)),", ostr, _Im_, psxRegs.GPR.r[_Rs_], disRNameGPR[_Rs_])
+#define dOffset()	sprintf(ostr, "%s %8.8x,", ostr, _Branch_)
+#define dCode()		sprintf(ostr, "%s %8.8x,", ostr, (code >> 6) & 0xffffff)
 
 /*********************************************************
 * Arithmetic with immediate operand                      *

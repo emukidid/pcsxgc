@@ -172,23 +172,19 @@ unsigned char SSS_PADpoll (const unsigned char value);
 long SSS_PADreadPort1 (PadDataS* pads);
 long SSS_PADreadPort2 (PadDataS* pads);
 
-/* Mooby28 CDR Plugin */
-void CALLBACK Mooby2CDRabout(void);
-long CALLBACK Mooby2CDRtest(void);
-long CALLBACK Mooby2CDRconfigure(void);
-long CALLBACK Mooby2CDRclose(void);
-long CALLBACK Mooby2CDRopen(void);
-long CALLBACK Mooby2CDRshutdown(void);
-long CALLBACK Mooby2CDRplay(unsigned char * sector);
-long CALLBACK Mooby2CDRstop(void);
-long CALLBACK Mooby2CDRgetStatus(struct CdrStat *stat) ;
-char CALLBACK Mooby2CDRgetDriveLetter(void);
-long CALLBACK Mooby2CDRinit(void);
-long CALLBACK Mooby2CDRgetTN(unsigned char *buffer);
-unsigned char * CALLBACK Mooby2CDRgetBufferSub(void);
-long CALLBACK Mooby2CDRgetTD(unsigned char track, unsigned char *buffer);
-long CALLBACK Mooby2CDRreadTrack(unsigned char *time);
-unsigned char * CALLBACK Mooby2CDRgetBuffer(void);
+/* CDR ISO Plugin */
+long CALLBACK ISOinit(void);
+long CALLBACK ISOshutdown(void);
+long CALLBACK ISOopen(void);
+long CALLBACK ISOclose(void);
+long CALLBACK ISOgetTN(unsigned char *buffer);
+long CALLBACK ISOgetTD(unsigned char track, unsigned char *buffer);
+long CALLBACK ISOreadTrack(unsigned char *time);
+unsigned char * CALLBACK ISOgetBuffer(void);
+long CALLBACK ISOplay(unsigned char *time);
+long CALLBACK ISOstop(void);
+unsigned char* CALLBACK ISOgetBufferSub(void);
+long CALLBACK ISOgetStatus(struct CdrStat *stat);
 
 #define EMPTY_PLUGIN \
 	{ NULL,      \
@@ -299,6 +295,35 @@ unsigned char * CALLBACK Mooby2CDRgetBuffer(void);
 	      (void*)Mooby2CDRgetStatus}, \
 	    { "CDRgetBufferSub", \
 	      (void*)Mooby2CDRgetBufferSub} \
+	       } }
+	       
+#define CDRISO_PLUGIN \
+	{ "CDR",      \
+	  12,         \
+	  { { "CDRinit",  \
+	      (void*)ISOinit }, \
+	    { "CDRshutdown",	\
+	      (void*)ISOshutdown}, \
+	    { "CDRopen", \
+	      (void*)ISOopen}, \
+	    { "CDRclose", \
+	      (void*)ISOclose}, \
+	    { "CDRgetTN", \
+	      (void*)ISOgetTN}, \
+	    { "CDRgetTD", \
+	      (void*)ISOgetTD}, \
+	    { "CDRreadTrack", \
+	      (void*)ISOreadTrack}, \
+	    { "CDRgetBuffer", \
+	      (void*)ISOgetBuffer}, \
+	    { "CDRplay", \
+	      (void*)ISOplay}, \
+	    { "CDRstop", \
+	      (void*)ISOstop}, \
+	    { "CDRgetStatus", \
+	      (void*)ISOgetStatus}, \
+	    { "CDRgetBufferSub", \
+	      (void*)ISOgetBufferSub} \
 	       } }
 	       
 #define CDR_PLUGIN \
@@ -515,7 +540,7 @@ unsigned char * CALLBACK Mooby2CDRgetBuffer(void);
 //#define PLUGIN_SLOT_2 PAD2_PLUGIN
 #define PLUGIN_SLOT_2 SSS_PAD2_PLUGIN
 //#define PLUGIN_SLOT_3 CDR_PLUGIN
-#define PLUGIN_SLOT_3 MOOBY28_CDR_PLUGIN
+#define PLUGIN_SLOT_3 CDRISO_PLUGIN
 //#define PLUGIN_SLOT_4 SPU_NULL_PLUGIN
 //#define PLUGIN_SLOT_4 SPU_PEOPS_PLUGIN
 #define PLUGIN_SLOT_4 FRANSPU_PLUGIN

@@ -1,6 +1,5 @@
 /***************************************************************************
  *   Copyright (C) 2007 Ryan Schultz, PCSX-df Team, PCSX team              *
- *   schultz.ryan@gmail.com, http://rschultz.ath.cx/code.php               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -15,16 +14,20 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin Street, Fifth Floor, Boston, MA 02111-1307 USA.           *
  ***************************************************************************/
 
 #ifndef __R3000A_H__
 #define __R3000A_H__
 
-#include "PsxCommon.h"
-#include "PsxMem.h"
-#include "PsxCounters.h"
-#include "PsxBios.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "psxcommon.h"
+#include "psxmem.h"
+#include "psxcounters.h"
+#include "psxbios.h"
 
 typedef struct {
 	int  (*Init)();
@@ -37,11 +40,24 @@ typedef struct {
 
 extern R3000Acpu *psxCpu;
 extern R3000Acpu psxInt;
-extern R3000Acpu psxIntDbg;
 #if defined(__x86_64__) || defined(__i386__) || defined(__sh__) || defined(__ppc__) || defined(HW_RVL) || defined(HW_DOL)
 extern R3000Acpu psxRec;
 #define PSXREC
 #endif
+
+typedef union {
+#if defined(__BIGENDIAN__)
+	struct { u8 h3, h2, h, l; } b;
+	struct { s8 h3, h2, h, l; } sb;
+	struct { u16 h, l; } w;
+	struct { s16 h, l; } sw;
+#else
+	struct { u8 l, h, h2, h3; } b;
+	struct { u16 l, h; } w;
+	struct { s8 l, h, h2, h3; } sb;
+	struct { s16 l, h; } sw;
+#endif
+} PAIR;
 
 typedef union {
 	struct {
@@ -50,19 +66,20 @@ typedef union {
 						s0, s1, s2, s3, s4, s5, s6, s7,
 						t8, t9, k0, k1, gp, sp, s8, ra, lo, hi;
 	} n;
-	u32 r[34]; /* Lo, Hi in r[33] and r[34] */
+	u32 r[34]; /* Lo, Hi in r[32] and r[33] */
+	PAIR p[34];
 } psxGPRRegs;
 
 typedef union {
 	struct {
-		u32	Index,     Random,    EntryLo0,  EntryLo1,
-						Context,   PageMask,  Wired,     Reserved0,
-						BadVAddr,  Count,     EntryHi,   Compare,
-						Status,    Cause,     EPC,       PRid,
-						Config,    LLAddr,    WatchLO,   WatchHI,
-						XContext,  Reserved1, Reserved2, Reserved3,
-						Reserved4, Reserved5, ECC,       CacheErr,
-						TagLo,     TagHi,     ErrorEPC,  Reserved6;
+		u32	Index,     Random,    EntryLo0,  BPC,
+				Context,   BDA,       PIDMask,   DCIC,
+				BadVAddr,  BDAM,      EntryHi,   BPCM,
+				Status,    Cause,     EPC,       PRid,
+				Config,    LLAddr,    WatchLO,   WatchHI,
+				XContext,  Reserved1, Reserved2, Reserved3,
+				Reserved4, Reserved5, ECC,       CacheErr,
+				TagLo,     TagHi,     ErrorEPC,  Reserved6;
 	} n;
 	u32 r[32];
 } psxCP0Regs;
@@ -106,6 +123,7 @@ typedef union {
 		s32          lzcs, lzcr;
 	} n;
 	u32 r[32];
+	PAIR p[32];
 } psxCP2Data;
 
 typedef union {
@@ -123,18 +141,39 @@ typedef union {
 		s32      flag;
 	} n;
 	u32 r[32];
+	PAIR p[32];
 } psxCP2Ctrl;
+
+enum {
+	PSXINT_SIO = 0,
+	PSXINT_CDR,
+	PSXINT_CDREAD,
+	PSXINT_GPUDMA,
+	PSXINT_MDECOUTDMA,
+	PSXINT_SPUDMA,
+	PSXINT_GPUBUSY,
+	PSXINT_MDECINDMA,
+	PSXINT_GPUOTCDMA,
+	PSXINT_CDRDMA,
+	PSXINT_CDREPPLAY,
+	PSXINT_CDRDBUF,
+	PSXINT_CDRLID,
+	PSXINT_CDRPLAY
+};
 
 typedef struct {
 	psxGPRRegs GPR;		/* General Purpose Registers */
 	psxCP0Regs CP0;		/* Coprocessor0 Registers */
 	psxCP2Data CP2D; 	/* Cop2 data registers */
 	psxCP2Ctrl CP2C; 	/* Cop2 control registers */
-    u32 pc;				/* Program counter */
-    u32 code;			/* The instruction */
+  u32 pc;						/* Program counter */
+  u32 code;					/* The instruction */
 	u32 cycle;
 	u32 interrupt;
-	u32 intCycle[32];
+	struct { u32 sCycle, cycle; } intCycle[32];
+	u8 ICache_Addr[0x1000];
+	u8 ICache_Code[0x1000];
+	u32 ICache_valid;
 } psxRegisters;
 
 extern psxRegisters psxRegs;
@@ -218,7 +257,9 @@ void psxExecuteBios();
 int  psxTestLoadDelay(int reg, u32 tmp);
 void psxDelayTest(int reg, u32 bpc);
 void psxTestSWInts();
-void psxTestHWInts();
 void psxJumpTest();
 
-#endif /* __R3000A_H__ */
+#ifdef __cplusplus
+}
+#endif
+#endif

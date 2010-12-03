@@ -1,6 +1,5 @@
 /***************************************************************************
  *   Copyright (C) 2007 Ryan Schultz, PCSX-df Team, PCSX team              *
- *   schultz.ryan@gmail.com, http://rschultz.ath.cx/code.php               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -15,20 +14,24 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin Street, Fifth Floor, Boston, MA 02111-1307 USA.           *
  ***************************************************************************/
 
-/*
-* This file contains common definitions and includes for all parts of the
+/* 
+* This file contains common definitions and includes for all parts of the 
 * emulator core.
 */
 
 #ifndef __PSXCOMMON_H__
 #define __PSXCOMMON_H__
 
-//#include "config.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-/* System includes */
+#include "config.h"
+
+// System includes
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
@@ -38,33 +41,31 @@
 #include <time.h>
 #include <ctype.h>
 #include <sys/types.h>
+#include <assert.h>
 #include <zlib.h>
-//#include <glib.h>
 
-/* Define types */
-/*typedef int8_t s8;
-typedef int16_t s16;
-typedef int32_t s32;
-typedef int64_t s64;
-typedef intptr_t sptr;
-
-typedef uint8_t u8;
-typedef uint16_t u16;
-typedef uint32_t u32;
-typedef uint64_t u64;
+// Define types
+typedef uint8_t boolean;
 typedef uintptr_t uptr;
-*/
-/* Local includes */
-#include "System.h"
-#include "CoreDebug.h"
 
-/* Ryan TODO WTF is this? */
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
+// Local includes
+#include "system.h"
+#include "debug.h"
+
 #if defined (__LINUX__) || defined (__MACOSX__) || defined(HW_RVL) || defined(HW_DOL)
 #define strnicmp strncasecmp
 #endif
 #define __inline inline
 
-/* Enables NLS/internationalization if active */
+// Enables NLS/internationalization if active
 #ifdef ENABLE_NLS
 
 #include <libintl.h>
@@ -84,63 +85,79 @@ typedef uintptr_t uptr;
 
 #endif
 
+extern FILE *emuLog;
 extern int Log;
+
 void __Log(char *fmt, ...);
 
 typedef struct {
-	char Gpu[256];
-	char Spu[256];
-	char Cdr[256];
-	char Pad1[256];
-	char Pad2[256];
-	char Net[256];
-	char Mcd1[256];
-	char Mcd2[256];
-	char Bios[256];
+	char Gpu[MAXPATHLEN];
+	char Spu[MAXPATHLEN];
+	char Cdr[MAXPATHLEN];
+	char Pad1[MAXPATHLEN];
+	char Pad2[MAXPATHLEN];
+	char Net[MAXPATHLEN];
+    char Sio1[MAXPATHLEN];
+	char Mcd1[MAXPATHLEN];
+	char Mcd2[MAXPATHLEN];
+	char Bios[MAXPATHLEN];
 	char BiosDir[MAXPATHLEN];
 	char PluginsDir[MAXPATHLEN];
-	long Xa;
-	long Sio;
-	long Mdec;
-	long PsxAuto;
-	long PsxType;		/* NTSC or PAL */
-	long Cdda;
-	long HLE;
-	long Cpu;
-	long Dbg;
-	long PsxOut;
-	long SpuIrq;
-	long RCntFix;
-	long UseNet;
-	long VSyncWA;
+	char PatchesDir[MAXPATHLEN];
+	boolean Xa;
+	boolean Sio;
+	boolean Mdec;
+	boolean PsxAuto;
+	boolean Cdda;
+	boolean HLE;
+	boolean Debug;
+	boolean PsxOut;
+	boolean SpuIrq;
+	boolean RCntFix;
+	boolean UseNet;
+	boolean VSyncWA;
+	u8 Cpu; // CPU_DYNAREC or CPU_INTERPRETER
+	u8 PsxType; // PSX_TYPE_NTSC or PSX_TYPE_PAL
+#ifdef _WIN32
+	char Lang[256];
+#endif
 } PcsxConfig;
 
 extern PcsxConfig Config;
+extern boolean NetOpened;
 
-extern char LoadCdBios;
-extern int StatesC;
-extern int cdOpenCase;
-extern int NetOpened;
-
-#define gzfreeze(ptr, size) \
+#define gzfreeze(ptr, size) { \
 	if (Mode == 1) gzwrite(f, ptr, size); \
-	if (Mode == 0) gzread(f, ptr, size);
+	if (Mode == 0) gzread(f, ptr, size); \
+}
 
-#define gzfreezel(ptr) gzfreeze(ptr, sizeof(ptr))
-
-//#define BIAS	4
+// Make the timing events trigger faster as we are currently assuming everything
+// takes one cycle, which is not the case on real hardware.
+// FIXME: Count the proper cycle and get rid of this
 #define BIAS	2
-#define PSXCLK	33868800	/* 33.8688 Mhz */
+#define PSXCLK	33868800	/* 33.8688 MHz */
+
+enum {
+	PSX_TYPE_NTSC = 0,
+	PSX_TYPE_PAL
+}; // PSX Types
+
+enum {
+	CPU_DYNAREC = 0,
+	CPU_INTERPRETER
+}; // CPU Types
 
 enum {
 	BIOS_USER_DEFINED,
 	BIOS_HLE
 };	/* BIOS Types */
 
-enum {
-	PSX_TYPE_NTSC,
-	PSX_TYPE_PAL
-};	/* PSX Type */
+int EmuInit();
+void EmuReset();
+void EmuShutdown();
+void EmuUpdate();
 
-
-#endif /* __PSXCOMMON_H__ */
+#ifdef __cplusplus
+}
+#endif
+#endif

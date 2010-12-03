@@ -1,6 +1,5 @@
 /***************************************************************************
  *   Copyright (C) 2007 Ryan Schultz, PCSX-df Team, PCSX team              *
- *   schultz.ryan@gmail.com, http://rschultz.ath.cx/code.php               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -15,27 +14,19 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin Street, Fifth Floor, Boston, MA 02111-1307 USA.           *
  ***************************************************************************/
 
 /*
-* Internal emulated HLE BIOS.
-*/
+ * Internal simulated HLE BIOS.
+ */
 
-#include <stdlib.h> 
-#include <stdio.h> 
-#include <string.h>
-#include <stdarg.h>
-#include <ctype.h>
+// TODO: implement all system calls, count the exact CPU cycles of system calls.
 
-#include <gccore.h>
+#include "psxbios.h"
+#include "psxhw.h"
 extern char mcd1Written;
 extern char mcd2Written;
-
-#include "PsxBios.h"
-#include "PsxHw.h"
-
-//We try to emulate bios :) HELP US :P
 
 char *biosA0n[256] = {
 // 0x00
@@ -160,6 +151,8 @@ char *biosC0n[256] = {
 #define t5 (psxRegs.GPR.n.t5)
 #define t6 (psxRegs.GPR.n.t6)
 #define t7 (psxRegs.GPR.n.t7)
+#define t8 (psxRegs.GPR.n.t8)
+#define t9 (psxRegs.GPR.n.t9)
 #define s0 (psxRegs.GPR.n.s0)
 #define s1 (psxRegs.GPR.n.s1)
 #define s2 (psxRegs.GPR.n.s2)
@@ -168,8 +161,6 @@ char *biosC0n[256] = {
 #define s5 (psxRegs.GPR.n.s5)
 #define s6 (psxRegs.GPR.n.s6)
 #define s7 (psxRegs.GPR.n.s7)
-#define t8 (psxRegs.GPR.n.t6)
-#define t9 (psxRegs.GPR.n.t7)
 #define k0 (psxRegs.GPR.n.k0)
 #define k1 (psxRegs.GPR.n.k1)
 #define gp (psxRegs.GPR.n.gp)
@@ -178,24 +169,12 @@ char *biosC0n[256] = {
 #define ra (psxRegs.GPR.n.ra)
 #define pc0 (psxRegs.pc)
 
-#define SANE_PSXM(mem) ((u8*)(psxMemRLUT[(mem) >> 16] + ((mem) & 0xffff)))
-#define Ra0 ((char*)SANE_PSXM(a0))
-#define Ra1 ((char*)SANE_PSXM(a1))
-#define Ra2 ((char*)SANE_PSXM(a2))
-#define Ra3 ((char*)SANE_PSXM(a3))
-#define Rv0 ((char*)SANE_PSXM(v0))
-#define Rsp ((char*)SANE_PSXM(sp))
-
-
-
-typedef struct _malloc_chunk {
-	unsigned long stat;
-	unsigned long size;
-	struct _malloc_chunk *fd;
-	struct _malloc_chunk *bk;
-} malloc_chunk;
-
-#define INUSE 0x1
+#define Ra0 ((char *)PSXM(a0))
+#define Ra1 ((char *)PSXM(a1))
+#define Ra2 ((char *)PSXM(a2))
+#define Ra3 ((char *)PSXM(a3))
+#define Rv0 ((char *)PSXM(v0))
+#define Rsp ((char *)PSXM(sp))
 
 typedef struct {
 	u32 desc;
@@ -214,10 +193,10 @@ typedef struct {
 
 /*
 typedef struct {
-	long next;
-	long func1;
-	long func2;
-	long pad;
+	s32 next;
+	s32 func1;
+	s32 func2;
+	s32 pad;
 } SysRPst;
 */
 
@@ -229,25 +208,25 @@ typedef struct {
 } TCB;
 
 typedef struct {                   
-	u32 _pc0;      
-	u32 gp0;      
-	u32 t_addr;   
-	u32 t_size;   
-	u32 d_addr;   
-	u32 d_size;   
-	u32 b_addr;   
-	u32 b_size;   
+	u32 _pc0;
+	u32 gp0;
+	u32 t_addr;
+	u32 t_size;
+	u32 d_addr;
+	u32 d_size;
+	u32 b_addr;
+	u32 b_size;
 	u32 S_addr;
 	u32 s_size;
-	u32 _sp,_fp,_gp,ret,base;
+	u32 _sp, _fp, _gp, ret, base;
 } EXEC;
 
 struct DIRENTRY {
 	char name[20];
-	long attr;
-	long size;
-	struct DIRENTRY *next;
-	long head;
+	s32 attr;
+	s32 size;
+	u32 next;
+	s32 head;
 	char system[4];
 };
 
@@ -261,9 +240,8 @@ typedef struct {
 
 static u32 *jmp_int = NULL;
 static int *pad_buf = NULL;
-static char *pad_buf1,*pad_buf2;//shadow add
-static int pad_buf1len,pad_buf2len;//shadow add
-
+static char *pad_buf1 = NULL, *pad_buf2 = NULL;
+static int pad_buf1len, pad_buf2len;
 
 static u32 regs[35];
 static EvCB *Event;
@@ -274,33 +252,59 @@ static EvCB *UeEV; // 0xf3
 static EvCB *SwEV; // 0xf4
 static EvCB *ThEV; // 0xff
 static u32 *heap_addr = NULL;
+static u32 *heap_end = NULL;
 static u32 SysIntRP[8];
 static int CardState = -1;
 static TCB Thread[8];
 static int CurThread = 0;
 static FileDesc FDesc[32];
 
-static __inline void softCall(u32 pc) {
+boolean hleSoftCall = FALSE;
+
+static inline void softCall(u32 pc) {
 	pc0 = pc;
 	ra = 0x80001000;
+
+	hleSoftCall = TRUE;
+
 	while (pc0 != 0x80001000) psxCpu->ExecuteBlock();
+
+	hleSoftCall = FALSE;
 }
 
-static __inline void softCall2(u32 pc) {
+static inline void softCall2(u32 pc) {
 	u32 sra = ra;
 	pc0 = pc;
 	ra = 0x80001000;
+
+	hleSoftCall = TRUE;
+
 	while (pc0 != 0x80001000) psxCpu->ExecuteBlock();
 	ra = sra;
+
+	hleSoftCall = FALSE;
 }
 
-static __inline void DeliverEvent(u32 ev, u32 spec) {
-	if (Event[ev][spec].status != SWAP32(EvStACTIVE)) return;
+static inline void DeliverEvent(u32 ev, u32 spec) {
+	if (Event[ev][spec].status != EvStACTIVE) return;
 
-//	Event[ev][spec].status = SWAP32(EvStALREADY);
-	if (Event[ev][spec].mode == SWAP32(EvMdINTR)) {
-		softCall2(SWAP32(Event[ev][spec].fhandler));
-	} else Event[ev][spec].status = SWAP32(EvStALREADY);
+//	Event[ev][spec].status = EvStALREADY;
+	if (Event[ev][spec].mode == EvMdINTR) {
+		softCall2(Event[ev][spec].fhandler);
+	} else Event[ev][spec].status = EvStALREADY;
+}
+
+static inline void SaveRegs() {
+	memcpy(regs, psxRegs.GPR.r, 32*4);
+	regs[32] = psxRegs.GPR.n.lo;
+	regs[33] = psxRegs.GPR.n.hi;
+	regs[34] = psxRegs.pc;
+}
+
+static inline void LoadRegs() {
+	memcpy(psxRegs.GPR.r, regs, 32*4);
+	psxRegs.GPR.n.lo = regs[32];
+	psxRegs.GPR.n.hi = regs[33];
 }
 
 /*                                           *
@@ -310,255 +314,645 @@ static __inline void DeliverEvent(u32 ev, u32 spec) {
 
 
 void psxBios_abs() { // 0x0e
-	v0 = abs(a0);
+	if ((s32)a0 < 0) v0 = -(s32)a0;
+	else v0 = a0;
 	pc0 = ra;
 }
 
 void psxBios_labs() { // 0x0f
-	v0 = labs(a0);
-	pc0 = ra;
+	psxBios_abs();
 }
 
 void psxBios_atoi() { // 0x10
-	v0 = atoi((char *)Ra0);
+	s32 n = 0, f = 0;
+	char *p = (char *)Ra0;
+
+	for (;;p++) {
+		switch (*p) {
+			case ' ': case '\t': continue;
+			case '-': f++;
+			case '+': p++;
+		}
+		break;
+	}
+
+	while (*p >= '0' && *p <= '9') {
+		n = n * 10 + *p++ - '0';
+	}
+
+	v0 = (f ? -n : n);
 	pc0 = ra;
 }
 
 void psxBios_atol() { // 0x11
-	v0 = atoi((char *)Ra0);
-	pc0 = ra;
+	psxBios_atoi();
 }
 
-void psxBios_setjmp() { // 13
-	u32 *jmp_buf= (u32*)Ra0;
+void psxBios_setjmp() { // 0x13
+	u32 *jmp_buf = (u32 *)Ra0;
 	int i;
 
 #ifdef PSXBIOS_LOG
 	PSXBIOS_LOG("psxBios_%s\n", biosA0n[0x13]);
 #endif
 
-	jmp_buf[0] = SWAP32(ra);
-	jmp_buf[1] = SWAP32(sp);
-	jmp_buf[2] = SWAP32(fp);
-	for (i=0; i<8; i++) // s0-s7
-		jmp_buf[3+i] = SWAP32(psxRegs.GPR.r[16+i]);
-	jmp_buf[11] = SWAP32(gp);
+	jmp_buf[0] = ra;
+	jmp_buf[1] = sp;
+	jmp_buf[2] = fp;
+	for (i = 0; i < 8; i++) // s0-s7
+		jmp_buf[3 + i] = psxRegs.GPR.r[16 + i];
+	jmp_buf[11] = gp;
 
 	v0 = 0; pc0 = ra;
 }
 
-void psxBios_longjmp() { //14
-	u32 *jmp_buf= (u32*)Ra0;
+void psxBios_longjmp() { // 0x14
+	u32 *jmp_buf = (u32 *)Ra0;
 	int i;
 
 #ifdef PSXBIOS_LOG
 	PSXBIOS_LOG("psxBios_%s\n", biosA0n[0x14]);
 #endif
 
-	ra = SWAP32(jmp_buf[0]); /* ra */
-	sp = SWAP32(jmp_buf[1]); /* sp */
-	fp = SWAP32(jmp_buf[2]); /* fp */
-	for (i=0; i<8; i++) // s0-s7
-	   psxRegs.GPR.r[16+i] = SWAP32(jmp_buf[3+i]);		
-	gp = SWAP32(jmp_buf[11]); /* gp */
+	ra = jmp_buf[0]; /* ra */
+	sp = jmp_buf[1]; /* sp */
+	fp = jmp_buf[2]; /* fp */
+	for (i = 0; i < 8; i++) // s0-s7
+		psxRegs.GPR.r[16 + i] = jmp_buf[3 + i];
+	gp = jmp_buf[11]; /* gp */
 
 	v0 = a1; pc0 = ra;
 }
 
 void psxBios_strcat() { // 0x15
+	char *p1 = (char *)Ra0, *p2 = (char *)Ra1;
+
 #ifdef PSXBIOS_LOG
 	PSXBIOS_LOG("psxBios_%s: %s, %s\n", biosA0n[0x15], Ra0, Ra1);
 #endif
 
-	strcat(Ra0, Ra1);
+	while (*p1++);
+	--p1;
+	while ((*p1++ = *p2++) != '\0');
+
 	v0 = a0; pc0 = ra;
 }
 
-/*0x16*/void psxBios_strncat() { strncat(Ra0, Ra1, a2); v0 = a0; pc0 = ra;}
+void psxBios_strncat() { // 0x16
+	char *p1 = (char *)Ra0, *p2 = (char *)Ra1;
+	s32 n = a2;
 
-void psxBios_strcmp() { // 0x17
 #ifdef PSXBIOS_LOG
-	PSXBIOS_LOG("psxBios_%s: %s (%lx), %s (%lx)\n", biosA0n[0x17], Ra0, a0, Ra1, a1);
+	PSXBIOS_LOG("psxBios_%s: %s (%x), %s (%x), %d\n", biosA0n[0x16], Ra0, a0, Ra1, a1, a2);
 #endif
 
-	v0 = strcmp(Ra0, Ra1);
+	while (*p1++);
+	--p1;
+	while ((*p1++ = *p2++) != '\0') {
+		if (--n < 0) {
+			*--p1 = '\0';
+			break;
+		}
+	}
+
+	v0 = a0; pc0 = ra;
+}
+
+void psxBios_strcmp() { // 0x17
+	char *p1 = (char *)Ra0, *p2 = (char *)Ra1;
+
+#ifdef PSXBIOS_LOG
+	PSXBIOS_LOG("psxBios_%s: %s (%x), %s (%x)\n", biosA0n[0x17], Ra0, a0, Ra1, a1);
+#endif
+
+	while (*p1 == *p2++) {
+		if (*p1++ == '\0') {
+			v0 = 0;
+			pc0 = ra;
+			return;
+		}
+	}
+
+	v0 = (*p1 - *--p2);
 	pc0 = ra;
 }
 
 void psxBios_strncmp() { // 0x18
+	char *p1 = (char *)Ra0, *p2 = (char *)Ra1;
+	s32 n = a2;
+
 #ifdef PSXBIOS_LOG
-	PSXBIOS_LOG("psxBios_%s: %s (%lx), %s (%lx), %d\n", biosA0n[0x18], Ra0, a0, Ra1, a1, a2);
+	PSXBIOS_LOG("psxBios_%s: %s (%x), %s (%x), %d\n", biosA0n[0x18], Ra0, a0, Ra1, a1, a2);
 #endif
 
-	v0 = strncmp(Ra0, Ra1, a2);
+	while (--n >= 0 && *p1 == *p2++) {
+		if (*p1++ == '\0') {
+			v0 = 0;
+			pc0 = ra;
+			return;
+		}
+	}
+
+	v0 = (n < 0 ? 0 : *p1 - *--p2);
 	pc0 = ra;
 }
 
-/*0x19*/void psxBios_strcpy()  { strcpy(Ra0, Ra1); v0 = a0; pc0 = ra;}
-/*0x1a*/void psxBios_strncpy() { strncpy(Ra0, Ra1, a2);  v0 = a0; pc0 = ra;}
-/*0x1b*/void psxBios_strlen()  { v0 = strlen(Ra0); pc0 = ra;}
+void psxBios_strcpy() { // 0x19
+	char *p1 = (char *)Ra0, *p2 = (char *)Ra1;
+	while ((*p1++ = *p2++) != '\0');
+
+	v0 = a0; pc0 = ra;
+}
+
+void psxBios_strncpy() { // 0x1a
+	char *p1 = (char *)Ra0, *p2 = (char *)Ra1;
+	s32 n = a2, i;
+
+	for (i = 0; i < n; i++) {
+		if ((*p1++ = *p2++) == '\0') {
+			while (++i < n) {
+				*p1++ = '\0';
+			}
+			v0 = a0; pc0 = ra;
+			return;
+		}
+	}
+
+	v0 = a0; pc0 = ra;
+}
+
+void psxBios_strlen() { // 0x1b
+	char *p = (char *)Ra0;
+	v0 = 0;
+	while (*p++) v0++;
+	pc0 = ra;
+}
 
 void psxBios_index() { // 0x1c
-	char *pcA0 = (char *)Ra0; 
-	char *pcRet = strchr(pcA0, a1); 
-	if(pcRet) 
-		v0 = a0 + pcRet - pcA0; 
-	else 
-		v0 = 0;
-    pc0 = ra;
+	char *p = (char *)Ra0;
+
+	do {
+		if (*p == a1) {
+			v0 = a0 + (p - (char *)Ra0);
+			pc0 = ra;
+			return;
+		}
+	} while (*p++ != '\0');
+
+	v0 = 0; pc0 = ra;
 }
 
 void psxBios_rindex() { // 0x1d
-	char *pcA0 = (char *)Ra0; 
-	char *pcRet = strrchr(pcA0, a1); 
-	if(pcRet) 
-		v0 = a0 + pcRet - pcA0; 
-	else 
-		v0 = 0;
-    pc0 = ra;  
+	char *p = (char *)Ra0;
+
+	v0 = 0;
+
+	do {
+		if (*p == a1)
+			v0 = a0 + (p - (char *)Ra0);
+	} while (*p++ != '\0');
+
+	pc0 = ra;
 }
 
 void psxBios_strchr() { // 0x1e
-	char *pcA0 = (char *)Ra0; 
-	char *pcRet = strchr(pcA0, a1); 
-	if(pcRet) 
-		v0 = a0 + pcRet - pcA0; 
-	else 
-		v0 = 0;
-    pc0 = ra;
+	psxBios_index();
 }
 
 void psxBios_strrchr() { // 0x1f
-	char *pcA0 = (char *)Ra0; 
-	char *pcRet = strrchr(pcA0, a1); 
-	if(pcRet) 
-		v0 = a0 + pcRet - pcA0; 
-	else 
-		v0 = 0;
-    pc0 = ra;
+	psxBios_rindex();
 }
 
 void psxBios_strpbrk() { // 0x20
-	char *pcA0 = (char *)Ra0; 
-	char *pcRet = strpbrk(pcA0, (char *)Ra1); 
-	if(pcRet) 
-		v0 = a0 + pcRet - pcA0; 
-	else 
-		v0 = 0;
-    pc0 = ra;
+	char *p1 = (char *)Ra0, *p2 = (char *)Ra1, *scanp, c, sc;
+
+	while ((c = *p1++) != '\0') {
+		for (scanp = p2; (sc = *scanp++) != '\0';) {
+			if (sc == c) {
+				v0 = a0 + (p1 - 1 - (char *)Ra0);
+				pc0 = ra;
+				return;
+			}
+		}
+	}
+
+	// BUG: return a0 instead of NULL if not found
+	v0 = a0; pc0 = ra;
 }
 
-void psxBios_strspn()  { v0 = strspn ((char *)Ra0, (char *)Ra1); pc0 = ra;}/*21*/ 
-void psxBios_strcspn() { v0 = strcspn((char *)Ra0, (char *)Ra1); pc0 = ra;}/*22*/ 
+void psxBios_strspn() { // 0x21
+	char *p1, *p2;
+
+	for (p1 = (char *)Ra0; *p1 != '\0'; p1++) {
+		for (p2 = (char *)Ra1; *p2 != '\0' && *p2 != *p1; p2++);
+		if (*p2 == '\0') break;
+	}
+
+	v0 = p1 - (char *)Ra0; pc0 = ra;
+}
+
+void psxBios_strcspn() { // 0x22
+	char *p1, *p2;
+
+	for (p1 = (char *)Ra0; *p1 != '\0'; p1++) {
+		for (p2 = (char *)Ra1; *p2 != '\0' && *p2 != *p1; p2++);
+		if (*p2 != '\0') break;
+	}
+
+	v0 = p1 - (char *)Ra0; pc0 = ra;
+}
 
 void psxBios_strtok() { // 0x23
 	char *pcA0 = (char *)Ra0;
 	char *pcRet = strtok(pcA0, (char *)Ra1);
-	if(pcRet)
+	if (pcRet)
 		v0 = a0 + pcRet - pcA0;
 	else
 		v0 = 0;
-    pc0 = ra;
+	pc0 = ra;
 }
 
 void psxBios_strstr() { // 0x24
-	char *pcA0 = (char *)Ra0;
-	char *pcRet = strstr(pcA0, (char *)Ra1);
-	if(pcRet)
-		v0 = a0 + pcRet - pcA0;
-	else
-		v0 = 0;
-    pc0 = ra;
+	char *p = (char *)Ra0, *p1, *p2;
+
+	while (*p != '\0') {
+		p1 = p;
+		p2 = (char *)Ra1;
+
+		while (*p1 != '\0' && *p2 != '\0' && *p1 == *p2) {
+			p1++; p2++;
+		}
+
+		if (*p2 == '\0') {
+			v0 = a0 + (p - (char *)Ra0);
+			pc0 = ra;
+			return;
+		}
+
+		p++;
+	}
+
+	v0 = 0; pc0 = ra;
 }
 
-/*0x25*/void psxBios_toupper() {v0 = toupper(a0); pc0 = ra;}
-/*0x26*/void psxBios_tolower() {v0 = tolower(a0); pc0 = ra;}
-/*0x27*/void psxBios_bcopy()   {memcpy(Ra1,Ra0,a2); pc0=ra;}
-/*0x28*/void psxBios_bzero()   {memset(Ra0,0,a1); pc0=ra;}
-/*0x29*/void psxBios_bcmp()    {v0 = memcmp(Ra0,Ra1,a2); pc0=ra; }
-/*0x2a*/void psxBios_memcpy()  {memcpy(Ra0, Ra1, a2); v0 = a0; pc0 = ra;}
-/*0x2b*/void psxBios_memset()  {memset(Ra0, a1, a2); v0 = a0; pc0 = ra;}
-/*0x2c*/void psxBios_memmove() {memmove(Ra0, Ra1, a2); v0 = a0; pc0 = ra;}
-/*0x2d*/void psxBios_memcmp()  {v0 = memcmp(Ra0, Ra1, a2); pc0 = ra;}  
-
-void psxBios_memchr() { // 2e
-	void *ret = memchr(Ra0, a1, a2);
-	if (ret != NULL) v0 = (u32)((char*)ret - Ra0) + a0;
-	else v0 = 0;
+void psxBios_toupper() { // 0x25
+	v0 = (s8)(a0 & 0xff);
+	if (v0 >= 'a' && v0 <= 'z') v0 -= 'a' - 'A';
 	pc0 = ra;
 }
 
-void psxBios_rand() { // 2f
-	v0 = 1+(int) (32767.0*rand()/(RAND_MAX+1.0));
+void psxBios_tolower() { // 0x26
+	v0 = (s8)(a0 & 0xff);
+	if (v0 >= 'A' && v0 <= 'Z') v0 += 'a' - 'A';
 	pc0 = ra;
 }
 
-void psxBios_srand() { // 30
-	srand(a0); pc0 = ra;
+void psxBios_bcopy() { // 0x27
+	char *p1 = (char *)Ra1, *p2 = (char *)Ra0;
+	while (a2-- > 0) *p1++ = *p2++;
+
+	pc0 = ra;
 }
 
-void psxBios_malloc() { // 33
-	malloc_chunk *chunk;
-	malloc_chunk *fd;
+void psxBios_bzero() { // 0x28
+	char *p = (char *)Ra0;
+	while (a1-- > 0) *p++ = '\0';
 
+	pc0 = ra;
+}
+
+void psxBios_bcmp() { // 0x29
+	char *p1 = (char *)Ra0, *p2 = (char *)Ra1;
+
+	if (a0 == 0 || a1 == 0) { v0 = 0; pc0 = ra; return; }
+
+	while (a2-- > 0) {
+		if (*p1++ != *p2++) {
+			v0 = *p1 - *p2; // BUG: compare the NEXT byte
+			pc0 = ra;
+			return;
+		}
+	}
+
+	v0 = 0; pc0 = ra;
+}
+
+void psxBios_memcpy() { // 0x2a
+	char *p1 = (char *)Ra0, *p2 = (char *)Ra1;
+	while (a2-- > 0) *p1++ = *p2++;
+
+	v0 = a0; pc0 = ra;
+}
+
+void psxBios_memset() { // 0x2b
+	char *p = (char *)Ra0;
+	while (a2-- > 0) *p++ = (char)a1;
+
+	v0 = a0; pc0 = ra;
+}
+
+void psxBios_memmove() { // 0x2c
+	char *p1 = (char *)Ra0, *p2 = (char *)Ra1;
+
+	if (p2 <= p1 && p2 + a2 > p1) {
+		a2++; // BUG: copy one more byte here
+		p1 += a2;
+		p2 += a2;
+		while (a2-- > 0) *--p1 = *--p2;
+	} else {
+		while (a2-- > 0) *p1++ = *p2++;
+	}
+
+	v0 = a0; pc0 = ra;
+}
+
+void psxBios_memcmp() { // 0x2d
+	psxBios_bcmp();
+}
+
+void psxBios_memchr() { // 0x2e
+	char *p = (char *)Ra0;
+
+	while (a2-- > 0) {
+		if (*p++ != (s8)a1) continue;
+		v0 = a0 + (p - (char *)Ra0 - 1);
+		pc0 = ra;
+		return;
+	}
+
+	v0 = 0; pc0 = ra;
+}
+
+void psxBios_rand() { // 0x2f
+	u32 s = psxMu32(0x9010) * 1103515245 + 12345;
+	v0 = (s >> 16) & 0x7fff;
+	psxMu32ref(0x9010) = SWAPu32(s);
+	pc0 = ra;
+}
+
+void psxBios_srand() { // 0x30
+	psxMu32ref(0x9010) = SWAPu32(a0);
+	pc0 = ra;
+}
+
+static u32 qscmpfunc, qswidth;
+
+static inline int qscmp(char *a, char *b) {
+	u32 sa0 = a0;
+
+	a0 = sa0 + (a - (char *)PSXM(sa0));
+	a1 = sa0 + (b - (char *)PSXM(sa0));
+
+	softCall2(qscmpfunc);
+
+	a0 = sa0;
+	return (s32)v0;
+}
+
+static inline void qexchange(char *i, char *j) {
+	char t;
+	int n = qswidth;
+
+	do {
+		t = *i;
+		*i++ = *j;
+		*j++ = t;
+	} while (--n);
+}
+
+static inline void q3exchange(char *i, char *j, char *k) {
+	char t;
+	int n = qswidth;
+
+	do {
+		t = *i;
+		*i++ = *k;
+		*k++ = *j;
+		*j++ = t;
+	} while (--n);
+}
+
+static void qsort_main(char *a, char *l) {
+	char *i, *j, *lp, *hp;
+	int c;
+	unsigned int n;
+
+start:
+	if ((n = l - a) <= qswidth)
+		return;
+	n = qswidth * (n / (2 * qswidth));
+	hp = lp = a + n;
+	i = a;
+	j = l - qswidth;
+	while (TRUE) {
+		if (i < lp) {
+			if ((c = qscmp(i, lp)) == 0) {
+				qexchange(i, lp -= qswidth);
+				continue;
+			}
+			if (c < 0) {
+				i += qswidth;
+				continue;
+			}
+		}
+
+loop:
+		if (j > hp) {
+			if ((c = qscmp(hp, j)) == 0) {
+				qexchange(hp += qswidth, j);
+				goto loop;
+			}
+			if (c > 0) {
+				if (i == lp) {
+					q3exchange(i, hp += qswidth, j);
+					i = lp += qswidth;
+					goto loop;
+				}
+				qexchange(i, j);
+				j -= qswidth;
+				i += qswidth;
+				continue;
+			}
+			j -= qswidth;
+			goto loop;
+		}
+
+		if (i == lp) {
+			if (lp - a >= l - hp) {
+				qsort_main(hp + qswidth, l);
+				l = lp;
+			} else {
+				qsort_main(a, lp);
+				a = hp + qswidth;
+			}
+			goto start;
+		}
+
+		q3exchange(j, lp -= qswidth, i);
+		j = hp -= qswidth;
+	}
+}
+
+void psxBios_qsort() { // 0x31
+	qswidth = a2;
+	qscmpfunc = a3;
+	qsort_main((char *)Ra0, (char *)Ra0 + a1 * a2);
+
+	pc0 = ra;
+}
+
+void psxBios_malloc() { // 0x33
+	unsigned int *chunk, *newchunk;
+	unsigned int dsize, csize, cstat;
+	int colflag;
 #ifdef PSXBIOS_LOG
 	PSXBIOS_LOG("psxBios_%s\n", biosA0n[0x33]);
 #endif
 
-	chunk = (malloc_chunk *)heap_addr;
-	if (chunk == NULL) { v0 = 0; return; }
+	// scan through heap and combine free chunks of space
+	chunk = heap_addr;
+	colflag = 0;
+	while(chunk < heap_end) {
+		// get size and status of actual chunk
+		csize = ((u32)*chunk) & 0xfffffffc;
+		cstat = ((u32)*chunk) & 1;
 
-	for (; ((a0 > SWAP32(chunk->size)) || chunk->stat == SWAP32(INUSE)) || (chunk->fd != NULL); chunk = (malloc_chunk *)SWAP32((unsigned long)chunk->fd));
-//printf ("chunk %lx\n",chunk->size);
-	/* split free chunk */
-	fd = chunk + sizeof(malloc_chunk) + a0;
-	fd->stat = SWAP32(chunk->stat);
-	fd->size = SWAP32(chunk->size - a0);
-	fd->fd = (malloc_chunk *)SWAP32((unsigned long)chunk->fd);
-	fd->bk = (malloc_chunk *)SWAP32((unsigned long)chunk);
+		// it's a free chunk
+		if(cstat == 1) {
+			if(colflag == 0) {
+				newchunk = chunk;
+				dsize = csize;
+				colflag = 1;			// let's begin a new collection of free memory
+			}
+			else dsize += (csize+4);	// add the new size including header
+		}
+		// not a free chunk: did we start a collection ?
+		else {
+			if(colflag == 1) {			// collection is over
+				colflag = 0;
+				*newchunk = SWAP32(dsize | 1);
+			}
+		}
 
-	/* set new chunk */
-	chunk->stat = SWAP32(INUSE);
-	chunk->size = SWAP32(a0);
-	chunk->fd = (malloc_chunk *)SWAP32((unsigned long)fd);
+		// next chunk
+		chunk = (u32*)((uptr)chunk + csize + 4);
+	}
+	// if neccessary free memory on end of heap
+	if (colflag == 1)
+		*newchunk = SWAP32(dsize | 1);
 
-	v0 = ((unsigned long)chunk - (unsigned long)psxM) + sizeof(malloc_chunk);
+	chunk = heap_addr;
+	csize = ((u32)*chunk) & 0xfffffffc;
+	cstat = ((u32)*chunk) & 1;
+	dsize = (a0 + 3) & 0xfffffffc;
+
+	// exit on uninitialized heap
+	if (chunk == NULL) {
+		SysPrintf("malloc %x,%x: Uninitialized Heap!\n", v0, a0);
+		v0 = 0;
+		pc0 = ra;
+		return;
+	}
+
+	// search an unused chunk that is big enough until the end of the heap
+	while ((dsize > csize || cstat == 0) && chunk < heap_end ) {
+		chunk = (u32*)((uptr)chunk + csize + 4);
+		csize = ((u32)*chunk) & 0xfffffffc;
+		cstat = ((u32)*chunk) & 1;
+	}
+
+	// catch out of memory
+	if(chunk >= heap_end) { SysPrintf("malloc %x,%x: Out of memory error!\n", v0, a0); v0 = 0; pc0 = ra; return; }
+	
+	// allocate memory
+	if(dsize == csize) {
+		// chunk has same size
+		*chunk &= 0xfffffffc;
+	}
+	else {
+		// split free chunk
+		*chunk = SWAP32(dsize);
+		newchunk = (u32*)((uptr)chunk + dsize + 4);
+		*newchunk = SWAP32((csize - dsize - 4) & 0xfffffffc | 1);
+	}
+
+	// return pointer to allocated memory
+	v0 = ((unsigned long)chunk - (unsigned long)psxM) + 4;
 	v0|= 0x80000000;
-//	printf ("malloc %lx,%lx\n", v0, a0);
+	SysPrintf ("malloc %x,%x\n", v0, a0);
 	pc0 = ra;
 }
 
-void psxBios_InitHeap() { // 39
-	malloc_chunk *chunk;
+void psxBios_free() { // 0x34
+
+#ifdef PSXBIOS_LOG
+	PSXBIOS_LOG("psxBios_%s\n", biosA0n[0x34]);
+#endif
+
+	SysPrintf("free %x: %x bytes\n", a0, *(u32*)(Ra0-4));
+
+	*(u32*)(Ra0-4) |= 1;	// set chunk to free
+	pc0 = ra;
+}
+
+void psxBios_calloc() { // 0x37
+#ifdef PSXBIOS_LOG
+	PSXBIOS_LOG("psxBios_%s\n", biosA0n[0x37]);
+#endif
+
+	a0 = a0 * a1;
+	psxBios_malloc();
+	memset(Rv0, 0, a0);
+}
+
+void psxBios_realloc() { // 0x38
+	u32 block = a0;
+	u32 size = a1;
+#ifdef PSXBIOS_LOG
+	PSXBIOS_LOG("psxBios_%s\n", biosA0n[0x38]);
+#endif
+
+	a0 = block;
+	psxBios_free();
+	a0 = size;
+	psxBios_malloc();
+}
+
+
+/* InitHeap(void *block , int n) */
+void psxBios_InitHeap() { // 0x39
+	unsigned int size;
 
 #ifdef PSXBIOS_LOG
 	PSXBIOS_LOG("psxBios_%s\n", biosA0n[0x39]);
 #endif
 
-	heap_addr = (u32*)Ra0;
+	if (((a0 & 0x1fffff) + a1)>= 0x200000) size = 0x1ffffc - (a0 & 0x1fffff);
+	else size = a1;
 
-	chunk = (malloc_chunk *)heap_addr;
-	chunk->stat = 0;
-	if (((a0 & 0x1fffff) + a1)>= 0x200000) chunk->size = SWAP32(0x1ffffc - (a0 & 0x1fffff));
-	else chunk->size = SWAP32(a1);
-	chunk->fd = NULL;
-	chunk->bk = NULL;
+	size &= 0xfffffffc;
 
-	SysPrintf("InitHeap %lx,%lx : %lx\n",a0,a1,SWAP32(chunk->size));
+	heap_addr = (u32 *)Ra0;
+	heap_end = (u32 *)((u8 *)heap_addr + size);
+	*heap_addr = SWAP32(size | 1);
+
+	SysPrintf("InitHeap %x,%x : %x %x\n",a0,a1, (uptr)heap_addr-(uptr)psxM, size);
 
 	pc0 = ra;
 }
 
-void psxBios_getchar(){ v0 = getchar(); pc0=ra;} //0x3b
+void psxBios_getchar() { //0x3b
+	v0 = getchar(); pc0 = ra;
+}
 
-void psxBios_printf() { // 3f
+void psxBios_printf() { // 0x3f
 	char tmp[1024];
 	char tmp2[1024];
-	unsigned long save[4];
+	u32 save[4];
 	char *ptmp = tmp;
-	int n=1, i=0, j, t;
+	int n=1, i=0, j;
 
-	memcpy(save, (char*)SANE_PSXM(sp), 4*4);
+	memcpy(save, (char*)PSXM(sp), 4 * 4);
 	psxMu32ref(sp) = SWAP32((u32)a0);
 	psxMu32ref(sp + 4) = SWAP32((u32)a1);
 	psxMu32ref(sp + 8) = SWAP32((u32)a2);
@@ -586,26 +980,21 @@ _start:
 
 				switch (Ra0[i]) {
 					case 'f': case 'F':
-                                                t = sp + n * 4;
-						ptmp+= sprintf(ptmp, tmp2, (float)psxMu32(t)); n++; break;
+						ptmp += sprintf(ptmp, tmp2, (float)psxMu32(sp + n * 4)); n++; break;
 					case 'a': case 'A':
 					case 'e': case 'E':
 					case 'g': case 'G':
-                                                t = sp + n * 4;
-						ptmp+= sprintf(ptmp, tmp2, (double)psxMu32(t)); n++; break;
+						ptmp += sprintf(ptmp, tmp2, (double)psxMu32(sp + n * 4)); n++; break;
 					case 'p':
 					case 'i':
 					case 'd': case 'D':
 					case 'o': case 'O':
 					case 'x': case 'X':
-                                                t = sp + n * 4;
-						ptmp+= sprintf(ptmp, tmp2, (unsigned int)psxMu32(t)); n++; break;
+						ptmp += sprintf(ptmp, tmp2, (unsigned int)psxMu32(sp + n * 4)); n++; break;
 					case 'c':
-                                                t = sp + n * 4;
-						ptmp+= sprintf(ptmp, tmp2, (unsigned char)psxMu32(t)); n++; break;
+						ptmp += sprintf(ptmp, tmp2, (unsigned char)psxMu32(sp + n * 4)); n++; break;
 					case 's':
-                                                t = sp + n * 4;
-						ptmp+= sprintf(ptmp, tmp2, (char*)PSXM(psxMu32(t))); n++; break;
+						ptmp += sprintf(ptmp, tmp2, (char*)PSXM(psxMu32(sp + n * 4))); n++; break;
 					case '%':
 						*ptmp++ = Ra0[i]; break;
 				}
@@ -617,7 +1006,7 @@ _start:
 	}
 	*ptmp = 0;
 
-	memcpy((char*)SANE_PSXM(sp), save, 4*4);
+	memcpy((char*)PSXM(sp), save, 4 * 4);
 
 	SysPrintf(tmp);
 
@@ -628,7 +1017,7 @@ _start:
  *	long Load(char *name, struct EXEC *header);
  */
 
-void psxBios_Load() { // 42
+void psxBios_Load() { // 0x42
 	EXE_HEADER eheader;
 
 #ifdef PSXBIOS_LOG
@@ -655,20 +1044,20 @@ void psxBios_Exec() { // 43
 	PSXBIOS_LOG("psxBios_%s: %x, %x, %x\n", biosA0n[0x43], a0, a1, a2);
 #endif
 
-	header->_sp = SWAP32(sp);
-	header->_fp = SWAP32(fp);
-	header->_sp = SWAP32(sp);
-	header->_gp = SWAP32(gp);
-	header->ret = SWAP32(ra);
-	header->base = SWAP32(s0);
+	header->_sp = sp;
+	header->_fp = fp;
+	header->_sp = sp;
+	header->_gp = gp;
+	header->ret = ra;
+	header->base = s0;
 
 	if (header->S_addr != 0) {
-		tmp = SWAP32(header->S_addr) + SWAP32(header->s_size);
+		tmp = header->S_addr + header->s_size;
 		sp = tmp;
 		fp = sp;
 	}
 
-	gp = SWAP32(header->gp0);
+	gp = header->gp0;
 
 	s0 = a0;
 
@@ -676,7 +1065,7 @@ void psxBios_Exec() { // 43
 	a1 = a2;
 
 	ra = 0x8000;
-	pc0 = SWAP32(header->_pc0);
+	pc0 = header->_pc0;
 }
 
 void psxBios_FlushCache() { // 44
@@ -684,12 +1073,14 @@ void psxBios_FlushCache() { // 44
 	PSXBIOS_LOG("psxBios_%s\n", biosA0n[0x44]);
 #endif
 
+	psxRegs.ICache_valid = 0;
+
 	pc0 = ra;
 }
 
 void psxBios_GPU_dw() { // 0x46
 	int size;
-	long *ptr;
+	s32 *ptr;
 
 #ifdef PSXBIOS_LOG
 	PSXBIOS_LOG("psxBios_%s\n", biosA0n[0x46]);
@@ -699,10 +1090,10 @@ void psxBios_GPU_dw() { // 0x46
 	GPU_writeData((a1<<16)|(a0&0xffff));
 	GPU_writeData((a3<<16)|(a2&0xffff));
 	size = (a2*a3+1)/2;
-	ptr = (long*)PSXM(Rsp[4]);  //that is correct?
+	ptr = (s32*)PSXM(Rsp[4]);  //that is correct?
 	do {
 		GPU_writeData(SWAP32(*ptr));
-                ptr++;
+		ptr++;
 	} while(--size);
 
 	pc0 = ra;
@@ -718,7 +1109,7 @@ void psxBios_mem2vram() { // 0x47
 	GPU_writeStatus(0x04000002);
 	psxHwWrite32(0x1f8010f4,0);
 	psxHwWrite32(0x1f8010f0,psxHwRead32(0x1f8010f0)|0x800);
-	psxHwWrite32(0x1f8010a0,(unsigned long)Rsp[4]);//might have a buggy...
+	psxHwWrite32(0x1f8010a0,Rsp[4]);//might have a buggy...
 	psxHwWrite32(0x1f8010a4,((size/16)<<16)|16);
 	psxHwWrite32(0x1f8010a8,0x01000201);
 
@@ -736,11 +1127,11 @@ void psxBios_GPU_cw() { // 0x49
 }
 
 void psxBios_GPU_cwb() { // 0x4a
-	long *ptr = (long*)Ra0;
+	s32 *ptr = (s32*)Ra0;
 	int size = a1;
 	while(size--) {
 		GPU_writeData(SWAP32(*ptr));
-                ptr++;
+		ptr++;
 	}
 
 	pc0 = ra;
@@ -784,8 +1175,8 @@ void psxBios_LoadExec() { // 51
 	a1 = 0xf000;	
 	psxBios_Load();
 
-	header->S_addr = SWAP32(s_addr);
-	header->s_size = SWAP32(s_size);
+	header->S_addr = s_addr;
+	header->s_size = s_size;
 
 	a0 = 0xf000; a1 = 0; a2 = 0;
 	psxBios_Exec();
@@ -814,6 +1205,33 @@ void psxBios__96_remove() { // 72
 #ifdef PSXBIOS_LOG
 	PSXBIOS_LOG("psxBios_%s\n", biosA0n[0x72]);
 #endif
+
+	pc0 = ra;
+}
+
+void psxBios_SetMem() { // 9f
+	u32 new = psxHu32(0x1060);
+
+#ifdef PSXBIOS_LOG
+	PSXBIOS_LOG("psxBios_%s: %x, %x\n", biosA0n[0x9f], a0, a1);
+#endif
+
+	switch(a0) {
+		case 2:
+			psxHu32ref(0x1060) = SWAP32(new);
+			psxMu32ref(0x060) = a0;
+			SysPrintf("Change effective memory : %d MBytes\n",a0);
+			break;
+
+		case 8:
+			psxHu32ref(0x1060) = SWAP32(new | 0x300);
+			psxMu32ref(0x060) = a0;
+			SysPrintf("Change effective memory : %d MBytes\n",a0);
+	
+		default:
+			SysPrintf("Effective memory must be 2/8 MBytes\n");
+		break;
+	}
 
 	pc0 = ra;
 }
@@ -849,7 +1267,7 @@ void psxBios_SetRCnt() { // 02
 
 	a0&= 0x3;
 	if (a0 != 3) {
-		unsigned long mode=0;
+		u32 mode=0;
 
 		psxRcntWtarget(a0, a1);
 		if (a2&0x1000) mode|= 0x050; // Interrupt Mode
@@ -882,7 +1300,6 @@ void psxBios_StartRCnt() { // 04
 	a0&= 0x3;
 	if (a0 != 3) psxHu32ref(0x1074)|= SWAP32((u32)((1<<(a0+4))));
 	else psxHu32ref(0x1074)|= SWAPu32(0x1);
-	
 	v0 = 1; pc0 = ra;
 }
 
@@ -894,7 +1311,6 @@ void psxBios_StopRCnt() { // 05
 	a0&= 0x3;
 	if (a0 != 3) psxHu32ref(0x1074)&= SWAP32((u32)(~(1<<(a0+4))));
 	else psxHu32ref(0x1074)&= SWAPu32(~0x1);
-	
 	pc0 = ra;
 }
 
@@ -955,12 +1371,12 @@ void psxBios_OpenEvent() { // 08
 	GetSpec();
 
 #ifdef PSXBIOS_LOG
-	PSXBIOS_LOG("psxBios_%s %x,%x (class:%lx, spec:%lx, mode:%lx, func:%lx)\n", biosB0n[0x08], ev, spec, a0, a1, a2, a3);
+	PSXBIOS_LOG("psxBios_%s %x,%x (class:%x, spec:%x, mode:%x, func:%x)\n", biosB0n[0x08], ev, spec, a0, a1, a2, a3);
 #endif
 
-	Event[ev][spec].status = SWAP32(EvStWAIT);
-	Event[ev][spec].mode = SWAP32(a2);
-	Event[ev][spec].fhandler = SWAP32(a3);
+	Event[ev][spec].status = EvStWAIT;
+	Event[ev][spec].mode = a2;
+	Event[ev][spec].fhandler = a3;
 
 	v0 = ev | (spec << 8);
 	pc0 = ra;
@@ -976,7 +1392,7 @@ void psxBios_CloseEvent() { // 09
 	PSXBIOS_LOG("psxBios_%s %x,%x\n", biosB0n[0x09], ev, spec);
 #endif
 
-	Event[ev][spec].status = SWAP32(EvStUNUSED);
+	Event[ev][spec].status = EvStUNUSED;
 
 	v0 = 1; pc0 = ra;
 }
@@ -991,7 +1407,7 @@ void psxBios_WaitEvent() { // 0a
 	PSXBIOS_LOG("psxBios_%s %x,%x\n", biosB0n[0x0a], ev, spec);
 #endif
 
-	Event[ev][spec].status = SWAP32(EvStACTIVE);
+	Event[ev][spec].status = EvStACTIVE;
 
 	v0 = 1; pc0 = ra;
 }
@@ -1002,8 +1418,8 @@ void psxBios_TestEvent() { // 0b
 	ev   = a0 & 0xff;
 	spec = (a0 >> 8) & 0xff;
 
-	if (Event[ev][spec].status == SWAP32(EvStALREADY)) {
-		Event[ev][spec].status = SWAP32(EvStACTIVE); v0 = 1;
+	if (Event[ev][spec].status == EvStALREADY) {
+		Event[ev][spec].status = EvStACTIVE; v0 = 1;
 	} else v0 = 0;
 
 #ifdef PSXBIOS_LOG
@@ -1023,7 +1439,7 @@ void psxBios_EnableEvent() { // 0c
 	PSXBIOS_LOG("psxBios_%s %x,%x\n", biosB0n[0x0c], ev, spec);
 #endif
 
-	Event[ev][spec].status = SWAP32(EvStACTIVE);
+	Event[ev][spec].status = EvStACTIVE;
 
 	v0 = 1; pc0 = ra;
 }
@@ -1038,7 +1454,7 @@ void psxBios_DisableEvent() { // 0d
 	PSXBIOS_LOG("psxBios_%s %x,%x\n", biosB0n[0x0d], ev, spec);
 #endif
 
-	Event[ev][spec].status = SWAP32(EvStWAIT);
+	Event[ev][spec].status = EvStWAIT;
 
 	v0 = 1; pc0 = ra;
 }
@@ -1137,7 +1553,6 @@ void psxBios_StartPAD() { // 13
 
 	psxHwWrite16(0x1f801074, (unsigned short)(psxHwRead16(0x1f801074) | 0x1));
 	psxRegs.CP0.n.Status |= 0x401;
-	
 	pc0 = ra;
 }
 
@@ -1155,12 +1570,10 @@ void psxBios_PAD_init() { // 15
 #ifdef PSXBIOS_LOG
 	PSXBIOS_LOG("psxBios_%s\n", biosB0n[0x15]);
 #endif
-
 	psxHwWrite16(0x1f801074, (u16)(psxHwRead16(0x1f801074) | 0x1));
-	pad_buf = (int*)Ra1;
-	*pad_buf = SWAP32(-1);
+	pad_buf = (int *)Ra1;
+	*pad_buf = -1;
 	psxRegs.CP0.n.Status |= 0x401;
-	
 	pc0 = ra;
 }
 
@@ -1173,16 +1586,13 @@ void psxBios_PAD_dr() { // 16
 }
 
 void psxBios_ReturnFromException() { // 17
-	memcpy(psxRegs.GPR.r, regs, 32*4);
-	psxRegs.GPR.n.lo = regs[32];
-	psxRegs.GPR.n.hi = regs[33];
+	LoadRegs();
 
 	pc0 = psxRegs.CP0.n.EPC;
-	if (psxRegs.CP0.n.Cause & 0x80000000) pc0+=4;
+	if (psxRegs.CP0.n.Cause & 0x80000000) pc0 += 4;
 
 	psxRegs.CP0.n.Status = (psxRegs.CP0.n.Status & 0xfffffff0) |
 						  ((psxRegs.CP0.n.Status & 0x3c) >> 2);
-	
 }
 
 void psxBios_ResetEntryInt() { // 18
@@ -1199,7 +1609,7 @@ void psxBios_HookEntryInt() { // 19
 	PSXBIOS_LOG("psxBios_%s\n", biosB0n[0x19]);
 #endif
 
-	jmp_int = (unsigned long*)Ra0;
+	jmp_int = (u32*)Ra0;
 	pc0 = ra;
 }
 
@@ -1211,35 +1621,35 @@ void psxBios_UnDeliverEvent() { // 0x20
 	GetSpec();
 
 #ifdef PSXBIOS_LOG
-	PSXBIOS_LOG("psxBios_%s %x,%x\n", biosB0n[0x07], ev, spec);
+	PSXBIOS_LOG("psxBios_%s %x,%x\n", biosB0n[0x20], ev, spec);
 #endif
 
-	if (Event[ev][spec].status == SWAP32(EvStALREADY) &&
-		Event[ev][spec].mode == SWAP32(EvMdNOINTR))
-		Event[ev][spec].status = SWAP32(EvStACTIVE);
+	if (Event[ev][spec].status == EvStALREADY &&
+		Event[ev][spec].mode == EvMdNOINTR)
+		Event[ev][spec].status = EvStACTIVE;
 
 	pc0 = ra;
 }
 
-#define buopen(slot) { \
-	strcpy(FDesc[1 + slot].name, Ra0+5); \
-	FDesc[1 + slot].offset = 0; \
-	FDesc[1 + slot].mode   = a1; \
+#define buopen(mcdslot) { \
+	strcpy(FDesc[1 + mcdslot].name, Ra0+5); \
+	FDesc[1 + mcdslot].offset = 0; \
+	FDesc[1 + mcdslot].mode   = a1; \
  \
 	for (i=1; i<16; i++) { \
-		ptr = Mcd##slot##Data + 128 * i; \
+		ptr = Mcd##mcdslot##Data + 128 * i; \
 		if ((*ptr & 0xF0) != 0x50) continue; \
-		if (strcmp(FDesc[1 + slot].name, ptr+0xa)) continue; \
-		FDesc[1 + slot].mcfile = i; \
+		if (strcmp(FDesc[1 + mcdslot].name, ptr+0xa)) continue; \
+		FDesc[1 + mcdslot].mcfile = i; \
 		SysPrintf("open %s\n", ptr+0xa); \
-		v0 = 1 + slot; \
+		v0 = 1 + mcdslot; \
 		break; \
 	} \
-	if (a1 & 0x200 && (s32)v0 == -1) { /* FCREAT */ \
+	if (a1 & 0x200 && v0 == -1) { /* FCREAT */ \
 		for (i=1; i<16; i++) { \
 			int j, xor = 0; \
  \
-			ptr = Mcd##slot##Data + 128 * i; \
+			ptr = Mcd##mcdslot##Data + 128 * i; \
 			if ((*ptr & 0xF0) == 0x50) continue; \
 			ptr[0] = 0x50 | (u8)(a1 >> 16); \
 			ptr[4] = 0x00; \
@@ -1248,13 +1658,13 @@ void psxBios_UnDeliverEvent() { // 0x20
 			ptr[7] = 0x00; \
 			ptr[8] = 'B'; \
 			ptr[9] = 'I'; \
-			strcpy(ptr+0xa, FDesc[1 + slot].name); \
+			strcpy(ptr+0xa, FDesc[1 + mcdslot].name); \
 			for (j=0; j<127; j++) xor^= ptr[j]; \
 			ptr[127] = xor; \
-			FDesc[1 + slot].mcfile = i; \
+			FDesc[1 + mcdslot].mcfile = i; \
 			SysPrintf("openC %s\n", ptr); \
-			v0 = 1 + slot; \
-			mcd##slot##Written = 1; \
+			v0 = 1 + mcdslot; \
+			mcd##mcdslot##Written = 1; \
 			break; \
 		} \
 	} \
@@ -1317,6 +1727,7 @@ void psxBios_lseek() { // 0x33
 	memcpy(Ra1, ptr, a2); \
 	if (FDesc[1 + mcd].mode & 0x8000) v0 = 0; \
 	else v0 = a2; \
+	FDesc[1 + mcd].offset += v0; \
 	DeliverEvent(0x11, 0x2); /* 0xf0000011, 0x0004 */ \
 	DeliverEvent(0x81, 0x2); /* 0xf4000001, 0x0004 */ \
 }
@@ -1342,13 +1753,14 @@ void psxBios_read() { // 0x34
 	pc0 = ra;
 }
 
-#define buwrite(slot) { \
-	u32 offset =  + 8192 * FDesc[1 + slot].mcfile + FDesc[1 + slot].offset; \
-	SysPrintf("write %d: %x,%x\n", FDesc[1 + slot].mcfile, FDesc[1 + slot].offset, a2); \
-	ptr = Mcd##slot##Data + offset; \
+#define buwrite(mcdslot) { \
+	u32 offset =  + 8192 * FDesc[1 + mcdslot].mcfile + FDesc[1 + mcdslot].offset; \
+	SysPrintf("write %d: %x,%x\n", FDesc[1 + mcdslot].mcfile, FDesc[1 + mcdslot].offset, a2); \
+	ptr = Mcd##mcdslot##Data + offset; \
 	memcpy(ptr, Ra1, a2); \
-	mcd##slot##Written = 1; \
-	if (FDesc[1 + slot].mode & 0x8000) v0 = 0; \
+	FDesc[1 + mcdslot].offset += a2; \
+	mcd##mcdslot##Written = 1; \
+	if (FDesc[1 + mcdslot].mode & 0x8000) v0 = 0; \
 	else v0 = a2; \
 	DeliverEvent(0x11, 0x2); /* 0xf0000011, 0x0004 */ \
 	DeliverEvent(0x81, 0x2); /* 0xf4000001, 0x0004 */ \
@@ -1361,14 +1773,14 @@ void psxBios_read() { // 0x34
 void psxBios_write() { // 0x35/0x03
 	char *ptr;
 
-    if (a0 == 1) { // stdout
+	if (a0 == 1) { // stdout
 		char *ptr = Ra1;
 
 		while (a2 > 0) {
 			SysPrintf("%c", *ptr++); a2--;
 		}
 		pc0 = ra; return;
-    }
+	}
 #ifdef PSXBIOS_LOG
 	PSXBIOS_LOG("psxBios_%s: %x,%x,%x\n", biosB0n[0x35], a0, a1, a2);
 #endif
@@ -1379,7 +1791,7 @@ void psxBios_write() { // 0x35/0x03
 		case 2: buwrite(1); break;
 		case 3: buwrite(2); break;
 	}
-  		
+
 	pc0 = ra;
 }
 
@@ -1391,23 +1803,19 @@ void psxBios_close() { // 0x36
 #ifdef PSXBIOS_LOG
 	PSXBIOS_LOG("psxBios_%s: %x\n", biosB0n[0x36], a0);
 #endif
-	
-	v0 = a0; pc0 = ra;
+
+	v0 = a0;
+	pc0 = ra;
 }
 
-void psxBios_putchar () { // 3d
-    char tmp[12];
-
-    sprintf (tmp,"%c",(char)a0);
-    SysPrintf(tmp);
-
-    pc0 = ra;
+void psxBios_putchar() { // 3d
+	SysPrintf("%c", (char)a0);
+	pc0 = ra;
 }
 
-void psxBios_puts () { // 3e/3f
-    SysPrintf(Ra0);
-
-    pc0 = ra;
+void psxBios_puts() { // 3e/3f
+	SysPrintf(Ra0);
+	pc0 = ra;
 }
 
 char ffile[64], *pfile;
@@ -1421,7 +1829,9 @@ int nfile;
 		nfile++; \
 		if ((*ptr & 0xF0) != 0x50) continue; \
 		ptr+= 0xa; \
-		for (i=0; i<20; i++) { \
+		if (pfile[0] == 0) { \
+			strcpy(dir->name, ptr); \
+		} else for (i=0; i<20; i++) { \
 			if (pfile[i] == ptr[i]) { \
 				dir->name[i] = ptr[i]; \
 				if (ptr[i] == 0) break; else continue; } \
@@ -1433,7 +1843,7 @@ int nfile;
 		} \
 		SysPrintf("%d : %s = %s + %s (match=%d)\n", nfile, dir->name, pfile, ptr, match); \
 		if (match == 0) continue; \
-		dir->size = SWAP32(8192); \
+		dir->size = 8192; \
 		v0 = _dir; \
 		break; \
 	} \
@@ -1498,14 +1908,57 @@ void psxBios_nextfile() { // 43
 	pc0 = ra;
 }
 
-#define budelete(slot) { \
+#define burename(mcdslot) { \
 	for (i=1; i<16; i++) { \
-		ptr = Mcd##slot##Data + 128 * i; \
+		int namelen, j, xor = 0; \
+		ptr = Mcd##mcdslot##Data + 128 * i; \
+		if ((*ptr & 0xF0) != 0x50) continue; \
+		if (strcmp(Ra0+5, ptr+0xa)) continue; \
+		namelen = strlen(Ra1+5); \
+		memcpy(ptr+0xa, Ra1+5, namelen); \
+		memset(ptr+0xa+namelen, 0, 0x75-namelen); \
+		for (j=0; j<127; j++) xor^= ptr[j]; \
+		ptr[127] = xor; \
+		mcd##mcdslot##Written = 1; \
+		v0 = 1; \
+		break; \
+	} \
+}
+
+/*
+ *	int rename(char *old, char *new);
+ */
+
+void psxBios_rename() { // 44
+	char *ptr;
+	int i;
+
+#ifdef PSXBIOS_LOG
+	PSXBIOS_LOG("psxBios_%s: %s,%s\n", biosB0n[0x44], Ra0, Ra1);
+#endif
+
+	v0 = 0;
+
+	if (!strncmp(Ra0, "bu00", 4) && !strncmp(Ra1, "bu00", 4)) {
+		burename(1);
+	}
+
+	if (!strncmp(Ra0, "bu10", 4) && !strncmp(Ra1, "bu10", 4)) {
+		burename(2);
+	}
+
+	pc0 = ra;
+}
+
+
+#define budelete(mcdslot) { \
+	for (i=1; i<16; i++) { \
+		ptr = Mcd##mcdslot##Data + 128 * i; \
 		if ((*ptr & 0xF0) != 0x50) continue; \
 		if (strcmp(Ra0+5, ptr+0xa)) continue; \
 		*ptr = (*ptr & 0xf) | 0xA0; \
+		mcd##mcdslot##Written = 1; \
 		SysPrintf("delete %s\n", ptr+0xa); \
-		mcd##slot##Written = 1; \
 		v0 = 1; \
 		break; \
 	} \
@@ -1618,73 +2071,46 @@ void psxBios__new_card() { // 0x50
 	pc0 = ra;
 }
 
-typedef struct {
-	char id[6];
-	char fontname[8];
-	unsigned char w,h;
-	unsigned char type;
-	unsigned char ntbl;
-	unsigned short codetbl[1];
-} FONTXHDR;
-
 void psxBios_Krom2RawAdd() { // 0x51
-#ifdef PSXBIOS_LOG
-	PSXBIOS_LOG("psxBios_%s\n", biosB0n[0x51]);
-#endif
-#if 1
-	// FPSE rip
-	{
-		FONTXHDR *font = (FONTXHDR *)&psxRs8ref(0x20000);
-		unsigned short *ptbl = font->codetbl;
-		int size = ((font->w+7)/8)*font->h;
-		int code, n=0,i;
+	int i = 0;
 
-		a0 &= 0xffff;
-		v0 = 0;
-		code = a0;
-		
-		for(i=0;i<font->ntbl;i++) {
-			if (code>=SWAP16p(&ptbl[0]) && code<=SWAP16p(&ptbl[1])) {
-				v0 = 0xbfc20000 + ((char*)&font->codetbl[font->ntbl*2] - (char *)font) + (code-SWAP16p(&ptbl[0])+n)*size+2; /* skip */
-				break;
-			}
-			n += SWAP16p(&ptbl[1])-SWAP16p(&ptbl[0]) + 1;
-			ptbl+=2;
-		}
+	const u32 table_8140[][2] = {
+		{0x8140, 0x0000}, {0x8180, 0x0762}, {0x81ad, 0x0cc6}, {0x81b8, 0x0ca8},
+		{0x81c0, 0x0f00}, {0x81c8, 0x0d98}, {0x81cf, 0x10c2}, {0x81da, 0x0e6a},
+		{0x81e9, 0x13ce}, {0x81f0, 0x102c}, {0x81f8, 0x1590}, {0x81fc, 0x111c},
+		{0x81fd, 0x1626}, {0x824f, 0x113a}, {0x8259, 0x20ee}, {0x8260, 0x1266},
+		{0x827a, 0x24cc}, {0x8281, 0x1572}, {0x829b, 0x28aa}, {0x829f, 0x187e},
+		{0x82f2, 0x32dc}, {0x8340, 0x2238}, {0x837f, 0x4362}, {0x8380, 0x299a},
+		{0x8397, 0x4632}, {0x839f, 0x2c4c}, {0x83b7, 0x49f2}, {0x83bf, 0x2f1c},
+		{0x83d7, 0x4db2}, {0x8440, 0x31ec}, {0x8461, 0x5dde}, {0x8470, 0x35ca},
+		{0x847f, 0x6162}, {0x8480, 0x378c}, {0x8492, 0x639c}, {0x849f, 0x39a8},
+		{0xffff, 0}
+	};
+
+	const u32 table_889f[][2] = {
+		{0x889f, 0x3d68},  {0x8900, 0x40ec},  {0x897f, 0x4fb0},  {0x8a00, 0x56f4},
+		{0x8a7f, 0x65b8},  {0x8b00, 0x6cfc},  {0x8b7f, 0x7bc0},  {0x8c00, 0x8304},
+		{0x8c7f, 0x91c8},  {0x8d00, 0x990c},  {0x8d7f, 0xa7d0},  {0x8e00, 0xaf14},
+		{0x8e7f, 0xbdd8},  {0x8f00, 0xc51c},  {0x8f7f, 0xd3e0},  {0x9000, 0xdb24},
+		{0x907f, 0xe9e8},  {0x9100, 0xf12c},  {0x917f, 0xfff0},  {0x9200, 0x10734},
+		{0x927f, 0x115f8}, {0x9300, 0x11d3c}, {0x937f, 0x12c00}, {0x9400, 0x13344},
+		{0x947f, 0x14208}, {0x9500, 0x1494c}, {0x957f, 0x15810}, {0x9600, 0x15f54},
+		{0x967f, 0x16e18}, {0x9700, 0x1755c}, {0x977f, 0x18420}, {0x9800, 0x18b64},
+		{0xffff, 0}
+	};
+
+	if (a0 >= 0x8140 && a0 <= 0x84be) {
+		while (table_8140[i][0] <= a0) i++;
+		a0 -= table_8140[i - 1][0];
+		v0 = 0xbfc66000 + (a0 * 0x1e + table_8140[i - 1][1]);
+	} else if (a0 >= 0x889f && a0 <= 0x9872) {
+		while (table_889f[i][0] <= a0) i++;
+		a0 -= table_889f[i - 1][0];
+		v0 = 0xbfc66000 + (a0 * 0x1e + table_889f[i - 1][1]);
+	} else {
+		v0 = 0xffffffff;
 	}
-#else        
-        a0 &= 0xffff;
 
-        if (a0 == 0x8260) {
-            v0 = 0xbfc67266;
-        } else {
-            v0 = 0xffffffff;
-        }
-
-/*        if (a0 > 0x8140 && a0 <= 0x84bf) {
-            hi = a0 >> 8;
-            hi -= 0x81;
-            if (hi < 4) {
-                switch (hi) {
-                    case 1:
-                        if (lo < 0x4f) {
-                        
-                        } else if (lo < 0x59) {
-                        
-                        } else if (lo < 0x60) {
-                            
-                        } else if (lo < 0x7a) {
-                            offset = 8;
-                        }
-                        break;
-                    default: 
-                        printf("unknown case\n");
-                }
-            }
-        } else {
-            printf("unknown state\n");
-        }*/
-#endif
 	pc0 = ra;
 }
 
@@ -1707,9 +2133,7 @@ void psxBios_GetB0Table() { // 57
 void psxBios_ChangeClearPad() { // 5b
 #ifdef PSXBIOS_LOG
 	PSXBIOS_LOG("psxBios_%s: %x\n", biosB0n[0x5b], a0);
-#endif
-	
-	// TODO: find out if v0 should be set as is done in FS
+#endif	
 
 	pc0 = ra;
 }
@@ -1752,47 +2176,31 @@ void psxBios_ChangeClearRCnt() { // 0a
 #endif
 
 	ptr = (u32*)PSXM((a0 << 2) + 0x8600);
-	v0 = SWAP32(*ptr);
-	*ptr = SWAP32(a1);
+	v0 = *ptr;
+	*ptr = a1;
 
 //	psxRegs.CP0.n.Status|= 0x404;
-//	
 	pc0 = ra;
 }
 
 void psxBios_dummy() { 
 #ifdef PSXBIOS_LOG
-	PSXBIOS_LOG("unk %lx call: %lx\n", pc0 & 0x1fffff, t1);
+	PSXBIOS_LOG("unk %x call: %x\n", pc0 & 0x1fffff, t1);
 #endif
 	pc0 = ra; 
-}
-
-// Added by GP
-static void *fileload(char *file,void *buf)
-{
-	FILE *f;
-	int fsize;
-
-	f = fopen(file,"rb");
-	if (f==NULL) return NULL;
-	fseek(f,0,SEEK_END);
-	fsize = ftell(f);
-	fseek(f,0,SEEK_SET);
-	if (buf!=NULL || (buf = malloc(fsize))!=NULL) {
-		fread(buf,1,fsize,f);
-	}
-	fclose(f);
-	return buf;
 }
 
 void (*biosA0[256])();
 void (*biosB0[256])();
 void (*biosC0[256])();
 
-int psxBiosSetupTables()
-{
+#include "sjisfont.h"
+
+void psxBiosInit() {
 	u32 base, size;
+	u32 *ptr; 
 	int i;
+	uLongf len;
 
 	for(i = 0; i < 256; i++) {
 		biosA0[i] = NULL;
@@ -1805,7 +2213,7 @@ int psxBiosSetupTables()
 	biosB0[0x3d] = psxBios_putchar;
 	biosB0[0x3f] = psxBios_puts;
 
-	if (!Config.HLE) return 0;
+	if (!Config.HLE) return;
 
 	for(i = 0; i < 256; i++) {
 		if (biosA0[i] == NULL) biosA0[i] = psxBios_dummy;
@@ -1813,7 +2221,7 @@ int psxBiosSetupTables()
 		if (biosC0[i] == NULL) biosC0[i] = psxBios_dummy;
 	}
 
-    biosA0[0x00] = psxBios_open;
+	biosA0[0x00] = psxBios_open;
 	biosA0[0x01] = psxBios_lseek;
 	biosA0[0x02] = psxBios_read;
 	biosA0[0x03] = psxBios_write;
@@ -1829,8 +2237,8 @@ int psxBiosSetupTables()
 	//biosA0[0x0d] = psxBios_strtol;
 	biosA0[0x0e] = psxBios_abs;
 	biosA0[0x0f] = psxBios_labs;
-    biosA0[0x10] = psxBios_atoi;  
-    biosA0[0x11] = psxBios_atol;  
+	biosA0[0x10] = psxBios_atoi;
+	biosA0[0x11] = psxBios_atol;
 	//biosA0[0x12] = psxBios_atob;
 	biosA0[0x13] = psxBios_setjmp;
 	biosA0[0x14] = psxBios_longjmp;
@@ -1850,11 +2258,11 @@ int psxBiosSetupTables()
 	biosA0[0x22] = psxBios_strcspn;
 	biosA0[0x23] = psxBios_strtok;
 	biosA0[0x24] = psxBios_strstr;
-    biosA0[0x25] = psxBios_toupper;
-    biosA0[0x26] = psxBios_tolower;
-    biosA0[0x27] = psxBios_bcopy;
-    biosA0[0x28] = psxBios_bzero;
-    biosA0[0x29] = psxBios_bcmp;
+	biosA0[0x25] = psxBios_toupper;
+	biosA0[0x26] = psxBios_tolower;
+	biosA0[0x27] = psxBios_bcopy;
+	biosA0[0x28] = psxBios_bzero;
+	biosA0[0x29] = psxBios_bcmp;
 	biosA0[0x2a] = psxBios_memcpy;
 	biosA0[0x2b] = psxBios_memset;
 	biosA0[0x2c] = psxBios_memmove;
@@ -1862,49 +2270,49 @@ int psxBiosSetupTables()
 	biosA0[0x2e] = psxBios_memchr;
 	biosA0[0x2f] = psxBios_rand;
 	biosA0[0x30] = psxBios_srand;
-	//biosA0[0x31] = psxBios_qsort;
+	biosA0[0x31] = psxBios_qsort;
 	//biosA0[0x32] = psxBios_strtod;
 	biosA0[0x33] = psxBios_malloc;
-	//biosA0[0x34] = psxBios_free;
-    //biosA0[0x35] = psxBios_lsearch;
-    //biosA0[0x36] = psxBios_bsearch;
-    //biosA0[0x37] = psxBios_calloc;
-    //biosA0[0x38] = psxBios_realloc;
+	biosA0[0x34] = psxBios_free;
+	//biosA0[0x35] = psxBios_lsearch;
+	//biosA0[0x36] = psxBios_bsearch;
+	biosA0[0x37] = psxBios_calloc;
+	biosA0[0x38] = psxBios_realloc;
 	biosA0[0x39] = psxBios_InitHeap;
-    //biosA0[0x3a] = psxBios__exit;
+	//biosA0[0x3a] = psxBios__exit;
 	biosA0[0x3b] = psxBios_getchar;
 	biosA0[0x3c] = psxBios_putchar;	
-	//biosA0[0x3d] = psxBios_gets;		
-	//biosA0[0x40] = psxBios_sys_a0_40;		
-	//biosA0[0x41] = psxBios_LoadTest;				
-	biosA0[0x42] = psxBios_Load;		
+	//biosA0[0x3d] = psxBios_gets;
+	//biosA0[0x40] = psxBios_sys_a0_40;
+	//biosA0[0x41] = psxBios_LoadTest;
+	biosA0[0x42] = psxBios_Load;
 	biosA0[0x43] = psxBios_Exec;
 	biosA0[0x44] = psxBios_FlushCache;
-    //biosA0[0x45] = psxBios_InstallInterruptHandler;
+	//biosA0[0x45] = psxBios_InstallInterruptHandler;
 	biosA0[0x46] = psxBios_GPU_dw;
 	biosA0[0x47] = psxBios_mem2vram;
-	biosA0[0x48] = psxBios_SendGPU; 
+	biosA0[0x48] = psxBios_SendGPU;
 	biosA0[0x49] = psxBios_GPU_cw;
-    biosA0[0x4a] = psxBios_GPU_cwb;
+	biosA0[0x4a] = psxBios_GPU_cwb;
 	biosA0[0x4b] = psxBios_GPU_SendPackets;
-    biosA0[0x4c] = psxBios_sys_a0_4c;
+	biosA0[0x4c] = psxBios_sys_a0_4c;
 	biosA0[0x4d] = psxBios_GPU_GetGPUStatus;
 	//biosA0[0x4e] = psxBios_GPU_sync;	
 	//biosA0[0x4f] = psxBios_sys_a0_4f;
-	//biosA0[0x50] = psxBios_sys_a0_50;		
-	biosA0[0x51] = psxBios_LoadExec;				
-	//biosA0[0x52] = psxBios_GetSysSp;		
+	//biosA0[0x50] = psxBios_sys_a0_50;
+	biosA0[0x51] = psxBios_LoadExec;
+	//biosA0[0x52] = psxBios_GetSysSp;
 	//biosA0[0x53] = psxBios_sys_a0_53;
 	//biosA0[0x54] = psxBios__96_init_a54;
-	//biosA0[0x55] = psxBios__bu_init_a55;			
-	//biosA0[0x56] = psxBios__96_remove_a56;	
+	//biosA0[0x55] = psxBios__bu_init_a55;
+	//biosA0[0x56] = psxBios__96_remove_a56;
 	//biosA0[0x57] = psxBios_sys_a0_57;
-	//biosA0[0x58] = psxBios_sys_a0_58;		
-	//biosA0[0x59] = psxBios_sys_a0_59;			
-	//biosA0[0x5a] = psxBios_sys_a0_5a;	
+	//biosA0[0x58] = psxBios_sys_a0_58;
+	//biosA0[0x59] = psxBios_sys_a0_59;
+	//biosA0[0x5a] = psxBios_sys_a0_5a;
 	//biosA0[0x5b] = psxBios_dev_tty_init;
-	//biosA0[0x5c] = psxBios_dev_tty_open;		
-	//biosA0[0x5d] = psxBios_sys_a0_5d;			
+	//biosA0[0x5c] = psxBios_dev_tty_open;
+	//biosA0[0x5d] = psxBios_sys_a0_5d;
 	//biosA0[0x5e] = psxBios_dev_tty_ioctl;
 	//biosA0[0x5f] = psxBios_dev_cd_open;
 	//biosA0[0x60] = psxBios_dev_cd_read;
@@ -1953,7 +2361,7 @@ int psxBiosSetupTables()
 	//biosA0[0x8b] = psxBios_sys_a0_8b;
 	//biosA0[0x8c] = psxBios_sys_a0_8c;
 	//biosA0[0x8d] = psxBios_sys_a0_8d;
-	//biosA0[0x8e] = psxBios_sys_a0_8e;		
+	//biosA0[0x8e] = psxBios_sys_a0_8e;
 	//biosA0[0x8f] = psxBios_sys_a0_8f;
 	//biosA0[0x90] = psxBios_sys_a0_90;
 	//biosA0[0x91] = psxBios_sys_a0_91;
@@ -1970,7 +2378,7 @@ int psxBiosSetupTables()
 	//biosA0[0x9c] = psxBios_SetConf;
 	//biosA0[0x9d] = psxBios_GetConf;
 	//biosA0[0x9e] = psxBios_sys_a0_9e;
-	//biosA0[0x9f] = psxBios_SetMem;
+	biosA0[0x9f] = psxBios_SetMem;
 	//biosA0[0xa0] = psxBios__boot;
 	//biosA0[0xa1] = psxBios_SystemError;
 	//biosA0[0xa2] = psxBios_EnqueueCdIntr;
@@ -2007,10 +2415,10 @@ int psxBiosSetupTables()
 	biosB0[0x0b] = psxBios_TestEvent;
 	biosB0[0x0c] = psxBios_EnableEvent;
 	biosB0[0x0d] = psxBios_DisableEvent;
-    biosB0[0x0e] = psxBios_OpenTh;
-    biosB0[0x0f] = psxBios_CloseTh;
-    biosB0[0x10] = psxBios_ChangeTh;
-    //biosB0[0x11] = psxBios_psxBios_b0_11;
+	biosB0[0x0e] = psxBios_OpenTh;
+	biosB0[0x0f] = psxBios_CloseTh;
+	biosB0[0x10] = psxBios_ChangeTh;
+	//biosB0[0x11] = psxBios_psxBios_b0_11;
 	biosB0[0x12] = psxBios_InitPAD;
 	biosB0[0x13] = psxBios_StartPAD;
 	biosB0[0x14] = psxBios_StopPAD;
@@ -2019,7 +2427,7 @@ int psxBiosSetupTables()
 	biosB0[0x17] = psxBios_ReturnFromException;
 	biosB0[0x18] = psxBios_ResetEntryInt;
 	biosB0[0x19] = psxBios_HookEntryInt;
-    //biosB0[0x1a] = psxBios_sys_b0_1a;
+	//biosB0[0x1a] = psxBios_sys_b0_1a;
 	//biosB0[0x1b] = psxBios_sys_b0_1b;
 	//biosB0[0x1c] = psxBios_sys_b0_1c;
 	//biosB0[0x1d] = psxBios_sys_b0_1d;
@@ -2043,11 +2451,11 @@ int psxBiosSetupTables()
 	//biosB0[0x2f] = psxBios_sys_b0_2f;
 	//biosB0[0x30] = psxBios_sys_b0_30;
 	//biosB0[0x31] = psxBios_sys_b0_31;
-    biosB0[0x32] = psxBios_open;
+	biosB0[0x32] = psxBios_open;
 	biosB0[0x33] = psxBios_lseek;
-	biosB0[0x34] = psxBios_read;		
+	biosB0[0x34] = psxBios_read;
 	biosB0[0x35] = psxBios_write;
-    biosB0[0x36] = psxBios_close;
+	biosB0[0x36] = psxBios_close;
 	//biosB0[0x37] = psxBios_ioctl;
 	//biosB0[0x38] = psxBios_exit;
 	//biosB0[0x39] = psxBios_sys_b0_39;
@@ -2059,7 +2467,7 @@ int psxBiosSetupTables()
 	//biosB0[0x41] = psxBios_format;
 	biosB0[0x42] = psxBios_firstfile;
 	biosB0[0x43] = psxBios_nextfile;
-	//biosB0[0x44] = psxBios_rename;
+	biosB0[0x44] = psxBios_rename;
 	biosB0[0x45] = psxBios_delete;
 	//biosB0[0x46] = psxBios_undelete;
 	//biosB0[0x47] = psxBios_AddDevice;
@@ -2079,7 +2487,7 @@ int psxBiosSetupTables()
 	//biosB0[0x55] = psxBios__get_error;
 	biosB0[0x56] = psxBios_GetC0Table;
 	biosB0[0x57] = psxBios_GetB0Table;
-    //biosB0[0x58] = psxBios__card_chan;
+	//biosB0[0x58] = psxBios__card_chan;
 	//biosB0[0x59] = psxBios_sys_b0_59;
 	//biosB0[0x5a] = psxBios_sys_b0_5a;
 	biosB0[0x5b] = psxBios_ChangeClearPad;
@@ -2099,7 +2507,7 @@ int psxBiosSetupTables()
 	biosC0[0x0a] = psxBios_ChangeClearRCnt;	
 	//biosC0[0x0b] = psxBios_SystemError;
 	//biosC0[0x0c] = psxBios_InitDefInt;
-    //biosC0[0x0d] = psxBios_sys_c0_0d;
+	//biosC0[0x0d] = psxBios_sys_c0_0d;
 	//biosC0[0x0e] = psxBios_sys_c0_0e;
 	//biosC0[0x0f] = psxBios_sys_c0_0f;
 	//biosC0[0x10] = psxBios_sys_c0_10;
@@ -2110,55 +2518,38 @@ int psxBiosSetupTables()
 	//biosC0[0x15] = psxBios__cdevinput;
 	//biosC0[0x16] = psxBios__cdevscan;
 	//biosC0[0x17] = psxBios__circgetc;
-	//biosC0[0x18] = psxBios__circputc;		  
+	//biosC0[0x18] = psxBios__circputc;
 	//biosC0[0x19] = psxBios_ioabort;
 	//biosC0[0x1a] = psxBios_sys_c0_1a
 	//biosC0[0x1b] = psxBios_KernelRedirect;
 	//biosC0[0x1c] = psxBios_PatchAOTable;
 //************** THE END ***************************************
-
+/**/
 	base = 0x1000;
 	size = sizeof(EvCB) * 32;
-	Event = (void *)&psxR[base]; base+= size*6;
+	Event = (void *)&psxR[base]; base += size * 6;
+	memset(Event, 0, size * 6);
 	HwEV = Event;
 	EvEV = Event + 32;
-	RcEV = Event + 32*2;
-	UeEV = Event + 32*3;
-	SwEV = Event + 32*4;
-	ThEV = Event + 32*5;
-	
-	return 1;
-}
+	RcEV = Event + 32 * 2;
+	UeEV = Event + 32 * 3;
+	SwEV = Event + 32 * 4;
+	ThEV = Event + 32 * 5;
 
-void psxBiosInit() {
-	u32 *ptr; 
-	
-	if (!psxBiosSetupTables())
-		return;
-	
-	memset(Event, 0, sizeof(EvCB) * 32 * 6);
-
-	ptr = (u32*)&psxM[0x0874]; // b0 table
+	ptr = (u32 *)&psxM[0x0874]; // b0 table
 	ptr[0] = SWAPu32(0x4c54 - 0x884);
 
-	ptr = (u32*)&psxM[0x0674]; // c0 table
+	ptr = (u32 *)&psxM[0x0674]; // c0 table
 	ptr[6] = SWAPu32(0xc80);
 
 	memset(SysIntRP, 0, sizeof(SysIntRP));
 	memset(Thread, 0, sizeof(Thread));
 	Thread[0].status = 2; // main thread
-	
-	// from FPSE
-/*	if (Config.BiosFont[0])
-		fileload(Config.BiosFont,&psxRs8ref(0x20000));
-	else
-		fileload("GONZN16X.TLF",&psxRs8ref(0x20000));*/
-	// !from FPSE
-	
+
 	psxMu32ref(0x0150) = SWAPu32(0x160);
 	psxMu32ref(0x0154) = SWAPu32(0x320);
 	psxMu32ref(0x0160) = SWAPu32(0x248);
-	strcpy((char*)&psxM[0x248], "bu");
+	strcpy((char *)&psxM[0x248], "bu");
 /*	psxMu32ref(0x0ca8) = SWAPu32(0x1f410004);
 	psxMu32ref(0x0cf0) = SWAPu32(0x3c020000);
 	psxMu32ref(0x0cf4) = SWAPu32(0x2442641c);
@@ -2176,24 +2567,27 @@ void psxBiosInit() {
 	psxMu32ref(0x07a0) = SWAPu32((0x3b << 26) | 0);
 	psxMu32ref(0x0884) = SWAPu32((0x3b << 26) | 0);
 	psxMu32ref(0x0894) = SWAPu32((0x3b << 26) | 0);
+
+	// initial stack pointer for BIOS interrupt
+	psxMu32ref(0x6c80) = SWAPu32(0x000085c8);
+
+	// initial RNG seed
+	psxMu32ref(0x9010) = SWAPu32(0xac20cc00);
+
+	// fonts
+	len = 0x80000 - 0x66000;
+	uncompress((Bytef *)(psxR + 0x66000), &len, font_8140, sizeof(font_8140));
+	len = 0x80000 - 0x69d68;
+	uncompress((Bytef *)(psxR + 0x69d68), &len, font_889f, sizeof(font_889f));
+
+	// memory size 2 MB
+	psxHu32ref(0x1060) = SWAPu32(0x00000b88);
+
+	hleSoftCall = FALSE;
 }
 
 void psxBiosShutdown() {
 }
-
-__inline void SaveRegs() {
-	memcpy(regs, psxRegs.GPR.r, 32*4);
-	regs[32] = psxRegs.GPR.n.lo;
-	regs[33] = psxRegs.GPR.n.hi;
-	regs[34] = psxRegs.pc;
-}
-
-__inline void LoadRegs() {
-	memcpy(psxRegs.GPR.r, regs, 32*4);
-	psxRegs.GPR.n.lo = regs[32];
-	psxRegs.GPR.n.hi = regs[33];
-}
-
 
 #define psxBios_PADpoll(pad) { \
 	PAD##pad##_startPoll(pad); \
@@ -2211,42 +2605,40 @@ __inline void LoadRegs() {
 	} \
 }
 
-void netError();
-
 void biosInterrupt() {
 	int i, bufcount;
 
 //	if (psxHu32(0x1070) & 0x1) { // Vsync
-		if (pad_buf) {
+		if (pad_buf != NULL) {
 			u32 *buf = (u32*)pad_buf;
 
 			if (!Config.UseNet) {
 				PAD1_startPoll(1);
 				if (PAD1_poll(0x42) == 0x23) {
 					PAD1_poll(0);
-					*buf = SWAP32(PAD1_poll(0) << 8);
-					*buf|= SWAP32(PAD1_poll(0));
+					*buf = PAD1_poll(0) << 8;
+					*buf |= PAD1_poll(0);
 					PAD1_poll(0);
-					*buf&= SWAP32(~((PAD1_poll(0)>0x20)?1<<6:0));
-					*buf&= SWAP32(~((PAD1_poll(0)>0x20)?1<<7:0));
+					*buf &= ~((PAD1_poll(0) > 0x20) ? 1 << 6 : 0);
+					*buf &= ~((PAD1_poll(0) > 0x20) ? 1 << 7 : 0);
 				} else {
 					PAD1_poll(0);
-					*buf = SWAP32(PAD1_poll(0) << 8);
-					*buf|= SWAP32(PAD1_poll(0));
+					*buf = PAD1_poll(0) << 8;
+					*buf|= PAD1_poll(0);
 				}
 
 				PAD2_startPoll(2);
 				if (PAD2_poll(0x42) == 0x23) {
 					PAD2_poll(0);
-					*buf|= SWAP32(PAD2_poll(0) << 24);
-					*buf|= SWAP32(PAD2_poll(0) << 16);
+					*buf |= PAD2_poll(0) << 24;
+					*buf |= PAD2_poll(0) << 16;
 					PAD2_poll(0);
-					*buf&= SWAP32(~((PAD2_poll(0)>0x20)?1<<22:0));
-					*buf&= SWAP32(~((PAD2_poll(0)>0x20)?1<<23:0));
+					*buf &= ~((PAD2_poll(0) > 0x20) ? 1 << 22 : 0);
+					*buf &= ~((PAD2_poll(0) > 0x20) ? 1 << 23 : 0);
 				} else {
 					PAD2_poll(0);
-					*buf|= SWAP32(PAD2_poll(0) << 24);
-					*buf|= SWAP32(PAD2_poll(0) << 16);
+					*buf |= PAD2_poll(0) << 24;
+					*buf |= PAD2_poll(0) << 16;
 				}
 			} else {
 				u16 data;
@@ -2255,7 +2647,7 @@ void biosInterrupt() {
 				PAD1_poll(0x42);
 				PAD1_poll(0);
 				data = PAD1_poll(0) << 8;
-				data|= PAD1_poll(0);
+				data |= PAD1_poll(0);
 
 				if (NET_sendPadData(&data, 2) == -1)
 					netError();
@@ -2265,9 +2657,8 @@ void biosInterrupt() {
 				if (NET_recvPadData(&((u16*)buf)[1], 2) == -1)
 					netError();
 			}
-
 		}
-		if (Config.UseNet && pad_buf1 && pad_buf2) {
+		if (Config.UseNet && pad_buf1 != NULL && pad_buf2 != NULL) {
 			psxBios_PADpoll(1);
 
 			if (NET_sendPadData(pad_buf1, i) == -1)
@@ -2288,8 +2679,8 @@ void biosInterrupt() {
 		}
 
 	if (psxHu32(0x1070) & 0x1) { // Vsync
-		if (RcEV[3][1].status == SWAP32(EvStACTIVE)) {
-			softCall(SWAP32(RcEV[3][1].fhandler));
+		if (RcEV[3][1].status == EvStACTIVE) {
+			softCall(RcEV[3][1].fhandler);
 //			hwWrite32(0x1f801070, ~(1));
 		}
 	}
@@ -2297,12 +2688,12 @@ void biosInterrupt() {
 	if (psxHu32(0x1070) & 0x70) { // Rcnt 0,1,2
 		int i;
 
-		for (i=0; i<3; i++) {
-			if (psxHu32(0x1070) & (1 << (i+4))) {
-				if (RcEV[i][1].status == SWAP32(EvStACTIVE)) {
-					softCall(SWAP32(RcEV[i][1].fhandler));
+		for (i = 0; i < 3; i++) {
+			if (psxHu32(0x1070) & (1 << (i + 4))) {
+				if (RcEV[i][1].status == EvStACTIVE) {
+					softCall(RcEV[i][1].fhandler);
 				}
-				psxHwWrite32(0x1f801070, ~(1 << (i+4)));
+				psxHwWrite32(0x1f801070, ~(1 << (i + 4)));
 			}
 		}
 	}
@@ -2318,14 +2709,16 @@ void psxBiosException() {
 #endif
 			SaveRegs();
 
+			sp = psxMu32(0x6c80); // create new stack for interrupt handlers
+
 			biosInterrupt();
 
-			for (i=0; i<8; i++) {
+			for (i = 0; i < 8; i++) {
 				if (SysIntRP[i]) {
-					u32 *queue = (u32*)PSXM(SysIntRP[i]);
+					u32 *queue = (u32 *)PSXM(SysIntRP[i]);
 
-					s0 = SWAP32(queue[2]);
-					softCall(SWAP32(queue[1]));
+					s0 = queue[2];
+					softCall(queue[1]);
 				}
 			}
 
@@ -2334,12 +2727,12 @@ void psxBiosException() {
 
 				psxHwWrite32(0x1f801070, 0xffffffff);
 
-				ra = SWAP32(jmp_int[0]);
-				sp = SWAP32(jmp_int[1]);
-				fp = SWAP32(jmp_int[2]);
-				for (i=0; i<8; i++) // s0-s7
-					 psxRegs.GPR.r[16+i] = SWAP32(jmp_int[3+i]);
-				gp = SWAP32(jmp_int[11]);
+				ra = jmp_int[0];
+				sp = jmp_int[1];
+				fp = jmp_int[2];
+				for (i = 0; i < 8; i++) // s0-s7
+					 psxRegs.GPR.r[16 + i] = jmp_int[3 + i];
+				gp = jmp_int[11];
 
 				v0 = 1;
 				pc0 = ra;
@@ -2347,25 +2740,30 @@ void psxBiosException() {
 			}
 			psxHwWrite16(0x1f801070, 0);
 			break;
+
 		case 0x20: // Syscall
 #ifdef PSXCPU_LOG
-//			PSXCPU_LOG("syscall exp %x\n", a0);
+			PSXCPU_LOG("syscall exp %x\n", a0);
 #endif
 			switch (a0) {
 				case 1: // EnterCritical - disable irq's
-					psxRegs.CP0.n.Status&=~0x404; break;
+					psxRegs.CP0.n.Status &= ~0x404; 
+v0=1;	// HDHOSHY experimental patch: Spongebob, Coldblood, fearEffect, Medievil2, Martian Gothic
+					break;
+
 				case 2: // ExitCritical - enable irq's
-					psxRegs.CP0.n.Status|= 0x404; break;
+					psxRegs.CP0.n.Status |= 0x404; 
+					break;
 			}
 			pc0 = psxRegs.CP0.n.EPC + 4;
 
 			psxRegs.CP0.n.Status = (psxRegs.CP0.n.Status & 0xfffffff0) |
 								  ((psxRegs.CP0.n.Status & 0x3c) >> 2);
-			
 			return;
+
 		default:
 #ifdef PSXCPU_LOG
-			PSXCPU_LOG("unk exp\n");
+			PSXCPU_LOG("unknown bios exception!\n");
 #endif
 			break;
 	}
@@ -2375,83 +2773,36 @@ void psxBiosException() {
 
 	psxRegs.CP0.n.Status = (psxRegs.CP0.n.Status & 0xfffffff0) |
 						  ((psxRegs.CP0.n.Status & 0x3c) >> 2);
-	
 }
 
-#define bfreeze(ptr, size) \
+#define bfreeze(ptr, size) { \
 	if (Mode == 1) memcpy(&psxR[base], ptr, size); \
 	if (Mode == 0) memcpy(ptr, &psxR[base], size); \
-	base+=size;
+	base += size; \
+}
 
 #define bfreezes(ptr) bfreeze(ptr, sizeof(ptr))
-#define bfreezel(ptr) {*ptr=SWAP32p((void*)ptr); bfreeze(ptr, 4); *ptr=SWAP32p((void*)ptr);}
+#define bfreezel(ptr) bfreeze(ptr, sizeof(*ptr))
 
-#define bfreezepsxMptr(ptr) \
+#define bfreezepsxMptr(ptr, type) { \
 	if (Mode == 1) { \
-		if (ptr) psxRu32ref(base) = SWAPu32((u32)ptr - (u32)psxM); \
+		if (ptr) psxRu32ref(base) = SWAPu32((s8 *)(ptr) - psxM); \
 		else psxRu32ref(base) = 0; \
 	} else { \
-		if (psxRu32(base)) *(u8**)&ptr = (u8*)(psxM + psxRu32(base)); \
-		else ptr = NULL; \
+		if (psxRu32(base) != 0) ptr = (type *)(psxM + psxRu32(base)); \
+		else (ptr) = NULL; \
 	} \
-	base+=4;
-
-static void biosSwap()
-{
-	int i, j;
-	
-	for (i=0; i<sizeof(regs)/4; i++) {
-		regs[i] = SWAP32p(&regs[i]);
-	}
-	
-	for (i=0; i<sizeof(SysIntRP)/4; i++) {
-		SysIntRP[i] = SWAP32p(&SysIntRP[i]);
-	}
-	
-	for (i=0; i<sizeof(Thread)/sizeof(TCB); i++) {
-		Thread[i].status = SWAP32p((u32*)&Thread[i].status);
-		Thread[i].mode = SWAP32p((u32*)&Thread[i].mode);
-		Thread[i].func = SWAP32p(&Thread[i].func);
-		
-		for (j=0; j<32; j++) {
-			Thread[i].reg[j] = SWAP32p(&Thread[i].reg[j]);
-		}
-	}
-
-	for (i=0; i<sizeof(FDesc)/sizeof(FileDesc); i++) {
-		FDesc[i].mode = SWAP32p(&FDesc[i].mode);
-		FDesc[i].offset = SWAP32p(&FDesc[i].offset);
-		FDesc[i].size = SWAP32p(&FDesc[i].size);
-		FDesc[i].mcfile = SWAP32p(&FDesc[i].mcfile);
-	}
+	base += sizeof(u32); \
 }
 
 void psxBiosFreeze(int Mode) {
 	u32 base = 0x40000;
-	char signature[4] = {'H','L','E', ' '};
-	
-	if ((Mode == 1) && Config.HLE)
-		return;
-	
-	biosSwap();
-	
-	bfreezes(&signature);
-	if (Mode == 0) {
-		if (memcmp(signature, "HLE ", 4) == 0) {
-			Config.HLE = 1;
-			psxBiosSetupTables();
-		} else {
-			Config.HLE = 0;
-			return;
-		}
-	}
-	
-	bfreezepsxMptr(jmp_int);
-	bfreezepsxMptr(pad_buf);
-	bfreezepsxMptr(pad_buf1);
-	bfreezepsxMptr(pad_buf2);
-	bfreezepsxMptr(heap_addr);
-	
+
+	bfreezepsxMptr(jmp_int, u32);
+	bfreezepsxMptr(pad_buf, int);
+	bfreezepsxMptr(pad_buf1, char);
+	bfreezepsxMptr(pad_buf2, char);
+	bfreezepsxMptr(heap_addr, u32);
 	bfreezel(&pad_buf1len);
 	bfreezel(&pad_buf2len);
 	bfreezes(regs);
@@ -2460,9 +2811,4 @@ void psxBiosFreeze(int Mode) {
 	bfreezes(Thread);
 	bfreezel(&CurThread);
 	bfreezes(FDesc);
-	
-	biosSwap();
 }
-
-
-

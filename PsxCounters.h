@@ -1,6 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 Ryan Schultz, PCSX-df Team, PCSX team              *
- *   schultz.ryan@gmail.com, http://rschultz.ath.cx/code.php               *
+ *   Copyright (C) 2010 by Blade_Arma                                      *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -15,34 +14,37 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin Street, Fifth Floor, Boston, MA 02111-1307 USA.           *
  ***************************************************************************/
 
 #ifndef __PSXCOUNTERS_H__
 #define __PSXCOUNTERS_H__
 
-#include "PsxCommon.h"
-#include "R3000A.h"
-#include "PsxMem.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "psxcommon.h"
+#include "r3000a.h"
+#include "psxmem.h"
 #include "plugins.h"
 
-typedef struct {
-	u32 count, mode, target;
-	u32 sCycle, Cycle, rate, interrupt;
-} psxCounter;
-
-extern psxCounter psxCounters[5];
-
-u32 psxNextCounter, psxNextsCounter;
+extern u32 psxNextCounter, psxNextsCounter;
 
 void psxRcntInit();
 void psxRcntUpdate();
+
 void psxRcntWcount(u32 index, u32 value);
 void psxRcntWmode(u32 index, u32 value);
 void psxRcntWtarget(u32 index, u32 value);
+
 u32 psxRcntRcount(u32 index);
-int psxRcntFreeze(gzFile f, int Mode);
+u32 psxRcntRmode(u32 index);
+u32 psxRcntRtarget(u32 index);
 
-void psxUpdateVSyncRate();
+s32 psxRcntFreeze(gzFile f, s32 Mode);
 
-#endif /* __PSXCOUNTERS_H__ */
+#ifdef __cplusplus
+}
+#endif
+#endif
