@@ -31,7 +31,6 @@ extern "C" {
 #include "../fileBrowser/fileBrowser.h"
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-SMB.h"
-#include "../fileBrowser/fileBrowser-DVD.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
 }
 
@@ -147,12 +146,12 @@ void Func_LoadFromDVD()
 	if(isoFile_deinit) isoFile_deinit( &isoFile );
 	// Change all the romFile pointers
 	isoFile_topLevel = &topLevel_DVD;
-	isoFile_readDir  = fileBrowser_DVD_readDir;
-	isoFile_open     = fileBrowser_DVD_open;
-	isoFile_readFile = fileBrowser_DVD_readFile;
-	isoFile_seekFile = fileBrowser_DVD_seekFile;
-	isoFile_init     = fileBrowser_DVD_init;
-	isoFile_deinit   = fileBrowser_DVD_deinit;
+	isoFile_readDir  = fileBrowser_libfat_readDir;
+	isoFile_open     = fileBrowser_libfat_open;
+	isoFile_readFile = fileBrowser_libfat_readFile;
+	isoFile_seekFile = fileBrowser_libfat_seekFile;
+	isoFile_init     = fileBrowser_libfat_init;
+	isoFile_deinit   = fileBrowser_libfat_deinit;
 	// Make sure the romFile system is ready before we browse the filesystem
 	isoFile_init( isoFile_topLevel );
 

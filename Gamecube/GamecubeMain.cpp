@@ -39,7 +39,6 @@ extern "C" {
 #include "DEBUG.h"
 #include "fileBrowser/fileBrowser.h"
 #include "fileBrowser/fileBrowser-libfat.h"
-#include "fileBrowser/fileBrowser-DVD.h"
 #include "fileBrowser/fileBrowser-CARD.h"
 #include "fileBrowser/fileBrowser-SMB.h"
 #include "gc_input/controller.h"

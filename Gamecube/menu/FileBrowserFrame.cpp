@@ -32,7 +32,6 @@
 extern "C" {
 #include "../fileBrowser/fileBrowser.h"
 #include "../fileBrowser/fileBrowser-libfat.h"
-#include "../fileBrowser/fileBrowser-DVD.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
 #include "../fileBrowser/fileBrowser-SMB.h"
 extern long CDR_getTN(unsigned char *buffer);

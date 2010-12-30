@@ -31,7 +31,6 @@
 #include "Gamecube/fileBrowser/fileBrowser.h"
 #include "Gamecube/fileBrowser/fileBrowser-libfat.h"
 #include "Gamecube/fileBrowser/fileBrowser-CARD.h"
-#include "Gamecube/fileBrowser/fileBrowser-DVD.h"
 #include "Gamecube/wiiSXconfig.h"
 
 s8 *psxH;
