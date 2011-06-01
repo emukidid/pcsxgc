@@ -48,6 +48,7 @@ extern "C" {
 unsigned int MALLOC_MEM2 = 0;
 extern "C" {
 #include <di/di.h>
+extern u32 __di_check_ahbprot(void);
 }
 #endif //WII
 
@@ -339,6 +340,14 @@ int main(int argc, char *argv[])
 {
 	/* INITIALIZE */
 #ifdef HW_RVL
+	DI_UseCache(false);
+	if (!__di_check_ahbprot()) {
+		s32 preferred = IOS_GetPreferredVersion();
+		if (preferred == 58 || preferred == 61)
+			IOS_ReloadIOS(preferred);
+		else DI_LoadDVDX(true);
+	}
+	
 	DI_Init();    // first
 #endif
 	
