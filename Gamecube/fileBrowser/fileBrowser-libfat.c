@@ -31,6 +31,8 @@
 #include "fileBrowser.h"
 #include <sdcard/gcsd.h>
 #include <iso9660.h>
+#include <di/di.h>
+#include <ogc/dvd.h>
 
 extern BOOL hasLoadedROM;
 extern int stop;
@@ -41,11 +43,11 @@ extern int stop;
 const DISC_INTERFACE* frontsd = &__io_wiisd;
 const DISC_INTERFACE* usb = &__io_usbstorage;
 const DISC_INTERFACE* dvd = &__io_wiidvd;
+#else
+const DISC_INTERFACE* dvd = &__io_gcdvd;
 #endif
 const DISC_INTERFACE* carda = &__io_gcsda;
 const DISC_INTERFACE* cardb = &__io_gcsdb;
-const DISC_INTERFACE* dvd = &__io_gcdvd;
-
 
 // Threaded insertion/removal detection
 #define THREAD_SLEEP 100
@@ -337,10 +339,10 @@ int fileBrowser_libfat_init(fileBrowser_file* f){
 	else if(f->name[0] == 'd') {	// DVD
 		if(!dvdMounted) {
 			if(dvdNeedsUnmount) {
-				ISO9660_Unmount();
+				ISO9660_Unmount("dvd");
 				dvdNeedsUnmount=0;
 			}
-			if(ISO9660_Mount()) {
+			if(ISO9660_Mount("dvd", dvd)) {
 				dvdMounted = 1;
 				res = 1;
 			}
@@ -370,7 +372,7 @@ int fileBrowser_libfat_init(fileBrowser_file* f){
 	else if(f->name[0] == 'd') {	// DVD
 		if(!dvdMounted) {
 			if(dvdNeedsUnmount) {
-				ISO9660_Unmount();
+				ISO9660_Unmount("dvd");
 				dvdNeedsUnmount=0;
 			}
 			if(ISO9660_Mount()) {
