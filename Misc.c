@@ -91,7 +91,7 @@ void mmssdd( char *b, char *p )
 	time[0] = itob(time[0]); time[1] = itob(time[1]); time[2] = itob(time[2]);
 
 #define READTRACK() \
-	if (CDR_readTrack((unsigned char*)time) == -1) return -1; \
+	if (CDR_readTrack(time) == -1) return -1; \
 	buf = CDR_getBuffer(); \
 	if (buf == NULL) return -1; else CheckPPFCache(buf, time[0], time[1], time[2]);
 
@@ -103,7 +103,7 @@ void mmssdd( char *b, char *p )
 	READTRACK(); \
 	memcpy(_dir + 2048, buf + 12, 2048);
 
-int GetCdromFile(char *mdir, char *time, char *filename) {
+int GetCdromFile(u8 *mdir, u8 *time, char *filename) {
 	struct iso_directory_record *dir;
 	char ddir[4096];
 	u8 *buf;
@@ -129,7 +129,7 @@ int GetCdromFile(char *mdir, char *time, char *filename) {
 				mmssdd(dir->extent, (char *)time);
 				READDIR(ddir);
 				i = 0;
-				mdir = ddir;
+				mdir = (u8*)ddir;
 			}
 		} else {
 			if (!strnicmp((char *)&dir->name[0], (char*)filename, strlen(filename))) {
@@ -144,13 +144,12 @@ int GetCdromFile(char *mdir, char *time, char *filename) {
 int LoadCdrom() {
 	EXE_HEADER tmpHead;
 	struct iso_directory_record *dir;
-	u8 time[4], *buf;
+	u8 time[4],*buf;
 	u8 mdir[4096];
 	char exename[256];
 
 	if (!Config.HLE) {
-		if(!LoadCdBios)
-			psxRegs.pc = psxRegs.GPR.n.ra;
+		if (!Config.SlowBoot) psxRegs.pc = psxRegs.GPR.n.ra;
 		return 0;
 	}
 
@@ -166,9 +165,9 @@ int LoadCdrom() {
 	READDIR(mdir);
 
 	// Load SYSTEM.CNF and scan for the main executable
-	if (GetCdromFile((char*)mdir, (char*)time, "SYSTEM.CNF;1") == -1) {
+	if (GetCdromFile(mdir, time, "SYSTEM.CNF;1") == -1) {
 		// if SYSTEM.CNF is missing, start an existing PSX.EXE
-		if (GetCdromFile((char*)mdir, (char*)time, "PSX.EXE;1") == -1) return -1;
+		if (GetCdromFile(mdir, time, "PSX.EXE;1") == -1) return -1;
 
 		READTRACK();
 	}
@@ -177,10 +176,10 @@ int LoadCdrom() {
 		READTRACK();
 
 		sscanf((char *)buf + 12, "BOOT = cdrom:\\%256s", exename);
-		if (GetCdromFile((char*)mdir, (char*)time, (char*)exename) == -1) {
+		if (GetCdromFile(mdir, time, exename) == -1) {
 			sscanf((char *)buf + 12, "BOOT = cdrom:%256s", exename);
-			if (GetCdromFile((char*)mdir, (char*)time, (char*)exename) == -1) {
-				char *ptr = strstr((char*)(buf + 12), "cdrom:");
+			if (GetCdromFile(mdir, time, exename) == -1) {
+				char *ptr = strstr((char*)buf + 12, "cdrom:");
 				if (ptr != NULL) {
 					ptr += 6;
 					while (*ptr == '\\' || *ptr == '/') ptr++;
@@ -189,7 +188,7 @@ int LoadCdrom() {
 					ptr = exename;
 					while (*ptr != '\0' && *ptr != '\r' && *ptr != '\n') ptr++;
 					*ptr = '\0';
-					if (GetCdromFile((char*)mdir, (char*)time, (char*)exename) == -1)
+					if (GetCdromFile(mdir, time, exename) == -1)
 						return -1;
 				} else
 					return -1;
@@ -229,7 +228,8 @@ int LoadCdrom() {
 int LoadCdromFile(const char *filename, EXE_HEADER *head) {
 	struct iso_directory_record *dir;
 	u8 time[4],*buf;
-	u8 mdir[4096], exename[256];
+	u8 mdir[4096];
+	char exename[256];
 	u32 size, addr;
 
 	sscanf(filename, "cdrom:\\%256s", exename);
@@ -245,7 +245,7 @@ int LoadCdromFile(const char *filename, EXE_HEADER *head) {
 
 	READDIR(mdir);
 
-	if (GetCdromFile((char*)mdir, (char*)time, (char*)exename) == -1) return -1;
+	if (GetCdromFile(mdir, time, exename) == -1) return -1;
 
 	READTRACK();
 
@@ -284,7 +284,7 @@ int CheckCdrom() {
 	CdromLabel[0] = '\0';
 	CdromId[0] = '\0';
 
-	strncpy((char*)CdromLabel, (char*)(buf + 52), 32);
+	strncpy(CdromLabel, (char*)buf + 52, 32);
 
 	// skip head and sub, and go to the root directory record
 	dir = (struct iso_directory_record *)&buf[12 + 156]; 
@@ -293,14 +293,14 @@ int CheckCdrom() {
 
 	READDIR(mdir);
 
-	if (GetCdromFile((char*)mdir, (char*)time, "SYSTEM.CNF;1") != -1) {
+	if (GetCdromFile(mdir, time, "SYSTEM.CNF;1") != -1) {
 		READTRACK();
 
 		sscanf((char *)buf + 12, "BOOT = cdrom:\\%256s", exename);
-		if (GetCdromFile((char*)mdir, (char*)time, (char*)exename) == -1) {
+		if (GetCdromFile(mdir, time, exename) == -1) {
 			sscanf((char *)buf + 12, "BOOT = cdrom:%256s", exename);
-			if (GetCdromFile((char*)mdir, (char*)time, (char*)exename) == -1) {
-				char *ptr = strstr((char*)(buf + 12), "cdrom:");			// possibly the executable is in some subdir
+			if (GetCdromFile(mdir, time, exename) == -1) {
+				char *ptr = strstr((char*)buf + 12, "cdrom:");			// possibly the executable is in some subdir
 				if (ptr != NULL) {
 					ptr += 6;
 					while (*ptr == '\\' || *ptr == '/') ptr++;
@@ -309,13 +309,13 @@ int CheckCdrom() {
 					ptr = exename;
 					while (*ptr != '\0' && *ptr != '\r' && *ptr != '\n') ptr++;
 					*ptr = '\0';
-					if (GetCdromFile((char*)mdir, (char*)time, (char*)exename) == -1)
+					if (GetCdromFile(mdir, time, exename) == -1)
 					 	return -1;		// main executable not found
 				} else
 					return -1;
 			}
 		}
-	} else if (GetCdromFile((char*)mdir, (char*)time, "PSX.EXE;1") != -1) {
+	} else if (GetCdromFile(mdir, time, "PSX.EXE;1") != -1) {
 		strcpy(exename, "PSX.EXE;1");
 		strcpy(CdromId, "SLUS99999");
 	} else
@@ -334,7 +334,10 @@ int CheckCdrom() {
 	}
 
 	if (Config.PsxAuto) { // autodetect system (pal or ntsc)
-		if (strstr(exename, "ES") != NULL)
+		if((CdromId[2] == 'e') || (CdromId[2] == 'E') ||
+			!strncmp(CdromId, "PBPX95001", 10) || // according to redump.org, these PAL
+			!strncmp(CdromId, "PBPX95007", 10) || // demos have a non-standard ID;
+			!strncmp(CdromId, "PBPX95008", 10))   // add more serials if they are discovered.
 			Config.PsxType = PSX_TYPE_PAL; // pal
 		else Config.PsxType = PSX_TYPE_NTSC; // ntsc
 	}
@@ -346,6 +349,7 @@ int CheckCdrom() {
 	SysPrintf(_("CD-ROM ID: %.9s\n"), CdromId);
 
 	BuildPPFCache();
+	LoadSBI();
 
 	return 0;
 }
@@ -393,7 +397,8 @@ static void LoadLibPS() {
 /* TODO Error handling - return integer for each error case below, defined in an enum. Pass variable on return */
 int Load(fileBrowser_file *exe) {
 	EXE_HEADER tmpHead;
-	int type, temp;
+	int temp;
+	int type;
 	int retval = 0;
 
 	strncpy(CdromId, "Homebrew\0", 9);
@@ -402,14 +407,17 @@ int Load(fileBrowser_file *exe) {
 	if (isoFile_readFile(exe, &temp, 4) != 4) {
 		SysMessage(_("Error opening file: %s"), exe->name);
 		retval = 0;
+
 	} else {
   	exe->offset = 0;  //reset the offset back to 0
 		type = PSXGetFileType(exe);
+
 		switch (type) {
 			case PSX_EXE:
 				isoFile_readFile(exe, &tmpHead, sizeof(EXE_HEADER));
 				isoFile_seekFile(exe, 0x800, FILE_BROWSER_SEEK_SET);
 				isoFile_readFile(exe, (void *)PSXM(SWAP32(tmpHead.t_addr)), SWAP32(tmpHead.t_size));
+
 				psxRegs.pc = SWAP32(tmpHead.pc0);
 				psxRegs.GPR.n.gp = SWAP32(tmpHead.gp0);
 				psxRegs.GPR.n.sp = SWAP32(tmpHead.s_addr); 
@@ -417,20 +425,29 @@ int Load(fileBrowser_file *exe) {
 					psxRegs.GPR.n.sp = 0x801fff00;
 				retval = 0;
 				break;
+
 			case CPE_EXE:
 				SysMessage(_("CPE files not supported."));
 				retval = -1;
 				break;
+
 			case COFF_EXE:
 				SysMessage(_("COFF files not supported."));
 				retval = -1;
 				break;
+
 			case INVALID_EXE:
-				SysMessage(_("This file does not appear to be a valid PSX file."));
+				SysPrintf(_("This file does not appear to be a valid PSX file.\n"));
 				retval = -1;
 				break;
 		}
 	}
+
+	if (retval != 0) {
+		CdromId[0] = '\0';
+		CdromLabel[0] = '\0';
+	}
+
 	return retval;
 }
 
@@ -455,7 +472,7 @@ void savestates_select_slot(unsigned int s)
 
 // Savestate Versioning!
 // If you make changes to the savestate version, please increment the value below.
-static const u32 SaveVersion = 0x8b410006;
+static const u32 SaveVersion = 0x8b410007;
 
 int SaveState() {
 	gzFile f;

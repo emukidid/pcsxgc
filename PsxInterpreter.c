@@ -49,102 +49,6 @@ void (*psxCP0[32])();
 void (*psxCP2[64])();
 void (*psxCP2BSC[32])();
 
-/*
-Formula One 2001
-- Use old CPU cache code when the RAM location is
-  updated with new code (affects in-game racing)
-
-TODO:
-- I-cache / D-cache swapping
-- Isolate D-cache from RAM
-*/
-
-u32 *Read_ICache( u32 pc, u32 isolate )
-{
-#define U32_PTR(x) (SWAP32(* (u32 *)(x)))
-#define U32_PTR_REF(x) (* (u32 *)(x))
-
-
-	u32 pc_bank, pc_offset, pc_cache;
-	u8 *IAddr, *ICode;
-
-	pc_bank = pc >> 24;
-	pc_offset = pc & 0xffffff;
-	pc_cache = pc & 0xfff;
-
-	IAddr = psxRegs.ICache_Addr;
-	ICode = psxRegs.ICache_Code;
-
-
-	//return PSXM(pc);
-
-
-	
-	// clear I-cache
-	if( psxRegs.ICache_valid == 0 )
-	{
-		memset( psxRegs.ICache_Addr, 0xff, sizeof(psxRegs.ICache_Addr) );
-		memset( psxRegs.ICache_Code, 0xff, sizeof(psxRegs.ICache_Code) );
-
-		psxRegs.ICache_valid = 1;
-	}
-
-
-
-	// uncached
-	if( pc_bank >= 0xa0 )
-		return PSXM(pc);
-
-
-	// cached - RAM
-	if( pc_bank == 0x80 || pc_bank == 0x00 )
-	{
-		if( U32_PTR( IAddr + pc_cache ) == pc_offset )
-		{
-			// Cache hit - return last opcode used
-			return ICode + pc_cache;
-		}
-		else
-		{
-			// Cache miss - addresses don't match
-			// - default: 0xffffffff (not init)
-
-			if( isolate == 0 )
-			{
-				// cache line is 4 bytes wide
-				pc_offset &= ~0xf;
-				pc_cache &= ~0xf;
-
-				// address line
-				U32_PTR_REF( IAddr + pc_cache + 0x0 ) = pc_offset + 0x0;
-				U32_PTR_REF( IAddr + pc_cache + 0x4 ) = pc_offset + 0x4;
-				U32_PTR_REF( IAddr + pc_cache + 0x8 ) = pc_offset + 0x8;
-				U32_PTR_REF( IAddr + pc_cache + 0xc ) = pc_offset + 0xc;
-
-				// opcode line
-				pc_offset = pc & ~0xf;
-				U32_PTR_REF( ICode + pc_cache + 0x0 ) = psxMu32( pc_offset + 0x0 );
-				U32_PTR_REF( ICode + pc_cache + 0x4 ) = psxMu32( pc_offset + 0x4 );
-				U32_PTR_REF( ICode + pc_cache + 0x8 ) = psxMu32( pc_offset + 0x8 );
-				U32_PTR_REF( ICode + pc_cache + 0xc ) = psxMu32( pc_offset + 0xc );
-			}
-
-			// normal code
-			return PSXM(pc);
-		}
-	}
-
-
-	/*
-	TODO: Probably should add cached BIOS
-	*/
-
-
-	// default
-	return PSXM(pc);
-}
-
-
 static void delayRead(int reg, u32 bpc) {
 	u32 rold, rnew;
 
@@ -156,13 +60,13 @@ static void delayRead(int reg, u32 bpc) {
 
 	psxRegs.pc = bpc;
 
-	psxBranchTest();
+	branch = 0;
 
 	psxRegs.GPR.r[reg] = rold;
 	execI(); // first branch opcode
 	psxRegs.GPR.r[reg] = rnew;
 
-	branch = 0;
+	psxBranchTest();
 }
 
 static void delayWrite(int reg, u32 bpc) {
@@ -250,8 +154,12 @@ int psxTestLoadDelay(int reg, u32 tmp) {
 
 		case 0x01: // REGIMM
 			switch (_tRt_) {
-				case 0x00: case 0x02:
-				case 0x10: case 0x12: // BLTZ/BGEZ...
+				case 0x00: case 0x01:
+				case 0x10: case 0x11: // BLTZ/BGEZ...
+					// Xenogears - lbu v0 / beq v0
+					// - no load delay (fixes battle loading)
+					break;
+
 					if (_tRs_ == reg) return 2;
 					break;
 			}
@@ -263,10 +171,18 @@ int psxTestLoadDelay(int reg, u32 tmp) {
 			break;
 
 		case 0x04: case 0x05: // BEQ/BNE
+			// Xenogears - lbu v0 / beq v0
+			// - no load delay (fixes battle loading)
+			break;
+
 			if (_tRs_ == reg || _tRt_ == reg) return 2;
 			break;
 
 		case 0x06: case 0x07: // BLEZ/BGTZ
+			// Xenogears - lbu v0 / beq v0
+			// - no load delay (fixes battle loading)
+			break;
+
 			if (_tRs_ == reg) return 2;
 			break;
 
@@ -351,8 +267,7 @@ void psxDelayTest(int reg, u32 bpc) {
 	u32 tmp;
 
 	// Don't execute yet - just peek
-	//code = (u32 *)PSXM(bpc);
-	code = Read_ICache(bpc,1);
+	code = Read_ICache(bpc, TRUE);
 
 	tmp = ((code == NULL) ? 0 : SWAP32(*code));
 	branch = 1;
@@ -373,6 +288,128 @@ void psxDelayTest(int reg, u32 bpc) {
 	psxBranchTest();
 }
 
+static u32 psxBranchNoDelay(void) {
+	u32 *code;
+	u32 temp;
+
+	code = Read_ICache(psxRegs.pc, TRUE);
+	psxRegs.code = ((code == NULL) ? 0 : SWAP32(*code));
+	switch (_Op_) {
+		case 0x00: // SPECIAL
+			switch (_Funct_) {
+				case 0x08: // JR
+					return _u32(_rRs_);
+				case 0x09: // JALR
+					temp = _u32(_rRs_);
+					if (_Rd_) { _SetLink(_Rd_); }
+					return temp;
+			}
+			break;
+		case 0x01: // REGIMM
+			switch (_Rt_) {
+				case 0x00: // BLTZ
+					if (_i32(_rRs_) < 0)
+						return _BranchTarget_;
+					break;
+				case 0x01: // BGEZ
+					if (_i32(_rRs_) >= 0)
+						return _BranchTarget_;
+					break;
+				case 0x08: // BLTZAL
+					if (_i32(_rRs_) < 0) {
+						_SetLink(31);
+						return _BranchTarget_;
+					}
+					break;
+				case 0x09: // BGEZAL
+					if (_i32(_rRs_) >= 0) {
+						_SetLink(31);
+						return _BranchTarget_;
+					}
+					break;
+			}
+			break;
+		case 0x02: // J
+			return _JumpTarget_;
+		case 0x03: // JAL
+			_SetLink(31);
+			return _JumpTarget_;
+		case 0x04: // BEQ
+			if (_i32(_rRs_) == _i32(_rRt_))
+				return _BranchTarget_;
+			break;
+		case 0x05: // BNE
+			if (_i32(_rRs_) != _i32(_rRt_))
+				return _BranchTarget_;
+			break;
+		case 0x06: // BLEZ
+			if (_i32(_rRs_) <= 0)
+				return _BranchTarget_;
+			break;
+		case 0x07: // BGTZ
+			if (_i32(_rRs_) > 0)
+				return _BranchTarget_;
+			break;
+	}
+
+	return (u32)-1;
+}
+
+static int psxDelayBranchExec(u32 tar) {
+	execI();
+
+	branch = 0;
+	psxRegs.pc = tar;
+	psxRegs.cycle += BIAS;
+	psxBranchTest();
+	return 1;
+}
+
+static int psxDelayBranchTest(u32 tar1) {
+	u32 tar2, tmp1, tmp2;
+
+	tar2 = psxBranchNoDelay();
+	if (tar2 == (u32)-1)
+		return 0;
+
+	debugI();
+
+	/*
+	 * Branch in delay slot:
+	 * - execute 1 instruction at tar1
+	 * - jump to tar2 (target of branch in delay slot; this branch
+	 *   has no normal delay slot, instruction at tar1 was fetched instead)
+	 */
+	psxRegs.pc = tar1;
+	tmp1 = psxBranchNoDelay();
+	if (tmp1 == (u32)-1) {
+		return psxDelayBranchExec(tar2);
+	}
+	debugI();
+	psxRegs.cycle += BIAS;
+
+	/*
+	 * Got a branch at tar1:
+	 * - execute 1 instruction at tar2
+	 * - jump to target of that branch (tmp1)
+	 */
+	psxRegs.pc = tar2;
+	tmp2 = psxBranchNoDelay();
+	if (tmp2 == (u32)-1) {
+		return psxDelayBranchExec(tmp1);
+	}
+	debugI();
+	psxRegs.cycle += BIAS;
+
+	/*
+	 * Got a branch at tar2:
+	 * - execute 1 instruction at tmp1
+	 * - jump to target of that branch (tmp2)
+	 */
+	psxRegs.pc = tmp1;
+	return psxDelayBranchExec(tmp2);
+}
+
 __inline void doBranch(u32 tar) {
 	u32 *code;
 	u32 tmp;
@@ -380,9 +417,12 @@ __inline void doBranch(u32 tar) {
 	branch2 = branch = 1;
 	branchPC = tar;
 
+	// notaz: check for branch in delay slot
+	if (psxDelayBranchTest(tar))
+		return;
+
 	// branch delay slot
-	//code = (u32 *)PSXM(psxRegs.pc);
-	code = Read_ICache( psxRegs.pc, 0 );
+	code = Read_ICache(psxRegs.pc, TRUE);
 
 	psxRegs.code = ((code == NULL) ? 0 : SWAP32(*code));
 
@@ -1028,7 +1068,7 @@ static int intInit() {
 }
 
 static void intReset() {
-	psxRegs.ICache_valid = 0;
+	psxRegs.ICache_valid = FALSE;
 }
 
 static void intExecute() {
@@ -1049,8 +1089,7 @@ static void intShutdown() {
 
 // interpreter execution
 inline void execI() { 
-	//u32 *code = (u32 *)PSXM(psxRegs.pc); 
-	u32 *code = Read_ICache( psxRegs.pc,0 );
+	u32 *code = Read_ICache(psxRegs.pc, FALSE);
 	psxRegs.code = ((code == NULL) ? 0 : SWAP32(*code));
 
 	debugI();

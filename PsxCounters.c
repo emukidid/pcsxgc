@@ -65,8 +65,9 @@ static const u32 CountToOverflow  = 0;
 static const u32 CountToTarget    = 1;
 
 static const u32 FrameRate[]      = { 60, 50 };
-static const u32 VBlankStart[]    = { 240, 256 };
-static const u32 HSyncTotal[]     = { 262, 312 };
+//static const u32 VBlankStart[]    = { 240, 256 };
+static const u32 VBlankStart[]    = { 243, 256 };
+static const u32 HSyncTotal[]     = { 263, 313 };
 static const u32 SpuUpdInterval[] = { 23, 22 };
 
 static const s32 VerboseLevel     = 0;
@@ -75,7 +76,7 @@ static const s32 VerboseLevel     = 0;
 
 static Rcnt rcnts[ CounterQuantity ];
 
-u32 hSyncCount = 0;
+static u32 hSyncCount = 0;
 static u32 spuSyncCount = 0;
 
 u32 psxNextCounter = 0, psxNextsCounter = 0;
@@ -97,7 +98,7 @@ void verboseLog( s32 level, const char *str, ... )
         char buf[ 4096 ];
 
         va_start( va, str );
-        vsprintf( buf, str, va );
+        vsnprintf( buf, sizeof(buf), str, va );
         va_end( va );
 
         printf( buf );
@@ -282,16 +283,16 @@ void psxRcntUpdate()
                 SPU_async( SpuUpdInterval[Config.PsxType] * rcnts[3].target );
             }
         }
-        
+
         // VSync irq.
         if( hSyncCount == VBlankStart[Config.PsxType] )
         {
             GPU_vBlank( 1 );
-            
+
             // For the best times. :D
             //setIrq( 0x01 );
         }
-        
+
         // Update lace. (with InuYasha fix)
         if( hSyncCount >= (Config.VSyncWA ? HSyncTotal[Config.PsxType] / BIAS : HSyncTotal[Config.PsxType]) )
         {
@@ -460,6 +461,9 @@ void psxRcntInit()
     {
         _psxRcntWcount( i, 0 );
     }
+
+    hSyncCount = 0;
+    spuSyncCount = 0;
 
     psxRcntSet();
 }

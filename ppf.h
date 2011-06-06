@@ -27,6 +27,9 @@ void BuildPPFCache();
 void FreePPFCache();
 void CheckPPFCache(unsigned char *pB, unsigned char m, unsigned char s, unsigned char f);
 
+void LoadSBI();
+boolean CheckSBI(const u8 *time);
+
 #ifdef __cplusplus
 }
 #endif

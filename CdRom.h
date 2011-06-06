@@ -52,7 +52,7 @@ typedef struct {
 	unsigned char StatP;
 
 	unsigned char Transfer[CD_FRAMESIZE_RAW];
-	unsigned char *pTransfer;
+	unsigned int  transferIndex;
 
 	unsigned char Prev[4];
 	unsigned char Param[8];
@@ -93,7 +93,7 @@ typedef struct {
 	u8 FastForward;
 	u8 FastBackward;
 
-	u32 LeftVol, RightVol;
+	u8 AttenuatorLeft[2], AttenuatorRight[2];
 } cdrStruct;
 
 extern cdrStruct cdr;
@@ -103,7 +103,6 @@ void cdrDecodedBufferInterrupt();
 void cdrReset();
 void cdrInterrupt();
 void cdrReadInterrupt();
-void cdrRepplayInterrupt();
 void cdrLidSeekInterrupt();
 void cdrPlayInterrupt();
 unsigned char cdrRead0(void);

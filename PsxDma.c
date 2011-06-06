@@ -48,7 +48,9 @@ void psxDma4(u32 madr, u32 bcr, u32 chcr) { // SPU
 				break;
 			}
 			SPU_writeDMAMem(ptr, (bcr >> 16) * (bcr & 0xffff) * 2);
-			SPUDMA_INT((bcr >> 16) * (bcr & 0xffff) / 2);
+
+			// Jungle Book - 0-0.333x DMA
+			SPUDMA_INT((bcr >> 16) * (bcr & 0xffff) / 3);
 			return;
 
 		case 0x01000200: //spu to cpu transfer
@@ -66,7 +68,12 @@ void psxDma4(u32 madr, u32 bcr, u32 chcr) { // SPU
 			SPU_readDMAMem(ptr, size);
 			psxCpu->Clear(madr, size);
 
+#if 1
 			SPUDMA_INT((bcr >> 16) * (bcr & 0xffff) / 2);
+#else
+			// Experimental burst dma transfer (0.333x max)
+			SPUDMA_INT((bcr >> 16) * (bcr & 0xffff) / 3);
+#endif
 			return;
 
 #ifdef PSXDMA_LOG
@@ -108,7 +115,12 @@ void psxDma6(u32 madr, u32 bcr, u32 chcr) {
 		}
 		mem++; *mem = SWAPu32(0xffffff);
 
+#if 1
 	  GPUOTCDMA_INT( size );
+#else
+		// Experimental burst dma transfer (0.333x max)
+	  GPUOTCDMA_INT( size/3 );
+#endif
 		return;
 	}
 #ifdef PSXDMA_LOG

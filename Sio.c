@@ -155,6 +155,23 @@ void sioWrite8(unsigned char value) {
 #endif
 	switch (padst) {
 		case 1: SIO_INT(SIO_CYCLES);
+			/*
+			$41-4F
+			$41 = Find bits in poll respones
+			$42 = Polling command
+			$43 = Config mode (Dual shock?)
+			$44 = Digital / Analog (after $F3)
+			$45 = Get status info (Dual shock?)
+
+			ID:
+			$41 = Digital
+			$73 = Analogue Red LED
+			$53 = Analogue Green LED
+
+			$23 = NegCon
+			$12 = Mouse
+			*/
+
 			if ((value & 0x40) == 0x40) {
 				padst = 2; parp = 1;
 				if (!Config.UseNet) {
@@ -175,11 +192,33 @@ void sioWrite8(unsigned char value) {
 				} else {
 					bufcount = 2 + (buf[parp] & 0x0f) * 2;
 				}
+
+
+				// Digital / Dual Shock Controller
 				if (buf[parp] == 0x41) {
 					switch (value) {
+						// enter config mode
 						case 0x43:
 							buf[1] = 0x43;
 							break;
+
+						// get status
+						case 0x45:
+							buf[1] = 0xf3;
+							break;
+					}
+				}
+
+
+				// NegCon - Wipeout 3
+				if( buf[parp] == 0x23 ) {
+					switch (value) {
+						// enter config mode
+						case 0x43:
+							buf[1] = 0x79;
+							break;
+
+						// get status
 						case 0x45:
 							buf[1] = 0xf3;
 							break;
@@ -686,6 +725,10 @@ void sioWrite8(unsigned char value) {
 			return;
 		case 0x81: // start memcard
 			StatReg |= RX_RDY;
+#if 0
+			// Chronicles of the Sword - no memcard = password options
+			if( Config.Memcard == 1 ) return;
+#endif
 			memcpy(buf, cardh, 4);
 			parp = 0;
 			bufcount = 3;
@@ -903,7 +946,7 @@ int SaveMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2) {
 }
 
 bool CreateMcd(int slot, fileBrowser_file *mcd) {
-	char *cardData = NULL;
+	unsigned char *cardData = NULL;
 	if (slot == 1) cardData = Mcd1Data;
 	if (slot == 2) cardData = Mcd2Data;
 
@@ -1004,15 +1047,15 @@ void ConvertMcd(char *mcd, char *data) {
 }
 
 void GetMcdBlockInfo(int mcd, int block, McdBlock *Info) {
-	unsigned char *data = NULL, *ptr, *str, *sstr;
+	char *data = NULL, *ptr, *str, *sstr;
 	unsigned short clut[16];
 	unsigned short c;
 	int i, x;
 
 	memset(Info, 0, sizeof(McdBlock));
 
-	if (mcd == 1) data = Mcd1Data;
-	if (mcd == 2) data = Mcd2Data;
+	if (mcd == 1) data = (char*)Mcd1Data;
+	if (mcd == 2) data = (char*)Mcd2Data;
 
 	ptr = data + block * 8192 + 2;
 

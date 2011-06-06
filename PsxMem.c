@@ -33,10 +33,11 @@
 #include "Gamecube/fileBrowser/fileBrowser-CARD.h"
 #include "Gamecube/wiiSXconfig.h"
 
-s8 *psxH;
-s8 *psxP;
 s8 psxM[0x00220000] __attribute__((aligned(32))); // Kernel & User Memory (2 Meg)
+s8 *psxP = NULL; // Parallel Port (64K)
 s8 psxR[0x00080000] __attribute__((aligned(32))); // BIOS ROM (512K)
+s8 *psxH = NULL; // Scratch Pad (1K) & Hardware Registers (8K)
+
 u8* psxMemWLUT[0x10000] __attribute__((aligned(32)));
 u8* psxMemRLUT[0x10000] __attribute__((aligned(32)));
 
@@ -150,7 +151,7 @@ u8 psxMemRead8(u32 mem) {
 	u32 t;
 
 
-	psxRegs.cycle += 1;
+	psxRegs.cycle += 0;
 
 
 	t = mem >> 16;
@@ -163,7 +164,7 @@ u8 psxMemRead8(u32 mem) {
 		p = (char *)(psxMemRLUT[t]);
 		if (p != NULL) {
 //			if (Config.Debug)
-//				DebugCheckBP((mem & 0xffffff) | 0x80000000, R1);
+//				DebugCheckBP((mem & 0xffffff) | 0x80000000, BR1);
 			return *(u8 *)(p + (mem & 0xffff));
 		} else {
 #ifdef PSXMEM_LOG
@@ -192,7 +193,7 @@ u16 psxMemRead16(u32 mem) {
 		p = (char *)(psxMemRLUT[t]);
 		if (p != NULL) {
 //			if (Config.Debug)
-//				DebugCheckBP((mem & 0xffffff) | 0x80000000, R2);
+//				DebugCheckBP((mem & 0xffffff) | 0x80000000, BR2);
 			return SWAPu16(*(u16 *)(p + (mem & 0xffff)));
 		} else {
 #ifdef PSXMEM_LOG
@@ -208,7 +209,7 @@ u32 psxMemRead32(u32 mem) {
 	u32 t;
 
 
-	psxRegs.cycle += 2;
+	psxRegs.cycle += 1;
 
 	
 	t = mem >> 16;
@@ -221,7 +222,7 @@ u32 psxMemRead32(u32 mem) {
 		p = (char *)(psxMemRLUT[t]);
 		if (p != NULL) {
 //			if (Config.Debug)
-//				DebugCheckBP((mem & 0xffffff) | 0x80000000, R4);
+//				DebugCheckBP((mem & 0xffffff) | 0x80000000, BR4);
 			return SWAPu32(*(u32 *)(p + (mem & 0xffff)));
 		} else {
 #ifdef PSXMEM_LOG
@@ -237,7 +238,7 @@ void psxMemWrite8(u32 mem, u8 value) {
 	u32 t;
 
 
-	psxRegs.cycle += 2;
+	psxRegs.cycle += 1;
 	
 	
 	t = mem >> 16;
@@ -250,7 +251,7 @@ void psxMemWrite8(u32 mem, u8 value) {
 		p = (char *)(psxMemWLUT[t]);
 		if (p != NULL) {
 //			if (Config.Debug)
-//				DebugCheckBP((mem & 0xffffff) | 0x80000000, W1);
+//				DebugCheckBP((mem & 0xffffff) | 0x80000000, BW1);
 			*(u8 *)(p + (mem & 0xffff)) = value;
 #ifdef PSXREC
 			psxCpu->Clear((mem & (~3)), 1);
@@ -268,7 +269,7 @@ void psxMemWrite16(u32 mem, u16 value) {
 	u32 t;
 
 
-	psxRegs.cycle += 2;
+	psxRegs.cycle += 1;
 
 		
 	t = mem >> 16;
@@ -281,7 +282,7 @@ void psxMemWrite16(u32 mem, u16 value) {
 		p = (char *)(psxMemWLUT[t]);
 		if (p != NULL) {
 //			if (Config.Debug)
-//				DebugCheckBP((mem & 0xffffff) | 0x80000000, W2);
+//				DebugCheckBP((mem & 0xffffff) | 0x80000000, BW2);
 			*(u16 *)(p + (mem & 0xffff)) = SWAPu16(value);
 #ifdef PSXREC
 			psxCpu->Clear((mem & (~3)), 1);
@@ -299,7 +300,7 @@ void psxMemWrite32(u32 mem, u32 value) {
 	u32 t;
 
 	
-	psxRegs.cycle += 2;
+	psxRegs.cycle += 1;
 
 
 	//	if ((mem&0x1fffff) == 0x71E18 || value == 0x48088800) SysPrintf("t2fix!!\n");
@@ -313,7 +314,7 @@ void psxMemWrite32(u32 mem, u32 value) {
 		p = (char *)(psxMemWLUT[t]);
 		if (p != NULL) {
 //			if (Config.Debug)
-//				DebugCheckBP((mem & 0xffffff) | 0x80000000, W4);
+//				DebugCheckBP((mem & 0xffffff) | 0x80000000, BW4);
 			*(u32 *)(p + (mem & 0xffff)) = SWAPu32(value);
 #ifdef PSXREC
 			psxCpu->Clear(mem, 1);

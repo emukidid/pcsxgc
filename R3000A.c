@@ -27,9 +27,6 @@
 #include "PsxGpu.h"
 #include "gte.h"
 
-extern u32 *Read_ICache( u32 pc, u32 isolate );
-
-
 R3000Acpu *psxCpu = NULL;
 psxRegisters psxRegs;
 
@@ -116,7 +113,7 @@ void psxBranchTest() {
 			u32 opcode;
 
 			// Crash Bandicoot 2: Don't run exceptions when GTE in pipeline
-			opcode = *Read_ICache( psxRegs.pc, 1 );
+			opcode = SWAP32(*Read_ICache(psxRegs.pc, TRUE));
 			if( ((opcode >> 24) & 0xfe) != 0x4a ) {
 #ifdef PSXCPU_LOG
 				PSXCPU_LOG("Interrupt: %x %x\n", psxHu32(0x1070), psxHu32(0x1074));
@@ -125,6 +122,29 @@ void psxBranchTest() {
 			}
 		}
 	}
+
+#if 0
+	if( SPU_async )
+	{
+		static int init;
+		int elapsed;
+
+		if( init == 0 ) {
+			// 10 apu cycles
+			// - Final Fantasy Tactics (distorted - dropped sound effects)
+			psxRegs.intCycle[PSXINT_SPUASYNC].cycle = PSXCLK / 44100 * 10;
+
+			init = 1;
+		}
+
+		elapsed = psxRegs.cycle - psxRegs.intCycle[PSXINT_SPUASYNC].sCycle;
+		if (elapsed >= psxRegs.intCycle[PSXINT_SPUASYNC].cycle) {
+			SPU_async( elapsed );
+
+			psxRegs.intCycle[PSXINT_SPUASYNC].sCycle = psxRegs.cycle;
+		}
+	}
+#endif
 
 	if ((psxRegs.cycle - psxNextsCounter) >= psxNextCounter)
 		psxRcntUpdate();
@@ -194,10 +214,10 @@ void psxBranchTest() {
 			}
 		}
 
-		if (psxRegs.interrupt & (1 << PSXINT_CDREPPLAY)) { // cdr report play
-			if ((psxRegs.cycle - psxRegs.intCycle[PSXINT_CDREPPLAY].sCycle) >= psxRegs.intCycle[PSXINT_CDREPPLAY].cycle) {
-				psxRegs.interrupt &= ~(1 << PSXINT_CDREPPLAY);
-				cdrRepplayInterrupt();
+		if (psxRegs.interrupt & (1 << PSXINT_CDRPLAY)) { // cdr play timing
+			if ((psxRegs.cycle - psxRegs.intCycle[PSXINT_CDRPLAY].sCycle) >= psxRegs.intCycle[PSXINT_CDRPLAY].cycle) {
+				psxRegs.interrupt &= ~(1 << PSXINT_CDRPLAY);
+				cdrPlayInterrupt();
 			}
 		}
 
@@ -212,13 +232,6 @@ void psxBranchTest() {
 			if ((psxRegs.cycle - psxRegs.intCycle[PSXINT_CDRLID].sCycle) >= psxRegs.intCycle[PSXINT_CDRLID].cycle) {
 				psxRegs.interrupt &= ~(1 << PSXINT_CDRLID);
 				cdrLidSeekInterrupt();
-			}
-		}
-
-		if (psxRegs.interrupt & (1 << PSXINT_CDRPLAY)) { // cdr play timing
-			if ((psxRegs.cycle - psxRegs.intCycle[PSXINT_CDRPLAY].sCycle) >= psxRegs.intCycle[PSXINT_CDRPLAY].cycle) {
-				psxRegs.interrupt &= ~(1 << PSXINT_CDRPLAY);
-				cdrPlayInterrupt();
 			}
 		}
 	}

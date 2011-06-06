@@ -1,7 +1,8 @@
-/*  PPF Patch Support for PCSX-Reloaded
+/*  PPF/SBI Support for PCSX-Reloaded
  *  Copyright (c) 2009, Wei Mingzhi <whistler_wmz@users.sf.net>.
+ *  Copyright (c) 2010, shalma.
  *
- *  Based on P.E.Op.S CDR Plugin by Pete Bernert.
+ *  PPF code based on P.E.Op.S CDR Plugin by Pete Bernert.
  *  Copyright (c) 2002, Pete Bernert.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -190,11 +191,13 @@ void BuildPPFCache() {
 
 	FreePPFCache();
 
+    if (CdromId[0] == '\0') return;
+
 	// Generate filename in the format of SLUS_123.45
-	buffer[0] = toupper(CdromId[0]);
-	buffer[1] = toupper(CdromId[1]);
-	buffer[2] = toupper(CdromId[2]);
-	buffer[3] = toupper(CdromId[3]);
+	buffer[0] = toupper((u32)CdromId[0]);
+	buffer[1] = toupper((u32)CdromId[1]);
+	buffer[2] = toupper((u32)CdromId[2]);
+	buffer[3] = toupper((u32)CdromId[3]);
 	buffer[4] = '_';
 	buffer[5] = CdromId[4];
 	buffer[6] = CdromId[5];
@@ -329,4 +332,65 @@ void BuildPPFCache() {
 	FillPPFCache(); // build address array
 
 	SysPrintf(_("Loaded PPF %d.0 patch: %s.\n"), method + 1, szPPF);
+}
+
+// redump.org SBI files
+static u8 sbitime[256][3], sbicount;
+
+void LoadSBI() {
+	FILE *sbihandle;
+	char buffer[16], sbifile[MAXPATHLEN];
+
+    if (CdromId[0] == '\0') return;
+
+	// Generate filename in the format of SLUS_123.45.sbi
+	buffer[0] = toupper((u32)CdromId[0]);
+	buffer[1] = toupper((u32)CdromId[1]);
+	buffer[2] = toupper((u32)CdromId[2]);
+	buffer[3] = toupper((u32)CdromId[3]);
+	buffer[4] = '_';
+	buffer[5] = CdromId[4];
+	buffer[6] = CdromId[5];
+	buffer[7] = CdromId[6];
+	buffer[8] = '.';
+	buffer[9] = CdromId[7];
+	buffer[10] = CdromId[8];
+	buffer[11] = '.';
+	buffer[12] = 's';
+	buffer[13] = 'b';
+	buffer[14] = 'i';
+	buffer[15] = '\0';
+
+	sprintf(sbifile, "%s%s", Config.PatchesDir, buffer);
+
+	// init
+	sbicount = 0;
+
+	sbihandle = fopen(sbifile, "rb");
+	if (sbihandle == NULL) return;
+
+	// 4-byte SBI header
+	fread(buffer, 1, 4, sbihandle);
+	while (!feof(sbihandle)) {
+		fread(sbitime[sbicount++], 1, 3, sbihandle);
+		fread(buffer, 1, 11, sbihandle);
+	}
+
+	fclose(sbihandle);
+
+	SysPrintf(_("Loaded SBI file: %s.\n"), sbifile);
+}
+
+boolean CheckSBI(const u8 *time) {
+	int lcv;
+
+	// both BCD format
+	for (lcv = 0; lcv < sbicount; lcv++) {
+		if (time[0] == sbitime[lcv][0] && 
+				time[1] == sbitime[lcv][1] && 
+				time[2] == sbitime[lcv][2])
+			return TRUE;
+	}
+
+	return FALSE;
 }

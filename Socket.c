@@ -31,11 +31,11 @@
 //#include <fcntl.h>
 #endif
 
-static int server_socket = 0;
+//static int server_socket = 0;
 static int client_socket = 0;
 
-static char tbuf[513];
-static int ptr = 0;
+//static char tbuf[513];
+//static int ptr = 0;
 
 #define PORT_NUMBER 12345
 

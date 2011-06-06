@@ -110,6 +110,7 @@ typedef struct {
 	boolean PsxAuto;
 	boolean Cdda;
 	boolean HLE;
+	boolean SlowBoot;
 	boolean Debug;
 	boolean PsxOut;
 	boolean SpuIrq;
@@ -151,7 +152,6 @@ enum {
 	BIOS_USER_DEFINED,
 	BIOS_HLE
 };	/* BIOS Types */
-
 int EmuInit();
 void EmuReset();
 void EmuShutdown();

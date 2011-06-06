@@ -359,13 +359,13 @@ void psxHwWrite8(u32 add, u8 value) {
 		case 0x1f801803: cdrWrite3(value); break;
 
 		default:
-			psxHu8(add) = value;
+			psxHu8ref(add) = value;
 #ifdef PSXHW_LOG
 			PSXHW_LOG("*Unknown 8bit write at address %x value %x\n", add, value);
 #endif
 			return;
 	}
-	psxHu8(add) = value;
+	psxHu8ref(add) = value;
 #ifdef PSXHW_LOG
 	PSXHW_LOG("*Known 8bit write at address %x value %x\n", add, value);
 #endif
@@ -725,6 +725,19 @@ void psxHwWrite32(u32 add, u32 value) {
 			psxRcntWtarget(2, value & 0xffff); return;
 
 		default:
+			// Dukes of Hazard 2 - car engine noise
+			if (add>=0x1f801c00 && add<0x1f801e00) {
+        SPU_writeRegister(add, value&0xffff);
+				
+				add += 2;
+				value >>= 16;
+
+				if (add>=0x1f801c00 && add<0x1f801e00)
+					SPU_writeRegister(add, value&0xffff);
+				return;
+			}
+
+
 			psxHu32ref(add) = SWAPu32(value);
 #ifdef PSXHW_LOG
 			PSXHW_LOG("*Unknown 32bit write at address %x value %x\n", add, value);

@@ -21,8 +21,6 @@
  * Internal simulated HLE BIOS.
  */
 
-// TODO: implement all system calls, count the exact CPU cycles of system calls.
-
 #include "psxbios.h"
 #include "psxhw.h"
 extern char mcd1Written;
@@ -258,6 +256,7 @@ static int CardState = -1;
 static TCB Thread[8];
 static int CurThread = 0;
 static FileDesc FDesc[32];
+static u32 card_active_chan = 0;
 
 boolean hleSoftCall = FALSE;
 
@@ -1241,6 +1240,8 @@ void psxBios__card_info() { // ab
 	PSXBIOS_LOG("psxBios_%s: %x\n", biosA0n[0xab], a0);
 #endif
 
+	card_active_chan = a0;
+
 //	DeliverEvent(0x11, 0x2); // 0xf0000011, 0x0004
 	DeliverEvent(0x81, 0x2); // 0xf4000001, 0x0004
 
@@ -1251,6 +1252,8 @@ void psxBios__card_load() { // ac
 #ifdef PSXBIOS_LOG
 	PSXBIOS_LOG("psxBios_%s: %x\n", biosA0n[0xac], a0);
 #endif
+
+	card_active_chan = a0;
 
 //	DeliverEvent(0x11, 0x2); // 0xf0000011, 0x0004
 	DeliverEvent(0x81, 0x2); // 0xf4000001, 0x0004
@@ -1870,13 +1873,12 @@ void psxBios_firstfile() { // 42
 	nfile = 1;
 	if (!strncmp(Ra0, "bu00", 4)) {
 		bufile(1);
-		v0 = _dir;
+	} else if (!strncmp(Ra0, "bu10", 4)) {
+		bufile(2);
 	}
 
-	if (!strncmp(Ra0, "bu10", 4)) {
-		bufile(2);
-		v0 = _dir;
-	}
+	// firstfile() calls _card_read() internally, so deliver it's event
+	DeliverEvent(0x11, 0x2);
 
 	pc0 = ra;
 }
@@ -2026,6 +2028,7 @@ void psxBios__card_write() { // 0x4e
 	PSXBIOS_LOG("psxBios_%s: %x,%x,%x\n", biosB0n[0x4e], a0, a1, a2);
 #endif
 
+	card_active_chan = a0;
 	port = a0 >> 4;
 
 	if (port == 0) {
@@ -2049,6 +2052,7 @@ void psxBios__card_read() { // 0x4f
 	PSXBIOS_LOG("psxBios_%s\n", biosB0n[0x4f]);
 #endif
 
+	card_active_chan = a0;
 	port = a0 >> 4;
 
 	if (port == 0) {
@@ -2128,6 +2132,15 @@ void psxBios_GetB0Table() { // 57
 #endif
 
 	v0 = 0x874; pc0 = ra;
+}
+
+void psxBios__card_chan() { // 0x58
+#ifdef PSXBIOS_LOG
+	PSXBIOS_LOG("psxBios_%s\n", biosB0n[0x58]);
+#endif
+
+	v0 = card_active_chan;
+	pc0 = ra;
 }
 
 void psxBios_ChangeClearPad() { // 5b
@@ -2487,7 +2500,7 @@ void psxBiosInit() {
 	//biosB0[0x55] = psxBios__get_error;
 	biosB0[0x56] = psxBios_GetC0Table;
 	biosB0[0x57] = psxBios_GetB0Table;
-	//biosB0[0x58] = psxBios__card_chan;
+	biosB0[0x58] = psxBios__card_chan;
 	//biosB0[0x59] = psxBios_sys_b0_59;
 	//biosB0[0x5a] = psxBios_sys_b0_5a;
 	biosB0[0x5b] = psxBios_ChangeClearPad;
@@ -2545,6 +2558,18 @@ void psxBiosInit() {
 	memset(SysIntRP, 0, sizeof(SysIntRP));
 	memset(Thread, 0, sizeof(Thread));
 	Thread[0].status = 2; // main thread
+
+	jmp_int = NULL;
+	pad_buf = NULL;
+	pad_buf1 = NULL;
+	pad_buf2 = NULL;
+	pad_buf1len = pad_buf2len = 0;
+	heap_addr = NULL;
+	heap_end = NULL;
+	CardState = -1;
+	CurThread = 0;
+	memset(FDesc, 0, sizeof(FDesc));
+	card_active_chan = 0;
 
 	psxMu32ref(0x0150) = SWAPu32(0x160);
 	psxMu32ref(0x0154) = SWAPu32(0x320);
@@ -2811,4 +2836,5 @@ void psxBiosFreeze(int Mode) {
 	bfreezes(Thread);
 	bfreezel(&CurThread);
 	bfreezes(FDesc);
+	bfreezel(&card_active_chan);
 }

@@ -123,7 +123,6 @@ extern u8* psxMemRLUT[0x10000] __attribute__((aligned(32)));
 #define PSXMu32ref(mem)	(*(u32 *)PSXM(mem))
 
 #if !defined PSXREC && (defined(__x86_64__) || defined(__i386__) || defined(__sh__) || defined(__ppc__) || defined(HW_RVL)) || defined(HW_DOL)
-
 #define PSXREC
 #endif
 

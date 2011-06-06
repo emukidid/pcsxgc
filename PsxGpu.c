@@ -39,8 +39,6 @@ extern unsigned int hSyncCount;
 #define GPUSTATUS_DRAWINGALLOWED      0x00000400
 #define GPUSTATUS_DITHER              0x00000200
 
-
-
 // Taken from PEOPS SOFTGPU
 u32 lUsedAddr[3];
 
@@ -75,13 +73,13 @@ static u32 gpuDmaChainSize(u32 addr) {
 		// # 32-bit blocks to transfer
 		size += psxMu8( addr + 3 );
 
-		
+
 		// next 32-bit pointer
 		addr = psxMu32( addr & ~0x3 ) & 0xffffff;
 		size += 1;
 	} while (addr != 0xffffff);
 
-	
+
 	return size;
 }
 
@@ -122,8 +120,13 @@ void psxDma2(u32 madr, u32 bcr, u32 chcr) { // GPU
 			GPU_readDataMem(ptr, size);
 			psxCpu->Clear(madr, size);
 
+#if 1
 			// already 32-bit word size ((size * 4) / 4)
 			GPUDMA_INT(size);
+#else
+			// Experimental burst dma transfer (0.333x max)
+			GPUDMA_INT(size/3);
+#endif
 			return;
 
 		case 0x01000201: // mem2vram
@@ -141,8 +144,14 @@ void psxDma2(u32 madr, u32 bcr, u32 chcr) { // GPU
 			size = (bcr >> 16) * (bcr & 0xffff);
 			GPU_writeDataMem(ptr, size);
 
+#if 1
 			// already 32-bit word size ((size * 4) / 4)
 			GPUDMA_INT(size);
+#else
+			// Experimental burst dma transfer
+			// - X-Files = 0.333333x max for videos
+			GPUDMA_INT( size / 3 );
+#endif
 			return;
 
 		case 0x01000401: // dma chain
@@ -152,7 +161,13 @@ void psxDma2(u32 madr, u32 bcr, u32 chcr) { // GPU
 
 			size = gpuDmaChainSize(madr);
 			GPU_dmaChain((u32 *)psxM, madr & 0x1fffff);
-			
+
+			// Tekken 3 = use 1.0 only (not 1.5x)
+
+			// Einhander = parse linked list in pieces (todo)
+			// Final Fantasy 4 = internal vram time (todo)
+			// Rebel Assault 2 = parse linked list in pieces (todo)
+			// Vampire Hunter D = allow edits to linked list (todo)
 			GPUDMA_INT(size);
 			return;
 

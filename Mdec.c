@@ -20,9 +20,19 @@
 
 #include "mdec.h"
 
-
+/* memory speed is 1 byte per MDEC_BIAS psx clock
+ * That mean (PSXCLK / MDEC_BIAS) B/s
+ * MDEC_BIAS = 2.0 => ~16MB/s
+ * MDEC_BIAS = 3.0 => ~11MB/s
+ * and so on ...
+ * I guess I have 50 images in 50Hz ... (could be 25 images ?)
+ * 320x240x24@50Hz => 11.52 MB/s
+ * 320x240x24@60Hz => 13.824 MB/s
+ * 320x240x16@50Hz => 7.68 MB/s
+ * 320x240x16@60Hz => 9.216 MB/s
+ * so 2.0 to 4.0 should be fine.
+ */
 #define MDEC_BIAS 2.0f
-
 
 #define DSIZE			8
 #define DSIZE2			(DSIZE * DSIZE)
@@ -209,11 +219,13 @@ struct _pending_dma1 {
 	u32 chcr;
 };
 
-struct {
+static struct {
 	u32 reg0;
 	u32 reg1;
 	u16 * rl;
 	u16 * rl_end;
+	u8 * block_buffer_pos;
+	u8 block_buffer[16*16*3];
 	struct _pending_dma1 pending_dma1;
 } mdec;
 
@@ -312,7 +324,7 @@ unsigned short *rl2blk(int *blk, unsigned short *mdec_rl) {
 #define CLAMP_SCALE8(a)   (CLAMP8(SCALE8(a)))
 #define CLAMP_SCALE5(a)   (CLAMP5(SCALE5(a)))
 
-static inline void putlinebw15(unsigned short *image, int *Yblk) {
+inline void putlinebw15(u16 *image, int *Yblk) {
 	int i;
 	int A = (mdec.reg0 & MDEC0_STP) ? 0x8000 : 0;
 
@@ -323,7 +335,7 @@ static inline void putlinebw15(unsigned short *image, int *Yblk) {
 	}
 }
 
-static void putquadrgb15(unsigned short *image, int *Yblk, int Cr, int Cb) {
+inline void putquadrgb15(u16 *image, int *Yblk, int Cr, int Cb) {
 	int Y, R, G, B;
 	int A = (mdec.reg0 & MDEC0_STP) ? 0x8000 : 0;
 	R = MULR(Cr);
@@ -341,7 +353,7 @@ static void putquadrgb15(unsigned short *image, int *Yblk, int Cr, int Cb) {
 	image[17] = MAKERGB15(CLAMP_SCALE5(Y + R), CLAMP_SCALE5(Y + G), CLAMP_SCALE5(Y + B), A);
 }
 
-static void yuv2rgb15(int *blk, unsigned short *image) {
+inline void yuv2rgb15(int *blk, unsigned short *image) {
 	int x, y;
 	int *Yblk = blk + DSIZE2 * 2;
 	int *Crblk = blk;
@@ -364,7 +376,7 @@ static void yuv2rgb15(int *blk, unsigned short *image) {
 	}
 }
 
-static inline void putlinebw24(unsigned char *image, int *Yblk) {
+inline void putlinebw24(u8 * image, int *Yblk) {
 	int i;
 	unsigned char Y;
 	for (i = 0; i < 8 * 3; i += 3, Yblk++) {
@@ -375,7 +387,7 @@ static inline void putlinebw24(unsigned char *image, int *Yblk) {
 	}
 }
 
-static void putquadrgb24(unsigned char *image, int *Yblk, int Cr, int Cb) {
+inline void putquadrgb24(u8 * image, int *Yblk, int Cr, int Cb) {
 	int Y, R, G, B;
 
 	R = MULR(Cr);
@@ -400,14 +412,14 @@ static void putquadrgb24(unsigned char *image, int *Yblk, int Cr, int Cb) {
 	image[17 * 3 + 2] = CLAMP_SCALE8(Y + B);
 }
 
-static void yuv2rgb24(int *blk, unsigned char *image) {
+static void yuv2rgb24(int *blk, u8 *image) {
 	int x, y;
 	int *Yblk = blk + DSIZE2 * 2;
 	int *Crblk = blk;
 	int *Cbblk = blk + DSIZE2;
 
 	if (!Config.Mdec) {
-		for (y = 0; y < 16; y += 2, Crblk += 4, Cbblk += 4, Yblk += 8, image += 24 * 3) {
+		for (y = 0; y < 16; y += 2, Crblk += 4, Cbblk += 4, Yblk += 8, image += 8 * 3 * 3) {
 			if (y == 8) Yblk += DSIZE2;
 			for (x = 0; x < 4; x++, image += 6, Crblk++, Cbblk++, Yblk += 2) {
 				putquadrgb24(image, Yblk, *Crblk, *Cbblk);
@@ -424,9 +436,10 @@ static void yuv2rgb24(int *blk, unsigned char *image) {
 }
 
 void mdecInit(void) {
+	memset(&mdec, 0, sizeof(mdec));
+	memset(iq_y, 0, sizeof(iq_y));
+	memset(iq_uv, 0, sizeof(iq_uv));
 	mdec.rl = (u16 *)&psxM[0x100000];
-	mdec.reg0 = 0;
-	mdec.reg1 = 0;
 }
 
 // command register
@@ -444,6 +457,7 @@ void mdecWrite1(u32 data) {
 		mdec.reg0 = 0;
 		mdec.reg1 = 0;
 		mdec.pending_dma1.adr = 0;
+		mdec.block_buffer_pos = 0;
 	}
 }
 
@@ -521,14 +535,22 @@ void mdec0Interrupt()
 	DMA_INTERRUPT(0);
 }
 
+#define SIZE_OF_24B_BLOCK (16*16*3)
+#define SIZE_OF_16B_BLOCK (16*16*2)
+
 void psxDma1(u32 adr, u32 bcr, u32 chcr) {
 	int blk[DSIZE2 * 6];
-	unsigned short *image;
-	int size, dmacnt;
+	u8 * image;
+	int size;
+	int dmacnt;
 
 	if (chcr != 0x01000200) return;
 
 	size = (bcr >> 16) * (bcr & 0xffff);
+	/* size in byte */
+	size *= 4;
+	/* I guess the memory speed is limitating */
+	dmacnt = size;
 
 	if (!(mdec.reg1 & MDEC1_BUSY)) {
 		/* add to pending */
@@ -538,26 +560,69 @@ void psxDma1(u32 adr, u32 bcr, u32 chcr) {
 		/* do not free the dma */
 	} else {
 
-	image = (u16 *)PSXM(adr);
+	image = (u8 *)PSXM(adr);
 
-	if (mdec.reg0 & MDEC0_RGB24) { // 15-b decoding
-		size = size / ((16 * 16) / 2);
-		dmacnt = size * (16 * 16 * 2);
-		for (; size > 0; size--, image += (16 * 16)) {
-			mdec.rl = rl2blk(blk, mdec.rl);
-			yuv2rgb15(blk, image);
+	if (mdec.reg0 & MDEC0_RGB24) {
+		/* 16 bits decoding
+		 * block are 16 px * 16 px, each px are 2 byte
+		 */
+
+		/* there is some partial block pending ? */
+		if(mdec.block_buffer_pos != 0) {
+			int n = mdec.block_buffer - mdec.block_buffer_pos + SIZE_OF_16B_BLOCK;
+			/* TODO: check if partial block do not  larger than size */
+			memcpy(image, mdec.block_buffer_pos, n);
+			image += n;
+			size -= n;
+			mdec.block_buffer_pos = 0;
 		}
-	} else { // 24-b decoding
-		size = size / ((24 * 16) / 2);
-		dmacnt = size * (16 * 16 * 3);
-		for (; size > 0; size--, image += (24 * 16)) {
+
+		while(size >= SIZE_OF_16B_BLOCK) {
 			mdec.rl = rl2blk(blk, mdec.rl);
-			yuv2rgb24(blk, (u8 *)image);
+			yuv2rgb15(blk, (u16 *)image);
+			image += SIZE_OF_16B_BLOCK;
+			size -= SIZE_OF_16B_BLOCK;
+		}
+
+		if(size != 0) {
+			mdec.rl = rl2blk(blk, mdec.rl);
+			yuv2rgb15(blk, (u16 *)mdec.block_buffer);
+			memcpy(image, mdec.block_buffer, size);
+			mdec.block_buffer_pos = mdec.block_buffer + size;
+		}
+
+	} else {
+		/* 24 bits decoding
+		 * block are 16 px * 16 px, each px are 3 byte
+		 */
+
+		/* there is some partial block pending ? */
+		if(mdec.block_buffer_pos != 0) {
+			int n = mdec.block_buffer - mdec.block_buffer_pos + SIZE_OF_24B_BLOCK;
+			/* TODO: check if partial block do not  larger than size */
+			memcpy(image, mdec.block_buffer_pos, n);
+			image += n;
+			size -= n;
+			mdec.block_buffer_pos = 0;
+		}
+
+		while(size >= SIZE_OF_24B_BLOCK) {
+			mdec.rl = rl2blk(blk, mdec.rl);
+			yuv2rgb24(blk, image);
+			image += SIZE_OF_24B_BLOCK;
+			size -= SIZE_OF_24B_BLOCK;
+		}
+
+		if(size != 0) {
+			mdec.rl = rl2blk(blk, mdec.rl);
+			yuv2rgb24(blk, mdec.block_buffer);
+			memcpy(image, mdec.block_buffer, size);
+			mdec.block_buffer_pos = mdec.block_buffer + size;
 		}
 	}
 	
 	/* define the power of mdec */
-	MDECOUTDMA_INT((int) (dmacnt * MDEC_BIAS));
+	MDECOUTDMA_INT((int) ((dmacnt* MDEC_BIAS)));
 	}
 }
 
