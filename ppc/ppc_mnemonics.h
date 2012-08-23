@@ -423,6 +423,10 @@
 	{int _src = (REG_SRC); int _dst=(REG_DST); \
         INSTR = (0x7C0000D0 | (_dst << 21) | (_src << 16));}
 
+#define EQV(REG_DST, REG1, REG2) \
+	{ int _reg1 = (REG1), _reg2 = (REG2); int _dst=(REG_DST); \
+		INSTR = (0x7C000238 | (_reg1 << 21) | (_dst << 16) | (_reg2 << 11));}
+		
 #define NOP() \
 	{INSTR = 0x60000000;}
 

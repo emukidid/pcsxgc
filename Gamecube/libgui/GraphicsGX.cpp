@@ -58,14 +58,14 @@ Graphics::Graphics(GXRModeObj *rmode)
 		}
 #endif
 		if (memcmp( &vmode_phys, &TVPal528IntDf, sizeof(GXRModeObj)) == 0)
-			memcpy( &vmode_phys, &TVPal574IntDfScale, sizeof(GXRModeObj));
+			memcpy( &vmode_phys, &TVPal576IntDfScale, sizeof(GXRModeObj));
 		break;
 	case VIDEOMODE_NTSC:
 		vmode = &TVNtsc480IntDf;
 		memcpy( &vmode_phys, vmode, sizeof(GXRModeObj));
 		break;
 	case VIDEOMODE_PAL:
-		vmode = &TVPal574IntDfScale;
+		vmode = &TVPal576IntDfScale;
 		memcpy( &vmode_phys, vmode, sizeof(GXRModeObj));
 		break;
 	case VIDEOMODE_PROGRESSIVE:

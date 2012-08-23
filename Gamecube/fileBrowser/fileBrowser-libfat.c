@@ -377,7 +377,7 @@ int fileBrowser_libfat_init(fileBrowser_file* f){
 				ISO9660_Unmount("dvd");
 				dvdNeedsUnmount=0;
 			}
-			if(ISO9660_Mount()) {
+			if(ISO9660_Mount("dvd", dvd)) {
 				dvdMounted = 1;
 				res = 1;
 			}
