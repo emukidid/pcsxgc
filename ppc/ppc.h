@@ -23,13 +23,7 @@
 { \
     u32 _func = (FUNC); \
     ReleaseArgs(); \
-    if ((_func & 0x1fffffc) == _func) { \
-        BLA(_func); \
-    } else { \
-        LIW(0, _func); \
-        MTCTR(0); \
-        BCTRL(); \
-    } \
+    BLA(_func); \
 }
 
 extern int cpuHWRegisters[NUM_HW_REGISTERS];
