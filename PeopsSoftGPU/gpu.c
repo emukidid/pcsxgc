@@ -946,6 +946,9 @@ void CALLBACK GPUupdateLace(void)                      // VSYNC
 void PEOPS_GPUupdateLace(void)
 #endif //__GX__
 {
+#ifdef PROFILE
+	start_section(GFX_SECTION);
+#endif
 #ifdef PEOPS_SDLOG
 	DEBUG_print("append",DBG_SDGECKOAPPEND);
 	sprintf(txtbuffer,"Calling GPUupdateLace()\r\n");
@@ -991,6 +994,9 @@ if(RECORD_RECORDING)
 #endif
 
  bDoVSyncUpdate=FALSE;                                 // vsync done
+#ifdef PROFILE
+	end_section(GFX_SECTION);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1003,6 +1009,9 @@ unsigned long CALLBACK GPUreadStatus(void)             // READ STATUS
 unsigned long PEOPS_GPUreadStatus(void)
 #endif // __GX__
 {
+#ifdef PROFILE
+	start_section(GFX_SECTION);
+#endif
  if(dwActFixes&1)
   {
    static int iNumRead=0;                              // odd/even hack
@@ -1031,7 +1040,9 @@ unsigned long PEOPS_GPUreadStatus(void)
     }
 //   auxprintf("2 %08x\n",lGPUstatusRet);
   }
-
+#ifdef PROFILE
+	end_section(GFX_SECTION);
+#endif
  return lGPUstatusRet;
 }
 
@@ -1046,6 +1057,9 @@ void CALLBACK GPUwriteStatus(unsigned long gdata)      // WRITE STATUS
 void PEOPS_GPUwriteStatus(unsigned long gdata)
 #endif // __GX__
 {
+#ifdef PROFILE
+	start_section(GFX_SECTION);
+#endif
  unsigned long lCommand=(gdata>>24)&0xff;
 
  ulStatusControl[lCommand]=gdata;                      // store command for freezing
@@ -1068,6 +1082,9 @@ void PEOPS_GPUwriteStatus(unsigned long gdata)
     PSXDisplay.RGB24=FALSE;
     PSXDisplay.Interlaced=FALSE;
     bUsingTWin = FALSE;
+#ifdef PROFILE
+	end_section(GFX_SECTION);
+#endif
     return;
    //--------------------------------------------------//
    // dis/enable display 
@@ -1079,6 +1096,9 @@ void PEOPS_GPUwriteStatus(unsigned long gdata)
     if(PSXDisplay.Disabled) 
          lGPUstatusRet|=GPUSTATUS_DISPLAYDISABLED;
     else lGPUstatusRet&=~GPUSTATUS_DISPLAYDISABLED;
+#ifdef PROFILE
+	end_section(GFX_SECTION);
+#endif
     return;
 
    //--------------------------------------------------//
@@ -1091,7 +1111,9 @@ void PEOPS_GPUwriteStatus(unsigned long gdata)
     if(gdata==0x03) DataReadMode =DR_VRAMTRANSFER;
     lGPUstatusRet&=~GPUSTATUS_DMABITS;                 // Clear the current settings of the DMA bits
     lGPUstatusRet|=(gdata << 29);                      // Set the DMA bits according to the received data
-
+#ifdef PROFILE
+	end_section(GFX_SECTION);
+#endif
     return;
    //--------------------------------------------------//
    // setting display position
@@ -1160,7 +1182,11 @@ void PEOPS_GPUwriteStatus(unsigned long gdata)
        if(UseFrameSkip)  updateDisplay();
        if(dwActFixes&64) bDoLazyUpdate=TRUE;
       }
-    }return;
+    }
+#ifdef PROFILE
+	end_section(GFX_SECTION);
+#endif
+	return;
    //--------------------------------------------------//
    // setting width
    case 0x06:
@@ -1171,7 +1197,9 @@ void PEOPS_GPUwriteStatus(unsigned long gdata)
     PSXDisplay.Range.x1-=PSXDisplay.Range.x0;
 
     ChangeDispOffsetsX();
-
+#ifdef PROFILE
+	end_section(GFX_SECTION);
+#endif
     return;
    //--------------------------------------------------//
    // setting height
@@ -1195,6 +1223,9 @@ void PEOPS_GPUwriteStatus(unsigned long gdata)
 
        updateDisplayIfChanged();
       }
+#ifdef PROFILE
+	end_section(GFX_SECTION);
+#endif
      return;
     }
    //--------------------------------------------------//
@@ -1244,14 +1275,18 @@ void PEOPS_GPUwriteStatus(unsigned long gdata)
     else lGPUstatusRet&=~GPUSTATUS_RGB24;
 
     updateDisplayIfChanged();
-
+#ifdef PROFILE
+	end_section(GFX_SECTION);
+#endif
     return;
    //--------------------------------------------------//
    // ask about GPU version and other stuff
    case 0x10: 
 
     gdata&=0xff;
-
+#ifdef PROFILE
+	end_section(GFX_SECTION);
+#endif
     switch(gdata) 
      {
       case 0x02:
@@ -1280,6 +1315,9 @@ void PEOPS_GPUwriteStatus(unsigned long gdata)
     return;
    //--------------------------------------------------//
   }   
+#ifdef PROFILE
+	end_section(GFX_SECTION);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1340,7 +1378,9 @@ void PEOPS_GPUreadDataMem(unsigned long * pMem, int iSize)
 #endif //__GX__
 {
  int i;
-
+#ifdef PROFILE
+	start_section(GFX_SECTION);
+#endif
  if(DataReadMode!=DR_VRAMTRANSFER) return;
 
  GPUIsBusy;
@@ -1396,6 +1436,9 @@ void PEOPS_GPUreadDataMem(unsigned long * pMem, int iSize)
 
 ENDREAD:
  GPUIsIdle;
+#ifdef PROFILE
+	end_section(GFX_SECTION);
+#endif
 }
 
 
@@ -1493,6 +1536,9 @@ void CALLBACK GPUwriteDataMem(unsigned long * pMem, int iSize)
 void PEOPS_GPUwriteDataMem(unsigned long * pMem, int iSize)
 #endif // __GX__
 {
+#ifdef PROFILE
+	start_section(GFX_SECTION);
+#endif
  unsigned char command;
  unsigned long gdata=0;
  int i=0;
@@ -1635,7 +1681,10 @@ ENDVRAM:
  lGPUdataRet=gdata;
 
  GPUIsReadyForCommands;
- GPUIsIdle;                
+ GPUIsIdle;   
+#ifdef PROFILE
+	end_section(GFX_SECTION);
+#endif 
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1732,6 +1781,9 @@ long CALLBACK GPUdmaChain(unsigned long * baseAddrL, unsigned long addr)
 long PEOPS_GPUdmaChain(unsigned long * baseAddrL, unsigned long addr)
 #endif // __GX__
 {
+#ifdef PROFILE
+	start_section(GFX_SECTION);
+#endif
  unsigned long dmaMem;
  unsigned char * baseAddrB;
  short count;unsigned int DMACommandCounter = 0;
@@ -1766,7 +1818,9 @@ long PEOPS_GPUdmaChain(unsigned long * baseAddrL, unsigned long addr)
  while (addr != 0xffffff);
 
  GPUIsIdle;
-
+#ifdef PROFILE
+	end_section(GFX_SECTION);
+#endif
  return 0;
 }
 

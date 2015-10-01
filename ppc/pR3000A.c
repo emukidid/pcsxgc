@@ -409,18 +409,6 @@ static int PutHWReg32(int reg)
 	return UpdateHWRegUsage(iRegs[reg].reg, usage);
 }
 
-/* --- Temporary register mapping --- */
-static int GetRegisterTemp(){
-	int hwreg = GetFreeHWReg();
-	HWRegisters[hwreg].flush = NULL;
-	HWRegisters[hwreg].usage = HWUSAGE_RESERVED;
-	return hwreg;
-}
-
-void FreeRegisterTemp(int reg){
-	DisposeHWReg(reg);
-}
-
 /* --- Special register mapping --- */
 
 static int GetSpecialIndexFromHWRegs(int which)
@@ -478,6 +466,7 @@ static int GetHWRegSpecial(int which)
 		switch (which) {
 			case PSXREGS:
 			case PSXMEM:
+			case PSXRLUT:
 				SysPrintf("error! shouldn't be here!\n");
 				break;
 			case TARGETPTR:
@@ -988,9 +977,15 @@ __inline static void execute() {
 	recFunc = (void (**)()) (u32)p;
 
 	if (*recFunc == 0) {
+#ifdef PROFILE
+		start_section(COMPILER_SECTION);
+#endif
 		recRecompile();
+#ifdef PROFILE
+		end_section(COMPILER_SECTION);
+#endif
 	}
-	recRun(*recFunc, (u32)&psxRegs, (u32)&psxM);
+	recRun(*recFunc, (u32)&psxRegs, (u32)&psxM, (u32)&psxMemRLUT);
 }
 
 static void recExecute() {
@@ -1369,11 +1364,13 @@ static void recDIVU() {
 
 static void preMemRead()
 {
+	int rs;
+	
 	ReserveArgs(1);
 	if (_Rs_ != _Rt_) {
 		DisposeHWReg(iRegs[_Rt_].reg);
 	}
-	int rs = GetHWReg32(_Rs_);
+	rs = GetHWReg32(_Rs_);
 	if (rs != 3 || _Imm_ != 0) {
 		ADDI(PutHWRegSpecial(ARG1), rs, _Imm_);
 	}
@@ -1381,6 +1378,30 @@ static void preMemRead()
 		DisposeHWReg(iRegs[_Rt_].reg);
 	}
 	InvalidateCPURegs();
+	//FlushAllHWReg();
+}
+
+static void preMemWrite(int size)
+{
+	int rs;
+	
+	ReserveArgs(2);
+	rs = GetHWReg32(_Rs_);
+	if (rs != 3 || _Imm_ != 0) {
+		ADDI(PutHWRegSpecial(ARG1), rs, _Imm_);
+	}
+	if (size == 1) {
+		RLWINM(PutHWRegSpecial(ARG2), GetHWReg32(_Rt_), 0, 24, 31);
+		//ANDI_(PutHWRegSpecial(ARG2), GetHWReg32(_Rt_), 0xff);
+	} else if (size == 2) {
+		RLWINM(PutHWRegSpecial(ARG2), GetHWReg32(_Rt_), 0, 16, 31);
+		//ANDI_(PutHWRegSpecial(ARG2), GetHWReg32(_Rt_), 0xffff);
+	} else {
+		MR(PutHWRegSpecial(ARG2), GetHWReg32(_Rt_));
+	}
+	
+	InvalidateCPURegs();
+	//FlushAllHWReg();
 }
 
 static void recLB() {
@@ -1389,23 +1410,18 @@ static void recLB() {
     if (IsConst(_Rs_)) {
         u32 addr = iRegs[_Rs_].k + _Imm_;
         int t = addr >> 16;
-    
+		if (!_Rt_) return;
         if ((t & 0xfff0)  == 0xbfc0) {	// Static BIOS read
-            if (!_Rt_) return;
             MapConst(_Rt_, psxRs8(addr));
             return;
         }
         if ((t & 0x1fe0) == 0 && (t & 0x1fff) != 0) {	// PSX Mem read
-            if (!_Rt_) return;
-                
             LIW(PutHWReg32(_Rt_), (u32)&psxM[addr & 0x1fffff]);
             LBZ(PutHWReg32(_Rt_), 0, GetHWReg32(_Rt_));
             EXTSB(PutHWReg32(_Rt_), GetHWReg32(_Rt_));
             return;
         }
         if (t == 0x1f80 && addr < 0x1f801000) {	// PSX Hardware registers read
-            if (!_Rt_) return;
-    
             LIW(PutHWReg32(_Rt_), (u32)&psxH[addr & 0xfff]);
             LBZ(PutHWReg32(_Rt_), 0, GetHWReg32(_Rt_));
             EXTSB(PutHWReg32(_Rt_), GetHWReg32(_Rt_));
@@ -1413,18 +1429,7 @@ static void recLB() {
         }
     }
 	
-	ReserveArgs(1);
-	if (_Rs_ != _Rt_) {
-		DisposeHWReg(iRegs[_Rt_].reg);
-	}
-	int rs = GetHWReg32(_Rs_);
-	if (rs != 3 || _Imm_ != 0) {
-		ADDI(PutHWRegSpecial(ARG1), rs, _Imm_);
-	}
-	if (_Rs_ == _Rt_) {
-		DisposeHWReg(iRegs[_Rt_].reg);
-	}
-	InvalidateCPURegs();
+	preMemRead();
 	CALLFunc((u32)psxMemRead8);
 	if (_Rt_) {
 		EXTSB(PutHWReg32(_Rt_), GetHWRegSpecial(RETVAL));
@@ -1438,42 +1443,43 @@ static void recLBU() {
     if (IsConst(_Rs_)) {
         u32 addr = iRegs[_Rs_].k + _Imm_;
         int t = addr >> 16;
-    
+		if (!_Rt_) return;
         if ((t & 0xfff0)  == 0xbfc0) {	// Static BIOS read
-            if (!_Rt_) return;
             MapConst(_Rt_, psxRu8(addr));
             return;
         }
         if ((t & 0x1fe0) == 0 && (t & 0x1fff) != 0) {	// PSX Mem read
-            if (!_Rt_) return;
-                
             LIW(PutHWReg32(_Rt_), (u32)&psxM[addr & 0x1fffff]);
             LBZ(PutHWReg32(_Rt_), 0, GetHWReg32(_Rt_));
             return;
         }
         if (t == 0x1f80 && addr < 0x1f801000) {	// PSX Hardware registers read
-            if (!_Rt_) return;
-    
             LIW(PutHWReg32(_Rt_), (u32)&psxH[addr & 0xfff]);
             LBZ(PutHWReg32(_Rt_), 0, GetHWReg32(_Rt_));
             return;
         }
     }
-        
-	ReserveArgs(1);
-	if (_Rs_ != _Rt_) {
-		DisposeHWReg(iRegs[_Rt_].reg);
-	}
-	int rs = GetHWReg32(_Rs_);
-	if (rs != 3 || _Imm_ != 0) {
-		ADDI(PutHWRegSpecial(ARG1), rs, _Imm_);
-	}
-	if (_Rs_ == _Rt_) {
-		DisposeHWReg(iRegs[_Rt_].reg);
-	}
-	InvalidateCPURegs();
-	CALLFunc((u32)psxMemRead8);
+	u32 *endload, *fastload, *endload2;
+	preMemRead();
+
+	// Begin actual PPC generation	
+	RLWINM(14, 3, 16, 16, 31);		//r15 = (Addr>>16) & 0xFFFF
+	CMPWI(14, 0x1f80);				//If AddrHi == 0x1f80, interpret load
+	BNE_L(fastload);
 	
+	CALLFunc((u32)psxDynaMemRead8);
+	B_L(endload);
+	B_DST(fastload);
+	SLWI(14, 14, 2);
+	LWZX(15, 14, GetHWRegSpecial(PSXRLUT));	// r15 = (char *)(psxMemRLUT[Addr16]);
+	CMPWI(15, 0);
+	RLWINM(14, 3, 0, 16, 31);				// r14 = (Addr) & 0xFFFF
+	LI(3, 0);
+	BEQ_L(endload2);
+	LBZX(3, 15, 14);						// rt = swap32(&psxmem + addr&0x1fffff) 
+
+	B_DST(endload);
+	B_DST(endload2);
 	if (_Rt_) {
 		SetDstCPUReg(3);
 		PutHWReg32(_Rt_);
@@ -1486,23 +1492,18 @@ static void recLH() {
 	if (IsConst(_Rs_)) {
 		u32 addr = iRegs[_Rs_].k + _Imm_;
 		int t = addr >> 16;
-	
+		if (!_Rt_) return;
 		if ((t & 0xfff0)  == 0xbfc0) {	// Static BIOS read
-			if (!_Rt_) return;
 			MapConst(_Rt_, psxRs16(addr));
 			return;
 		}
 		if ((t & 0x1fe0) == 0 && (t & 0x1fff) != 0) {	// PSX Mem read
-			if (!_Rt_) return;
-
 			LIW(PutHWReg32(_Rt_), (u32)&psxM[addr & 0x1fffff]);
 			LHBRX(PutHWReg32(_Rt_), 0, GetHWReg32(_Rt_));
 			EXTSH(PutHWReg32(_Rt_), GetHWReg32(_Rt_));
 			return;
 		}
 		if (t == 0x1f80 && addr < 0x1f801000) {	// PSX Hardware registers read
-			if (!_Rt_) return;
-
 			LIW(PutHWReg32(_Rt_), (u32)&psxH[addr & 0xfff]);
 			LHBRX(PutHWReg32(_Rt_), 0, GetHWReg32(_Rt_));
 			EXTSH(PutHWReg32(_Rt_), GetHWReg32(_Rt_));
@@ -1510,18 +1511,7 @@ static void recLH() {
 		}
 	}
     
-	ReserveArgs(1);
-	if (_Rs_ != _Rt_) {
-		DisposeHWReg(iRegs[_Rt_].reg);
-	}
-	int rs = GetHWReg32(_Rs_);
-	if (rs != 3 || _Imm_ != 0) {
-		ADDI(PutHWRegSpecial(ARG1), rs, _Imm_);
-	}
-	if (_Rs_ == _Rt_) {
-		DisposeHWReg(iRegs[_Rt_].reg);
-	}
-	InvalidateCPURegs();
+	preMemRead();
 	CALLFunc((u32)psxMemRead16);
 	if (_Rt_) {
 		EXTSH(PutHWReg32(_Rt_), GetHWRegSpecial(RETVAL));
@@ -1535,41 +1525,89 @@ static void recLHU() {
 	if (IsConst(_Rs_)) {
 		u32 addr = iRegs[_Rs_].k + _Imm_;
 		int t = addr >> 16;
+		if (!_Rt_) return;
 	
 		if ((t & 0xfff0) == 0xbfc0) {	// Static BIOS read
-			if (!_Rt_) return;
 			MapConst(_Rt_, psxRu16(addr));
 			return;
 		}
 		if ((t & 0x1fe0) == 0 && (t & 0x1fff) != 0) {	// PSX Mem read
-			if (!_Rt_) return;
-
 			LIW(PutHWReg32(_Rt_), (u32)&psxM[addr & 0x1fffff]);
 			LHBRX(PutHWReg32(_Rt_), 0, GetHWReg32(_Rt_));
 			return;
 		}
 		if (t == 0x1f80 && addr < 0x1f801000) {	// PSX Hardware registers read
-			if (!_Rt_) return;
-
 			LIW(PutHWReg32(_Rt_), (u32)&psxH[addr & 0xfff]);
 			LHBRX(PutHWReg32(_Rt_), 0, GetHWReg32(_Rt_));
 			return;
 		}
-	}
+		if (t == 0x1f80) {
+			if (addr >= 0x1f801c00 && addr < 0x1f801e00) {				
+					ReserveArgs(1);
+					LIW(PutHWRegSpecial(ARG1), addr);
+					DisposeHWReg(iRegs[_Rt_].reg);
+					InvalidateCPURegs();
+					CALLFunc((u32)SPU_readRegister);
+
+					SetDstCPUReg(3);
+					PutHWReg32(_Rt_);
+					return;
+			}
+			switch (addr) {
+					case 0x1f801100: case 0x1f801110: case 0x1f801120:						
+						ReserveArgs(1);
+						LIW(PutHWRegSpecial(ARG1), (addr >> 4) & 0x3);
+						DisposeHWReg(iRegs[_Rt_].reg);
+						InvalidateCPURegs();
+						CALLFunc((u32)psxRcntRcount);
+						
+						SetDstCPUReg(3);
+						PutHWReg32(_Rt_);
+						return;
+
+					case 0x1f801104: case 0x1f801114: case 0x1f801124:
+						ReserveArgs(1);
+						LIW(PutHWRegSpecial(ARG1), (addr >> 4) & 0x3);
+						DisposeHWReg(iRegs[_Rt_].reg);
+						InvalidateCPURegs();
+						CALLFunc((u32)psxRcntRmode);
+						SetDstCPUReg(3);
+						PutHWReg32(_Rt_);
+						return;
 	
-	ReserveArgs(1);
-	if (_Rs_ != _Rt_) {
-		DisposeHWReg(iRegs[_Rt_].reg);
+					case 0x1f801108: case 0x1f801118: case 0x1f801128:
+						ReserveArgs(1);
+						LIW(PutHWRegSpecial(ARG1), (addr >> 4) & 0x3);
+						DisposeHWReg(iRegs[_Rt_].reg);
+						InvalidateCPURegs();
+						CALLFunc((u32)psxRcntRtarget);
+						SetDstCPUReg(3);
+						PutHWReg32(_Rt_);
+						return;
+					}
+		}
 	}
-	int rs = GetHWReg32(_Rs_);
-	if (rs != 3 || _Imm_ != 0) {
-		ADDI(PutHWRegSpecial(ARG1), rs, _Imm_);
-	}
-	if (_Rs_ == _Rt_) {
-		DisposeHWReg(iRegs[_Rt_].reg);
-	}
-	InvalidateCPURegs();
-	CALLFunc((u32)psxMemRead16);
+
+	u32 *endload, *fastload, *endload2;
+	preMemRead();
+	// Begin actual PPC generation	
+	RLWINM(14, 3, 16, 16, 31);		//r15 = (Addr>>16) & 0xFFFF
+	CMPWI(14, 0x1f80);				//If AddrHi == 0x1f80, interpret load
+	BNE_L(fastload);
+	
+	CALLFunc((u32)psxDynaMemRead16);
+	B_L(endload);
+	B_DST(fastload);
+	SLWI(14, 14, 2);
+	LWZX(15, 14, GetHWRegSpecial(PSXRLUT));	// r15 = (char *)(psxMemRLUT[Addr16]);
+	CMPWI(15, 0);
+	RLWINM(14, 3, 0, 16, 31);				// r14 = (Addr) & 0xFFFF
+	LI(3, 0);
+	BEQ_L(endload2);
+	LHBRX(3, 15, 14);						// rt = swap32(&psxmem + addr&0x1fffff) 
+
+	B_DST(endload);
+	B_DST(endload2);
 	if (_Rt_) {
 		SetDstCPUReg(3);
 		PutHWReg32(_Rt_);
@@ -1578,81 +1616,87 @@ static void recLHU() {
 
 static void recLW() {
 // Rt = mem[Rs + Im] (unsigned)
-
+	
 	if (IsConst(_Rs_)) {
+		if (!_Rt_) return;
 		u32 addr = iRegs[_Rs_].k + _Imm_;
 		int t = addr >> 16;
 
 		if ((t & 0xfff0) == 0xbfc0) {	// Static BIOS read
-			if (!_Rt_) return;
 			MapConst(_Rt_, psxRu32(addr));
 			return;
 		}
 		if ((t & 0x1fe0) == 0 && (t & 0x1fff) != 0) {	// PSX Mem read
-			if (!_Rt_) return;
 			LIW(PutHWReg32(_Rt_), (u32)&psxM[addr & 0x1fffff]);
 			LWBRX(PutHWReg32(_Rt_), 0, GetHWReg32(_Rt_));
 			return;
 		}
 		if (t == 0x1f80 && addr < 0x1f801000) {	// PSX Hardware registers read
-			if (!_Rt_) return;
 			LIW(PutHWReg32(_Rt_), (u32)&psxH[addr & 0xfff]);
 			LWBRX(PutHWReg32(_Rt_), 0, GetHWReg32(_Rt_));
 			return;
 		}
+		if (t == 0x1f80) {
+			switch (addr) {
+				case 0x1f801080: case 0x1f801084: case 0x1f801088: 
+				case 0x1f801090: case 0x1f801094: case 0x1f801098: 
+				case 0x1f8010a0: case 0x1f8010a4: case 0x1f8010a8: 
+				case 0x1f8010b0: case 0x1f8010b4: case 0x1f8010b8: 
+				case 0x1f8010c0: case 0x1f8010c4: case 0x1f8010c8: 
+				case 0x1f8010d0: case 0x1f8010d4: case 0x1f8010d8: 
+				case 0x1f8010e0: case 0x1f8010e4: case 0x1f8010e8: 
+				case 0x1f801070: case 0x1f801074:
+				case 0x1f8010f0: case 0x1f8010f4:			
+					LIW(PutHWReg32(_Rt_), (u32)&psxH[addr & 0xffff]);
+					LWBRX(PutHWReg32(_Rt_), 0, GetHWReg32(_Rt_));
+					return;
+
+				case 0x1f801810:
+					DisposeHWReg(iRegs[_Rt_].reg);
+					InvalidateCPURegs();
+					CALLFunc((u32)GPU_readData);
+					
+					SetDstCPUReg(3);
+					PutHWReg32(_Rt_);
+					return;
+
+				case 0x1f801814:
+					DisposeHWReg(iRegs[_Rt_].reg);
+					InvalidateCPURegs();
+					CALLFunc((u32)GPU_readStatus);
+					
+					SetDstCPUReg(3);
+					PutHWReg32(_Rt_);
+					return;
+			}
+		}
 	}
 	
-	InvalidateCPURegs();
-	
-	u32 *b1, *b1End, *b2ZeroPtr;
-	int idx = GetRegisterTemp();
-	int tmp = GetRegisterTemp();
-	int addr = GetRegisterTemp();
-	
-	ADDI(addr, GetHWReg32(_Rs_), _Imm_);	// addr = rs + immed
-	ADDI(tmp, tmp ,0x1f80);					// tmp = 0x1f80
-	RLWINM(idx, addr, 16, 16, 31);			// idx = (addr >> 16) & 0xFFFF;
+	u32 *endload, *fastload, *endload2;
+	preMemRead();
 
-	// Are we in the reserved 0x1f80 section?
-	CMPLW(tmp, idx);
-	BNE_L(b1);
+	// Begin actual PPC generation	
+	RLWINM(14, 3, 16, 16, 31);		//r15 = (Addr>>16) & 0xFFFF
+	CMPWI(14, 0x1f80);				//If AddrHi == 0x1f80, interpret load
+	BNE_L(fastload);
 	
-	// Yes, call psxMemRead32 which should handle anything in this section (HW Regs/Other)
-	ReserveArgs(1);
-	ADDI(PutHWRegSpecial(ARG1), addr, 0);
-	ReleaseArgs();
-	BLA((u32)psxDynaMemRead32);
+	CALLFunc((u32)psxDynaMemRead32);
+	B_L(endload);
+	B_DST(fastload);
+	SLWI(14, 14, 2);
+	LWZX(15, 14, GetHWRegSpecial(PSXRLUT));	// r15 = (char *)(psxMemRLUT[Addr16]);
+	CMPWI(15, 0);
+	RLWINM(14, 3, 0, 16, 31);				// r14 = (Addr) & 0xFFFF
+	LI(3, 0);
+	BEQ_L(endload2);
+	LWBRX(3, 15, 14);						// rt = swap32(&psxmem + addr&0x1fffff) 
+
+	B_DST(endload);
+	B_DST(endload2);
 	if (_Rt_) {
 		SetDstCPUReg(3);
 		PutHWReg32(_Rt_);
 	}
-	B_L(b1End);	// Go to the end
-	
-	// No, but we can grab where we'll need to read from by looking in the ptr in psxMemRLUT[addr>>16]
-	B_DST(b1);
-	LIW(tmp, psxMemRLUT);
-	ADD(tmp, tmp, idx);			// tmp = &psxMemRLUT[addr>>16];
-	LWZ(tmp, 0, tmp);			// tmp = psxMemRLUT[addr>>16];
-	RLWINM(idx, addr, 0, 16, 31);
-	ADD(tmp, tmp, idx);
-	
-	// Zero out the dest reg
-	if(_Rt_) {
-		ADDI(PutHWReg32(_Rt_), 0, 0);
-	}
-	CMPLWI(tmp, 0);
-	BEQ_L(b2ZeroPtr);			// if !tmp, we return 0;
-	
-	// else SWAPu32(*(u32 *)(p + (mem & 0xffff)))
-	if(_Rt_) {
-		LWBRX(PutHWReg32(_Rt_), 0, ptr);
-	}
-
-	B_DST(b1End);
-	B_DST(b2ZeroPtr);
-	FreeRegisterTemp(idx);
-	FreeRegisterTemp(tmp);
-	FreeRegisterTemp(addr);
 }
 
 REC_FUNC(LWL);
@@ -1679,14 +1723,7 @@ static void recSB() {
 		}
 	}
 
-	// We could be writing to anywhere
-	ReserveArgs(2);
-	int rs = GetHWReg32(_Rs_);
-	if (rs != 3 || _Imm_ != 0) {
-		ADDI(PutHWRegSpecial(ARG1), rs, _Imm_);
-	}
-	RLWINM(PutHWRegSpecial(ARG2), GetHWReg32(_Rt_), 0, 24, 31);
-	InvalidateCPURegs();
+	preMemWrite(1);
 	CALLFunc((u32)psxMemWrite8);
 }
 
@@ -1709,14 +1746,7 @@ static void recSH() {
 		}
 	}
 
-	// We could be writing to anywhere
-	ReserveArgs(2);
-	int rs = GetHWReg32(_Rs_);
-	if (rs != 3 || _Imm_ != 0) {
-		ADDI(PutHWRegSpecial(ARG1), rs, _Imm_);
-	}
-	RLWINM(PutHWRegSpecial(ARG2), GetHWReg32(_Rt_), 0, 16, 31);
-	InvalidateCPURegs();
+	preMemWrite(2);
 	CALLFunc((u32)psxMemWrite16);
 }
 
@@ -1740,14 +1770,7 @@ static void recSW() {
 		}
 	}
 
-	// We could be writing to anywhere
-	ReserveArgs(2);
-	int rs = GetHWReg32(_Rs_);
-	if (rs != 3 || _Imm_ != 0) {
-		ADDI(PutHWRegSpecial(ARG1), rs, _Imm_);
-	}
-	MR(PutHWRegSpecial(ARG2), GetHWReg32(_Rt_));
-	InvalidateCPURegs();
+	preMemWrite(4);
 	CALLFunc((u32)psxMemWrite32);
 }
 
@@ -2380,6 +2403,10 @@ static void recRecompile() {
 	HWRegisters[1].usage = HWUSAGE_SPECIAL | HWUSAGE_RESERVED | HWUSAGE_HARDWIRED;
 	HWRegisters[1].private = PSXMEM;
 	HWRegisters[1].k = (u32)&psxM;
+	
+	HWRegisters[2].usage = HWUSAGE_SPECIAL | HWUSAGE_RESERVED | HWUSAGE_HARDWIRED;
+	HWRegisters[2].private = PSXRLUT;
+	HWRegisters[2].k = (u32)&psxMemRLUT;
 
 	// reserve the special psxRegs.cycle register
 	//HWRegisters[1].usage = HWUSAGE_SPECIAL | HWUSAGE_RESERVED | HWUSAGE_HARDWIRED;

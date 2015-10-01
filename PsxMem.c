@@ -63,24 +63,11 @@ u8* psxMemRLUT[0x10000] __attribute__((aligned(32)));
 int psxMemInit() {
 	int i;
 
-	//psxMemRLUT = (u8 **)malloc(0x10000 * sizeof(void *));
-	//psxMemWLUT = (u8 **)malloc(0x10000 * sizeof(void *));
 	memset(psxMemRLUT, 0, 0x10000 * sizeof(void *));
 	memset(psxMemWLUT, 0, 0x10000 * sizeof(void *));
 
-	//psxM = mmap(0, 0x00220000,
-	//	PROT_WRITE | PROT_READ, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
 	psxP = &psxM[0x200000];
 	psxH = &psxM[0x210000];
-
-	//psxR = (s8 *)malloc(0x00080000);
-
-	/*if (psxMemRLUT == NULL || psxMemWLUT == NULL || 
-		psxM == NULL || psxP == NULL || psxH == NULL) {
-		SysMessage(_("Error allocating memory!"));
-		return -1;
-	}*/
 
 // MemR
 	for (i = 0; i < 0x80; i++) psxMemRLUT[i + 0x0000] = (u8 *)&psxM[(i & 0x1f) << 16];
@@ -137,198 +124,112 @@ void psxMemReset() {
 }
 
 void psxMemShutdown() {
-	/*munmap(psxM, 0x00220000);
-
-	free(psxR);
-	free(psxMemRLUT);
-	free(psxMemWLUT);*/
 }
 
 static int writeok = 1;
 
 u8 psxMemRead8(u32 mem) {
-	char *p;
-	u32 t;
-
-
 	psxRegs.cycle += 0;
-
-
-	t = mem >> 16;
+	
+	u32 t = mem >> 16;
 	if (t == 0x1f80) {
-		if (mem < 0x1f801000)
-			return psxHu8(mem);
-		else
-			return psxHwRead8(mem);
+		return (mem < 0x1f801000) ? psxHu8(mem) : psxHwRead8(mem);
 	} else {
-		p = (char *)(psxMemRLUT[t]);
-		if (p != NULL) {
-//			if (Config.Debug)
-//				DebugCheckBP((mem & 0xffffff) | 0x80000000, BR1);
-			return *(u8 *)(p + (mem & 0xffff));
-		} else {
-#ifdef PSXMEM_LOG
-			PSXMEM_LOG("err lb %8.8lx\n", mem);
-#endif
-			return 0;
-		}
+		char *p = (char *)(psxMemRLUT[t]);
+		return (p == NULL) ? 0 : *(u8 *)(p + (mem & 0xffff));
 	}
 }
 
 u16 psxMemRead16(u32 mem) {
-	char *p;
-	u32 t;
-
-
 	psxRegs.cycle += 1;
 
-	
-	t = mem >> 16;
+	u32 t = mem >> 16;
 	if (t == 0x1f80) {
-		if (mem < 0x1f801000)
-			return psxHu16(mem);
-		else
-			return psxHwRead16(mem);
+		return (mem < 0x1f801000) ? psxHu16(mem) : psxHwRead16(mem);
 	} else {
-		p = (char *)(psxMemRLUT[t]);
-		if (p != NULL) {
-//			if (Config.Debug)
-//				DebugCheckBP((mem & 0xffffff) | 0x80000000, BR2);
-			return SWAPu16(*(u16 *)(p + (mem & 0xffff)));
-		} else {
-#ifdef PSXMEM_LOG
-			PSXMEM_LOG("err lh %8.8lx\n", mem);
-#endif
-			return 0;
-		}
+		char *p = (char *)(psxMemRLUT[t]);
+		return (p == NULL) ? 0 : SWAPu16(*(u16 *)(p + (mem & 0xffff)));
 	}
 }
 
 u32 psxMemRead32(u32 mem) {
-	char *p;
-	u32 t;
-
-
 	psxRegs.cycle += 1;
-
 	
-	t = mem >> 16;
+	u32 t = mem >> 16;
 	if (t == 0x1f80) {
-		if (mem < 0x1f801000)
-			return psxHu32(mem);
-		else
-			return psxHwRead32(mem);
+		return (mem < 0x1f801000) ? psxHu32(mem) : psxHwRead32(mem);
 	} else {
-		p = (char *)(psxMemRLUT[t]);
-		if (p != NULL) {
-//			if (Config.Debug)
-//				DebugCheckBP((mem & 0xffffff) | 0x80000000, BR4);
-			return SWAPu32(*(u32 *)(p + (mem & 0xffff)));
-		} else {
-#ifdef PSXMEM_LOG
-			if (writeok) { PSXMEM_LOG("err lw %8.8lx\n", mem); }
-#endif
-			return 0;
-		}
+		char *p = (char *)(psxMemRLUT[t]);
+		return (p == NULL) ? 0 : SWAPu32(*(u32 *)(p + (mem & 0xffff)));
 	}
 }
 
+// These will assume mem is within the special mem range 0x1f800000 0x1f80FFFF
+u32 psxDynaMemRead8(u32 mem) {
+	return (mem < 0x1f801000) ? psxHu8(mem) : psxHwRead8(mem);
+}
+u32 psxDynaMemRead16(u32 mem) {
+	return (mem < 0x1f801000) ? psxHu16(mem) : psxHwRead16(mem);
+}
+u32 psxDynaMemRead32(u32 mem) {
+	return (mem < 0x1f801000) ? psxHu32(mem) : psxHwRead32(mem);
+}
+
+
 void psxMemWrite8(u32 mem, u8 value) {
-	char *p;
-	u32 t;
-
-
 	psxRegs.cycle += 1;
-	
-	
-	t = mem >> 16;
+
+	u32 t = mem >> 16;
 	if (t == 0x1f80) {
 		if (mem < 0x1f801000)
 			psxHu8(mem) = value;
 		else
 			psxHwWrite8(mem, value);
 	} else {
-		p = (char *)(psxMemWLUT[t]);
+		char *p = (char *)(psxMemWLUT[t]);
 		if (p != NULL) {
-//			if (Config.Debug)
-//				DebugCheckBP((mem & 0xffffff) | 0x80000000, BW1);
 			*(u8 *)(p + (mem & 0xffff)) = value;
-#ifdef PSXREC
 			psxCpu->Clear((mem & (~3)), 1);
-#endif
-		} else {
-#ifdef PSXMEM_LOG
-			PSXMEM_LOG("err sb %8.8lx\n", mem);
-#endif
 		}
 	}
 }
 
 void psxMemWrite16(u32 mem, u16 value) {
-	char *p;
-	u32 t;
-
-
 	psxRegs.cycle += 1;
 
-		
-	t = mem >> 16;
+	u32 t = mem >> 16;
 	if (t == 0x1f80) {
 		if (mem < 0x1f801000)
 			psxHu16ref(mem) = SWAPu16(value);
 		else
 			psxHwWrite16(mem, value);
 	} else {
-		p = (char *)(psxMemWLUT[t]);
+		char *p = (char *)(psxMemWLUT[t]);
 		if (p != NULL) {
-//			if (Config.Debug)
-//				DebugCheckBP((mem & 0xffffff) | 0x80000000, BW2);
 			*(u16 *)(p + (mem & 0xffff)) = SWAPu16(value);
-#ifdef PSXREC
 			psxCpu->Clear((mem & (~3)), 1);
-#endif
-		} else {
-#ifdef PSXMEM_LOG
-			PSXMEM_LOG("err sh %8.8lx\n", mem);
-#endif
 		}
 	}
 }
 
 void psxMemWrite32(u32 mem, u32 value) {
-	char *p;
-	u32 t;
-
-	
 	psxRegs.cycle += 1;
 
-
-	//	if ((mem&0x1fffff) == 0x71E18 || value == 0x48088800) SysPrintf("t2fix!!\n");
-	t = mem >> 16;
+	u32 t = mem >> 16;
 	if (t == 0x1f80) {
 		if (mem < 0x1f801000)
 			psxHu32ref(mem) = SWAPu32(value);
 		else
 			psxHwWrite32(mem, value);
 	} else {
-		p = (char *)(psxMemWLUT[t]);
+		char *p = (char *)(psxMemWLUT[t]);
 		if (p != NULL) {
-//			if (Config.Debug)
-//				DebugCheckBP((mem & 0xffffff) | 0x80000000, BW4);
 			*(u32 *)(p + (mem & 0xffff)) = SWAPu32(value);
-#ifdef PSXREC
 			psxCpu->Clear(mem, 1);
-#endif
 		} else {
 			if (mem != 0xfffe0130) {
-#ifdef PSXREC
-				if (!writeok)
+				if(!writeok)
 					psxCpu->Clear(mem, 1);
-#endif
-
-#ifdef PSXMEM_LOG
-				if (writeok) { PSXMEM_LOG("err sw %8.8lx\n", mem); }
-#endif
 			} else {
 				int i;
 
@@ -351,9 +252,6 @@ void psxMemWrite32(u32 mem, u32 value) {
 						memcpy(psxMemWLUT + 0xa000, psxMemWLUT, 0x80 * sizeof(void *));
 						break;
 					default:
-#ifdef PSXMEM_LOG
-						PSXMEM_LOG("unk %8.8lx = %x\n", mem, value);
-#endif
 						break;
 				}
 			}
@@ -362,20 +260,12 @@ void psxMemWrite32(u32 mem, u32 value) {
 }
 
 void *psxMemPointer(u32 mem) {
-	char *p;
-	u32 t;
-
-	t = mem >> 16;
+	u32 t = mem >> 16;
 	if (t == 0x1f80) {
-		if (mem < 0x1f801000)
-			return (void *)&psxH[mem];
-		else
-			return NULL;
+		return (mem < 0x1f801000) ? (void *)&psxH[mem] : NULL;
 	} else {
-		p = (char *)(psxMemWLUT[t]);
-		if (p != NULL) {
-			return (void *)(p + (mem & 0xffff));
-		}
-		return NULL;
+		char *p = (char *)(psxMemWLUT[t]);
+		return (p != NULL) ? (void *)(p + (mem & 0xffff)) : NULL;
 	}
 }
+

@@ -326,6 +326,9 @@ void FRAN_SPU_async(unsigned long cycle)
 		if(iSpuAsyncWait<=64) return;
 		iSpuAsyncWait=0;
 	}
+#ifdef PROFILE
+	start_section(AUDIO_SECTION);
+#endif
 	int i;
 	int t=(cycle?32:40); /* cycle 1=NTSC 16 ms, 0=PAL 20 ms; do two frames */for (i=0;i<t;i++)
 		SPU_async_1ms(s_chan,SSumL,SSumR,iFMod); // Calculates 1 ms of sound
@@ -334,13 +337,22 @@ void FRAN_SPU_async(unsigned long cycle)
 	pSpuBuffer = spuBuffer[whichBuffer =
 			((whichBuffer + 1) % NUM_SPU_BUFFERS)];
 	pS=(short *)pSpuBuffer;
+#ifdef PROFILE
+	end_section(AUDIO_SECTION);
+#endif
 }
 
 // XA AUDIO
 void FRAN_SPU_playADPCMchannel(xa_decode_t *xap)
 {
+#ifdef PROFILE
+	start_section(XA_SECTION);
+#endif
 	if ((iUseXA)&&(xap)&&(xap->freq))
 		FeedXA(xap); // call main XA feeder
+#ifdef PROFILE
+	end_section(XA_SECTION);
+#endif
 }
 
 // SPUINIT: this func will be called first by the main emu

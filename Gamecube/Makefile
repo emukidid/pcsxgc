@@ -26,16 +26,17 @@ INCLUDES	:=
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
+LTO			 = #-flto # Uncomment to use link-time optimization
 
-CFLAGS	= -g -O3 -Wall $(MACHDEP) $(INCLUDE) -D__GAMECUBE__ -DHW_DOL -D__ppc__ \
+CFLAGS	= -g -O3 $(LTO) -Wall $(MACHDEP) $(INCLUDE) -D__GAMECUBE__ -DHW_DOL -D__ppc__ \
 		  -D__GX__ -D_SDL -DEMBEDDED_FONTS \
-		  -DTHREADED_AUDIO -DRELEASE -DSHOW_DEBUG #-DPROFILE
+		  -DTHREADED_AUDIO -DRELEASE #-DSHOW_DEBUG #-DPROFILE
 		  
 CXXFLAGS	=	$(CFLAGS)
 
 ASFLAGS := -DHW_DOL
 
-LDFLAGS	=	-g $(MACHDEP) -mogc -Wl,-Map,$(notdir $@).map
+LDFLAGS	=	-g $(MACHDEP) $(LTO) -mogc -Wl,-Map,$(notdir $@).map
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project

@@ -1,7 +1,0 @@
-To do for Pcsx:
- * Add reg caching code for the recompiler.
- * Continue Bios emulation. (linuzappz)
- * Fix CdRom code. (linuzappz)
- * Fix Gte and speed it up, convert it to fixed point.
- * Check Sio in games that don't work.
- * Port to other platforms and CPUs.

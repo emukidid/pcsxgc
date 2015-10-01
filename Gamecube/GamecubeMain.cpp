@@ -643,9 +643,6 @@ int framesdone = 0;
 void SysUpdate() 
 {
 	framesdone++;
-#ifdef PROFILE
-	refresh_stat();
-#endif
 }
 
 void SysRunGui() {}

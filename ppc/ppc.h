@@ -11,7 +11,7 @@
 #include "../PsxCommon.h"
 #include "ppc_mnemonics.h"
 
-#define NUM_HW_REGISTERS 28
+#define NUM_HW_REGISTERS 26
 
 /* general defines */
 #define write8(val)  *(u8 *)ppcPtr = val; ppcPtr++;
@@ -38,10 +38,10 @@ void ppcShutdown();
 
 extern inline void ppcAlign();
 void returnPC();
-void recRun(void (*func)(), u32 hw1, u32 hw2);
-u8 dynMemRead8(u32 mem);
-u16 dynMemRead16(u32 mem);
-u32 dynMemRead32(u32 mem);
+void recRun(void (*func)(), u32 hw1, u32 hw2, u32 hw3);
+u8 psxDynaMemRead8(u32 mem);
+u16 psxDynaMemRead16(u32 mem);
+u32 psxDynaMemRead32(u32 mem);
 void dynMemWrite32(u32 mem, u32 val);
 
 #endif /* __PPC_H__ */

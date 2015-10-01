@@ -1,1 +1,0 @@
-( cat Makefile.nodep && gcc -MM --makedep -I./fpse   *.c) > Makefile

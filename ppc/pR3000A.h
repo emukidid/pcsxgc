@@ -124,11 +124,12 @@ enum {
     ARG2 = 4,
     ARG3 = 5,
     PSXREGS,	// ptr
-	 PSXMEM,		// ptr
+	PSXMEM,		// ptr
+	PSXRLUT,	//ptr
     CYCLECOUNT,	// ptr
-    PSXPC,	// ptr
+    PSXPC,		// ptr
     TARGETPTR,	// ptr
-    TARGET,	// ptr
+    TARGET,		// ptr
     RETVAL,
     REG_RZERO,
     REG_WZERO

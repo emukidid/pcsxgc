@@ -18,6 +18,7 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA 02111-1307 USA.           *
  ***************************************************************************/
 
+#include "./GameCube/DEBUG.h"
 #include "psxcommon.h"
 #include "plugins.h"
 #include "cdrom.h"
@@ -153,6 +154,7 @@ static void playthread(void *param)
 static void *playthread(void *param)
 #endif
 {
+
 	long			d, t, i, s;
 	unsigned char	tmp;
 	int sec;
@@ -163,6 +165,9 @@ static void *playthread(void *param)
 	iso_play_bufptr = 0;
 
 	while (playing) {
+#ifdef PROFILE
+	start_section(CDDA_SECTION);
+#endif
 		d = t - (long)GetTickCount();
 		if (d <= 0) {
 			d = 1;
@@ -274,8 +279,10 @@ static void *playthread(void *param)
 		// Vib Ribbon: decoded buffer IRQ
 		iso_play_cdbuf = (u16*)sndbuffer;
 		iso_play_bufptr = 0;
+#ifdef PROFILE
+	end_section(CDDA_SECTION);
+#endif
 	}
-
 #ifdef _WIN32
 	_endthread();
 #else
@@ -881,6 +888,9 @@ long CALLBACK ISOreadTrack(unsigned char *time) {
 	if (cdHandle == NULL) {
 		return -1;
 	}
+#ifdef PROFILE
+	start_section(CDR_SECTION);
+#endif
 
 	if (subChanMixed) {
 		fseek(cdHandle, MSF2SECT(btoi(time[0]), btoi(time[1]), btoi(time[2])) * (CD_FRAMESIZE_RAW + SUB_FRAMESIZE), SEEK_SET);
@@ -910,7 +920,9 @@ long CALLBACK ISOreadTrack(unsigned char *time) {
 			if (subChanRaw) DecodeRawSubData();
 		}
 	}
-
+#ifdef PROFILE
+	end_section(CDR_SECTION);
+#endif
 	return 0;
 }
 
@@ -951,7 +963,9 @@ unsigned char* CALLBACK ISOgetBufferSub(void) {
 
 long CALLBACK ISOgetStatus(struct CdrStat *stat) {
 	u32 sect;
-	
+#ifdef PROFILE
+	start_section(CDR_SECTION);
+#endif
 	CDR__getStatus(stat);
 	
 	if (playing) {
@@ -964,7 +978,9 @@ long CALLBACK ISOgetStatus(struct CdrStat *stat) {
 	
 	// BIOS - boot ID (CD type)
 	stat->Type = ti[1].type;
-	
+#ifdef PROFILE
+	end_section(CDR_SECTION);
+#endif
 	return 0;
 }
 
@@ -972,7 +988,9 @@ long CALLBACK ISOgetStatus(struct CdrStat *stat) {
 long CALLBACK ISOreadCDDA(unsigned char m, unsigned char s, unsigned char f, unsigned char *buffer) {
 	unsigned char msf[3] = {m, s, f};
 	unsigned char *p;
-
+#ifdef PROFILE
+	start_section(CDR_SECTION);
+#endif
 	msf[0] = itob(msf[0]);
 	msf[1] = itob(msf[1]);
 	msf[2] = itob(msf[2]);
@@ -994,7 +1012,9 @@ long CALLBACK ISOreadCDDA(unsigned char m, unsigned char s, unsigned char f, uns
 			buffer[i * 2 + 1] = tmp;
 		}
 	}
-
+#ifdef PROFILE
+	end_section(CDR_SECTION);
+#endif
 	return 0;
 }
 

@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/dir.h>
-#include <aesndlib.h>
 #include "DEBUG.h"
 #include "TEXT.h"
 //#include "usb.h"
@@ -30,14 +29,11 @@ static void check_heap_space(void){
 	
 	sprintf(txtbuffer,"Dynarec (KB) %04d/%04d",dyna_used,dyna_total/1024);
 	DEBUG_print(txtbuffer,DBG_CORE1);
-	
-	sprintf(txtbuffer,"DSP is at %f%%",AESND_GetDSPProcessUsage());
-	DEBUG_print(txtbuffer,DBG_CORE2);
 }
 #endif
 
 void DEBUG_update() {
-	#ifdef SHOW_DEBUG
+#ifdef SHOW_DEBUG
 	int i;
 	long long nowTick = gettime();
 	for(i=0; i<DEBUG_TEXT_HEIGHT; i++){
@@ -47,7 +43,7 @@ void DEBUG_update() {
 		}
 	}
 	check_heap_space();
-	#endif
+#endif
 }
 
 int flushed = 0;
@@ -58,7 +54,7 @@ char *dump_filename = "/PSXISOS/debug.txt";
 FILE* fdebug = NULL;
 void DEBUG_print(char* string,int pos){
 
-	#ifdef SHOW_DEBUG
+#ifdef SHOW_DEBUG
 		if(pos == DBG_USBGECKO) {
 			#ifdef PRINTGECKO
 			if(!flushed){

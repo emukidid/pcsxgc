@@ -373,25 +373,7 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch)
 		memset(GXtexture,0,iResX_Max*iResY_Max*2);
 		GX_InitTexObj(&GXtexobj, GXtexture, width, height, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	}
-/*
-	for (h = 0; h < height; h += 4)
-	{
-		for (w = 0; w < width ; w += 4)
-		{
-			for (hh = 0; hh < 4; h++)
-			{
-				*dst1++ = src[(h+hh)*1024 + w];
-				*dst1++ = src[(h+hh)*1024 + w + 1];
-				*dst1++ = src[(h+hh)*1024 + w + 2];
-				*dst1++ = src[(h+hh)*1024 + w + 3];
-//				*dst++ = src[(h+hh)*iResX_Max + w];
-//				*dst++ = src[(h+hh)*iResX_Max + w + 1];
-//				*dst++ = src[(h+hh)*iResX_Max + w + 2];
-//				*dst++ = src[(h+hh)*iResX_Max + w + 3];
-			}
-        }
-    }
-*/
+
 
 	for (h = 0; h < height; h += 4)
 	{

@@ -66,17 +66,17 @@ void refresh_stat()
 	sprintf(txtbuffer, "audio=%f%%", 100.0f * (float)time_in_section[AUDIO_SECTION] / (float)time_in_section[0]);
 	DEBUG_print(txtbuffer, DBG_PROFILE_AUDIO);
 	
-	sprintf(txtbuffer, "tlb=%f%%", 100.0f * (float)time_in_section[TLB_SECTION] / (float)time_in_section[0]);
-	DEBUG_print(txtbuffer, DBG_PROFILE_TLB);
+	sprintf(txtbuffer, "cdr=%f%%", 100.0f * (float)time_in_section[CDR_SECTION] / (float)time_in_section[0]);
+	DEBUG_print(txtbuffer, DBG_PROFILE_CDR);
 	
-	sprintf(txtbuffer, "fp=%f%%", 100.0f * (float)time_in_section[FP_SECTION] / (float)time_in_section[0]);
-	DEBUG_print(txtbuffer, DBG_PROFILE_FP);
+	sprintf(txtbuffer, "cdda=%f%%", 100.0f * (float)time_in_section[CDDA_SECTION] / (float)time_in_section[0]);
+	DEBUG_print(txtbuffer, DBG_PROFILE_CDDA);
 	
 	sprintf(txtbuffer, "comp=%f%%", 100.0f * (float)time_in_section[COMPILER_SECTION] / (float)time_in_section[0]);
 	DEBUG_print(txtbuffer, DBG_PROFILE_COMP);
 	
-	sprintf(txtbuffer, "interp=%f%%", 100.0f * (float)time_in_section[INTERP_SECTION] / (float)time_in_section[0]);
-	DEBUG_print(txtbuffer, DBG_PROFILE_INTERP);
+	sprintf(txtbuffer, "xa=%f%%", 100.0f * (float)time_in_section[XA_SECTION] / (float)time_in_section[0]);
+	DEBUG_print(txtbuffer, DBG_PROFILE_XA);
 	
 	sprintf(txtbuffer, "tramp=%f%%", 100.0f * (float)time_in_section[TRAMP_SECTION] / (float)time_in_section[0]);
 	DEBUG_print(txtbuffer, DBG_PROFILE_TRAMP);

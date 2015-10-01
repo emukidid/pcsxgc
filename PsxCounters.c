@@ -20,7 +20,6 @@
 /*
  * Internal PSX counters.
  */
-
 #include "psxcounters.h"
 
 /******************************************************************************/
@@ -305,7 +304,9 @@ void psxRcntUpdate()
             EmuUpdate();
         }
     }
-
+#ifdef PROFILE
+	refresh_stat();
+#endif
 //    DebugVSync();
 }
 
