@@ -95,7 +95,7 @@ static void* init_network(void *args) {
 
     if(!net_initialized) {
       netInitPending = 1;
-      res = if_config(ip, NULL, NULL, true);
+      res = if_config(ip, NULL, NULL, true, 5);
       if(res >= 0) {
         net_initialized = 1;
       }
