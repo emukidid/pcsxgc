@@ -285,6 +285,9 @@ int CheckCdrom() {
 	CdromId[0] = '\0';
 
 	strncpy(CdromLabel, (char*)buf + 52, 32);
+	for(i = 32; i > 0; i--)
+		if(CdromLabel[i] == ' ')
+			CdromLabel[i] = 0;
 
 	// skip head and sub, and go to the root directory record
 	dir = (struct iso_directory_record *)&buf[12 + 156]; 
