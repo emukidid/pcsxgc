@@ -1,0 +1,557 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// Neutral resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
+#ifdef _WIN32
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_GPU                 BITMAP  DISCARDABLE     "res\\gpu.bmp"
+#endif    // Neutral resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)\r\n"
+    "#ifdef _WIN32\r\n"
+    "LANGUAGE 9, 1\r\n"
+    "#pragma code_page(1252)\r\n"
+    "#endif\r\n"
+    "#include ""res\\gpuPeopsOpenGL.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""afxres.rc""         // Standard components\r\n"
+    "#endif\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+#ifndef _MAC
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,78,0,0
+ PRODUCTVERSION 1,78,0,0
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "Comments", "\0"
+            VALUE "CompanyName", "\0"
+            VALUE "FileDescription", "gpuPeopsOpenGL. DLL\0"
+            VALUE "FileVersion", "1, 78, 0, 0\0"
+            VALUE "InternalName", "P.E.Op.S. PSX OpenGL GPU\0"
+            VALUE "LegalCopyright", "Copyright (C) 1999-2009\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "gpuPeopsOpenGL.DLL\0"
+            VALUE "PrivateBuild", "\0"
+            VALUE "ProductName", "gpuPeopsOpenGL Dynamic Link Library\0"
+            VALUE "ProductVersion", "1, 78, 0, 0\0"
+            VALUE "SpecialBuild", "\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+#endif    // !_MAC
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_DIALOG_ABOUT DIALOG DISCARDABLE  0, 0, 258, 165
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About P.E.Op.S. PSX OpenGL Renderer ..."
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,98,145,50,14
+    RTEXT           "Version:",IDC_STATIC,8,6,49,10
+    RTEXT           "Coded by:",IDC_STATIC,8,35,49,10
+    RTEXT           "Homepage:",IDC_STATIC,8,53,49,10
+    LTEXT           "1.78",IDC_STATIC,60,6,159,9
+    LTEXT           "Pete Bernert",IDC_STATIC,60,35,159,10
+    LTEXT           "www.pbernert.com",IDC_STATIC,60,53,159,10
+    RTEXT           "Release date:",IDC_STATIC,8,17,49,10
+    LTEXT           "04/2009",IDC_STATIC,60,17,159,10
+    RTEXT           "Thanks to:",IDC_STATIC,8,74,49,10
+    LTEXT           "Lewpy - without his infos this driver wouldn't exist",
+                    IDC_STATIC,60,74,159,10
+    LTEXT           "Duddie && FoxPro - for their public sources",IDC_STATIC,
+                    60,86,159,10
+    LTEXT           "My girlfriend Heike - 'Hey, that cloud still looks funny, ",
+                    IDC_STATIC,60,112,170,10
+    LTEXT           "go on and change it...'",IDC_STATIC,125,121,117,10
+    CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDFRAME | SS_SUNKEN,4,68,
+                    249,70
+    LTEXT           "Gamma - thanks for your OpenGL book",IDC_STATIC,60,99,
+                    159,10
+END
+
+IDD_CFGDLG DIALOGEX 0, 0, 413, 295
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Configure P.E.Op.S. PSX OpenGL Renderer ..."
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "Fullscreen mode",IDC_DISPMODE1,"Button",
+                    BS_AUTORADIOBUTTON,11,11,73,10
+    CONTROL         "Window mode",IDC_DISPMODE2,"Button",BS_AUTORADIOBUTTON,
+                    11,25,63,10
+    COMBOBOX        IDC_RESOLUTION,150,10,63,64,CBS_DROPDOWNLIST | CBS_SORT | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COLORDEPTH,261,10,36,64,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_WINX,150,24,26,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_WINY,187,24,26,12,ES_AUTOHSCROLL
+    CONTROL         "Keep psx aspect ratio",IDC_ARATIO,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,306,17,95,12
+    COMBOBOX        IDC_TEXQUALITY,61,50,159,64,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_FILTERTYPE,61,63,159,83,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_HIRESTEX,275,50,129,64,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_VRAMSIZE,275,63,62,88,CBS_DROPDOWN | WS_VSCROLL | 
+                    WS_TABSTOP
+    CONTROL         "Show FPS display on startup",IDC_SHOWFPS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,12,94,107,10
+    PUSHBUTTON      "...",IDC_KEYCONFIG,119,94,11,10,0,WS_EX_STATICEDGE
+    CONTROL         "Use FPS limit",IDC_USELIMIT,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,149,89,73,10
+    CONTROL         "Use Frame skipping",IDC_USESKIP,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,149,101,78,10
+    CONTROL         "Auto-detect FPS/Frame skipping limit",IDC_FRAMEAUTO,
+                    "Button",BS_AUTORADIOBUTTON | WS_GROUP,258,89,131,9
+    CONTROL         "FPS limit (10-200) :",IDC_FRAMEMANUELL,"Button",
+                    BS_AUTORADIOBUTTON,258,100,72,10
+    EDITTEXT        IDC_FRAMELIMIT,334,99,29,12,ES_AUTOHSCROLL
+    COMBOBOX        IDC_OFFSCREEN,78,123,130,64,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_FRAMETEX,78,136,130,64,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_FRAMEREAD,78,149,130,64,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Alpha MultiPass",IDC_OPAQUE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,219,127,66,10
+    CONTROL         "Mask bit",IDC_USEMASK,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,219,138,47,10
+    CONTROL         "Advanced blending",IDC_ADVBLEND,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,219,149,76,10
+    CONTROL         "Scanlines",IDC_USESCANLINES,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,11,176,46,10
+    EDITTEXT        IDC_SCANBLEND,375,175,29,12,ES_AUTOHSCROLL
+    CONTROL         "Line mode",IDC_USELINES,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,11,186,48,10
+    CONTROL         "Unfiltered framebuffer updates",IDC_FASTMDEC,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,196,113,10
+    CONTROL         "Force 15 bit framebuffer updates",IDC_FASTMDEC2,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,206,121,10
+    CONTROL         "Color dithering",IDC_DRAWDITHER,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,216,81,10
+    CONTROL         "Screen smoothing",IDC_BLUR,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,11,226,81,10
+    CONTROL         "Disable screensaver",IDC_SSAVE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,11,236,81,10
+    CONTROL         "Special game fixes",IDC_GAMEFIX,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,246,75,10
+    PUSHBUTTON      "...",IDC_SELFIX,89,246,11,10,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Fast",IDC_DEF1,10,272,34,14
+    PUSHBUTTON      "Nice",IDC_DEF2,49,272,34,14
+    DEFPUSHBUTTON   "OK",IDOK,113,272,84,14
+    PUSHBUTTON      "Cancel",IDCANCEL,215,272,84,14
+    PUSHBUTTON      "Copy settings\n to clipboard",IDC_CLIPBOARD,322,266,87,
+                    25,BS_MULTILINE,WS_EX_STATICEDGE
+    GROUPBOX        "Misc",IDC_STATIC,3,166,406,95
+    GROUPBOX        "Default settings",IDC_STATIC,3,262,88,30
+    GROUPBOX        "Textures",IDC_STATIC,3,41,406,40
+    RTEXT           "Desktop resolution:",IDC_STATIC,81,12,65,9
+    GROUPBOX        "Resolution && Colors",IDC_STATIC,3,1,406,40
+    RTEXT           "Color depth:",IDC_STATIC,219,12,39,9
+    GROUPBOX        "Framerate",IDC_STATIC,3,81,406,33
+    LTEXT           "FPS",IDC_STATIC,367,100,17,9,SS_CENTERIMAGE
+    GROUPBOX        "Compatibility",IDC_STATIC,3,115,406,51
+    RTEXT           "Texture quality:",IDC_QUALTXT,6,52,51,9
+    RTEXT           "Window size:",IDC_STATIC,85,26,61,9
+    CTEXT           "x",IDC_STATIC,177,26,8,9
+    RTEXT           "Gfx card vram:",IDC_QUALTXT2,225,65,48,9
+    RTEXT           "Off-Screen drawing:",IDC_STATIC,11,124,64,10,
+                    SS_CENTERIMAGE
+    RTEXT           "Texture filtering:",IDC_STATIC,6,65,52,10
+    RTEXT           "Framebuffer textures:",IDC_STATIC,7,137,68,10,
+                    SS_CENTERIMAGE
+    LTEXT           "Some games will need certain special options to work without glitches",
+                    IDC_STATIC,135,246,242,9,SS_CENTERIMAGE
+    LTEXT           "Smoother shading in 16 bit color depth",IDC_STATIC,135,
+                    216,242,9,SS_CENTERIMAGE
+    LTEXT           "Small speed up with mdecs",IDC_STATIC,135,196,242,9,
+                    SS_CENTERIMAGE
+    LTEXT           "Polygons will not get filled",IDC_STATIC,135,186,89,9,
+                    SS_CENTERIMAGE
+    LTEXT           "TV screen alike lines",IDC_STATIC,135,176,69,9,
+                    SS_CENTERIMAGE
+    LTEXT           "Accurate psx color emulation",IDC_STATIC,303,149,97,9,
+                    SS_CENTERIMAGE
+    LTEXT           "Correct opaque texture areas",IDC_STATIC,302,127,97,9,
+                    SS_CENTERIMAGE
+    LTEXT           "Needed by a few games",IDC_STATIC,302,138,97,9,
+                    SS_CENTERIMAGE
+    RTEXT           "Scanline brightness (0...255, -1=Monitor dot matrix):",
+                    IDC_STATIC,210,176,162,9,SS_CENTERIMAGE
+    EDITTEXT        IDC_CLPEDIT,314,283,6,12,ES_MULTILINE | ES_AUTOVSCROLL | 
+                    ES_AUTOHSCROLL | NOT WS_VISIBLE
+    LTEXT           "MBytes",IDC_QUALTXT3,340,65,27,9
+    LTEXT           "The complete screen will get smoothed. Very slow on some cards, lotta vram needed",
+                    IDC_STATIC,135,226,269,9,SS_CENTERIMAGE
+    RTEXT           "Framebuffer access:",IDC_STATIC,7,150,68,10,
+                    SS_CENTERIMAGE
+    LTEXT           "Disable screensavers and power saving modes. Not available in Win95/WinNT",
+                    IDC_STATIC,135,236,269,9,SS_CENTERIMAGE
+    LTEXT           "Speed up with mdecs in 32 bit color depth, but less colorful",
+                    IDC_T14_STATIC2,135,206,268,9,SS_CENTERIMAGE
+    RTEXT           "Hi-Res textures:",IDC_QUALTXT4,223,52,50,9
+    COMBOBOX        IDC_VSYNC,261,24,36,64,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    RTEXT           "V-Sync:",IDC_STATIC,219,26,39,9,SS_CENTERIMAGE
+END
+
+IDD_FIXES DIALOG DISCARDABLE  0, 0, 316, 322
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Special game fixes..."
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "0x00001: Adjust framebuffer access",IDC_FIX1,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,30,133,10
+    CONTROL         "0x00004: Ignore black brightness",IDC_FIX3,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,60,140,10
+    CONTROL         "0x00008: Swap front/back detection",IDC_FIX4,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,75,144,10
+    CONTROL         "0x00010: Disable coord check",IDC_FIX5,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,90,139,10
+    CONTROL         "0x00020: Remove blue glitches",IDC_FIX6,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,105,139,10
+    CONTROL         "0x00040: Mixed software FB access",IDC_FIX7,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,120,143,10
+    CONTROL         "0x00080: Use PC fps calculation",IDC_FIX8,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,135,142,10
+    CONTROL         "0x00100: Use old frame skipping",IDC_FIX9,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,150,139,10
+    CONTROL         "0x00002: Direct framebuffer updates",IDC_FIX2,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,45,137,10
+    CONTROL         "0x00200: G4 polygon cache",IDC_FIX10,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,165,141,10
+    CONTROL         "0x00400: Fake subtractive blending",IDC_FIX11,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,180,143,10
+    CONTROL         "0x00800: Lazy upload detection",IDC_FIX12,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,195,144,10
+    CONTROL         "0x01000: Odd/even bit hack",IDC_FIX13,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,210,143,10
+    CONTROL         "0x02000: Expand screen width",IDC_FIX14,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,225,144,10
+    DEFPUSHBUTTON   "OK",IDOK,83,302,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,182,302,50,14
+    LTEXT           "Activate the following options only if you want to play one of the listed games (or if your game is showing similar glitches)!",
+                    IDC_STATIC,7,4,246,22
+    LTEXT           "ONLY for FF7 battle cursor/battle swirl",IDC_STATIC,163,
+                    30,137,9,SS_CENTERIMAGE
+    LTEXT           "Speed up in nasty frame upload situations",IDC_STATIC,
+                    163,45,137,9,SS_CENTERIMAGE
+    LTEXT           "Fixes black screens in Lunar",IDC_STATIC,162,60,123,9,
+                    SS_CENTERIMAGE
+    LTEXT           "Speed freaks, Killer Loop",IDC_STATIC,162,75,90,9,
+                    SS_CENTERIMAGE
+    LTEXT           "Old coord compatibility mode",IDC_STATIC,162,89,99,9,
+                    SS_CENTERIMAGE
+    LTEXT           "Leg. o. Dragoon, Alpha Multipass needed",IDC_STATIC,162,
+                    105,136,9,SS_CENTERIMAGE
+    LTEXT           "Faster FB access on some systems/ATI",IDC_STATIC,162,
+                    120,125,9,SS_CENTERIMAGE
+    LTEXT           "Better fps limitation with some games",IDC_STATIC,162,
+                    135,117,9,SS_CENTERIMAGE
+    LTEXT           "Skips only every second frame",IDC_STATIC,162,150,130,9,
+                    SS_CENTERIMAGE
+    LTEXT           "ONLY for FF9 battle mode... yellow rect",IDC_STATIC,162,
+                    165,132,9,SS_CENTERIMAGE
+    LTEXT           "Needed by some (buggy) OpenGL ICDs",IDC_STATIC,162,180,
+                    132,9,SS_CENTERIMAGE
+    LTEXT           "DW7 fix (not 100% perfect...)",IDC_STATIC,162,195,132,9,
+                    SS_CENTERIMAGE
+    LTEXT           "Needed with epsxe 1.5.2 and older",IDC_STATIC,162,210,
+                    138,9,SS_CENTERIMAGE
+    LTEXT           "Shows the full area in Capcom 2D fighters",IDC_STATIC,
+                    162,225,138,9,SS_CENTERIMAGE
+    CONTROL         "0x04000: Use old texture filtering",IDC_FIX15,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,240,141,10
+    LTEXT           "Fixes black areas with some cards",IDC_STATIC,162,240,
+                    138,9,SS_CENTERIMAGE
+    CONTROL         "0x08000: Special upload detection",IDC_FIX16,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,255,146,10
+    LTEXT           "May show some additional splash screens",
+                    IDC_F14_STATIC3,163,255,137,9,SS_CENTERIMAGE
+    CONTROL         "0x10000: Use low-res fps timer",IDC_FIX17,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,270,147,10
+    LTEXT           "For buggy motherboard chipsets",IDC_F14_STATIC4,163,270,
+                    137,9,SS_CENTERIMAGE
+    CONTROL         "0x20000: Fake 'gpu busy' states",IDC_FIX18,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,11,285,147,10
+    LTEXT           "Toggles busy flags after drawing",IDC_F14_STATIC5,163,
+                    285,137,9,SS_CENTERIMAGE
+END
+
+IDD_KEYS DIALOG DISCARDABLE  0, 0, 186, 162
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION
+CAPTION "GPU key configuration"
+FONT 8, "MS Sans Serif"
+BEGIN
+    PUSHBUTTON      "Default keys",IDC_DEFAULT,107,6,61,13
+    COMBOBOX        IDC_KEY1,108,25,61,62,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_KEY2,108,41,61,62,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_KEY3,108,57,61,62,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_KEY4,108,73,61,62,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_KEY5,108,89,61,62,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    COMBOBOX        IDC_KEY6,108,105,61,62,CBS_DROPDOWNLIST | WS_VSCROLL | 
+                    WS_TABSTOP
+    DEFPUSHBUTTON   "OK",IDOK,19,142,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,115,142,50,14
+    RTEXT           "Show/hide gpu menu:",IDC_STATIC,4,26,100,9,
+                    SS_CENTERIMAGE
+    RTEXT           "Show/hide gpu infos:",IDC_STATIC,4,42,100,9,
+                    SS_CENTERIMAGE
+    RTEXT           "Toggle selected option up:",IDC_STATIC,4,58,100,9,
+                    SS_CENTERIMAGE
+    RTEXT           "Toggle selected option down:",IDC_STATIC,4,74,100,9,
+                    SS_CENTERIMAGE
+    RTEXT           "Select previous option:",IDC_STATIC,4,90,100,9,
+                    SS_CENTERIMAGE
+    RTEXT           "Select next option:",IDC_STATIC,4,106,100,9,
+                    SS_CENTERIMAGE
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_DIALOG_ABOUT, DIALOG
+    BEGIN
+        LEFTMARGIN, 2
+        RIGHTMARGIN, 253
+        TOPMARGIN, 3
+        BOTTOMMARGIN, 159
+    END
+
+    IDD_CFGDLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 406
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 288
+    END
+
+    IDD_FIXES, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 309
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 315
+    END
+
+    IDD_KEYS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 155
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog Info
+//
+
+IDD_CFGDLG DLGINIT
+BEGIN
+    IDC_RESOLUTION, 0x403, 1, 0
+"\000" 
+    IDC_COLORDEPTH, 0x403, 7, 0
+0x3631, 0x4220, 0x7469, "\000" 
+    IDC_COLORDEPTH, 0x403, 7, 0
+0x3233, 0x4220, 0x7469, "\000" 
+    IDC_TEXQUALITY, 0x403, 11, 0
+0x6f64, 0x276e, 0x2074, 0x6163, 0x6572, "\000" 
+    IDC_TEXQUALITY, 0x403, 12, 0
+0x3452, 0x4720, 0x2034, 0x3442, 0x4120, 0x0034, 
+    IDC_TEXQUALITY, 0x403, 12, 0
+0x3552, 0x4720, 0x2035, 0x3542, 0x4120, 0x0031, 
+    IDC_TEXQUALITY, 0x403, 12, 0
+0x3852, 0x4720, 0x2038, 0x3842, 0x4120, 0x0038, 
+    IDC_FILTERTYPE, 0x403, 9, 0
+0x7453, 0x6e61, 0x6164, 0x6472, "\000" 
+    IDC_FILTERTYPE, 0x403, 9, 0
+0x7845, 0x6574, 0x646e, 0x6465, "\000" 
+    IDC_FILTERTYPE, 0x403, 22, 0
+0x7453, 0x6e61, 0x6164, 0x6472, 0x2820, 0x6f6e, 0x5320, 0x7270, 0x7469, 
+0x7365, 0x0029, 
+    IDC_FILTERTYPE, 0x403, 22, 0
+0x7845, 0x6574, 0x646e, 0x6465, 0x2820, 0x6f6e, 0x5320, 0x7270, 0x7469, 
+0x7365, 0x0029, 
+    IDC_HIRESTEX, 0x403, 11, 0
+0x6f64, 0x276e, 0x2074, 0x6163, 0x6572, "\000" 
+    IDC_HIRESTEX, 0x403, 12, 0
+0x3452, 0x4720, 0x2034, 0x3442, 0x4120, 0x0034, 
+    IDC_HIRESTEX, 0x403, 12, 0
+0x3552, 0x4720, 0x2035, 0x3542, 0x4120, 0x0031, 
+    IDC_HIRESTEX, 0x403, 12, 0
+0x3852, 0x4720, 0x2038, 0x3842, 0x4120, 0x0038, 
+    IDC_OFFSCREEN, 0x403, 11, 0
+0x6f64, 0x276e, 0x2074, 0x6163, 0x6572, "\000" 
+    IDC_OFFSCREEN, 0x403, 12, 0
+0x3452, 0x4720, 0x2034, 0x3442, 0x4120, 0x0034, 
+    IDC_OFFSCREEN, 0x403, 12, 0
+0x3552, 0x4720, 0x2035, 0x3542, 0x4120, 0x0031, 
+    IDC_OFFSCREEN, 0x403, 12, 0
+0x3852, 0x4720, 0x2038, 0x3842, 0x4120, 0x0038, 
+    IDC_FRAMETEX, 0x403, 11, 0
+0x6f64, 0x276e, 0x2074, 0x6163, 0x6572, "\000" 
+    IDC_FRAMETEX, 0x403, 12, 0
+0x3452, 0x4720, 0x2034, 0x3442, 0x4120, 0x0034, 
+    IDC_FRAMETEX, 0x403, 12, 0
+0x3552, 0x4720, 0x2035, 0x3542, 0x4120, 0x0031, 
+    IDC_FRAMETEX, 0x403, 12, 0
+0x3852, 0x4720, 0x2038, 0x3842, 0x4120, 0x0038, 
+    IDC_FRAMEREAD, 0x403, 11, 0
+0x6f64, 0x276e, 0x2074, 0x6163, 0x6572, "\000" 
+    IDC_FRAMEREAD, 0x403, 12, 0
+0x3452, 0x4720, 0x2034, 0x3442, 0x4120, 0x0034, 
+    IDC_FRAMEREAD, 0x403, 12, 0
+0x3552, 0x4720, 0x2035, 0x3542, 0x4120, 0x0031, 
+    IDC_FRAMEREAD, 0x403, 12, 0
+0x3852, 0x4720, 0x2038, 0x3842, 0x4120, 0x0038, 
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_INFO0               "FL - Frame limitation:\n[Off] - Speed as fast as possible\n[On-1] - Limits speed to manual value\n[On-2] - Limits speed to auto-detected value."
+    IDS_INFO1               "FS - Frame skipping:\n[Off] - No frames get skipped\n[On] - Tries to speed up the game by skipping frames. Can cause glitches!"
+    IDS_INFO2               "OD - Offscreen drawing:\n[0-4] - The higher the mode, the more checks for uploading screen data/software drawing will be done. Setting depends on the game."
+    IDS_INFO3               "FI - Texture filtering:\n[0-6] - Filtering will cause glitches! Mode 2/4/6: black borders vanish. Mode 3/4 will not filter sprites. Mode 5/6 will smooth sprites."
+    IDS_INFO4               "DI - Dithering:\n[Off] - No dithering\n[On] - Smoother shading in 16 bit modes."
+    IDS_INFO5               "AM - Alpha multipass:\n[Off] - Faster with some games, but opaque texture areas can get transparent.\n[On] - Accurate psx emulation."
+    IDS_INFO6               "AB - Advanced blending:\n[0-1] - For accurate psx coloring use mode 1. If your gfx card can't do it in hardware, a software mode will be done automatically (slower)."
+    IDS_INFO7               "FA - Framebuffer access:\n[0-4] - Some games read back the framebuffer to create special effects. This can be very slow! In mode 4 everything is done in software."
+    IDS_INFO8               "FT - Frame buffer texture:\n[0-3] - Mode 2 is trying to do some effects (whirls, motion blur) in hardware (can be slow). Mode 1 is turning the effects off (fastest emulation)."
+    IDS_INFO9               "GF - Special game fixes:\n[Off] - Turn off all fixes\n[On] - Turn on all activated fixes. You have to select the fixes you want to use in the gpu config."
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE 9, 1
+#pragma code_page(1252)
+#endif
+#include "res\gpuPeopsOpenGL.rc2"  // non-Microsoft Visual C++ edited resources
+#include "afxres.rc"         // Standard components
+#endif
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
