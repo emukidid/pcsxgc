@@ -353,11 +353,11 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch)
 	static GXTexObj GXtexobj;
 //	short *dst1 = (short *) GXtexture;
 //	short *src = (short *) buffer;
-	long long int *dst = (long long int *) GXtexture;
-	long long int *src1 = (long long int *) buffer;
-	long long int *src2 = (long long int *) (buffer + pitch);
-	long long int *src3 = (long long int *) (buffer + (pitch * 2));
-	long long int *src4 = (long long int *) (buffer + (pitch * 3));
+
+	f64 *src1 = (f64 *) buffer;
+	f64 *src2 = (f64 *) (buffer + pitch);
+	f64 *src3 = (f64 *) (buffer + (pitch * 2));
+	f64 *src4 = (f64 *) (buffer + (pitch * 3));
 	int rowpitch = (pitch >> 3) * 4  - (width >> 2);
 	int rowadjust = ( pitch % 8 ) * 4;
 	char *ra = NULL;
@@ -374,16 +374,16 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch)
 		GX_InitTexObj(&GXtexobj, GXtexture, width, height, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	}
 
-
+	f64 *wgPipePtr = MEM_PHYSICAL_TO_K1(GX_RedirectWriteGatherPipe(GXtexture));
 	for (h = 0; h < height; h += 4)
 	{
 
 		for (w = 0; w < (width >> 2); w++)
 		{
-			*dst++ = *src1++;
-			*dst++ = *src2++;
-			*dst++ = *src3++;
-			*dst++ = *src4++;
+			*wgPipePtr = *src1++;
+			*wgPipePtr = *src2++;
+			*wgPipePtr = *src3++;
+			*wgPipePtr = *src4++;
         }
 
       src1 += rowpitch;
@@ -394,17 +394,17 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch)
       if ( rowadjust )
         {
           ra = (char *)src1;
-          src1 = (long long int *)(ra + rowadjust);
+          src1 = (f64 *)(ra + rowadjust);
           ra = (char *)src2;
-          src2 = (long long int *)(ra + rowadjust);
+          src2 = (f64 *)(ra + rowadjust);
           ra = (char *)src3;
-          src3 = (long long int *)(ra + rowadjust);
+          src3 = (f64 *)(ra + rowadjust);
           ra = (char *)src4;
-          src4 = (long long int *)(ra + rowadjust);
+          src4 = (f64 *)(ra + rowadjust);
         }
     }
+	GX_RestoreWriteGatherPipe();
 
-	DCFlushRange(GXtexture, width*height*2);
 	GX_LoadTexObj(&GXtexobj, GX_TEXMAP0);
 
 	Mtx44	GXprojIdent;
