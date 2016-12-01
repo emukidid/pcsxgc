@@ -166,7 +166,7 @@ void SaveCheats(const char *filename) {
 
 		// write all cheat codes
 		for (j = 0; j < Cheats[i].n; j++) {
-			fprintf(fp, "%.8X %.4X\n",
+			fprintf(fp, "%.8lX %.4lX\n",
 				CheatCodes[Cheats[i].First + j].Addr,
 				CheatCodes[Cheats[i].First + j].Val);
 		}

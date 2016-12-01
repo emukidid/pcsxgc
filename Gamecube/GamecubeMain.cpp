@@ -315,7 +315,7 @@ void ShutdownWii()
 }
 #endif
 
-void video_mode_init(GXRModeObj *videomode,unsigned int *fb1, unsigned int *fb2)
+void video_mode_init(GXRModeObj *videomode, u32 *fb1, u32 *fb2)
 {
 	vmode = videomode;
 	xfb[0] = fb1;

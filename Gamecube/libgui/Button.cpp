@@ -248,19 +248,18 @@ void Button::drawComponent(Graphics& gfx)
 		gfx.enableScissor(x + labelScissor, y, width - 2*labelScissor, height);
 		if(active)	IplFont::getInstance().drawInit(labelColor);
 		else		IplFont::getInstance().drawInit(inactiveColor);
+		strWidth = IplFont::getInstance().getStringWidth(*buttonText, fontSize);
+		strHeight = IplFont::getInstance().getStringHeight(*buttonText, fontSize);
 		switch (labelMode)
 		{
 			case LABEL_CENTER:
 				IplFont::getInstance().drawString((int) (x+width/2), (int) (y+height/2), *buttonText, fontSize, true);
 				break;
 			case LABEL_LEFT:
-				strWidth = IplFont::getInstance().getStringWidth(*buttonText, fontSize);
-				strHeight = IplFont::getInstance().getStringHeight(*buttonText, fontSize);
 				IplFont::getInstance().drawString((int) (x+labelScissor), (int) (y+(height-strHeight)/2), *buttonText, fontSize, false);
 				break;
 			case LABEL_SCROLL:
-				strHeight = IplFont::getInstance().getStringHeight(*buttonText, fontSize);
-				scrollWidth = IplFont::getInstance().getStringWidth(*buttonText, fontSize)-width+2*labelScissor;
+				scrollWidth = strWidth-width+2*labelScissor;
 				scrollWidth = scrollWidth < 0.0f ? 0.0 : scrollWidth;
 				CurrentTime = ticks_to_microsecs(gettick());
 				time_sec = (float)(CurrentTime - StartTime)/1000000.0f;
@@ -271,8 +270,7 @@ void Button::drawComponent(Graphics& gfx)
 			case LABEL_SCROLLONFOCUS:
 				if(getFocus())
 				{
-					strHeight = IplFont::getInstance().getStringHeight(*buttonText, fontSize);
-					scrollWidth = IplFont::getInstance().getStringWidth(*buttonText, fontSize)-width+2*labelScissor;
+					scrollWidth = strWidth-width+2*labelScissor;
 					scrollWidth = scrollWidth < 0.0f ? 0.0 : scrollWidth;
 					CurrentTime = ticks_to_microsecs(gettick());
 					time_sec = (float)(CurrentTime - StartTime)/1000000.0f;
@@ -282,9 +280,7 @@ void Button::drawComponent(Graphics& gfx)
 				}
 				else
 				{
-				strWidth = IplFont::getInstance().getStringWidth(*buttonText, fontSize);
-				strHeight = IplFont::getInstance().getStringHeight(*buttonText, fontSize);
-				IplFont::getInstance().drawString((int) (x+labelScissor), (int) (y+(height-strHeight)/2), *buttonText, fontSize, false);
+					IplFont::getInstance().drawString((int) (x+labelScissor), (int) (y+(height-strHeight)/2), *buttonText, fontSize, false);
 				}
 				break;
 		}

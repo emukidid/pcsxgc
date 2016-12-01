@@ -39,7 +39,7 @@ extern int stop;
 #define debugI()
 #endif
 
-inline void execI();
+void execI();
 
 // Subsets
 void (*psxBSC[64])();
@@ -410,7 +410,7 @@ static int psxDelayBranchTest(u32 tar1) {
 	return psxDelayBranchExec(tmp2);
 }
 
-__inline void doBranch(u32 tar) {
+static __inline void doBranch(u32 tar) {
 	u32 *code;
 	u32 tmp;
 
@@ -1088,7 +1088,7 @@ static void intShutdown() {
 }
 
 // interpreter execution
-inline void execI() { 
+void execI() { 
 	u32 *code = Read_ICache(psxRegs.pc, FALSE);
 	psxRegs.code = ((code == NULL) ? 0 : SWAP32(*code));
 

@@ -79,7 +79,7 @@ int fileBrowser_CARD_readFile(fileBrowser_file* file, void* buffer, unsigned int
 	char *tbuffer;
 	card_file CardFile;
 	int slot = file->discoffset;
-	unsigned int SectorSize = 0;
+	u32 SectorSize = 0;
   CARD_GetSectorSize (slot, &SectorSize);
     
 	if(CARD_Open(slot, (const char*)file->name, &CardFile) != CARD_ERROR_NOFILE){
@@ -110,7 +110,7 @@ int fileBrowser_CARD_writeFile(fileBrowser_file* file, void* buffer, unsigned in
 	card_stat CardStat;
 	int slot = file->discoffset;
 	char *tmpBuffer = NULL;
-	unsigned int status,SectorSize,newLength;
+	u32 status,SectorSize,newLength;
 	
 	newLength = length + sizeof(CARDIcon) + 0x40;
 	
@@ -139,7 +139,7 @@ int fileBrowser_CARD_writeFile(fileBrowser_file* file, void* buffer, unsigned in
 	  CardStat.banner_fmt = 0;
 	  CardStat.icon_addr = 0x40;
 	  tmpBuffer = memalign(32,newLength);
-	  memset(tmpBuffer,0,sizeof(tmpBuffer));
+	  memset(tmpBuffer,0,newLength);
 	  strcpy(tmpBuffer,ctime (&gc_time));
 	  strcpy(tmpBuffer+0x20,file->name);
 	  memcpy(tmpBuffer+0x40,CARDIcon,sizeof(CARDIcon));       // copy icon

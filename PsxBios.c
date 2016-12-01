@@ -1679,7 +1679,7 @@ void psxBios_UnDeliverEvent() { // 0x20
 
 void psxBios_open() { // 0x32
 	int i;
-	char *ptr;
+	unsigned char *ptr;
 
 #ifdef PSXBIOS_LOG
 	PSXBIOS_LOG("psxBios_%s: %s,%x\n", biosB0n[0x32], Ra0, a1);
@@ -1740,7 +1740,7 @@ void psxBios_lseek() { // 0x33
  */
 
 void psxBios_read() { // 0x34
-	char *ptr;
+	unsigned char *ptr;
 
 #ifdef PSXBIOS_LOG
 	PSXBIOS_LOG("psxBios_%s: %x, %x, %x\n", biosB0n[0x34], a0, a1, a2);
@@ -1774,7 +1774,7 @@ void psxBios_read() { // 0x34
  */
 
 void psxBios_write() { // 0x35/0x03
-	char *ptr;
+	unsigned char *ptr;
 
 	if (a0 == 1) { // stdout
 		char *ptr = Ra1;
@@ -1859,7 +1859,7 @@ int nfile;
 void psxBios_firstfile() { // 42
 	struct DIRENTRY *dir = (struct DIRENTRY *)Ra1;
 	u32 _dir = a1;
-	char *ptr;
+	unsigned char *ptr;
 	int i;
 
 #ifdef PSXBIOS_LOG
@@ -1932,7 +1932,7 @@ void psxBios_nextfile() { // 43
  */
 
 void psxBios_rename() { // 44
-	char *ptr;
+	unsigned char *ptr;
 	int i;
 
 #ifdef PSXBIOS_LOG
@@ -1971,7 +1971,7 @@ void psxBios_rename() { // 44
  */
 
 void psxBios_delete() { // 45
-	char *ptr;
+	unsigned char *ptr;
 	int i;
 
 #ifdef PSXBIOS_LOG

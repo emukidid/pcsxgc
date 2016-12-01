@@ -305,7 +305,7 @@ void Dither16(unsigned short * pdest,unsigned long r,unsigned long g,unsigned lo
 /////////////////////////////////////////////////////////////////
 
 //__inline__ void GetShadeTransCol_Dither(unsigned short * pdest,long m1,long m2,long m3) __attribute__ ((__pure__));
-__inline__ void GetShadeTransCol_Dither(unsigned short * pdest,long m1,long m2,long m3)
+static __inline__ void GetShadeTransCol_Dither(unsigned short * pdest,long m1,long m2,long m3)
 {
  long r,g,b;
 
@@ -369,7 +369,7 @@ __inline__ void GetShadeTransCol_Dither(unsigned short * pdest,long m1,long m2,l
 
 ////////////////////////////////////////////////////////////////////////
 //__inline__ void GetShadeTransCol(unsigned short * pdest,unsigned short color) __attribute__ ((__pure__));
-__inline__ void GetShadeTransCol(unsigned short * pdest,unsigned short color)
+static __inline__ void GetShadeTransCol(unsigned short * pdest,unsigned short color)
 {
  if(bCheckMask && (*pdest & HOST2LE16(0x8000))) return;
 
@@ -428,7 +428,7 @@ __inline__ void GetShadeTransCol(unsigned short * pdest,unsigned short color)
 
 ////////////////////////////////////////////////////////////////////////
 //__inline__ void GetShadeTransCol32(unsigned long * pdest,unsigned long color) __attribute__ ((__pure__));
-__inline__ void GetShadeTransCol32(unsigned long * pdest,unsigned long color)
+static __inline__ void GetShadeTransCol32(unsigned long * pdest,unsigned long color)
 {
  if(DrawSemiTrans)
   {
@@ -520,7 +520,7 @@ __inline__ void GetShadeTransCol32(unsigned long * pdest,unsigned long color)
 
 ////////////////////////////////////////////////////////////////////////
 //__inline__ void GetTextureTransColG(unsigned short * pdest,unsigned short color) __attribute__ ((__pure__));
-__inline__ void GetTextureTransColG(unsigned short * pdest,unsigned short color)
+static __inline__ void GetTextureTransColG(unsigned short * pdest,unsigned short color)
 {
  long r,g,b;unsigned short l;
 
@@ -593,7 +593,7 @@ __inline__ void GetTextureTransColG(unsigned short * pdest,unsigned short color)
 
 ////////////////////////////////////////////////////////////////////////
 //__inline__ void GetTextureTransColG_S(unsigned short * pdest,unsigned short color) __attribute__ ((__pure__));
-__inline__ void GetTextureTransColG_S(unsigned short * pdest,unsigned short color)
+static __inline__ void GetTextureTransColG_S(unsigned short * pdest,unsigned short color)
 {
  long r,g,b;unsigned short l;
 
@@ -614,7 +614,7 @@ __inline__ void GetTextureTransColG_S(unsigned short * pdest,unsigned short colo
 
 ////////////////////////////////////////////////////////////////////////
 //__inline__ void GetTextureTransColG_SPR(unsigned short * pdest,unsigned short color) __attribute__ ((__pure__));
-__inline__ void GetTextureTransColG_SPR(unsigned short * pdest,unsigned short color)
+static __inline__ void GetTextureTransColG_SPR(unsigned short * pdest,unsigned short color)
 {
  long r,g,b;unsigned short l;
 
@@ -687,7 +687,7 @@ __inline__ void GetTextureTransColG_SPR(unsigned short * pdest,unsigned short co
 
 ////////////////////////////////////////////////////////////////////////
 //__inline__ void GetTextureTransColG32(unsigned long * pdest,unsigned long color) __attribute__ ((__pure__));
-__inline__ void GetTextureTransColG32(unsigned long * pdest,unsigned long color)
+static __inline__ void GetTextureTransColG32(unsigned long * pdest,unsigned long color)
 {
  long r,g,b,l;
 
@@ -791,7 +791,7 @@ __inline__ void GetTextureTransColG32(unsigned long * pdest,unsigned long color)
 
 ////////////////////////////////////////////////////////////////////////
 //__inline__ void GetTextureTransColG32_S(unsigned long * pdest,unsigned long color) __attribute__ ((__pure__));
-__inline__ void GetTextureTransColG32_S(unsigned long * pdest,unsigned long color)
+static __inline__ void GetTextureTransColG32_S(unsigned long * pdest,unsigned long color)
 {
  long r,g,b;
 
@@ -816,7 +816,7 @@ __inline__ void GetTextureTransColG32_S(unsigned long * pdest,unsigned long colo
 
 ////////////////////////////////////////////////////////////////////////
 //__inline__ void GetTextureTransColG32_SPR(unsigned long * pdest,unsigned long color) __attribute__ ((__pure__));
-__inline__ void GetTextureTransColG32_SPR(unsigned long * pdest,unsigned long color)
+static __inline__ void GetTextureTransColG32_SPR(unsigned long * pdest,unsigned long color)
 {
  long r,g,b;
 
@@ -918,7 +918,7 @@ __inline__ void GetTextureTransColG32_SPR(unsigned long * pdest,unsigned long co
 
 ////////////////////////////////////////////////////////////////////////
 //__inline__ void GetTextureTransColGX_Dither(unsigned short * pdest,unsigned short color,long m1,long m2,long m3) __attribute__ ((__pure__));
-__inline__ void GetTextureTransColGX_Dither(unsigned short * pdest,unsigned short color,long m1,long m2,long m3)
+static __inline__ void GetTextureTransColGX_Dither(unsigned short * pdest,unsigned short color,long m1,long m2,long m3)
 {
  long r,g,b;
 
@@ -989,7 +989,7 @@ __inline__ void GetTextureTransColGX_Dither(unsigned short * pdest,unsigned shor
 
 ////////////////////////////////////////////////////////////////////////
 //__inline__ void GetTextureTransColGX(unsigned short * pdest,unsigned short color,short m1,short m2,short m3) __attribute__ ((__pure__));
-__inline__ void GetTextureTransColGX(unsigned short * pdest,unsigned short color,short m1,short m2,short m3)
+static __inline__ void GetTextureTransColGX(unsigned short * pdest,unsigned short color,short m1,short m2,short m3)
 {
  long r,g,b;unsigned short l;
 
@@ -1061,7 +1061,7 @@ __inline__ void GetTextureTransColGX(unsigned short * pdest,unsigned short color
 
 ////////////////////////////////////////////////////////////////////////
 //__inline__ void GetTextureTransColGX_S(unsigned short * pdest,unsigned short color,short m1,short m2,short m3) __attribute__ ((__pure__));
-__inline__ void GetTextureTransColGX_S(unsigned short * pdest,unsigned short color,short m1,short m2,short m3)
+static __inline__ void GetTextureTransColGX_S(unsigned short * pdest,unsigned short color,short m1,short m2,short m3)
 {
  long r,g,b;
 
@@ -1080,7 +1080,7 @@ __inline__ void GetTextureTransColGX_S(unsigned short * pdest,unsigned short col
 
 ////////////////////////////////////////////////////////////////////////
 //__inline__ void GetTextureTransColGX32_S(unsigned long * pdest,unsigned long color,short m1,short m2,short m3) __attribute__ ((__pure__));
-__inline__ void GetTextureTransColGX32_S(unsigned long * pdest,unsigned long color,short m1,short m2,short m3)
+static __inline__ void GetTextureTransColGX32_S(unsigned long * pdest,unsigned long color,short m1,short m2,short m3)
 {
  long r,g,b;
  
@@ -1275,7 +1275,7 @@ static int left_B, delta_left_B, right_B, delta_right_B;
 // NASM version (external):
 #define shl10idiv i386_shl10idiv
 
-__inline__ int shl10idiv(int x, int y);
+static __inline__ int shl10idiv(int x, int y);
 
 #else
 
@@ -1283,7 +1283,7 @@ __inline__ int shl10idiv(int x, int y);
 
 #pragma warning  (disable : 4035)
 
-__inline__ int shl10idiv(int x, int y)
+static __inline__ int shl10idiv(int x, int y)
 {
  __asm
   {
@@ -1299,7 +1299,7 @@ __inline__ int shl10idiv(int x, int y)
 
 #else
 
-__inline__ int shl10idiv(int x, int y)
+static __inline__ int shl10idiv(int x, int y)
 {
  __int64 bi=x;
  bi<<=10;
@@ -1325,7 +1325,7 @@ __inline__ int shl10idiv(int x, int y)
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
                         
-__inline__ int RightSection_F(void)
+static __inline__ int RightSection_F(void)
 {
  soft_vertex * v1 = right_array[ right_section ];
  soft_vertex * v2 = right_array[ right_section-1 ];
@@ -1341,7 +1341,7 @@ __inline__ int RightSection_F(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ int LeftSection_F(void)
+static __inline__ int LeftSection_F(void)
 {
  soft_vertex * v1 = left_array[ left_section ];
  soft_vertex * v2 = left_array[ left_section-1 ];
@@ -1357,7 +1357,7 @@ __inline__ int LeftSection_F(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ BOOL NextRow_F(void)
+static __inline__ BOOL NextRow_F(void)
 {
  if(--left_section_height<=0) 
   {
@@ -1383,7 +1383,7 @@ __inline__ BOOL NextRow_F(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ BOOL SetupSections_F(short x1, short y1, short x2, short y2, short x3, short y3)
+static __inline__ BOOL SetupSections_F(short x1, short y1, short x2, short y2, short x3, short y3)
 {
  soft_vertex * v1, * v2, * v3;
  int height,longest;
@@ -1445,7 +1445,7 @@ __inline__ BOOL SetupSections_F(short x1, short y1, short x2, short y2, short x3
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ int RightSection_G(void)
+static __inline__ int RightSection_G(void)
 {
  soft_vertex * v1 = right_array[ right_section ];
  soft_vertex * v2 = right_array[ right_section-1 ];
@@ -1461,7 +1461,7 @@ __inline__ int RightSection_G(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ int LeftSection_G(void)
+static __inline__ int LeftSection_G(void)
 {
  soft_vertex * v1 = left_array[ left_section ];
  soft_vertex * v2 = left_array[ left_section-1 ];
@@ -1484,7 +1484,7 @@ __inline__ int LeftSection_G(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ BOOL NextRow_G(void)
+static __inline__ BOOL NextRow_G(void)
 {
  if(--left_section_height<=0) 
   {
@@ -1513,7 +1513,7 @@ __inline__ BOOL NextRow_G(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ BOOL SetupSections_G(short x1,short y1,short x2,short y2,short x3,short y3,long rgb1, long rgb2, long rgb3)
+static __inline__ BOOL SetupSections_G(short x1,short y1,short x2,short y2,short x3,short y3,long rgb1, long rgb2, long rgb3)
 {
  soft_vertex * v1, * v2, * v3;
  int height,longest,temp;
@@ -1591,7 +1591,7 @@ __inline__ BOOL SetupSections_G(short x1,short y1,short x2,short y2,short x3,sho
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ int RightSection_FT(void)
+static __inline__ int RightSection_FT(void)
 {
  soft_vertex * v1 = right_array[ right_section ];
  soft_vertex * v2 = right_array[ right_section-1 ];
@@ -1607,7 +1607,7 @@ __inline__ int RightSection_FT(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ int LeftSection_FT(void)
+static __inline__ int LeftSection_FT(void)
 {
  soft_vertex * v1 = left_array[ left_section ];
  soft_vertex * v2 = left_array[ left_section-1 ];
@@ -1628,7 +1628,7 @@ __inline__ int LeftSection_FT(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ BOOL NextRow_FT(void)
+static __inline__ BOOL NextRow_FT(void)
 {
  if(--left_section_height<=0) 
   {
@@ -1656,7 +1656,7 @@ __inline__ BOOL NextRow_FT(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ BOOL SetupSections_FT(short x1, short y1, short x2, short y2, short x3, short y3, short tx1, short ty1, short tx2, short ty2, short tx3, short ty3)
+static __inline__ BOOL SetupSections_FT(short x1, short y1, short x2, short y2, short x3, short y3, short tx1, short ty1, short tx2, short ty2, short tx3, short ty3)
 {
  soft_vertex * v1, * v2, * v3;
  int height,longest,temp;
@@ -1744,7 +1744,7 @@ texture distortions
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ int RightSection_GT(void)
+static __inline__ int RightSection_GT(void)
 {
  soft_vertex * v1 = right_array[ right_section ];
  soft_vertex * v2 = right_array[ right_section-1 ];
@@ -1760,7 +1760,7 @@ __inline__ int RightSection_GT(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ int LeftSection_GT(void)
+static __inline__ int LeftSection_GT(void)
 {
  soft_vertex * v1 = left_array[ left_section ];
  soft_vertex * v2 = left_array[ left_section-1 ];
@@ -1788,7 +1788,7 @@ __inline__ int LeftSection_GT(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ BOOL NextRow_GT(void)
+static __inline__ BOOL NextRow_GT(void)
 {
  if(--left_section_height<=0) 
   {
@@ -1819,7 +1819,7 @@ __inline__ BOOL NextRow_GT(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ BOOL SetupSections_GT(short x1, short y1, short x2, short y2, short x3, short y3, short tx1, short ty1, short tx2, short ty2, short tx3, short ty3, long rgb1, long rgb2, long rgb3)
+static __inline__ BOOL SetupSections_GT(short x1, short y1, short x2, short y2, short x3, short y3, short tx1, short ty1, short tx2, short ty2, short tx3, short ty3, long rgb1, long rgb2, long rgb3)
 {
  soft_vertex * v1, * v2, * v3;
  int height,longest,temp;
@@ -1924,7 +1924,7 @@ texture distortions
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ int RightSection_F4(void)
+static __inline__ int RightSection_F4(void)
 {
  soft_vertex * v1 = right_array[ right_section ];
  soft_vertex * v2 = right_array[ right_section-1 ];
@@ -1943,7 +1943,7 @@ __inline__ int RightSection_F4(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ int LeftSection_F4(void)
+static __inline__ int LeftSection_F4(void)
 {
  soft_vertex * v1 = left_array[ left_section ];
  soft_vertex * v2 = left_array[ left_section-1 ];
@@ -1962,7 +1962,7 @@ __inline__ int LeftSection_F4(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ BOOL NextRow_F4(void)
+static __inline__ BOOL NextRow_F4(void)
 {
  if(--left_section_height<=0) 
   {
@@ -1994,7 +1994,7 @@ __inline__ BOOL NextRow_F4(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ BOOL SetupSections_F4(short x1, short y1, short x2, short y2, short x3, short y3, short x4, short y4)
+static __inline__ BOOL SetupSections_F4(short x1, short y1, short x2, short y2, short x3, short y3, short x4, short y4)
 {
  soft_vertex * v1, * v2, * v3, * v4;
  int height,width,longest1,longest2;
@@ -2136,7 +2136,7 @@ __inline__ BOOL SetupSections_F4(short x1, short y1, short x2, short y2, short x
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ int RightSection_FT4(void)
+static __inline__ int RightSection_FT4(void)
 {
  soft_vertex * v1 = right_array[ right_section ];
  soft_vertex * v2 = right_array[ right_section-1 ];
@@ -2159,7 +2159,7 @@ __inline__ int RightSection_FT4(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ int LeftSection_FT4(void)
+static __inline__ int LeftSection_FT4(void)
 {
  soft_vertex * v1 = left_array[ left_section ];
  soft_vertex * v2 = left_array[ left_section-1 ];
@@ -2182,7 +2182,7 @@ __inline__ int LeftSection_FT4(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ BOOL NextRow_FT4(void)
+static __inline__ BOOL NextRow_FT4(void)
 {
  if(--left_section_height<=0) 
   {
@@ -2218,7 +2218,7 @@ __inline__ BOOL NextRow_FT4(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ BOOL SetupSections_FT4(short x1, short y1, short x2, short y2, short x3, short y3, short x4, short y4, short tx1, short ty1, short tx2, short ty2, short tx3, short ty3, short tx4, short ty4)
+static __inline__ BOOL SetupSections_FT4(short x1, short y1, short x2, short y2, short x3, short y3, short x4, short y4, short tx1, short ty1, short tx2, short ty2, short tx3, short ty3, short tx4, short ty4)
 {
  soft_vertex * v1, * v2, * v3, * v4;
  int height,width,longest1,longest2;
@@ -2367,7 +2367,7 @@ __inline__ BOOL SetupSections_FT4(short x1, short y1, short x2, short y2, short 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ int RightSection_GT4(void)
+static __inline__ int RightSection_GT4(void)
 {
  soft_vertex * v1 = right_array[ right_section ];
  soft_vertex * v2 = right_array[ right_section-1 ];
@@ -2397,7 +2397,7 @@ __inline__ int RightSection_GT4(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ int LeftSection_GT4(void)
+static __inline__ int LeftSection_GT4(void)
 {
  soft_vertex * v1 = left_array[ left_section ];
  soft_vertex * v2 = left_array[ left_section-1 ];
@@ -2427,7 +2427,7 @@ __inline__ int LeftSection_GT4(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ BOOL NextRow_GT4(void)
+static __inline__ BOOL NextRow_GT4(void)
 {
  if(--left_section_height<=0) 
   {
@@ -2469,7 +2469,7 @@ __inline__ BOOL NextRow_GT4(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ BOOL SetupSections_GT4(short x1, short y1, short x2, short y2, short x3, short y3, short x4, short y4, short tx1, short ty1, short tx2, short ty2, short tx3, short ty3, short tx4, short ty4,long rgb1,long rgb2,long rgb3,long rgb4)
+static __inline__ BOOL SetupSections_GT4(short x1, short y1, short x2, short y2, short x3, short y3, short x4, short y4, short tx1, short ty1, short tx2, short ty2, short tx3, short ty3, short tx4, short ty4,long rgb1,long rgb2,long rgb3,long rgb4)
 {
  soft_vertex * v1, * v2, * v3, * v4;
  int height,width,longest1,longest2;
@@ -2639,7 +2639,7 @@ __inline__ BOOL SetupSections_GT4(short x1, short y1, short x2, short y2, short 
 // POLY 3/4 FLAT SHADED
 ////////////////////////////////////////////////////////////////////////
 
-__inline__ void drawPoly3Fi(short x1,short y1,short x2,short y2,short x3,short y3,long rgb)
+static __inline__ void drawPoly3Fi(short x1,short y1,short x2,short y2,short x3,short y3,long rgb)
 {
  int i,j,xmin,xmax,ymin,ymax;
  unsigned short color;unsigned long lcolor;
@@ -4665,7 +4665,7 @@ void drawPoly4TD_TW_S(short x1, short y1, short x2, short y2, short x3, short y3
 // POLY 3/4 G-SHADED
 ////////////////////////////////////////////////////////////////////////
  
-__inline__ void drawPoly3Gi(short x1,short y1,short x2,short y2,short x3,short y3,long rgb1, long rgb2, long rgb3)
+static __inline__ void drawPoly3Gi(short x1,short y1,short x2,short y2,short x3,short y3,long rgb1, long rgb2, long rgb3)
 {
  int i,j,xmin,xmax,ymin,ymax;
  long cR1,cG1,cB1;
@@ -7390,7 +7390,6 @@ void HorzLineFlat(int y, int x0, int x1, unsigned short colour)
 void DrawSoftwareLineShade(long rgb0, long rgb1)
 {
 	short x0, y0, x1, y1, xt, yt;
-	long rgbt;
 	double m, dy, dx;
 
 	if(lx0>drawW && lx1>drawW) return;
@@ -7429,7 +7428,6 @@ void DrawSoftwareLineShade(long rgb0, long rgb1)
 			{
 				xt = x0;
 				yt = y0;
-				rgbt = rgb0;
 				x0 = x1;
 				y0 = y1;
 				rgb0 = rgb1;

@@ -857,10 +857,10 @@ static void iBranch(u32 branchPC, int savectx) {
 void iDumpRegs() {
 	int i, j;
 
-	printf("%08x %08x\n", psxRegs.pc, psxRegs.cycle);
+	printf("%08lx %08lx\n", psxRegs.pc, psxRegs.cycle);
 	for (i=0; i<4; i++) {
 		for (j=0; j<8; j++)
-			printf("%08x ", psxRegs.GPR.r[j*i]);
+			printf("%08lx ", psxRegs.GPR.r[j*i]);
 		printf("\n");
 	}
 }
@@ -1756,8 +1756,7 @@ static void recSW() {
 	if (IsConst(_Rs_)) {
 		u32 addr = iRegs[_Rs_].k + _Imm_;
 		int t = addr >> 16;
-		int rt = 0;
-		
+
 		if ((t & 0x1fe0) == 0 && (t & 0x1fff) != 0) {
 			LIW(PutHWRegSpecial(PSXMEM), (u32)&psxM[addr & 0x1fffff]);
 			STWBRX(GetHWReg32(_Rt_), 0, GetHWRegSpecial(PSXMEM));

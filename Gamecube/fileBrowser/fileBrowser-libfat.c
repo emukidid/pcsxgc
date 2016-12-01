@@ -134,10 +134,10 @@ fileBrowser_file biosDir_DVD =
 
 void continueRemovalThread()
 {
-  if(rThreadRun)
-    return;
-  rThreadRun = 1;
-  LWP_ResumeThread(removalThread);
+  //if(rThreadRun)
+ //   return;
+ // rThreadRun = 1;
+ // LWP_ResumeThread(removalThread);
 }
 
 void pauseRemovalThread()
@@ -294,7 +294,7 @@ int fileBrowser_libfat_init(fileBrowser_file* f){
 	int res = 0;
 
 	if(!rThreadCreated) {
-	 	InitRemovalThread();
+	 	//InitRemovalThread();
  	}
 
 	pauseRemovalThread();

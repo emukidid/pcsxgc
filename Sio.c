@@ -1164,7 +1164,7 @@ void LoadDongle( char *str )
 	else {
 		u32 *ptr, lcv;
 
-		ptr = (unsigned int *) DongleData;
+		ptr = (u32 *) DongleData;
 
 		// create temp data
 		ptr[0] = (u32) 0x02015447;

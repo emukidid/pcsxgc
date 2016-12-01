@@ -141,8 +141,6 @@ long PAD__readPort2(PadDataS* ppad)
 }
 
 unsigned char _PADstartPoll(PadDataS *pad, unsigned int ismultitap) {
-	int i ;
-	unsigned short value ;
 	bufc = 0;
 
 	if ( ismultitap )
