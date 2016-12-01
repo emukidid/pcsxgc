@@ -985,7 +985,13 @@ __inline static void execute() {
 		end_section(COMPILER_SECTION);
 #endif
 	}
+#ifdef PROFILE
+		start_section(CORE_SECTION);
+#endif
 	recRun(*recFunc, (u32)&psxRegs, (u32)&psxM, (u32)&psxMemRLUT);
+#ifdef PROFILE
+		end_section(CORE_SECTION);
+#endif
 }
 
 static void recExecute() {

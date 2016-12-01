@@ -29,63 +29,74 @@
 
 #include "sys/time.h"
 #include "DEBUG.h"
+#include <stdio.h>
 
 #ifdef PROFILE
+
+char * profile_strings[] = {
+	SECTION_NAME_0,
+	SECTION_NAME_1,
+	SECTION_NAME_2,
+	SECTION_NAME_3,
+	SECTION_NAME_4,
+	SECTION_NAME_5,
+	SECTION_NAME_6,
+	SECTION_NAME_7,
+	SECTION_NAME_8
+};
 
 extern long long gettime();
 extern unsigned int diff_sec(long long, long long);
 
-static long long time_in_section[NUM_SECTIONS+1];
-static long long last_start[NUM_SECTIONS+1];
+typedef struct {
+	long long start;
+	long long timeused;
+	long long subtract;	// amount to remove taken by overlapping section(s)
+}_profile_section;
+
+static _profile_section profile_section[NUM_SECTIONS];
 static long long last_refresh;
 
 void start_section(int section_type)
 {
-   last_start[section_type] = gettime();
+   profile_section[section_type].start = gettime();
 }
 
 void end_section(int section_type)
 {
+   if(profile_section[section_type].start == 0) return;
    long long end = gettime();
-   time_in_section[section_type] += end - last_start[section_type];
+   long long timeused = end - profile_section[section_type].start;
+   profile_section[section_type].timeused += timeused;
+   profile_section[section_type].start = 0;
+   
+   // Go through any sections we may have overlapped and add negative ticks
+   int i;
+   for(i = 0; i < NUM_SECTIONS; i++) {
+		if(i != section_type && profile_section[i].start > 0 && (profile_section[i].start < profile_section[section_type].start)) {
+			profile_section[i].subtract += timeused;
+		}
+   }
 }
 
 void refresh_stat()
 {
-   long long this_tick = gettime();
-   if(diff_sec(last_refresh, this_tick) >= 1)
-     {
-	time_in_section[0] = this_tick - last_start[0];
-
-	sprintf(txtbuffer, "idle=%f%%", 100.0f * (float)time_in_section[IDLE_SECTION] / (float)time_in_section[0]);
-	DEBUG_print(txtbuffer, DBG_PROFILE_IDLE);
-	
-	sprintf(txtbuffer, "gfx=%f%%", 100.0f * (float)time_in_section[GFX_SECTION] / (float)time_in_section[0]);
-	DEBUG_print(txtbuffer, DBG_PROFILE_GFX);
-	
-	sprintf(txtbuffer, "audio=%f%%", 100.0f * (float)time_in_section[AUDIO_SECTION] / (float)time_in_section[0]);
-	DEBUG_print(txtbuffer, DBG_PROFILE_AUDIO);
-	
-	sprintf(txtbuffer, "cdr=%f%%", 100.0f * (float)time_in_section[CDR_SECTION] / (float)time_in_section[0]);
-	DEBUG_print(txtbuffer, DBG_PROFILE_CDR);
-	
-	sprintf(txtbuffer, "cdda=%f%%", 100.0f * (float)time_in_section[CDDA_SECTION] / (float)time_in_section[0]);
-	DEBUG_print(txtbuffer, DBG_PROFILE_CDDA);
-	
-	sprintf(txtbuffer, "comp=%f%%", 100.0f * (float)time_in_section[COMPILER_SECTION] / (float)time_in_section[0]);
-	DEBUG_print(txtbuffer, DBG_PROFILE_COMP);
-	
-	sprintf(txtbuffer, "xa=%f%%", 100.0f * (float)time_in_section[XA_SECTION] / (float)time_in_section[0]);
-	DEBUG_print(txtbuffer, DBG_PROFILE_XA);
-	
-	sprintf(txtbuffer, "tramp=%f%%", 100.0f * (float)time_in_section[TRAMP_SECTION] / (float)time_in_section[0]);
-	DEBUG_print(txtbuffer, DBG_PROFILE_TRAMP);
-	
 	int i;
-	for(i=1; i<=NUM_SECTIONS; ++i) time_in_section[i] = 0;
-	last_start[0] = this_tick;
-	last_refresh = this_tick;
-     }
+	for(i=0; i<NUM_SECTIONS; i++)
+		end_section(i);
+	long long this_tick = gettime();
+	long long time_in_refresh = this_tick - last_refresh;
+	if(diff_sec(last_refresh, this_tick) >= 1)
+	{
+		for(i=0; i<NUM_SECTIONS; i++) {
+			sprintf(txtbuffer, "%s=%f%%",profile_strings[i], 100.0f * (((float)profile_section[i].timeused-(float)profile_section[i].subtract) / (float)time_in_refresh));
+			DEBUG_print(txtbuffer, DBG_PROFILE_BASE+i);
+			profile_section[i].start = 0;
+			profile_section[i].timeused = 0;
+			profile_section[i].subtract = 0;
+		}
+		last_refresh = gettime();
+	}
 }
 
 #endif

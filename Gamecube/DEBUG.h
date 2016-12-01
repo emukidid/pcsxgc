@@ -22,14 +22,8 @@
 #define DBG_CDR2  11
 #define DBG_CDR3  12
 #define DBG_CDR4  13
-#define DBG_PROFILE_IDLE 14
-#define DBG_PROFILE_GFX 15
-#define DBG_PROFILE_AUDIO 16
-#define DBG_PROFILE_XA 17
-#define DBG_PROFILE_CDR 18
-#define DBG_PROFILE_CDDA 19
-#define DBG_PROFILE_COMP 20
-#define DBG_PROFILE_TRAMP 21
+#define DBG_PROFILE_BASE 14
+
 #define DBG_STATSBASE 12 // ALL stats print from this line onwards
 #define DBG_SDGECKOAPPEND 0xFB
 #define DBG_SDGECKOOPEN 0xFC
@@ -39,15 +33,24 @@
 
 // profiling
 
-#define GFX_SECTION 1
-#define AUDIO_SECTION 2
-#define XA_SECTION 3
-#define IDLE_SECTION 4
-#define CDR_SECTION 5
-#define CDDA_SECTION 6
-#define COMPILER_SECTION 7
-#define TRAMP_SECTION 8
-#define FUNCS_SECTION 9
+#define GFX_SECTION 0
+#define SECTION_NAME_0 "Graphics"
+#define AUDIO_SECTION 1
+#define SECTION_NAME_1 "Audio"
+#define XA_SECTION 2
+#define SECTION_NAME_2 "XA"
+#define IDLE_SECTION 3
+#define SECTION_NAME_3 "Idle"
+#define CDR_SECTION 4
+#define SECTION_NAME_4 "CDR"
+#define CDDA_SECTION 5
+#define SECTION_NAME_5 "CDDA"
+#define COMPILER_SECTION 6
+#define SECTION_NAME_6 "Compiler"
+#define CORE_SECTION 7
+#define SECTION_NAME_7 "Code Exec"
+#define FUNCS_SECTION 8
+#define SECTION_NAME_8 "Funcs"
 #define NUM_SECTIONS 9
 
 #ifdef PROFILE
