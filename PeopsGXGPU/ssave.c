@@ -31,7 +31,7 @@
 ////////////////////////////////////////////////////////////////////////
 // screensaver stuff: dynamically load kernel32.dll to avoid export dependeny
 ////////////////////////////////////////////////////////////////////////
-
+#if 0
 void EnableScreenSaver(BOOL bEnab)
 {
  HINSTANCE hKernel32 = NULL;
@@ -59,3 +59,4 @@ void EnableScreenSaver(BOOL bEnab)
   }
 }
 
+#endif

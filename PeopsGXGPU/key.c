@@ -200,6 +200,7 @@ void ExitKeyHandler(void)
 
 void ResetStuff(void)
 {
+#ifndef __GX__
  ResetTextureArea(TRUE);
  ulKeybits&=~KEY_RESETTEXSTORE;
 
@@ -274,6 +275,7 @@ void ResetStuff(void)
    iRenderFVR=0;
    ulKeybits&=~(KEY_TOGGLEFBREAD|KEY_STEPDOWN);
   }
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////

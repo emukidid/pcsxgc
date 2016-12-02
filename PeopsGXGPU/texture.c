@@ -453,6 +453,7 @@ void CheckTextureMemory(void)
  int i,iCnt,iRam=iVRamSize*1024*1024;
  int iTSize;char * p;
 
+#ifndef __GX__
  if(iBlurBuffer)
   {
    char * p;
@@ -465,7 +466,6 @@ void CheckTextureMemory(void)
    else
    if(iResY>512)  iFTexB=1024;
    else           iFTexB=512;
-
    glGenTextures(1, &gTexBlurName);
    gTexName=gTexBlurName;
    glBindTexture(GL_TEXTURE_2D, gTexName);
@@ -484,7 +484,7 @@ void CheckTextureMemory(void)
    iFTexA=(iResX*256)/iFTexA;
    iFTexB=(iResY*256)/iFTexB;
   }
- 
+
  if(iVRamSize)
   {
    int ts;
@@ -553,6 +553,7 @@ void CheckTextureMemory(void)
  else  iSortTexCnt=iCnt-3+min(1,iHiResTextures);       // place for menu&texwnd
 
  if(iSortTexCnt<8) iSortTexCnt=8;
+#endif 
 } 
 
 ////////////////////////////////////////////////////////////////////////
@@ -615,9 +616,11 @@ void InitializeTextureStore()
 void CleanupTextureStore() 
 {
  int i,j;textureWndCacheEntry * tsx;
+#ifndef __GX__
  //----------------------------------------------------//
  glBindTexture(GL_TEXTURE_2D,0);
  //----------------------------------------------------//
+#endif
  free(texturepart);                                    // free tex part
  texturepart=0;
  if(texturebuffer)
@@ -629,21 +632,29 @@ void CleanupTextureStore()
  tsx=wcWndtexStore;                                    // loop tex window cache
  for(i=0;i<MAXWNDTEXCACHE;i++,tsx++)
   {
+#ifndef __GX__
    if(tsx->texname)                                    // -> some tex?
     glDeleteTextures(1,&tsx->texname);                 // --> delete it
+#endif
   }
  iMaxTexWnds=0;                                        // no more tex wnds
  //----------------------------------------------------//
+#ifndef __GX__
  if(gTexMovieName!=0)                                  // some movie tex?
   glDeleteTextures(1, &gTexMovieName);                 // -> delete it
+#endif
  gTexMovieName=0;                                      // no more movie tex
  //----------------------------------------------------//
+#ifndef __GX__
  if(gTexFrameName!=0)                                  // some 15bit framebuffer tex?
   glDeleteTextures(1, &gTexFrameName);                 // -> delete it
+#endif
  gTexFrameName=0;                                      // no more movie tex
  //----------------------------------------------------//
+#ifndef __GX__
  if(gTexBlurName!=0)                                   // some 15bit framebuffer tex?
   glDeleteTextures(1, &gTexBlurName);                  // -> delete it
+#endif
  gTexBlurName=0;                                       // no more movie tex
  //----------------------------------------------------//
  for(i=0;i<3;i++)                                    // -> loop
@@ -655,7 +666,9 @@ void CleanupTextureStore()
   {
    if(uiStexturePage[i])                             // --> tex used ?
     {
+#ifndef __GX__
      glDeleteTextures(1,&uiStexturePage[i]);
+#endif
      uiStexturePage[i]=0;                            // --> delete it
     }
    free(pxSsubtexLeft[i]);                           // -> clean mem
@@ -674,17 +687,20 @@ void ResetTextureArea(BOOL bDelTex)
  //----------------------------------------------------//
 
  dwTexPageComp=0;
-
+#ifndef __GX__
  //----------------------------------------------------//
  if(bDelTex) {glBindTexture(GL_TEXTURE_2D,0);gTexName=0;}
  //----------------------------------------------------//
+#endif
  tsx=wcWndtexStore;
  for(i=0;i<MAXWNDTEXCACHE;i++,tsx++)
   {
    tsx->used=0;
    if(bDelTex && tsx->texname)
     {
+#ifndef __GX__
      glDeleteTextures(1,&tsx->texname);
+#endif
      tsx->texname=0;
     }
   }
@@ -705,8 +721,10 @@ void ResetTextureArea(BOOL bDelTex)
   {
    lu=pxSsubtexLeft[i];
    lu->l=0;
+#ifndef __GX__
    if(bDelTex && uiStexturePage[i])
     {glDeleteTextures(1,&uiStexturePage[i]);uiStexturePage[i]=0;}
+#endif
   }
 }
 
@@ -808,6 +826,7 @@ void MarkFree(textureSubCacheEntryS * tsx)
 
 void InvalidateSubSTextureArea(long X,long Y,long W, long H)
 {
+
  int i,j,k,iMax,px,py,px1,px2,py1,py2,iYM=1;
  EXLong npos;textureSubCacheEntryS * tsb;
  long x1,x2,y1,y2,xa,sw;
@@ -826,7 +845,7 @@ void InvalidateSubSTextureArea(long X,long Y,long W, long H)
  py2=min(iYM,H>>8);                                    // y: 0 or 1
  px1=max(0,(X>>6)-3);                                   
  px2=min(15,(W>>6)+3);                                 // x: 0-15
-
+ return;
  for(py=py1;py<=py2;py++)
   {
    j=(py<<4)+px1;                                      // get page
@@ -926,6 +945,7 @@ void InvalidateTextureArea(long X,long Y,long W, long H)
 
 void DefineTextureWnd(void)
 {
+#ifndef __GX__
  if(gTexName==0)
   glGenTextures(1, &gTexName);
 
@@ -949,6 +969,7 @@ void DefineTextureWnd(void)
               TWin.Position.x1, 
               TWin.Position.y1, 
               0, giWantedFMT, giWantedTYPE, texturepart);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1680,15 +1701,17 @@ void UploadTexWndPal(int mode,short cx,short cy)
    ta+=4;wSrcPtr+=4;i--;
   }
  while(i);
-
+#ifndef __GX__
  (*glColorTableEXTEx)(GL_TEXTURE_2D,GL_RGBA8,iSize,
                     GL_RGBA,GL_UNSIGNED_BYTE,texturepart);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
 
 void DefinePalTextureWnd(void)
 {
+#ifndef __GX__
  if(gTexName==0)
   glGenTextures(1, &gTexName);
 
@@ -1712,6 +1735,7 @@ void DefinePalTextureWnd(void)
               TWin.Position.x1, 
               TWin.Position.y1, 
               0, GL_COLOR_INDEX, GL_UNSIGNED_BYTE,texturepart);
+#endif
 }
 
 ///////////////////////////////////////////////////////
@@ -1903,6 +1927,7 @@ GLuint LoadTextureWnd(long pageid,long TextureMode,unsigned long GivenClutId)
          ubOpaqueDraw=ts->Opaque;
          return ts->texname;
         }
+#ifndef __GX__
        else if(glColorTableEXTEx && TextureMode!=2)
         {
          ts->ClutID=GivenClutId;
@@ -1915,6 +1940,7 @@ GLuint LoadTextureWnd(long pageid,long TextureMode,unsigned long GivenClutId)
          ts->Opaque=ubOpaqueDraw;
          return gTexName;
         }
+#endif
       }
     }
    else tsx=ts;
@@ -1940,9 +1966,11 @@ GLuint LoadTextureWnd(long pageid,long TextureMode,unsigned long GivenClutId)
  if(TWin.OPosition.y1==TWin.Position.y1 &&
     TWin.OPosition.x1==TWin.Position.x1)
   {
+#ifndef __GX__
    if(glColorTableEXTEx && TextureMode!=2)
     LoadPalWndTexturePage(pageid,TextureMode,cx,cy);
    else
+#endif
    if(bGLExt)
     LoadPackedWndTexturePage(pageid,TextureMode,cx,cy);
    else
@@ -1980,6 +2008,7 @@ GLuint LoadTextureWnd(long pageid,long TextureMode,unsigned long GivenClutId)
 
 void DefinePackedTextureMovie(void)
 {
+#ifndef __GX__
  if(gTexMovieName==0)
   {
    glGenTextures(1, &gTexMovieName);
@@ -2015,12 +2044,14 @@ void DefinePackedTextureMovie(void)
                  GL_RGBA,
                  GL_UNSIGNED_SHORT_5_5_5_1_EXT,
                  texturepart);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
 
 void DefineTextureMovie(void)
 {
+#ifndef __GX__
  if(gTexMovieName==0)
   {
    glGenTextures(1, &gTexMovieName);
@@ -2052,6 +2083,7 @@ void DefineTextureMovie(void)
                  (xrMovieArea.x1-xrMovieArea.x0), 
                  (xrMovieArea.y1-xrMovieArea.y0), 
                  GL_RGBA, GL_UNSIGNED_BYTE, texturepart);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2461,6 +2493,7 @@ GLuint BlackFake15BitTexture(void)
  if(   FastCheckAgainstFrontScreen(x1,y1,x2,y2)
     || FastCheckAgainstScreen(x1,y1,x2,y2))
   {
+#ifndef __GX__
    if(!gTexFrameName)
     {
      glGenTextures(1, &gTexFrameName);
@@ -2499,7 +2532,7 @@ GLuint BlackFake15BitTexture(void)
      gTexName=gTexFrameName;
      glBindTexture(GL_TEXTURE_2D, gTexName);
     }
-
+#endif
    ubOpaqueDraw=0;
 
    return (GLuint)gTexName;
@@ -2561,6 +2594,7 @@ GLuint Fake15BitTexture(void)
 
  bDrawMultiPass = FALSE;
 
+#ifndef __GX__
  if(!gTexFrameName)
   {
    char * p;
@@ -2569,7 +2603,6 @@ GLuint Fake15BitTexture(void)
    else
    if(iResX>640  || iResY>480)  iFTex=1024;
    else                         iFTex=512; 
-
    glGenTextures(1, &gTexFrameName);
    gTexName=gTexFrameName;
    glBindTexture(GL_TEXTURE_2D, gTexName);
@@ -2591,7 +2624,7 @@ GLuint Fake15BitTexture(void)
    gTexName=gTexFrameName;
    glBindTexture(GL_TEXTURE_2D, gTexName);
   }
-
+#endif
  x1+=PreviousPSXDisplay.Range.x0;
  y1+=PreviousPSXDisplay.Range.y0;
 
@@ -2656,7 +2689,7 @@ GLuint Fake15BitTexture(void)
  y1=rSrc.bottom-rSrc.top;
  if(y1<=0)             y1=1;
  if(y1+iYAdjust>iFTex) y1=iFTex-iYAdjust;
-
+#ifndef __GX__
  if(bFakeFrontBuffer) glReadBuffer(GL_FRONT);
 
  glCopyTexSubImage2D( GL_TEXTURE_2D, 0, 
@@ -2677,7 +2710,7 @@ GLuint Fake15BitTexture(void)
 
  if(bFakeFrontBuffer) 
   {glReadBuffer(GL_BACK);bIgnoreNextTile=TRUE;}
- 
+#endif
  ubOpaqueDraw=0;
 
  if(iSpriteTex)
@@ -4077,7 +4110,7 @@ void Super2xSaI_ex5(unsigned char *srcPtr, DWORD srcPitch,
 void DefineSubTextureSortHiRes(void)
 {
  int x,y,dx2;
-
+#ifndef __GX__
  if(!gTexName)             
   {
    glGenTextures(1, &gTexName);
@@ -4164,6 +4197,7 @@ void DefineSubTextureSortHiRes(void)
  glTexSubImage2D(GL_TEXTURE_2D, 0, XTexS<<1, YTexS<<1,
                  DXTexS<<1, DYTexS<<1,
                  giWantedFMT, giWantedTYPE, texturebuffer);
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -4175,7 +4209,7 @@ void DefineSubTextureSort(void)
    DefineSubTextureSortHiRes();
    return;
   }
-
+#ifndef __GX__
  if(!gTexName)
   {
    glGenTextures(1, &gTexName);
@@ -4201,6 +4235,7 @@ void DefineSubTextureSort(void)
  glTexSubImage2D(GL_TEXTURE_2D, 0, XTexS, YTexS,
                  DXTexS, DYTexS,
                  giWantedFMT, giWantedTYPE, texturepart);
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////

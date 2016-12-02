@@ -147,6 +147,7 @@ HFONT hGFont=NULL;
 
 void MakeDisplayLists(void)                            // MAKE FONT 
 {
+#ifndef __GX__
  GLubyte TexBytes[64][64][3];                          // we use a 64x64 texture
  int x,y,i,j,n=0; GLubyte col,IB;
 
@@ -188,6 +189,7 @@ void MakeDisplayLists(void)                            // MAKE FONT
                    DEFAULT_QUALITY,DEFAULT_PITCH,
                    "Arial");
 #endif
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -196,6 +198,7 @@ void MakeDisplayLists(void)                            // MAKE FONT
 
 void KillDisplayLists(void)
 {
+#ifndef __GX__
 #ifdef _WINDOWS
  if(hGFont) DeleteObject(hGFont);                      // windows: kill info font
  hGFont=NULL;
@@ -207,6 +210,7 @@ void KillDisplayLists(void)
   {glDeleteTextures(1,&gTexPicName);gTexPicName=0;}
  if(gTexCursorName) 
   {glDeleteTextures(1,&gTexCursorName);gTexCursorName=0;}
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -223,6 +227,7 @@ int iMPos=0;
 
 void DisplayText(void)
 {
+#ifndef __GX__
  int iX,iY,i;
  GLfloat fX1,fY1,fX2,fY2,fYS1,fYS2,fXS1,fXS2,fXS,fXSC,fYSC,fYD;
 
@@ -351,7 +356,7 @@ void DisplayText(void)
    fXS2=fXS1+fXSC;fX1=192.0f;fX2=224.0f;
    DRAWTEXCHAR;
   }
-
+#ifndef __GX__
  if(glColorTableEXTEx)                                 // tex wnd pal
   {                                                    
    fY1=144.0f;fY2=192.0f;
@@ -371,7 +376,7 @@ void DisplayText(void)
    fY1=48.0f;fY2=96.0f;
   }
  else fXS1+=fYSC;
-
+#endif
  if(bGLBlend)                                         // modulate2x
   {
    fXS2=fXS1+fXSC;fX1=224.0f;fX2=256.0f;
@@ -538,13 +543,15 @@ void DisplayText(void)
  glEnd();
 
  glEnable(GL_ALPHA_TEST);                              // repair needed states
- glEnable(GL_SCISSOR_TEST);                       
+ glEnable(GL_SCISSOR_TEST);  
+#endif 
 }
  
 ////////////////////////////////////////////////////////////////////////
 
 void HideText(void)
 {
+#ifndef __GX__
  GLfloat fYS1,fYS2,fXS1,fXS2,fXS,fXSC,fYSC;
 
  glDisable(GL_SCISSOR_TEST);                           // turn off unneeded ogl states
@@ -573,7 +580,8 @@ void HideText(void)
 
  glEnd();
  glEnable(GL_ALPHA_TEST);                              // enable needed ogl states
- glEnable(GL_SCISSOR_TEST);                       
+ glEnable(GL_SCISSOR_TEST);    
+#endif 
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1287,6 +1295,7 @@ void SwitchDispMenu(int iStep)
 
 void CreatePic(unsigned char * pMem)
 {
+#ifndef __GX__
  int x,y;
  GLubyte TexBytes[128][128][3];
  memset(TexBytes,0,128*128*3);
@@ -1310,6 +1319,7 @@ void CreatePic(unsigned char * pMem)
  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
  glTexImage2D(GL_TEXTURE_2D, 0, 3, 128, 128, 0, GL_RGB,
               GL_UNSIGNED_BYTE,TexBytes);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1318,6 +1328,7 @@ void CreatePic(unsigned char * pMem)
 
 void DestroyPic(void)
 {
+#ifndef __GX__
  if(gTexPicName) 
   {
    GLfloat fYS1,fYS2,fXS1,fXS2,fXS,fYS;
@@ -1352,6 +1363,7 @@ void DestroyPic(void)
    
    glDeleteTextures(1,&gTexPicName);gTexPicName=0;
   }
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1360,6 +1372,7 @@ void DestroyPic(void)
 
 void DisplayPic(void)
 {
+#ifndef __GX__
  GLfloat fYS1,fYS2,fXS1,fXS2,fXS,fYS;
 
  glDisable(GL_SCISSOR_TEST);                       
@@ -1405,7 +1418,8 @@ void DisplayPic(void)
 
  glEnd();
  glEnable(GL_ALPHA_TEST);
- glEnable(GL_SCISSOR_TEST);                       
+ glEnable(GL_SCISSOR_TEST);     
+#endif 
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1536,6 +1550,7 @@ GLubyte texcursor[8][32]=
 
 void ShowGunCursor(void)
 {
+#ifndef __GX__
  int iPlayer;
  GLfloat fX,fY,fDX,fDY,fYS,fXS;
  const unsigned long crCursorColor32[8]={0xff00ff00,0xffff0000,0xff0000ff,0xffff00ff,0xffffff00,0xff00ffff,0xffffffff,0xff7f7f7f};
@@ -1592,7 +1607,8 @@ void ShowGunCursor(void)
     }
   }
 
- glEnable(GL_SCISSOR_TEST);                       
+ glEnable(GL_SCISSOR_TEST);  
+#endif 
 }
 
 ////////////////////////////////////////////////////////////////////////

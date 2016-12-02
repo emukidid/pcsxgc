@@ -23,7 +23,7 @@
 // - generic cleanup for the Peops release
 //
 //*************************************************************************// 
-
+#include "gl.h"
 /////////////////////////////////////////////////////////////////////////////
 
 #define MIRROR_TEST 1
@@ -41,8 +41,13 @@
 
 #define CLUTUSED     0x80000000
 
+#ifndef __GX__
 #define SETCOL(x)  if(x.c.lcol!=ulOLDCOL) {ulOLDCOL=x.c.lcol;glColor4ubv(x.c.col);} 
 #define SETPCOL(x)  if(x->c.lcol!=ulOLDCOL) {ulOLDCOL=x->c.lcol;glColor4ubv(x->c.col);}
+#else
+#define SETCOL(x)  {}
+#define SETPCOL(x)  {}
+#endif
 
 #define GL_TO_EDGE_CLAMP              0x812F
 
@@ -113,6 +118,7 @@
 #define max(a,b)            (((a) > (b)) ? (a) : (b))
 #define min(a,b)            (((a) < (b)) ? (a) : (b))
 #define DWORD unsigned long
+#define __int64 long long int 
 
 typedef struct RECTTAG
 {
@@ -197,12 +203,12 @@ typedef struct PSXDISPLAYTAG
 
 typedef struct OGLVertexTag 
 {
- GLfloat x;
- GLfloat y;
- GLfloat z;
+ float x;
+ float y;
+ float z;
 
- GLfloat sow;
- GLfloat tow;
+ float sow;
+ float tow;
 
  union
 COLTAG
@@ -255,8 +261,13 @@ extern BOOL           bGLFastMovie;
 extern BOOL           bGLSoft;
 extern BOOL           bGLBlend;
 
+#ifndef __GX__
 extern PFNGLBLENDEQU      glBlendEquationEXTEx;
 extern PFNGLCOLORTABLEEXT glColorTableEXTEx;
+#else
+extern bool     glBlendEquationEXTEx;
+extern bool 	glColorTableEXTEx;
+#endif
 
 extern unsigned char  gl_ux[8];
 extern unsigned char  gl_vy[8];
@@ -280,7 +291,7 @@ extern BOOL           bSetClip;
 extern int            iForceVSync;
 extern int            iUseExts;
 extern int            iUsePalTextures;
-extern GLuint         gTexScanName;
+extern unsigned long  gTexScanName;
 
 #endif
 
@@ -306,7 +317,12 @@ extern BOOL          bNeedUploadTest;
 extern BOOL          bNeedUploadAfter;
 extern BOOL          bTexEnabled;
 extern BOOL          bBlendEnable;
+#ifdef __GX__
+extern int           iDither;
+#define bDrawDither  iDither
+#else
 extern BOOL          bDrawDither;
+#endif
 extern int           iFilterType; 
 extern BOOL          bFullVRam;
 extern BOOL          bUseMultiPass;
@@ -321,8 +337,8 @@ extern PSXRect_t     xrUploadAreaRGB24;
 extern GLuint        gTexName;
 extern BOOL          bDrawNonShaded;
 extern BOOL          bDrawMultiPass;
-extern GLubyte       ubGloColAlpha;
-extern GLubyte       ubGloAlpha;
+extern unsigned char ubGloColAlpha;
+extern unsigned char ubGloAlpha;
 extern short         sSprite_ux2;
 extern short         sSprite_vy2;
 extern BOOL          bRenderFrontBuffer;

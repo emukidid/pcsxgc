@@ -145,9 +145,13 @@ BOOL               bGLExt;
 BOOL               bGLFastMovie=FALSE;
 BOOL               bGLSoft;
 BOOL               bGLBlend;
+#ifndef __GX__
 PFNGLBLENDEQU      glBlendEquationEXTEx=NULL;
 PFNGLCOLORTABLEEXT glColorTableEXTEx=NULL;
-
+#else
+bool    glBlendEquationEXTEx=FALSE;
+bool 	glColorTableEXTEx=FALSE;
+#endif
 
 
 // gfx card buffer infos
@@ -215,6 +219,7 @@ BOOL bSetupPixelFormat(HDC hDC)
 
 void GetExtInfos(void)                              
 {
+#ifndef __GX__
  BOOL bPacked=FALSE;                                   // default: no packed pixel support
 
  bGLExt=FALSE;                                         // default: no extensions
@@ -258,6 +263,7 @@ void GetExtInfos(void)
    if(glColorTableEXTEx==NULL) iUsePalTextures=0;      // -> ha, cheater... no func, no support
   }
  else iUsePalTextures=0;
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -266,6 +272,7 @@ void GetExtInfos(void)
 
 void SetExtGLFuncs(void)
 {
+#ifndef __GX__
  //----------------------------------------------------//
 
  SetFixes();                                           // update fix infos
@@ -483,12 +490,13 @@ void SetExtGLFuncs(void)
  glDisable(GL_BLEND);
 
  SetScanTrans();                                       // init scan lines (if wanted)
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
 // setup scan lines
 ////////////////////////////////////////////////////////////////////////
-
+#ifndef __GX__
 #define R_TSP 0x00,0x45,0x00,0xff
 #define G_TSP 0x00,0x00,0x45,0xff
 #define B_TSP 0x45,0x00,0x00,0xff
@@ -504,9 +512,11 @@ GLubyte texscan[4][16]=
 {B_TSP, N_TSP, R_TSP, G_TSP},
 {O_TSP, N_TSP, O_TSP, N_TSP}
 };
+#endif
 
 void CreateScanLines(void)
 {
+#ifndef __GX__
  if(iUseScanLines)
   {
    int y;
@@ -538,6 +548,8 @@ void CreateScanLines(void)
      glEndList();
     }
   }
+#else
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -563,6 +575,7 @@ int GLinitialize()
 #endif
  //----------------------------------------------------// 
 
+#ifndef __GX__
  glViewport(rRatioRect.left,                           // init viewport by ratio rect
             iResY-(rRatioRect.top+rRatioRect.bottom),
             rRatioRect.right, 
@@ -631,7 +644,7 @@ int GLinitialize()
    glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
    glHint(GL_POLYGON_SMOOTH_HINT,GL_NICEST);
   }
-
+#endif
  ubGloAlpha=127;                                       // init some drawing vars
  ubGloColAlpha=127;
  TWin.UScaleFactor = 1;
@@ -640,6 +653,7 @@ int GLinitialize()
  bTexEnabled=FALSE;
  bUsingTWin=FALSE;
       
+#ifndef __GX__
  if(bDrawDither)  glEnable(GL_DITHER);                 // dither mode
  else             glDisable(GL_DITHER); 
 
@@ -678,6 +692,7 @@ int GLinitialize()
 
  glFlush();                                            // we are done...
  glFinish();                           
+#endif
 
  CreateScanLines();                                    // setup scanline stuff (if wanted)
 
@@ -702,7 +717,8 @@ int GLinitialize()
 ////////////////////////////////////////////////////////////////////////
 
 void GLcleanup() 
-{                                                     
+{
+#ifndef __GX__
  KillDisplayLists();                                   // bye display lists
 
  if(iUseScanLines)                                     // scanlines used?
@@ -715,7 +731,7 @@ void GLcleanup()
     }
    else glDeleteLists(uiScanLine,1);                   // otherwise del scanline display list
   }
-
+#endif
  CleanupTextureStore();                                // bye textures
 
 #ifdef _WINDOWS 
@@ -867,64 +883,6 @@ __inline BOOL CheckCoord2()
  return FALSE;
 }
 
-/*
-//Lewpys "offsetline" func:
-
-void offsetline(void)
-{
-	float x0, x1, y0, y1, oolength, xl, yl;
-
- if(bDisplayNotSet)
-  SetOGLDisplaySettings(1);
-
- if(!(dwActFixes&16))
-  {
-   if((lx0 & SIGNBIT)) lx0|=S_MASK;
-   else                lx0&=~S_MASK;
-   if((lx1 & SIGNBIT)) lx1|=S_MASK;
-   else                lx1&=~S_MASK;
-   if((ly0 & SIGNBIT)) ly0|=S_MASK;
-   else                ly0&=~S_MASK;
-   if((ly1 & SIGNBIT)) ly1|=S_MASK;
-   else                ly1&=~S_MASK;
-  }
-
- x0 = (float)(lx0 + PSXDisplay.CumulOffset.x);
- x1 = (float)(lx1 + PSXDisplay.CumulOffset.x);
- y0 = (float)(ly0 + PSXDisplay.CumulOffset.y);
- y1 = (float)(ly1 + PSXDisplay.CumulOffset.y);
-
- oolength = (float)1/((float)sqrt((y1 - y0)*(y1 - y0) + (x1 - x0)*(x1 - x0)) * (float)2);
-//	oolength = (float)1/((float)sqrt(((y1 - y0)*(y1 - y0) + (x1 - x0)*(x1 - x0)) * (float)2));
-
-	xl = (x1 - x0) * oolength;
-	yl = (y1 - y0) * oolength;
-
-	x0 += 0.5f;
-	x1 += 0.5f;
-
-	x0 -= xl - yl;
-	x1 += xl + yl;
-	y0 -= yl + xl;
-	y1 += yl - xl;
-
-	vertex[0].x=x0;
-	vertex[1].x=x1;
-	vertex[0].y=y0;
-	vertex[1].y=y1;
-
-	x0 -= yl * 2;
-	x1 -= yl * 2;
-	y0 += xl * 2;
-	y1 += xl * 2;
-
-	vertex[2].x=x1;
-	vertex[3].x=x0;
-	vertex[2].y=y1;
-	vertex[3].y=y0;
-}
-*/
-
 
 // Pete's way: a very easy (and hopefully fast) approach for lines
 // without sqrt... using a small float -> short cast trick :)
@@ -936,8 +894,10 @@ BOOL offsetline(void)
 {
  short x0,x1,y0,y1,dx,dy;float px,py;
 
+#ifndef __GX__
  if(bDisplayNotSet)
   SetOGLDisplaySettings(1);
+#endif
 
  if(!(dwActFixes&16))
   {
@@ -1031,8 +991,10 @@ BOOL offsetline(void)
 
 BOOL offset2(void)
 {
+#ifndef __GX__
  if(bDisplayNotSet)
   SetOGLDisplaySettings(1);
+#endif
 
  if(!(dwActFixes&16))
   {
@@ -1056,8 +1018,10 @@ BOOL offset2(void)
 
 BOOL offset3(void)
 {
+#ifndef __GX__
  if(bDisplayNotSet)
   SetOGLDisplaySettings(1);
+#endif
 
  if(!(dwActFixes&16))
   {
@@ -1085,8 +1049,10 @@ BOOL offset3(void)
 
 BOOL offset4(void)
 {
+#ifndef __GX__
  if(bDisplayNotSet)
   SetOGLDisplaySettings(1);
+#endif
 
  if(!(dwActFixes&16))
   {
@@ -1118,8 +1084,10 @@ BOOL offset4(void)
 
 void offsetST(void)
 {
+#ifndef __GX__
  if(bDisplayNotSet)
   SetOGLDisplaySettings(1);
+#endif
 
  if(!(dwActFixes&16))
   {
@@ -1152,8 +1120,10 @@ void offsetST(void)
 
 void offsetScreenUpload(long Position)
 {
+#ifndef __GX__
  if(bDisplayNotSet)
   SetOGLDisplaySettings(1);
+#endif
 
  if(Position==-1)
   {
@@ -1215,9 +1185,11 @@ void offsetScreenUpload(long Position)
 
 void offsetBlk(void)
 {
+#ifndef __GX__
  if(bDisplayNotSet)
   SetOGLDisplaySettings(1);
-                                            
+#endif
+
  vertex[0].x=lx0-PSXDisplay.GDrawOffset.x + PreviousPSXDisplay.Range.x0;
  vertex[1].x=lx1-PSXDisplay.GDrawOffset.x + PreviousPSXDisplay.Range.x0;
  vertex[2].x=lx2-PSXDisplay.GDrawOffset.x + PreviousPSXDisplay.Range.x0;
@@ -1343,12 +1315,14 @@ void assignTextureSprite(void)
 
    if(iFilterType>2) 
     {
+#ifndef __GX__
      if(gLastTex!=gTexName || gLastFMode!=0)
       {
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
        gLastTex=gTexName;gLastFMode=0;
       }
+#endif
     }
   }
 
@@ -1403,12 +1377,14 @@ void assignTexture3(void)
 
    if(iFilterType>2) 
     {
+#ifndef __GX__
      if(gLastTex!=gTexName || gLastFMode!=1)
       {
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
        gLastTex=gTexName;gLastFMode=1;
       }
+#endif
     }
 
    if(iFilterType) 
@@ -1473,12 +1449,14 @@ void assignTexture4(void)
 
    if(iFilterType>2) 
     {
+#ifndef __GX__
      if(gLastTex!=gTexName || gLastFMode!=1)
       {
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
        gLastTex=gTexName;gLastFMode=1;
       }
+#endif
     }
 
    if(iFilterType) 
@@ -1549,7 +1527,9 @@ void SetOGLDisplaySettings(BOOL DisplaySet)
    if(bSetClip || !EqualRect(&rC,&rX))
     {
      rC=rX;
+#ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
+#endif
      bSetClip=FALSE; 
     }
    return;
@@ -1640,7 +1620,9 @@ void SetOGLDisplaySettings(BOOL DisplaySet)
 
  if(bSetClip || !EqualRect(&r,&rC))
   {
+#ifndef __GX__
    glScissor(r.left,r.top,r.right,r.bottom);
+#endif
    rC=r;
    bSetClip=FALSE;
   }

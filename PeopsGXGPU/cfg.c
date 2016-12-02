@@ -24,6 +24,12 @@
 //
 //*************************************************************************// 
 
+#include "stdafx.h"
+
+#ifdef __GX__
+#include "../Gamecube/wiiSXconfig.h"
+#endif
+
 #define _IN_CFG
 
 #ifdef _WINDOWS
@@ -1233,9 +1239,23 @@ void ReadConfig(void)                                  // read config (linux fil
  bAdvancedBlend=FALSE;
  bDrawDither=FALSE;
  bUseLines=FALSE;
- bUseFrameLimit=TRUE;
- bUseFrameSkip=FALSE;
+#ifndef __GX__
+ bUseFrameLimit=1;
+ bUseFrameSkip=0;
  iFrameLimit=2;
+#else //!__GX__
+ if (frameLimit == FRAMELIMIT_AUTO)
+ {
+	 bUseFrameLimit=1;
+	 iFrameLimit=2;
+ }
+ else
+ {
+	 bUseFrameLimit=0;
+	 iFrameLimit=0;
+ }
+ bUseFrameSkip = frameSkip;
+#endif //__GX__
  fFrameRate=200.0f;
  iOffscreenDrawing=2;
  bOpaquePass=TRUE;
@@ -1252,7 +1272,7 @@ void ReadConfig(void)                                  // read config (linux fil
  iShowFPS=0;
  bKeepRatio=FALSE;
  iScanBlend=0;
- iVRamSize=0;
+ iVRamSize=2;	//TODO
  iTexGarbageCollection=1;
  iBlurBuffer=0;
  iHiResTextures=0;

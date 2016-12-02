@@ -39,23 +39,28 @@
 
 #else
 
+#ifndef __GX__
 #define __X11_C_
+#endif
 #define __inline inline
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#ifndef __GX__
 #include <GL/gl.h>
 #include <GL/glx.h>
-#include <math.h> 
 #include <X11/cursorfont.h> 
+#endif
+#include <math.h> 
 
 #define CALLBACK
 #define __inline inline
 
 #endif
 
+#ifndef __GX__
 #include "gl_ext.h"
 
 #define SHADETEXBIT(x) ((x>>24) & 0x1)
@@ -67,4 +72,4 @@
 #endif
 #define GL_COLOR_INDEX8_EXT 0x80E5
 #endif
-
+#endif
