@@ -29,6 +29,7 @@
 #ifdef __GX__
 #include "../Gamecube/DEBUG.h"
 #include "../Gamecube/wiiSXconfig.h"
+#include "gxsupp.h"
 #endif //__GX__
 
 #ifdef _WINDOWS
@@ -1026,6 +1027,7 @@ long PEOPS_GPUopen(unsigned long * disp,char * CapText,char * CfgFile)
  if(display) return 0;
  return -1;
 #else
+	VIDEO_SetPreRetraceCallback(PEOPS_GX_PreRetraceCallback);
  return 0;
 #endif
 }

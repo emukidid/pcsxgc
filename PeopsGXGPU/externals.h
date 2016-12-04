@@ -108,11 +108,9 @@
 // Linux is missing some stuff, eh? ;)
 
 #ifndef _WINDOWS
-
+#include <gccore.h>
 #define FALSE 0
 #define TRUE  1
-#define BOOL unsigned short
-#define bool unsigned short
 #define LOWORD(l)           ((unsigned short)(l))
 #define HIWORD(l)           ((unsigned short)(((unsigned long)(l) >> 16) & 0xFFFF))
 #define max(a,b)            (((a) > (b)) ? (a) : (b))

@@ -44,6 +44,8 @@
 #else
 #define DEFOPAQUEON  primNI();
 #define DEFOPAQUEOFF primNI();
+#include <gccore.h>
+#include "gxsupp.h"
 #endif
 
 ////////////////////////////////////////////////////////////////////////                                          
@@ -2040,12 +2042,12 @@ void primBlkFill(unsigned char * baseAddr)
    if(PSXDisplay.InterlacedTest) pd=&PSXDisplay;
    else                          pd=&PreviousPSXDisplay;
 
-#ifndef __GX__
    if ((lx0 <= pd->DisplayPosition.x+16) &&
        (ly0 <= pd->DisplayPosition.y+16) &&
        (lx2 >= pd->DisplayEnd.x-16) &&
        (ly2 >= pd->DisplayEnd.y-16))
     {
+#ifndef __GX__
      GLclampf g,b,r;
      g=((GLclampf)GREEN(GETLE32(&gpuData[0])))/255.0f;
      b=((GLclampf)BLUE(GETLE32(&gpuData[0])))/255.0f;
@@ -2054,6 +2056,15 @@ void primBlkFill(unsigned char * baseAddr)
      glDisable(GL_SCISSOR_TEST);                       
      glClearColor(r,g,b,1.0f);
      glClear(uiBufferBits); 
+#else
+	// TODO deal with uiBufferBits / Z-Buffer ?
+	GXColor color = {RED(GETLE32(&gpuData[0]))
+						  , GREEN(GETLE32(&gpuData[0]))
+						  , BLUE(GETLE32(&gpuData[0])), 0xff};
+	GX_SetCopyClear(color, 0xFFFFFF);
+	GX_CopyDisp (xfb[whichfb], GX_TRUE);
+	GX_DrawDone(); //Wait until EFB->XFB copy is complete
+#endif
      gl_z=0.0f;
 
      if(GETLE32(&gpuData[0])!=0x02000000 &&
@@ -2083,8 +2094,9 @@ void primBlkFill(unsigned char * baseAddr)
          PRIMdrawQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
         }
       }
-
-     glEnable(GL_SCISSOR_TEST);                       
+#ifndef __GX__
+     glEnable(GL_SCISSOR_TEST);  
+#endif
     }
    else
     {
@@ -2093,12 +2105,15 @@ void primBlkFill(unsigned char * baseAddr)
      SetRenderState((unsigned long)0x01000000);
      SetRenderMode((unsigned long)0x01000000, FALSE);
      vertex[0].c.lcol=GETLE32(&gpuData[0])|0xff000000;
+#ifndef __GX__
      SETCOL(vertex[0]); 
      glDisable(GL_SCISSOR_TEST);                       
-     PRIMdrawQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
-     glEnable(GL_SCISSOR_TEST);                       
-    }
 #endif
+     PRIMdrawQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
+#ifndef __GX__
+     glEnable(GL_SCISSOR_TEST);                       
+#endif
+    }
   }
  //mmm... will clean all stuff, also if not all _should_ be cleaned...
  //if (IsInsideNextScreen(sprtX, sprtY, sprtW, sprtH))
