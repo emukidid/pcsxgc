@@ -302,7 +302,7 @@ char * GetConfigInfos(int hW)
  sprintf(szTxt,"- Framebuffer texture: %d",iFrameTexType);
  if(!hW && iFrameTexType==2)
   {
-   if(gTexFrameName) strcat(szTxt," - texture created\r\n");
+   if(gTexFrameName!=NULL) strcat(szTxt," - texture created\r\n");
    else              strcat(szTxt," - not used yet\r\n");
   }
  else strcat(szTxt,"\r\n");
@@ -360,7 +360,7 @@ char * GetConfigInfos(int hW)
  strcat(pB,szTxt);
  if(!hW && iBlurBuffer) 
   {
-   if(gTexBlurName) strcat(pB," - supported\r\n");
+   if(gTexBlurName!=NULL) strcat(pB," - supported\r\n");
    else             strcat(pB," - not supported\r\n");
   }
  else strcat(pB,"\r\n");
@@ -1145,6 +1145,7 @@ void PaintBlackBorders(void)
  glEnable(GL_ALPHA_TEST);
  glEnable(GL_SCISSOR_TEST);
 #else
+	// TODO
 #endif
 }
 
@@ -1170,6 +1171,7 @@ __inline void XPRIMdrawTexturedQuad(OGLVertex* vertex1, OGLVertex* vertex2,
   glVertex3fv(&vertex3->x);
  glEnd();
 #else
+//TODO
 #endif
 }
 
@@ -1265,6 +1267,7 @@ void SetScanLines(void)
  glEnable(GL_ALPHA_TEST);
  glEnable(GL_SCISSOR_TEST);   
 #else
+ //TODO
 #endif 
 }
 
@@ -1274,7 +1277,7 @@ void SetScanLines(void)
 
 void BlurBackBuffer(void)
 {
- if(!gTexBlurName) return;
+ if(gTexBlurName == NULL) return;
 #ifndef __GX__
  if(bKeepRatio) glViewport(0,0,iResX,iResY);
 
@@ -1336,6 +1339,8 @@ void BlurBackBuffer(void)
              iResY-(rRatioRect.top+rRatioRect.bottom),
              rRatioRect.right, 
              rRatioRect.bottom);  
+#else
+//TODO
 #endif
 }
 
@@ -1344,7 +1349,7 @@ void BlurBackBuffer(void)
 
 void UnBlurBackBuffer(void)
 {
- if(!gTexBlurName) return;
+ if(gTexBlurName==NULL) return;
 #ifndef __GX__
  if(bKeepRatio) glViewport(0,0,iResX,iResY);
 
@@ -1398,6 +1403,7 @@ void UnBlurBackBuffer(void)
              rRatioRect.right, 
              rRatioRect.bottom);                         // init viewport
 #else
+//TODO
 #endif
 }
 
@@ -1479,8 +1485,8 @@ void updateDisplay(void)                               // UPDATE DISPLAY
    iDrawnSomething=0;                                  // -> simply lie about something drawn
   }
 
-#ifdef __GX__/*
- //Write menu/debug text on screen
+#ifdef __GX__
+ /*//Write menu/debug text on screen
  GXColor fontColor = {150,255,150,255};
  IplFont_drawInit(fontColor);
  if((ulKeybits&KEY_SHOWFPS)&&showFPSonScreen)
@@ -1531,11 +1537,10 @@ void updateDisplay(void)                               // UPDATE DISPLAY
      if(iDrawnSomething)
       SwapBuffers(wglGetCurrentDC());                  // -> to skip or not to skip
 #else
-#ifndef __GX__
 	 if(iDrawnSomething)
+#ifndef __GX__
       glXSwapBuffers(display,window);
 #else
-	 if(iDrawnSomething)
 	  PEOPS_GX_Flush();
 #endif
 #endif
@@ -1558,7 +1563,6 @@ void updateDisplay(void)                               // UPDATE DISPLAY
    if(iDrawnSomething)
     glXSwapBuffers(display,window);
 #else
-   if(iDrawnSomething)
 	PEOPS_GX_Flush();
 #endif
 #endif
@@ -1601,6 +1605,7 @@ void updateDisplay(void)                               // UPDATE DISPLAY
      glClear(GL_DEPTH_BUFFER_BIT);
      glEnable(GL_SCISSOR_TEST);                       
 #else
+	//TODO
 #endif
     }
   }
@@ -1705,6 +1710,7 @@ void updateFrontDisplay(void)
  if(iDrawnSomething)                                   // linux:
   glXSwapBuffers(display,window);
 #else
+  PEOPS_GX_Flush();
 #endif
 #endif
 
@@ -1818,6 +1824,7 @@ void SetAspectRatio(void)
    RECT rC;
 #ifndef __GX__
    glClearColor(0,0,0,128);                         
+#else
 #endif
    if(r.right <rRatioRect.right)
     {
@@ -1828,11 +1835,13 @@ void SetAspectRatio(void)
 #ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
      glClear(uiBufferBits);
+#else
 #endif
      rC.left=iResX-rC.right;
 #ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
      glClear(uiBufferBits);
+#else
 #endif
     }
 
@@ -1845,11 +1854,13 @@ void SetAspectRatio(void)
 #ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
      glClear(uiBufferBits);
+#else
 #endif
      rC.top=iResY-rC.bottom;
 #ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
      glClear(uiBufferBits);
+#else
 #endif
     }
    
@@ -2438,7 +2449,7 @@ __inline void FinishedVRAMRead(void)
 
 void CheckVRamReadEx(int x, int y, int dx, int dy)
 {
-#ifndef __GX__
+
  unsigned short sArea;
  int ux,uy,udx,udy,wx,wy;
  unsigned short * p1, *p2;
@@ -2537,7 +2548,7 @@ void CheckVRamReadEx(int x, int y, int dx, int dy)
  y-=rRatioRect.top;
 
  if(y<0) y=0; if((y+dy)>iResY) dy=iResY-y;
-
+#ifndef __GX__
  if(!pGfxCardScreen)
   {
    glPixelStorei(GL_PACK_ALIGNMENT,1);
@@ -2593,7 +2604,7 @@ void CheckVRamReadEx(int x, int y, int dx, int dy)
 
 void CheckVRamRead(int x, int y, int dx, int dy,BOOL bFront)
 {
-#ifndef __GX__
+
  unsigned short sArea;unsigned short * p;
  int ux,uy,udx,udy,wx,wy;float XS,YS;
  unsigned char * ps, * px;
@@ -2687,7 +2698,7 @@ void CheckVRamRead(int x, int y, int dx, int dy,BOOL bFront)
  y-=rRatioRect.top;
 
  if(y<0) y=0; if((y+dy)>iResY) dy=iResY-y;
-
+#ifndef __GX__
  if(!pGfxCardScreen)
   {
    glPixelStorei(GL_PACK_ALIGNMENT,1);

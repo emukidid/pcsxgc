@@ -232,11 +232,26 @@ unsigned short BGR24to16 (unsigned long BGR)
 
 #endif
 
+// GX setup texture
+void GXSetupCurrentTex() {
+ if(gTexName != NULL && gTexName->GXtexture != NULL) {	// TODO not necessary once everything is done
+  DCFlushRange(&gTexName->GXtexture, gTexName->GXrealWidth*  gTexName->GXrealHeight * 4);
+  GX_InitTexObj(&gTexName->GXtex, gTexName->GXtexture, (u16) gTexName->GXrealWidth, (u16) gTexName->GXrealHeight, gTexName->GXtexfmt, 
+			gTexName->clampS ? GX_CLAMP : GX_REPEAT, 
+			gTexName->clampT ? GX_CLAMP : GX_REPEAT, GX_FALSE); 
+  if(gTexName->LODtype == 0)
+   GX_InitTexObjLOD(&gTexName->GXtex, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+  if(gTexName->LODtype == 1)
+   GX_InitTexObjLOD(&gTexName->GXtex, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_TRUE, GX_TRUE, GX_ANISO_4);
+  GX_LoadTexObj(&gTexName->GXtex, GX_TEXMAP0);
+ }
+}
+
 ////////////////////////////////////////////////////////////////////////
 // OpenGL primitive drawing commands
 ////////////////////////////////////////////////////////////////////////
 
-__inline void PRIMdrawTexturedQuad(OGLVertex* vertex1, OGLVertex* vertex2, 
+void PRIMdrawTexturedQuad(OGLVertex* vertex1, OGLVertex* vertex2, 
                                    OGLVertex* vertex3, OGLVertex* vertex4) 
 {
 #ifndef __GX__
@@ -254,6 +269,7 @@ __inline void PRIMdrawTexturedQuad(OGLVertex* vertex1, OGLVertex* vertex2,
   glVertex3fv(&vertex3->x);
  glEnd();
 #else
+ GXSetupCurrentTex();
  GX_LoadPosMtxImm(GXmodelViewIdent,GX_PNMTX0);
  
  //set vertex description here
@@ -269,17 +285,17 @@ __inline void PRIMdrawTexturedQuad(OGLVertex* vertex1, OGLVertex* vertex2,
   GX_TexCoord2f32( (f32) vertex1->sow, (f32) vertex1->tow );
   GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );
   GX_TexCoord2f32( (f32) vertex2->sow, (f32) vertex2->tow );
-  GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );
-  GX_TexCoord2f32( (f32) vertex3->sow, (f32) vertex3->tow );
   GX_Position3f32( (f32) vertex4->x, (f32) vertex4->y, (f32) vertex4->z );
   GX_TexCoord2f32( (f32) vertex4->sow, (f32) vertex4->tow );
+  GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );
+  GX_TexCoord2f32( (f32) vertex3->sow, (f32) vertex3->tow );
  GX_End();
 #endif
 }
 
 ///////////////////////////////////////////////////////// 
 
-__inline void PRIMdrawTexturedTri(OGLVertex* vertex1, OGLVertex* vertex2, 
+void PRIMdrawTexturedTri(OGLVertex* vertex1, OGLVertex* vertex2, 
                                   OGLVertex* vertex3) 
 {
 #ifndef __GX__
@@ -294,6 +310,7 @@ __inline void PRIMdrawTexturedTri(OGLVertex* vertex1, OGLVertex* vertex2,
   glVertex3fv(&vertex3->x);
  glEnd();
 #else
+ GXSetupCurrentTex();
  GX_LoadPosMtxImm(GXmodelViewIdent,GX_PNMTX0);
  
  //set vertex description here
@@ -317,7 +334,7 @@ __inline void PRIMdrawTexturedTri(OGLVertex* vertex1, OGLVertex* vertex2,
 
 ///////////////////////////////////////////////////////// 
 
-__inline void PRIMdrawTexGouraudTriColor(OGLVertex* vertex1, OGLVertex* vertex2, 
+void PRIMdrawTexGouraudTriColor(OGLVertex* vertex1, OGLVertex* vertex2, 
                                          OGLVertex* vertex3) 
 {
 #ifndef __GX__
@@ -336,6 +353,7 @@ __inline void PRIMdrawTexGouraudTriColor(OGLVertex* vertex1, OGLVertex* vertex2,
   glVertex3fv(&vertex3->x);
  glEnd();
 #else
+ GXSetupCurrentTex();
  vertex1->c.lcol = SWAP32(vertex1->c.lcol);
  vertex2->c.lcol = SWAP32(vertex2->c.lcol);
  vertex3->c.lcol = SWAP32(vertex3->c.lcol);
@@ -344,29 +362,29 @@ __inline void PRIMdrawTexGouraudTriColor(OGLVertex* vertex1, OGLVertex* vertex2,
  GX_ClearVtxDesc();
  GX_SetVtxDesc(GX_VA_PTNMTXIDX, GX_PNMTX0);
  GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
- GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
  GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+ GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
  //set vertex attribute formats here
  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
- GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+ GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
  GX_Begin(GX_TRIANGLES, GX_VTXFMT0, 3);
   GX_Position3f32( (f32) vertex1->x, (f32) vertex1->y, (f32) vertex1->z );
-  GX_Color4u8(vertex1->c.col[0], vertex1->c.col[1], vertex1->c.col[2], vertex1->c.col[3]);
   GX_TexCoord2f32( (f32) vertex1->sow, (f32) vertex1->tow );
+  GX_Color4u8(vertex1->c.col[0], vertex1->c.col[1], vertex1->c.col[2], vertex1->c.col[3]);
   GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );
-  GX_Color4u8(vertex2->c.col[0], vertex2->c.col[1], vertex2->c.col[2], vertex2->c.col[3]);
   GX_TexCoord2f32( (f32) vertex2->sow, (f32) vertex2->tow );
+  GX_Color4u8(vertex2->c.col[0], vertex2->c.col[1], vertex2->c.col[2], vertex2->c.col[3]);
   GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );
-  GX_Color4u8(vertex3->c.col[0], vertex3->c.col[1], vertex3->c.col[2], vertex3->c.col[3]);
   GX_TexCoord2f32( (f32) vertex3->sow, (f32) vertex3->tow );
+  GX_Color4u8(vertex3->c.col[0], vertex3->c.col[1], vertex3->c.col[2], vertex3->c.col[3]);
  GX_End();
 #endif
 }
 
 ///////////////////////////////////////////////////////// 
 
-__inline void PRIMdrawTexGouraudTriColorQuad(OGLVertex* vertex1, OGLVertex* vertex2, 
+void PRIMdrawTexGouraudTriColorQuad(OGLVertex* vertex1, OGLVertex* vertex2, 
                                              OGLVertex* vertex3, OGLVertex* vertex4) 
 {
 #ifndef __GX__
@@ -388,6 +406,7 @@ __inline void PRIMdrawTexGouraudTriColorQuad(OGLVertex* vertex1, OGLVertex* vert
   glVertex3fv(&vertex3->x);
  glEnd();
 #else
+ GXSetupCurrentTex();
  vertex1->c.lcol = SWAP32(vertex1->c.lcol);
  vertex2->c.lcol = SWAP32(vertex2->c.lcol);
  vertex3->c.lcol = SWAP32(vertex3->c.lcol);
@@ -397,32 +416,32 @@ __inline void PRIMdrawTexGouraudTriColorQuad(OGLVertex* vertex1, OGLVertex* vert
  GX_ClearVtxDesc();
  GX_SetVtxDesc(GX_VA_PTNMTXIDX, GX_PNMTX0);
  GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
- GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
  GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+ GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
  //set vertex attribute formats here
  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
- GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+ GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
  GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
   GX_Position3f32( (f32) vertex1->x, (f32) vertex1->y, (f32) vertex1->z );
-  GX_Color4u8(vertex1->c.col[0], vertex1->c.col[1], vertex1->c.col[2], vertex1->c.col[3]);
   GX_TexCoord2f32( (f32) vertex1->sow, (f32) vertex1->tow );
+  GX_Color4u8(vertex1->c.col[0], vertex1->c.col[1], vertex1->c.col[2], vertex1->c.col[3]);
   GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );
-  GX_Color4u8(vertex2->c.col[0], vertex2->c.col[1], vertex2->c.col[2], vertex2->c.col[3]);
   GX_TexCoord2f32( (f32) vertex2->sow, (f32) vertex2->tow );
+  GX_Color4u8(vertex2->c.col[0], vertex2->c.col[1], vertex2->c.col[2], vertex2->c.col[3]);
   GX_Position3f32( (f32) vertex4->x, (f32) vertex4->y, (f32) vertex4->z );
-  GX_Color4u8(vertex4->c.col[0], vertex4->c.col[1], vertex4->c.col[2], vertex4->c.col[3]);
   GX_TexCoord2f32( (f32) vertex4->sow, (f32) vertex4->tow );
+  GX_Color4u8(vertex4->c.col[0], vertex4->c.col[1], vertex4->c.col[2], vertex4->c.col[3]);
   GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );
-  GX_Color4u8(vertex3->c.col[0], vertex3->c.col[1], vertex3->c.col[2], vertex3->c.col[3]);
   GX_TexCoord2f32( (f32) vertex3->sow, (f32) vertex3->tow );
+  GX_Color4u8(vertex3->c.col[0], vertex3->c.col[1], vertex3->c.col[2], vertex3->c.col[3]);
  GX_End();
 #endif
 }
 
 ///////////////////////////////////////////////////////// 
 
-__inline void PRIMdrawTri(OGLVertex* vertex1, OGLVertex* vertex2, OGLVertex* vertex3) 
+void PRIMdrawTri(OGLVertex* vertex1, OGLVertex* vertex2, OGLVertex* vertex3) 
 {
 #ifndef __GX__
  glBegin(GL_TRIANGLES);
@@ -454,7 +473,7 @@ __inline void PRIMdrawTri(OGLVertex* vertex1, OGLVertex* vertex2, OGLVertex* ver
 
 ///////////////////////////////////////////////////////// 
 
-__inline void PRIMdrawTri2(OGLVertex* vertex1, OGLVertex* vertex2, 
+void PRIMdrawTri2(OGLVertex* vertex1, OGLVertex* vertex2, 
                            OGLVertex* vertex3, OGLVertex* vertex4) 
 {
 #ifndef __GX__
@@ -478,9 +497,9 @@ __inline void PRIMdrawTri2(OGLVertex* vertex1, OGLVertex* vertex2,
  GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
   GX_Position3f32( (f32) vertex1->x, (f32) vertex1->y, (f32) vertex1->z );
   GX_Color4u8(vertex1->c.col[0], vertex1->c.col[1], vertex1->c.col[2], vertex1->c.col[3]);
-  GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );
-  GX_Color4u8(vertex1->c.col[0], vertex1->c.col[1], vertex1->c.col[2], vertex1->c.col[3]);
   GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );
+  GX_Color4u8(vertex1->c.col[0], vertex1->c.col[1], vertex1->c.col[2], vertex1->c.col[3]);
+  GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );
   GX_Color4u8(vertex1->c.col[0], vertex1->c.col[1], vertex1->c.col[2], vertex1->c.col[3]);
   GX_Position3f32( (f32) vertex4->x, (f32) vertex4->y, (f32) vertex4->z );
   GX_Color4u8(vertex1->c.col[0], vertex1->c.col[1], vertex1->c.col[2], vertex1->c.col[3]);
@@ -490,7 +509,7 @@ __inline void PRIMdrawTri2(OGLVertex* vertex1, OGLVertex* vertex2,
 
 ///////////////////////////////////////////////////////// 
 
-__inline void PRIMdrawGouraudTriColor(OGLVertex* vertex1, OGLVertex* vertex2, 
+void PRIMdrawGouraudTriColor(OGLVertex* vertex1, OGLVertex* vertex2, 
                                       OGLVertex* vertex3) 
 {
 #ifndef __GX__
@@ -530,7 +549,7 @@ __inline void PRIMdrawGouraudTriColor(OGLVertex* vertex1, OGLVertex* vertex2,
 
 ///////////////////////////////////////////////////////// 
 
-__inline void PRIMdrawGouraudTri2Color(OGLVertex* vertex1, OGLVertex* vertex2, 
+void PRIMdrawGouraudTri2Color(OGLVertex* vertex1, OGLVertex* vertex2, 
                                        OGLVertex* vertex3, OGLVertex* vertex4) 
 {
 #ifndef __GX__
@@ -564,10 +583,10 @@ __inline void PRIMdrawGouraudTri2Color(OGLVertex* vertex1, OGLVertex* vertex2,
  GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
   GX_Position3f32( (f32) vertex1->x, (f32) vertex1->y, (f32) vertex1->z );
   GX_Color4u8(vertex1->c.col[0], vertex1->c.col[1], vertex1->c.col[2], vertex1->c.col[3]);
-  GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );
-  GX_Color4u8(vertex2->c.col[0], vertex2->c.col[1], vertex2->c.col[2], vertex2->c.col[3]);
   GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );
   GX_Color4u8(vertex3->c.col[0], vertex3->c.col[1], vertex3->c.col[2], vertex3->c.col[3]);
+  GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );
+  GX_Color4u8(vertex2->c.col[0], vertex2->c.col[1], vertex2->c.col[2], vertex2->c.col[3]);
   GX_Position3f32( (f32) vertex4->x, (f32) vertex4->y, (f32) vertex4->z );
   GX_Color4u8(vertex4->c.col[0], vertex4->c.col[1], vertex4->c.col[2], vertex4->c.col[3]);
  GX_End();
@@ -576,7 +595,7 @@ __inline void PRIMdrawGouraudTri2Color(OGLVertex* vertex1, OGLVertex* vertex2,
 
 ///////////////////////////////////////////////////////// 
 
-__inline void PRIMdrawFlatLine(OGLVertex* vertex1, OGLVertex* vertex2,OGLVertex* vertex3, OGLVertex* vertex4)
+void PRIMdrawFlatLine(OGLVertex* vertex1, OGLVertex* vertex2,OGLVertex* vertex3, OGLVertex* vertex4)
 {
 #ifndef __GX__
  glBegin(GL_QUADS);
@@ -614,7 +633,7 @@ __inline void PRIMdrawFlatLine(OGLVertex* vertex1, OGLVertex* vertex2,OGLVertex*
 
 ///////////////////////////////////////////////////////// 
      
-__inline void PRIMdrawGouraudLine(OGLVertex* vertex1, OGLVertex* vertex2,OGLVertex* vertex3, OGLVertex* vertex4)
+void PRIMdrawGouraudLine(OGLVertex* vertex1, OGLVertex* vertex2,OGLVertex* vertex3, OGLVertex* vertex4)
 {
 #ifndef __GX__
  glBegin(GL_QUADS);
@@ -660,7 +679,7 @@ __inline void PRIMdrawGouraudLine(OGLVertex* vertex1, OGLVertex* vertex2,OGLVert
 
 ///////////////////////////////////////////////////////// 
              
-__inline void PRIMdrawQuad(OGLVertex* vertex1, OGLVertex* vertex2, 
+void PRIMdrawQuad(OGLVertex* vertex1, OGLVertex* vertex2, 
                            OGLVertex* vertex3, OGLVertex* vertex4) 
 {
 #ifndef __GX__
@@ -1029,17 +1048,8 @@ void SetRenderMode(unsigned long DrawAttributes,BOOL bSCol)
 #else
    if(gTexName!=currTex)
     {
-	 gTexName=currTex;
-	 DCFlushRange(&gTexName->GXtex, gTexName->GXrealWidth*  gTexName->GXrealHeight * 4);
-	 GX_InitTexObj(&gTexName->GXtex, gTexName->GXtexture, (u16) gTexName->GXrealWidth, (u16) gTexName->GXrealHeight, gTexName->GXtexfmt, 
-				gTexName->clampS ? GX_CLAMP : GX_REPEAT, 
-				gTexName->clampT ? GX_CLAMP : GX_REPEAT, GX_FALSE); 
-	 if(gTexName->LODtype == 0)
-	  GX_InitTexObjLOD(&gTexName->GXtex, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-	 if(gTexName->LODtype == 1)
-	  GX_InitTexObjLOD(&gTexName->GXtex, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_TRUE, GX_TRUE, GX_ANISO_4);
-	 GX_LoadTexObj(&gTexName->GXtex, GX_TEXMAP0);
-	}
+     gTexName=currTex;
+    }
 #endif
 
    if(!bTexEnabled)                                    // -> turn texturing on
@@ -1068,7 +1078,7 @@ void SetRenderMode(unsigned long DrawAttributes,BOOL bSCol)
    //disable textures
    GX_SetNumChans (0);
    GX_SetNumTexGens (1);
-   GX_SetTevOrder (GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
+   GX_SetTevOrder (GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLORNULL);
    GX_SetTevOp (GX_TEVSTAGE0, GX_REPLACE);
    bTexEnabled=FALSE;
   }     

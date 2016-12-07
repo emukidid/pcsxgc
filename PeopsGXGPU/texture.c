@@ -527,7 +527,24 @@ void CheckTextureMemory(void)
   }
  glBindTexture(GL_TEXTURE_2D,0);
 #else
-
+ for(i=0;i<MAXSORTTEX;i++)
+  {
+   uiStexturePage[i] = malloc(sizeof(textureWndCacheEntry));
+   textureWndCacheEntry* entry = uiStexturePage[i];
+   entry->clampS = entry->clampT = iClampType;
+   entry->LODtype = 0;
+   entry->GXtexture = (u16*)p;
+   entry->GXtexfmt = GX_TF_RGB5A3;
+   DCFlushRange(&entry->GXtexture, iTSize*iTSize*4);
+   GX_InitTexObj(&entry->GXtex, entry->GXtexture, 
+        (u16) iTSize, (u16) iTSize, entry->GXtexfmt, 
+   		entry->clampS ? GX_CLAMP : GX_REPEAT, 
+   		entry->clampT ? GX_CLAMP : GX_REPEAT, GX_FALSE); 
+   if(entry->LODtype == 0)
+    GX_InitTexObjLOD(&entry->GXtex, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+   if(entry->LODtype == 1)
+	GX_InitTexObjLOD(&entry->GXtex, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_TRUE, GX_TRUE, GX_ANISO_4);
+  }
 #endif
  free(p);
 
@@ -2526,12 +2543,12 @@ textureWndCacheEntry* BlackFake15BitTexture(void)
  if(   FastCheckAgainstFrontScreen(x1,y1,x2,y2)
     || FastCheckAgainstScreen(x1,y1,x2,y2))
   {
-#ifndef __GX__
    if(gTexFrameName == NULL)
     {
 	 gTexFrameName=malloc(sizeof(textureWndCacheEntry));
-     glGenTextures(1, &gTexFrameName->texname);
      gTexName=gTexFrameName;
+#ifndef __GX__
+     glGenTextures(1, &gTexFrameName->texname);
      glBindTexture(GL_TEXTURE_2D, gTexName->texname);
 
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, iClampType);
@@ -2553,20 +2570,24 @@ textureWndCacheEntry* BlackFake15BitTexture(void)
          *ta++=s;
       }
      else
+#endif
       {
        unsigned long * ta=(unsigned long *)texturepart;
        for(y1=0;y1<=4;y1++)
         for(x1=0;x1<=4;x1++)
          *ta++=0xff000000;
       }
+#ifndef __GX__
      glTexImage2D(GL_TEXTURE_2D, 0, giWantedRGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, texturepart);
+#endif
     }
    else
     {
      gTexName=gTexFrameName;
+#ifndef __GX__
      glBindTexture(GL_TEXTURE_2D, gTexName->texname);
-    }
 #endif
+    }
    ubOpaqueDraw=0;
 
    return gTexName;
@@ -2628,7 +2649,6 @@ textureWndCacheEntry* Fake15BitTexture(void)
 
  bDrawMultiPass = FALSE;
 
-#ifndef __GX__
  if(gTexFrameName == NULL)
   {
    char * p;
@@ -2638,28 +2658,30 @@ textureWndCacheEntry* Fake15BitTexture(void)
    if(iResX>640  || iResY>480)  iFTex=1024;
    else                         iFTex=512; 
    gTexFrameName=malloc(sizeof(textureWndCacheEntry));
-   glGenTextures(1, &gTexFrameName->texname);
    gTexName=gTexFrameName;
+   p=(char *)malloc(iFTex*iFTex*4);
+   memset(p,0,iFTex*iFTex*4);
+#ifndef __GX__
+   glGenTextures(1, &gTexFrameName->texname);
    glBindTexture(GL_TEXTURE_2D, gTexName->texname);
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, iClampType);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, iClampType);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-   p=(char *)malloc(iFTex*iFTex*4);
-   memset(p,0,iFTex*iFTex*4);
    glTexImage2D(GL_TEXTURE_2D, 0, 3, iFTex, iFTex, 0, GL_RGB, GL_UNSIGNED_BYTE, p);
-   free(p);
-
    glGetError();
+#endif
+
+   free(p);
   }
  else 
   {
    gTexName=gTexFrameName;
+#ifndef __GX__
    glBindTexture(GL_TEXTURE_2D, gTexName->texname);
-  }
 #endif
+  }
  x1+=PreviousPSXDisplay.Range.x0;
  y1+=PreviousPSXDisplay.Range.y0;
 

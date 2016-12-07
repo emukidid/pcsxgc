@@ -366,7 +366,7 @@ extern short symax;
 //-----------------------------------------------------//
 
 #ifndef _IN_TEXTURE
-
+#include "texture.h"
 extern unsigned char  ubOpaqueDraw;
 extern GLint          giWantedRGBA;
 extern GLint          giWantedFMT;
@@ -383,8 +383,8 @@ extern int            iFrameReadType;
 extern int            iClampType;
 extern int            iSortTexCnt;
 extern BOOL           bFakeFrontBuffer; 
-extern GLuint         gTexFrameName;
-extern GLuint         gTexBlurName;
+extern textureWndCacheEntry*         gTexFrameName;
+extern textureWndCacheEntry*         gTexBlurName;
 extern int            iVRamSize;
 extern int            iTexGarbageCollection;
 extern int            iFTexA;

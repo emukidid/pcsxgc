@@ -150,6 +150,8 @@ PFNGLBLENDEQU      glBlendEquationEXTEx=NULL;
 PFNGLCOLORTABLEEXT glColorTableEXTEx=NULL;
 #else
 #include "gxsupp.h"
+#define PFNGLBLENDEQU void*
+#define PFNGLCOLORTABLEEXT void*
 void*    glBlendEquationEXTEx=NULL;
 void*    glColorTableEXTEx=NULL;
 #endif
@@ -220,16 +222,15 @@ BOOL bSetupPixelFormat(HDC hDC)
 
 void GetExtInfos(void)                              
 {
-#ifndef __GX__
  BOOL bPacked=FALSE;                                   // default: no packed pixel support
 
  bGLExt=FALSE;                                         // default: no extensions
  bGLFastMovie=FALSE;
 
+#ifndef __GX__
  if(strstr((char *)glGetString(GL_EXTENSIONS),         // packed pixels available?
     "GL_EXT_packed_pixels"))                          
   bPacked=TRUE;                                        // -> ok
-
  if(bPacked && bUse15bitMdec)                          // packed available and 15bit mdec wanted?
   bGLFastMovie=TRUE;                                   // -> ok
 
@@ -239,16 +240,19 @@ void GetExtInfos(void)
    bGLExt=TRUE;
   }
 
+
  if(iUseExts &&                                        // extension support wanted?
     (strstr((char *)glGetString(GL_EXTENSIONS),
      "GL_EXT_texture_edge_clamp") ||
      strstr((char *)glGetString(GL_EXTENSIONS),        // -> check clamp support, if yes: use it
      "GL_SGIS_texture_edge_clamp")))
       iClampType=GL_TO_EDGE_CLAMP;
- else iClampType=GL_CLAMP;
+ else 
+#endif
+  iClampType=GL_CLAMP;
 
  glColorTableEXTEx=(PFNGLCOLORTABLEEXT)NULL;           // init ogl palette func pointer
-
+#ifndef __GX__
  if(iGPUHeight!=1024 &&                                // no pal textures in ZN mode (height=1024)! 
     strstr((char *)glGetString(GL_EXTENSIONS),         // otherwise: check ogl support
     "GL_EXT_paletted_texture"))
@@ -263,8 +267,9 @@ void GetExtInfos(void)
 
    if(glColorTableEXTEx==NULL) iUsePalTextures=0;      // -> ha, cheater... no func, no support
   }
- else iUsePalTextures=0;
+ else 
 #endif
+  iUsePalTextures=0;
 }
 
 ////////////////////////////////////////////////////////////////////////
