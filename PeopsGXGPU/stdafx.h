@@ -60,11 +60,11 @@
 
 #endif
 
+#define SHADETEXBIT(x) ((x>>24) & 0x1)
+#define SEMITRANSBIT(x) ((x>>25) & 0x1)
 #ifndef __GX__
 #include "gl_ext.h"
 
-#define SHADETEXBIT(x) ((x>>24) & 0x1)
-#define SEMITRANSBIT(x) ((x>>25) & 0x1)
 
 #ifndef _WINDOWS
 #ifndef GL_BGRA_EXT

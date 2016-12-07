@@ -149,8 +149,9 @@ BOOL               bGLBlend;
 PFNGLBLENDEQU      glBlendEquationEXTEx=NULL;
 PFNGLCOLORTABLEEXT glColorTableEXTEx=NULL;
 #else
-bool    glBlendEquationEXTEx=FALSE;
-bool 	glColorTableEXTEx=FALSE;
+#include "gxsupp.h"
+void*    glBlendEquationEXTEx=NULL;
+void*    glColorTableEXTEx=NULL;
 #endif
 
 
@@ -272,7 +273,6 @@ void GetExtInfos(void)
 
 void SetExtGLFuncs(void)
 {
-#ifndef __GX__
  //----------------------------------------------------//
 
  SetFixes();                                           // update fix infos
@@ -293,6 +293,7 @@ void SetExtGLFuncs(void)
 
  //----------------------------------------------------//
 
+#ifndef __GX__
  if(iUseExts && !(dwActFixes&1024) &&                  // extensions wanted? and not turned off by game fix?
     strstr((char *)glGetString(GL_EXTENSIONS),         // and blend_subtract available?
     "GL_EXT_blend_subtract"))
@@ -331,7 +332,7 @@ void SetExtGLFuncs(void)
 
    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);    
   }
-
+#endif
  //----------------------------------------------------//
  // init standard tex quality 0-2, and big alpha mode 3
 
@@ -353,13 +354,17 @@ void SetExtGLFuncs(void)
     }
 
    TCF[1]=XP8RGBA_1;
+#ifndef __GX__
    glAlphaFunc(GL_GREATER,0.49f);
+#endif
   }
  else                                                  // no opaque mode?
   {
    TCF[0]=TCF[1]=P8RGBA;
    PalTexturedColourFn=P8RGBA;                         // -> init col func
+#ifndef __GX__
    glAlphaFunc(GL_NOTEQUAL,0);                         // --> set alpha func
+#endif
   }
 
  //----------------------------------------------------//
@@ -377,6 +382,7 @@ void SetExtGLFuncs(void)
     break;
    //--------------------------------------------------// 
    case 1:                                             // -> R4G4B4A4
+#ifndef __GX__
     if(bGLExt)
      {
       giWantedRGBA=GL_RGBA4;
@@ -394,6 +400,7 @@ void SetExtGLFuncs(void)
        }
      }
     else
+#endif
      {
       giWantedRGBA=GL_RGBA4;
       giWantedTYPE=GL_UNSIGNED_BYTE;
@@ -401,6 +408,7 @@ void SetExtGLFuncs(void)
     break;
    //--------------------------------------------------// 
    case 2:                                             // -> R5B5G5A1
+#ifndef __GX__
     if(bGLExt)
      {
       giWantedRGBA=GL_RGB5_A1;
@@ -418,6 +426,7 @@ void SetExtGLFuncs(void)
        }
      }
     else
+#endif
      {
       giWantedRGBA=GL_RGB5_A1;giWantedTYPE=GL_UNSIGNED_BYTE;
      }
@@ -442,7 +451,7 @@ void SetExtGLFuncs(void)
    case 4:                                             // -> R8G8B8A8
     giWantedRGBA = GL_RGBA8;
     giWantedTYPE = GL_UNSIGNED_BYTE;
-
+#ifndef __GX__
     if(strstr((char *)glGetString(GL_EXTENSIONS),      // and extension avail?
               "GL_EXT_bgra"))
      {
@@ -469,6 +478,7 @@ void SetExtGLFuncs(void)
        }
      }
     else
+#endif
      {
       iTexQuality=3;
       if(bSmallAlpha)
@@ -487,10 +497,11 @@ void SetExtGLFuncs(void)
   }
 
  bBlendEnable=FALSE;                                   // init blending: off
+#ifndef __GX__
  glDisable(GL_BLEND);
+#endif
 
  SetScanTrans();                                       // init scan lines (if wanted)
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -644,7 +655,40 @@ int GLinitialize()
    glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
    glHint(GL_POLYGON_SMOOTH_HINT,GL_NICEST);
   }
+#else
+ //GX
+ GX_SetViewport((f32) rRatioRect.left
+				,(f32) iResY-(rRatioRect.top+rRatioRect.bottom)
+				,(f32) rRatioRect.right
+				,(f32) rRatioRect.bottom, 0.0f, 1.0f);	// init viewport by ratio rect
+ GX_SetScissor((u32) rRatioRect.left,(u32) iResY-(rRatioRect.top+rRatioRect.bottom)
+				,(u32) iResX,(u32) iResY);	//Set to the same size as the viewport.
+
+ Mtx44 GXprojection;
+ guMtxIdentity(GXprojection);
+ guMtxIdentity(GXmodelViewIdent);
+ guOrtho(GXprojection, 0, PSXDisplay.DisplayMode.y, 0, PSXDisplay.DisplayMode.x, 0.0f, 1.0f);
+ GX_LoadProjectionMtx(GXprojection, GX_ORTHOGRAPHIC); 
+ GX_LoadPosMtxImm(GXmodelViewIdent,GX_PNMTX0);
+ GX_LoadTexMtxImm(GXmodelViewIdent,GX_TEXMTX0,GX_MTX2x4);
+
+ if(iZBufferDepth)                                     // zbuffer?
+  {
+   GX_SetZMode(GX_ENABLE,GX_ALWAYS,GX_TRUE);
+   iDepthFunc=1;
+  }
+ else                                                  // no zbuffer?
+  {
+   GX_SetZMode(GX_DISABLE,GX_ALWAYS,GX_FALSE);
+  }
+ GX_SetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_CLEAR); 
+ GX_SetAlphaCompare(GX_ALWAYS,0,GX_AOP_AND,GX_ALWAYS,0);
+
+ GXColor color = {0,0,0,0};
+ GX_SetCopyClear(color, 0xFFFFFF);                     // first buffer clear
+ SetExtGLFuncs();                                      // init all kind of stuff (tex function pointers)
 #endif
+
  ubGloAlpha=127;                                       // init some drawing vars
  ubGloColAlpha=127;
  TWin.UScaleFactor = 1;
@@ -692,6 +736,8 @@ int GLinitialize()
 
  glFlush();                                            // we are done...
  glFinish();                           
+#else
+ PEOPS_GX_Flush();
 #endif
 
  CreateScanLines();                                    // setup scanline stuff (if wanted)
@@ -894,10 +940,8 @@ BOOL offsetline(void)
 {
  short x0,x1,y0,y1,dx,dy;float px,py;
 
-#ifndef __GX__
  if(bDisplayNotSet)
   SetOGLDisplaySettings(1);
-#endif
 
  if(!(dwActFixes&16))
   {
@@ -991,10 +1035,8 @@ BOOL offsetline(void)
 
 BOOL offset2(void)
 {
-#ifndef __GX__
  if(bDisplayNotSet)
   SetOGLDisplaySettings(1);
-#endif
 
  if(!(dwActFixes&16))
   {
@@ -1018,10 +1060,8 @@ BOOL offset2(void)
 
 BOOL offset3(void)
 {
-#ifndef __GX__
  if(bDisplayNotSet)
   SetOGLDisplaySettings(1);
-#endif
 
  if(!(dwActFixes&16))
   {
@@ -1049,10 +1089,8 @@ BOOL offset3(void)
 
 BOOL offset4(void)
 {
-#ifndef __GX__
  if(bDisplayNotSet)
   SetOGLDisplaySettings(1);
-#endif
 
  if(!(dwActFixes&16))
   {
@@ -1084,10 +1122,8 @@ BOOL offset4(void)
 
 void offsetST(void)
 {
-#ifndef __GX__
  if(bDisplayNotSet)
   SetOGLDisplaySettings(1);
-#endif
 
  if(!(dwActFixes&16))
   {
@@ -1120,10 +1156,8 @@ void offsetST(void)
 
 void offsetScreenUpload(long Position)
 {
-#ifndef __GX__
  if(bDisplayNotSet)
   SetOGLDisplaySettings(1);
-#endif
 
  if(Position==-1)
   {
@@ -1185,10 +1219,8 @@ void offsetScreenUpload(long Position)
 
 void offsetBlk(void)
 {
-#ifndef __GX__
  if(bDisplayNotSet)
   SetOGLDisplaySettings(1);
-#endif
 
  vertex[0].x=lx0-PSXDisplay.GDrawOffset.x + PreviousPSXDisplay.Range.x0;
  vertex[1].x=lx1-PSXDisplay.GDrawOffset.x + PreviousPSXDisplay.Range.x0;
@@ -1251,7 +1283,7 @@ void assignTextureVRAMWrite(void)
 #endif
 }
 
-GLuint  gLastTex=0;
+textureWndCacheEntry*  gLastTex=NULL;
 GLuint  gLastFMode=(GLuint)-1;
 
 ///////////////////////////////////////////////////////// 
@@ -1315,14 +1347,15 @@ void assignTextureSprite(void)
 
    if(iFilterType>2) 
     {
-#ifndef __GX__
      if(gLastTex!=gTexName || gLastFMode!=0)
       {
+#ifndef __GX__
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-       gLastTex=gTexName;gLastFMode=0;
-      }
 #endif
+       gLastTex=gTexName;gLastFMode=0;
+	   gLastTex->LODtype = 0;
+      }
     }
   }
 
@@ -1377,14 +1410,15 @@ void assignTexture3(void)
 
    if(iFilterType>2) 
     {
-#ifndef __GX__
      if(gLastTex!=gTexName || gLastFMode!=1)
       {
+#ifndef __GX__
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-       gLastTex=gTexName;gLastFMode=1;
-      }
 #endif
+       gLastTex=gTexName;gLastFMode=1;
+	   gLastTex->LODtype = 1;
+      }
     }
 
    if(iFilterType) 
@@ -1449,14 +1483,15 @@ void assignTexture4(void)
 
    if(iFilterType>2) 
     {
-#ifndef __GX__
      if(gLastTex!=gTexName || gLastFMode!=1)
       {
+#ifndef __GX__
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-       gLastTex=gTexName;gLastFMode=1;
-      }
 #endif
+       gLastTex=gTexName;gLastFMode=1;
+	   gLastTex->LODtype = 1;
+      }
     }
 
    if(iFilterType) 
@@ -1529,6 +1564,8 @@ void SetOGLDisplaySettings(BOOL DisplaySet)
      rC=rX;
 #ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
+#else
+	GX_SetScissor((u32)rC.left,(u32)rC.top,(u32)rC.right,(u32)rC.bottom);
 #endif
      bSetClip=FALSE; 
     }
@@ -1622,6 +1659,8 @@ void SetOGLDisplaySettings(BOOL DisplaySet)
   {
 #ifndef __GX__
    glScissor(r.left,r.top,r.right,r.bottom);
+#else
+   GX_SetScissor((u32)r.left,(u32)r.top,(u32)r.right,(u32)r.bottom);
 #endif
    rC=r;
    bSetClip=FALSE;

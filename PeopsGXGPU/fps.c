@@ -610,12 +610,23 @@ void SetFrameRateConfig(void)
 
 #define TIMEBASE 100000
 
+#ifdef __GX__
+// prototypes
+ long long gettime(void);
+ unsigned int diff_usec(long long start,long long end);
+#endif //__GX__
+
 // hehehe... using same func name as with win32 ;) wow, are we genius ;)
 unsigned long timeGetTime()
 {
+#ifndef __GX__
  struct timeval tv;
  gettimeofday(&tv, 0);                                // well, maybe there are better ways
  return tv.tv_sec * 100000 + tv.tv_usec/10;           // to do that in linux, but at least it works
+#else //!__GX__
+ long long nowTick = gettime();
+ return diff_usec(0,nowTick)/10;
+#endif //__GX__
 }
 
 void FrameCap(void)

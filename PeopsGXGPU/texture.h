@@ -29,15 +29,50 @@
 
 #define TEXTUREPAGESIZE 256*256
 
+
+// "texture window" cache entry
+
+typedef struct textureWndCacheEntryTag
+{
+#ifdef __GX__
+ GXTexObj	GXtex;
+ u16		*GXtexture;
+ u8			GXtexfmt;
+ u32		GXrealWidth, GXrealHeight;	// Actual dimensions of GX texture
+ u32		VIcount;
+ u8			LODtype; //0 = GX_NEAR,GX_ANISO_1, 1 = GX_LINEAR,GX_ANISO_4
+ u32		clampS, clampT;
+#endif // __GX__
+ unsigned long  ClutID;
+ short          pageid;
+ short          textureMode;
+ short          Opaque;
+ short          used;
+ EXLong         pos;
+ GLuint         texname;
+} textureWndCacheEntry;
+
+// "standard texture" cache entry (12 byte per entry, as small as possible... we need lots of them)
+
+typedef struct textureSubCacheEntryTagS 
+{
+ unsigned long   ClutID;
+ EXLong          pos;
+ unsigned char   posTX;
+ unsigned char   posTY;
+ unsigned char   cTexID;
+ unsigned char   Opaque;
+} textureSubCacheEntryS;
+
 void           InitializeTextureStore();
 void           CleanupTextureStore();
-GLuint         LoadTextureWnd(long pageid,long TextureMode,unsigned long GivenClutId);
-GLuint         LoadTextureMovie(void);
+textureWndCacheEntry*         LoadTextureWnd(long pageid,long TextureMode,unsigned long GivenClutId);
+textureWndCacheEntry*         LoadTextureMovie(void);
 void           InvalidateTextureArea(long imageX0,long imageY0,long imageX1,long imageY1);
 void           InvalidateTextureAreaEx(void);
 void           LoadTexturePage(int pageid, int mode, short cx, short cy);
 void           ResetTextureArea(BOOL bDelTex);
-GLuint         SelectSubTextureS(long TextureMode, unsigned long GivenClutId);
+textureWndCacheEntry*         SelectSubTextureS(long TextureMode, unsigned long GivenClutId);
 void           CheckTextureMemory(void);
 
 

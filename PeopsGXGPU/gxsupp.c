@@ -2,13 +2,13 @@
 #include "externals.h"
 #include "gxsupp.h"
 
-void PEOPS_GX_PreRetraceCallback(u32 retraceCnt)
+Mtx GXmodelViewIdent;
+
+void PEOPS_GX_Flush()
 {
-	if(iDrawnSomething)
-	{
-		VIDEO_SetNextFramebuffer(xfb[whichfb]);
-		VIDEO_Flush();
-		whichfb ^= 1;
-		iDrawnSomething = false;
-	}
+	GX_CopyDisp (xfb[whichfb], GX_TRUE);
+	GX_DrawDone();
+	VIDEO_SetNextFramebuffer(xfb[whichfb]);
+	VIDEO_Flush();
+	whichfb ^= 1;
 }

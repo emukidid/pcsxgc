@@ -27,9 +27,12 @@
 #include "stdafx.h"
 
 #ifdef __GX__
+#include <gccore.h>
+#include "../Gamecube/libgui/IPLFontC.h"
 #include "../Gamecube/DEBUG.h"
 #include "../Gamecube/wiiSXconfig.h"
 #include "gxsupp.h"
+extern char text[DEBUG_TEXT_HEIGHT][DEBUG_TEXT_WIDTH]; /*** DEBUG textbuffer ***/
 #endif //__GX__
 
 #ifdef _WINDOWS
@@ -1005,7 +1008,7 @@ long PEOPS_GPUopen(unsigned long * disp,char * CapText,char * CfgFile)
  pConfigFile=CfgFile;
 
  ReadConfig();                                         // read text file for config
-
+ iShowFPS = 1;
  SetFrameRateConfig();                                 // setup frame rate stuff
 
  bIsFirstFrame = TRUE;                                 // we have to init later (well, no really... in Linux we do all in GPUopen)
@@ -1017,8 +1020,8 @@ long PEOPS_GPUopen(unsigned long * disp,char * CapText,char * CfgFile)
  rRatioRect.left   = rRatioRect.top=0;
  rRatioRect.right  = iResX;
  rRatioRect.bottom = iResY;
+ GLinitialize();                                       // init opengl/GX
 #ifndef __GX__
- GLinitialize();                                       // init opengl
  if(disp)
   {
    *disp=(unsigned long)display;                       // return display ID to main emu
@@ -1027,7 +1030,6 @@ long PEOPS_GPUopen(unsigned long * disp,char * CapText,char * CfgFile)
  if(display) return 0;
  return -1;
 #else
-	VIDEO_SetPreRetraceCallback(PEOPS_GX_PreRetraceCallback);
  return 0;
 #endif
 }
@@ -1066,8 +1068,8 @@ long CALLBACK GPUclose()                               // GPU CLOSE
 long PEOPS_GPUclose()
 #endif // __GX__
 {
+ GLcleanup();                                          // close OGL / GX
 #ifndef __GX__
- GLcleanup();                                          // close OGL
 
  if(pGfxCardScreen) free(pGfxCardScreen);              // free helper memory
  pGfxCardScreen=0;
@@ -1192,7 +1194,7 @@ void SetScanLines(void)
   {
    if(!bTexEnabled)    {glEnable(GL_TEXTURE_2D);bTexEnabled=TRUE;}
    gTexName=gTexScanName;
-   glBindTexture(GL_TEXTURE_2D, gTexName);
+   glBindTexture(GL_TEXTURE_2D, gTexName->texname);
    if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);    
    if(!bBlendEnable)   {glEnable(GL_BLEND);bBlendEnable=TRUE;}
    SetScanTexTrans();
@@ -1285,7 +1287,7 @@ void BlurBackBuffer(void)
  if(bDrawDither)      glDisable(GL_DITHER); 
 
  gTexName=gTexBlurName;
- glBindTexture(GL_TEXTURE_2D, gTexName);
+ glBindTexture(GL_TEXTURE_2D, gTexName->texname);
 
  glCopyTexSubImage2D( GL_TEXTURE_2D, 0,                // get back buffer in texture
                       0,
@@ -1354,7 +1356,7 @@ void UnBlurBackBuffer(void)
  if(bDrawDither)      glDisable(GL_DITHER); 
 
  gTexName=gTexBlurName;
- glBindTexture(GL_TEXTURE_2D, gTexName);
+ glBindTexture(GL_TEXTURE_2D, gTexName->texname);
 
  vertex[0].x=0;
  vertex[0].y=PSXDisplay.DisplayMode.y;
@@ -1464,6 +1466,8 @@ void updateDisplay(void)                               // UPDATE DISPLAY
    glClear(uiBufferBits);
    glEnable(GL_SCISSOR_TEST);                       
 #else
+   GXColor color = {0,0,0,128};
+   GX_SetCopyClear(color, 0xFFFFFF);                     // first buffer clear
 #endif
    gl_z=0.0f;
    bDisplayNotSet = TRUE;
@@ -1474,6 +1478,23 @@ void updateDisplay(void)                               // UPDATE DISPLAY
    iSkipTwo--;
    iDrawnSomething=0;                                  // -> simply lie about something drawn
   }
+
+#ifdef __GX__/*
+ //Write menu/debug text on screen
+ GXColor fontColor = {150,255,150,255};
+ IplFont_drawInit(fontColor);
+ if((ulKeybits&KEY_SHOWFPS)&&showFPSonScreen)
+  IplFont_drawString(10,35,szDispBuf, 1.0, false);
+ 
+ int i = 0;
+ DEBUG_update();
+ for (i=0;i<DEBUG_TEXT_HEIGHT;i++)
+  IplFont_drawString(10,(10*i+60),text[i], 0.5, false);
+ 
+ //reset swap table from GUI/DEBUG
+ //GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+ GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);*/
+#endif
 
  if(iBlurBuffer && !bSkipNextFrame)                    // "blur display" activated?
   {BlurBackBuffer();bBlur=TRUE;}                       // -> blur it
@@ -1514,6 +1535,8 @@ void updateDisplay(void)                               // UPDATE DISPLAY
 	 if(iDrawnSomething)
       glXSwapBuffers(display,window);
 #else
+	 if(iDrawnSomething)
+	  PEOPS_GX_Flush();
 #endif
 #endif
     }
@@ -1535,6 +1558,8 @@ void updateDisplay(void)                               // UPDATE DISPLAY
    if(iDrawnSomething)
     glXSwapBuffers(display,window);
 #else
+   if(iDrawnSomething)
+	PEOPS_GX_Flush();
 #endif
 #endif
   }
@@ -1545,7 +1570,6 @@ void updateDisplay(void)                               // UPDATE DISPLAY
 
  if(lClearOnSwap)                                      // clear buffer after swap?
   {
-#ifndef __GX__
    GLclampf g,b,r;
 
    if(bDisplayNotSet)                                  // -> set new vals
@@ -1555,11 +1579,14 @@ void updateDisplay(void)                               // UPDATE DISPLAY
    b=((GLclampf)BLUE(lClearOnSwapColor))/255.0f;
    r=((GLclampf)RED(lClearOnSwapColor))/255.0f;
    
+#ifndef __GX__
    glDisable(GL_SCISSOR_TEST);                       
    glClearColor(r,g,b,128);                            // -> clear 
    glClear(uiBufferBits);
    glEnable(GL_SCISSOR_TEST);                       
 #else
+ GXColor color = {r,g,b,128};
+ GX_SetCopyClear(color, 0xFFFFFF);                     // first buffer clear
 #endif
    lClearOnSwap=0;                                     // -> done
   }
@@ -1625,6 +1652,10 @@ void updateDisplay(void)                               // UPDATE DISPLAY
               rRatioRect.right+i3, 
               rRatioRect.bottom+i4);            
 #else
+	GX_SetViewport((f32) rRatioRect.left+i1
+				,(f32) iResY-(rRatioRect.top+rRatioRect.bottom)+i2
+				,(f32) rRatioRect.right+i3
+				,(f32) rRatioRect.bottom+i4, 0.0f, 1.0f);
 #endif
   }
 
@@ -1761,7 +1792,7 @@ void ChangeDispOffsetsY(void)                          // CENTER Y
 
 void SetAspectRatio(void)
 {
-#ifndef __GX__
+
  float xs,ys,s;RECT r;
 
  if(!PSXDisplay.DisplayModeNew.x) return;
@@ -1785,19 +1816,24 @@ void SetAspectRatio(void)
     r.right <rRatioRect.right)
   {
    RECT rC;
+#ifndef __GX__
    glClearColor(0,0,0,128);                         
-
+#endif
    if(r.right <rRatioRect.right)
     {
      rC.left=0;
      rC.top=0;
      rC.right=r.left;
      rC.bottom=iResY;
+#ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
      glClear(uiBufferBits);
+#endif
      rC.left=iResX-rC.right;
+#ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
      glClear(uiBufferBits);
+#endif
     }
 
    if(r.bottom <rRatioRect.bottom)
@@ -1806,11 +1842,15 @@ void SetAspectRatio(void)
      rC.top=0;
      rC.right=iResX;
      rC.bottom=r.top;
+#ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
      glClear(uiBufferBits);
+#endif
      rC.top=iResY-rC.bottom;
+#ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
      glClear(uiBufferBits);
+#endif
     }
    
    bSetClip=TRUE;
@@ -1819,11 +1859,16 @@ void SetAspectRatio(void)
 
  rRatioRect=r;
 
-
+#ifndef __GX__
  glViewport(rRatioRect.left,
             iResY-(rRatioRect.top+rRatioRect.bottom),
             rRatioRect.right,
             rRatioRect.bottom);                         // init viewport
+#else
+ GX_SetViewport((f32) rRatioRect.left
+				,(f32) iResY-(rRatioRect.top+rRatioRect.bottom)
+				,(f32) rRatioRect.right
+				,(f32) rRatioRect.bottom, 0.0f, 1.0f);
 #endif
 }
 
@@ -1833,7 +1878,7 @@ void SetAspectRatio(void)
 
 void updateDisplayIfChanged(void)
 {
-#ifndef __GX__
+
  BOOL bUp;
 
  if ((PSXDisplay.DisplayMode.y == PSXDisplay.DisplayModeNew.y) && 
@@ -1845,9 +1890,16 @@ void updateDisplayIfChanged(void)
   }
  else                                                  // some res change?
   {
+#ifndef __GX__
    glLoadIdentity();
    glOrtho(0,PSXDisplay.DisplayModeNew.x,              // -> new psx resolution
              PSXDisplay.DisplayModeNew.y, 0, -1, 1);
+#else
+   Mtx44 GXprojection;
+   guMtxIdentity(GXprojection);
+   guOrtho(GXprojection, 0, PSXDisplay.DisplayModeNew.y, 0, PSXDisplay.DisplayModeNew.x, 0.0f, 1.0f);
+   GX_LoadProjectionMtx(GXprojection, GX_ORTHOGRAPHIC); 
+#endif
    if(bKeepRatio) SetAspectRatio();
   }
 
@@ -1880,7 +1932,6 @@ void updateDisplayIfChanged(void)
  if(iFrameLimit==2) SetAutoFrameCap();                 // set new fps limit vals (depends on interlace)
 
  if(bUp) updateDisplay();                              // yeah, real update (swap buffer)
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2387,6 +2438,7 @@ __inline void FinishedVRAMRead(void)
 
 void CheckVRamReadEx(int x, int y, int dx, int dy)
 {
+#ifndef __GX__
  unsigned short sArea;
  int ux,uy,udx,udy,wx,wy;
  unsigned short * p1, *p2;
@@ -2531,6 +2583,7 @@ void CheckVRamReadEx(int x, int y, int dx, int dy)
    p1 += 1024 - udx;
    if(p2) p2 += 1024 - udx;
   }
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////

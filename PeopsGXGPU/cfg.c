@@ -1272,7 +1272,12 @@ void ReadConfig(void)                                  // read config (linux fil
  iShowFPS=0;
  bKeepRatio=FALSE;
  iScanBlend=0;
- iVRamSize=2;	//TODO
+#ifndef __GX__
+ iVRamSize=0;
+#else
+ iVRamSize=32;	//Wii
+ //TODO GC
+#endif
  iTexGarbageCollection=1;
  iBlurBuffer=0;
  iHiResTextures=0;

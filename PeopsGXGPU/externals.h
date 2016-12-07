@@ -310,7 +310,7 @@ extern short          DrawSemiTrans;
 //-----------------------------------------------------//
 
 #ifndef _IN_PRIMDRAW
-
+#include "texture.h"
 extern BOOL          bNeedUploadTest;
 extern BOOL          bNeedUploadAfter;
 extern BOOL          bTexEnabled;
@@ -332,7 +332,7 @@ extern PSXRect_t     xrMovieArea;
 extern PSXRect_t     xrUploadArea;
 extern PSXRect_t     xrUploadAreaIL;
 extern PSXRect_t     xrUploadAreaRGB24;
-extern GLuint        gTexName;
+extern textureWndCacheEntry*        gTexName;
 extern BOOL          bDrawNonShaded;
 extern BOOL          bDrawMultiPass;
 extern unsigned char ubGloColAlpha;
