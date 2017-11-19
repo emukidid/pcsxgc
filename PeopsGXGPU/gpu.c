@@ -1589,6 +1589,7 @@ void updateDisplay(void)                               // UPDATE DISPLAY
    glClear(uiBufferBits);
    glEnable(GL_SCISSOR_TEST);                       
 #else
+ SysPrintf("UpdateDisplay ClearOnSwap\r\n");
  GXColor color = {r,g,b,128};
  GX_SetCopyClear(color, 0xFFFFFF);                     // first buffer clear
 #endif

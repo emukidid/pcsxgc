@@ -35,7 +35,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // for own sow/tow scaling
-#define OWNSCALE 1
+//#define OWNSCALE 1
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -45,8 +45,8 @@
 #define SETCOL(x)  if(x.c.lcol!=ulOLDCOL) {ulOLDCOL=x.c.lcol;glColor4ubv(x.c.col);} 
 #define SETPCOL(x)  if(x->c.lcol!=ulOLDCOL) {ulOLDCOL=x->c.lcol;glColor4ubv(x->c.col);}
 #else
-#define SETCOL(x)  {}
-#define SETPCOL(x)  {}
+#define SETCOL(x)  if(x.c.lcol!=ulOLDCOL) {ulOLDCOL=x.c.lcol;} 
+#define SETPCOL(x)  if(x->c.lcol!=ulOLDCOL) {ulOLDCOL=x->c.lcol;}
 #endif
 
 #define GL_TO_EDGE_CLAMP              0x812F

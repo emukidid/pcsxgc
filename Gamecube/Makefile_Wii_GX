@@ -29,7 +29,7 @@ INCLUDES	:=
 
 CFLAGS	= -g -O3 -Wall $(MACHDEP) $(INCLUDE) -Wno-strict-aliasing -Wno-misleading-indentation \
 		  -D__GAMECUBE__ -DWII -DHW_RVL -D__ppc__ -D__LINUX__ \
-		  -D__GX__ -D_SDL -DEMBEDDED_FONTS \
+		  -D__GX__ -D_SDL -DEMBEDDED_FONTS -DPRINTGECKO \
 		  -DTHREADED_AUDIO -DRELEASE -DSHOW_DEBUG -DPROFILE #-DDEBUGON #-DPROFILE
 		  
 CXXFLAGS	=	$(CFLAGS)
@@ -47,7 +47,7 @@ LIBS	:=	-laesnd -ldi -lm -lfat -ldb -lwiiuse -lbte -logc -lz -ltinysmb -liso9660
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= 
+LIBDIRS	:= $(PORTLIBS)
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional

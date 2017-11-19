@@ -1359,7 +1359,6 @@ void assignTextureSprite(void)
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 #endif
        gLastTex=gTexName;gLastFMode=0;
-	   gLastTex->LODtype = 0;
       }
     }
   }
@@ -1422,7 +1421,6 @@ void assignTexture3(void)
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 #endif
        gLastTex=gTexName;gLastFMode=1;
-	   gLastTex->LODtype = 1;
       }
     }
 
@@ -1495,7 +1493,6 @@ void assignTexture4(void)
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 #endif
        gLastTex=gTexName;gLastFMode=1;
-	   gLastTex->LODtype = 1;
       }
     }
 

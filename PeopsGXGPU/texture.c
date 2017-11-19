@@ -71,7 +71,11 @@
 #ifdef __GX__
 #include <gccore.h>
 #include <ogc/lwp_heap.h>
+#include <ogc/machine/processor.h>
 #include "../Gamecube/MEM2.h"
+#include "swap.h"
+#include <malloc.h>
+extern void SysPrintf(char *fmt, ...);
 #endif
 
 #include "externals.h"
@@ -212,148 +216,165 @@ unsigned short MAXSORTTEX    = 196;
 
 unsigned long XP8RGBA(unsigned long BGR)
 {
- if(!(BGR&0xffff)) return 0x50000000;
+	SysPrintf("1\r\n");
+ if(!(BGR&0xffff)) return SWAP32(0x50000000);
  if(DrawSemiTrans && !(BGR&0x8000)) 
-  {ubOpaqueDraw=1;return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff);}
- return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
+  {ubOpaqueDraw=1;return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff));}
+ return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000);
 }
 
 unsigned long XP8RGBAEx(unsigned long BGR)
 {
- if(!(BGR&0xffff)) return 0x03000000;
+	SysPrintf("2\r\n");
+ if(!(BGR&0xffff)) return SWAP32(0x03000000);
  if(DrawSemiTrans && !(BGR&0x8000)) 
-  {ubOpaqueDraw=1;return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff);}
- return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
+  {ubOpaqueDraw=1;return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff));}
+ return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000);
 }
 
 unsigned long CP8RGBA(unsigned long BGR)
 {
+	SysPrintf("3\r\n");
  unsigned long l;
- if(!(BGR&0xffff)) return 0x50000000;
+ if(!(BGR&0xffff)) return SWAP32(0x50000000);
  if(DrawSemiTrans && !(BGR&0x8000)) 
-  {ubOpaqueDraw=1;return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff);}
+  {ubOpaqueDraw=1;return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff));}
  l=((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
  if(l==0xffffff00) l=0xff000000;
- return l;
+ return SWAP32(l);
 }
 
 unsigned long CP8RGBAEx(unsigned long BGR)
 {
+	SysPrintf("4\r\n");
  unsigned long l;
- if(!(BGR&0xffff)) return 0x03000000;
+ if(!(BGR&0xffff)) return SWAP32(0x03000000);
  if(DrawSemiTrans && !(BGR&0x8000)) 
-  {ubOpaqueDraw=1;return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff);}
+  {ubOpaqueDraw=1;return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff));}
  l=((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
  if(l==0xffffff00) l=0xff000000;
- return l;
+ return SWAP32(l);
 }
 
-unsigned long XP8RGBA_0(unsigned long BGR)
-{
- if(!(BGR&0xffff)) return 0x50000000;
- return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
+unsigned long XP8RGBA_0(unsigned long BGR) {
+ if(!(BGR&0xffff)) return (0x50000000);
+ return (((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000);
 }
 
 unsigned long XP8RGBAEx_0(unsigned long BGR)
 {
- if(!(BGR&0xffff)) return 0x03000000;
- return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
+	SysPrintf("6\r\n");
+ if(!(BGR&0xffff)) return SWAP32(0x03000000);
+ return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000);
 }
 
 unsigned long XP8BGRA_0(unsigned long BGR)
 {
- if(!(BGR&0xffff)) return 0x50000000;
- return ((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff)|0xff000000;
+	SysPrintf("7\r\n");
+ if(!(BGR&0xffff)) return SWAP32(0x50000000);
+ return SWAP32(((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff)|0xff000000);
 }
 
 unsigned long XP8BGRAEx_0(unsigned long BGR)
 {
- if(!(BGR&0xffff)) return 0x03000000;
- return ((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff)|0xff000000;
+	SysPrintf("8\r\n");
+ if(!(BGR&0xffff)) return SWAP32(0x03000000);
+ return SWAP32(((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff)|0xff000000);
 }
 
 unsigned long CP8RGBA_0(unsigned long BGR)
 {
+	SysPrintf("9\r\n");
  unsigned long l;
 
- if(!(BGR&0xffff)) return 0x50000000;
+ if(!(BGR&0xffff)) return SWAP32(0x50000000);
  l=((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
  if(l==0xfff8f800) l=0xff000000;
- return l;
+ return SWAP32(l);
 }
 
 unsigned long CP8RGBAEx_0(unsigned long BGR)
 {
+	SysPrintf("10\r\n");
  unsigned long l;
 
- if(!(BGR&0xffff)) return 0x03000000;
+ if(!(BGR&0xffff)) return SWAP32(0x03000000);
  l=((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
  if(l==0xfff8f800) l=0xff000000;
- return l;
+ return SWAP32(l);
 }
 
 unsigned long CP8BGRA_0(unsigned long BGR)
 {
+	SysPrintf("11\r\n");
  unsigned long l;
 
- if(!(BGR&0xffff)) return 0x50000000;
+ if(!(BGR&0xffff)) return SWAP32(0x50000000);
  l=((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff)|0xff000000;
  if(l==0xff00f8f8) l=0xff000000;
- return l;
+ return SWAP32(l);
 }
 
 unsigned long CP8BGRAEx_0(unsigned long BGR)
 {
+	SysPrintf("12\r\n");
  unsigned long l;
 
- if(!(BGR&0xffff)) return 0x03000000;
+ if(!(BGR&0xffff)) return SWAP32(0x03000000);
  l=((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff)|0xff000000;
  if(l==0xff00f8f8) l=0xff000000;
- return l;
+ return SWAP32(l);
 }
 
 unsigned long XP8RGBA_1(unsigned long BGR)
 {
- if(!(BGR&0xffff)) return 0x50000000;
- if(!(BGR&0x8000)) {ubOpaqueDraw=1;return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff);}
- return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
+	SysPrintf("13\r\n");
+ if(!(BGR&0xffff)) return SWAP32(0x50000000);
+ if(!(BGR&0x8000)) {ubOpaqueDraw=1;return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff));}
+ return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000);
 }
 
 unsigned long XP8RGBAEx_1(unsigned long BGR)
 {
- if(!(BGR&0xffff)) return 0x03000000;
- if(!(BGR&0x8000)) {ubOpaqueDraw=1;return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff);}
- return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
+	SysPrintf("14\r\n");
+ if(!(BGR&0xffff)) return SWAP32(0x03000000);
+ if(!(BGR&0x8000)) {ubOpaqueDraw=1;return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff));}
+ return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000);
 }
 
 unsigned long XP8BGRA_1(unsigned long BGR)
 {
- if(!(BGR&0xffff)) return 0x50000000;
- if(!(BGR&0x8000)) {ubOpaqueDraw=1;return ((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff);}
- return ((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff)|0xff000000;
+	SysPrintf("15\r\n");
+ if(!(BGR&0xffff)) return SWAP32(0x50000000);
+ if(!(BGR&0x8000)) {ubOpaqueDraw=1;return SWAP32(((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff));}
+ return SWAP32(((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff)|0xff000000);
 }
 
 unsigned long XP8BGRAEx_1(unsigned long BGR)
 {
- if(!(BGR&0xffff)) return 0x03000000;
- if(!(BGR&0x8000)) {ubOpaqueDraw=1;return ((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff);}
- return ((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff)|0xff000000;
+	SysPrintf("16\r\n");
+ if(!(BGR&0xffff)) return SWAP32(0x03000000);
+ if(!(BGR&0x8000)) {ubOpaqueDraw=1;return SWAP32(((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff));}
+ return SWAP32(((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff)|0xff000000);
 }
 
 unsigned long P8RGBA(unsigned long BGR)
 {
+	SysPrintf("17\r\n");
  if(!(BGR&0xffff)) return 0;
- return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
+ return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000);
 }
 
 unsigned long P8BGRA(unsigned long BGR)
 {
+	SysPrintf("18\r\n");
  if(!(BGR&0xffff)) return 0;
- return ((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff)|0xff000000;
+ return SWAP32(((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff)|0xff000000);
 }
 
 unsigned short XP5RGBA(unsigned short BGR)
 {
+	SysPrintf("19\r\n");
  if(!BGR) return 0;
  if(DrawSemiTrans && !(BGR&0x8000)) 
   {ubOpaqueDraw=1;return ((((BGR<<11))|((BGR>>9)&0x3e)|((BGR<<1)&0x7c0)));}
@@ -362,6 +383,7 @@ unsigned short XP5RGBA(unsigned short BGR)
 
 unsigned short XP5RGBA_0 (unsigned short BGR)
 {
+	SysPrintf("20\r\n");
  if(!BGR) return 0;
 
  return ((((BGR<<11))|((BGR>>9)&0x3e)|((BGR<<1)&0x7c0)))|1;
@@ -369,6 +391,7 @@ unsigned short XP5RGBA_0 (unsigned short BGR)
 
 unsigned short CP5RGBA_0 (unsigned short BGR)
 {
+	SysPrintf("21\r\n");
  unsigned short s;
 
  if(!BGR) return 0;
@@ -380,6 +403,7 @@ unsigned short CP5RGBA_0 (unsigned short BGR)
 
 unsigned short XP5RGBA_1(unsigned short BGR)
 {
+	SysPrintf("22\r\n");
  if(!BGR) return 0;
  if(!(BGR&0x8000)) 
   {ubOpaqueDraw=1;return ((((BGR<<11))|((BGR>>9)&0x3e)|((BGR<<1)&0x7c0)));}
@@ -388,12 +412,14 @@ unsigned short XP5RGBA_1(unsigned short BGR)
 
 unsigned short P5RGBA(unsigned short BGR)
 {
+	SysPrintf("23\r\n");
  if(!BGR) return 0;
  return ((((BGR<<11))|((BGR>>9)&0x3e)|((BGR<<1)&0x7c0)))|1;
 }
 
 unsigned short XP4RGBA(unsigned short BGR)
 {
+	SysPrintf("24\r\n");
  if(!BGR) return 6;
  if(DrawSemiTrans && !(BGR&0x8000)) 
   {ubOpaqueDraw=1;return ((((BGR<<11))|((BGR>>9)&0x3e)|((BGR<<1)&0x7c0)));}
@@ -402,12 +428,14 @@ unsigned short XP4RGBA(unsigned short BGR)
 
 unsigned short XP4RGBA_0 (unsigned short BGR)
 {
+	SysPrintf("25\r\n");
  if(!BGR) return 6;
  return (((((BGR&0x1e)<<11))|((BGR&0x7800)>>7)|((BGR&0x3c0)<<2)))|0xf;
 }
 
 unsigned short CP4RGBA_0 (unsigned short BGR)
 {
+	SysPrintf("26\r\n");
  unsigned short s;
  if(!BGR) return 6;
  s=(((((BGR&0x1e)<<11))|((BGR&0x7800)>>7)|((BGR&0x3c0)<<2)))|0xf;
@@ -417,6 +445,7 @@ unsigned short CP4RGBA_0 (unsigned short BGR)
 
 unsigned short XP4RGBA_1(unsigned short BGR)
 {
+	SysPrintf("27\r\n");
  if(!BGR) return 6;
  if(!(BGR&0x8000)) 
   {ubOpaqueDraw=1;return ((((BGR<<11))|((BGR>>9)&0x3e)|((BGR<<1)&0x7c0)));}
@@ -425,6 +454,7 @@ unsigned short XP4RGBA_1(unsigned short BGR)
 
 unsigned short P4RGBA(unsigned short BGR)
 {
+	SysPrintf("28\r\n");
  if(!BGR) return 0;
  return (((((BGR&0x1e)<<11))|((BGR&0x7800)>>7)|((BGR&0x3c0)<<2)))|0xf;
 }
@@ -470,7 +500,8 @@ void CheckTextureMemory(void)
    free(p);
    glGetError();
 #else
-	
+	gTexBlurName = malloc(sizeof(textureWndCacheEntry));
+	memset(gTexBlurName, 0, sizeof(textureWndCacheEntry));
 #endif
    iRam-=iFTexA*iFTexB*3;
    iFTexA=(iResX*256)/iFTexA;
@@ -527,24 +558,7 @@ void CheckTextureMemory(void)
   }
  glBindTexture(GL_TEXTURE_2D,0);
 #else
- for(i=0;i<MAXSORTTEX;i++)
-  {
-   uiStexturePage[i] = malloc(sizeof(textureWndCacheEntry));
-   textureWndCacheEntry* entry = uiStexturePage[i];
-   entry->clampS = entry->clampT = iClampType;
-   entry->LODtype = 0;
-   entry->GXtexture = (u16*)p;
-   entry->GXtexfmt = GX_TF_RGB5A3;
-   DCFlushRange(&entry->GXtexture, iTSize*iTSize*4);
-   GX_InitTexObj(&entry->GXtex, entry->GXtexture, 
-        (u16) iTSize, (u16) iTSize, entry->GXtexfmt, 
-   		entry->clampS ? GX_CLAMP : GX_REPEAT, 
-   		entry->clampT ? GX_CLAMP : GX_REPEAT, GX_FALSE); 
-   if(entry->LODtype == 0)
-    GX_InitTexObjLOD(&entry->GXtex, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-   if(entry->LODtype == 1)
-	GX_InitTexObjLOD(&entry->GXtex, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_TRUE, GX_TRUE, GX_ANISO_4);
-  }
+
 #endif
  free(p);
 
@@ -692,6 +706,8 @@ void CleanupTextureStore()
     {
 #ifndef __GX__
      glDeleteTextures(1,&uiStexturePage[i]->texname);
+#else
+	//TODO clear GX stuff
 #endif
      uiStexturePage[i]=NULL;                         // --> delete it
     }
@@ -977,6 +993,7 @@ void DefineTextureWnd(void)
 #ifndef __GX__
  if(gTexName==NULL) {
   gTexName=malloc(sizeof(textureWndCacheEntry));
+  memset(gTexName, 0, sizeof(textureWndCacheEntry));
   glGenTextures(1, &gTexName->texname);
  }
 
@@ -1001,20 +1018,7 @@ void DefineTextureWnd(void)
               TWin.Position.y1, 
               0, giWantedFMT, giWantedTYPE, texturepart);
 #else
- if(gTexName==NULL) {
-  gTexName=malloc(sizeof(textureWndCacheEntry));
- }
- gTexName->clampS = GX_REPEAT;
- gTexName->clampT = GX_REPEAT;
-	
- if(iFilterType && iFilterType<3 && iHiResTextures!=2)
-   gTexName->LODtype = 0;
- else
-   gTexName->LODtype = 1;
- gTexName->GXtexture = (u16*)texturepart;
- gTexName->GXtexfmt = GX_TF_RGB5A3;
- gTexName->GXrealWidth = TWin.Position.x1;
- gTexName->GXrealHeight = TWin.Position.y1;
+	// We don't care about texture window
 #endif
 }
 
@@ -1760,6 +1764,7 @@ void DefinePalTextureWnd(void)
 #ifndef __GX__
  if(gTexName==NULL) {
   gTexName=malloc(sizeof(textureWndCacheEntry));
+  memset(gTexName, 0, sizeof(textureWndCacheEntry));
   glGenTextures(1, &gTexName->texname);
  }
 
@@ -2060,6 +2065,7 @@ void DefinePackedTextureMovie(void)
  if(gTexMovieName==NULL)
   {
    gTexMovieName=malloc(sizeof(textureWndCacheEntry));
+   memset(gTexMovieName, 0, sizeof(textureWndCacheEntry));
    glGenTextures(1, &gTexMovieName->texname);
    gTexName=gTexMovieName;
    glBindTexture(GL_TEXTURE_2D, gTexName->texname);
@@ -2104,6 +2110,7 @@ void DefineTextureMovie(void)
  if(gTexMovieName==NULL)
   {
    gTexMovieName=malloc(sizeof(textureWndCacheEntry));
+   memset(gTexMovieName, 0, sizeof(textureWndCacheEntry));
    glGenTextures(1, &gTexMovieName->texname);
    gTexName=gTexMovieName;
    glBindTexture(GL_TEXTURE_2D, gTexName->texname);
@@ -2546,6 +2553,7 @@ textureWndCacheEntry* BlackFake15BitTexture(void)
    if(gTexFrameName == NULL)
     {
 	 gTexFrameName=malloc(sizeof(textureWndCacheEntry));
+	 memset(gTexFrameName, 0, sizeof(textureWndCacheEntry));
      gTexName=gTexFrameName;
 #ifndef __GX__
      glGenTextures(1, &gTexFrameName->texname);
@@ -2589,7 +2597,7 @@ textureWndCacheEntry* BlackFake15BitTexture(void)
 #endif
     }
    ubOpaqueDraw=0;
-
+	SysPrintf("\r\n\r\nBlackFake15BitTexture\r\n\r\n");
    return gTexName;
   }
  return 0;
@@ -2658,6 +2666,7 @@ textureWndCacheEntry* Fake15BitTexture(void)
    if(iResX>640  || iResY>480)  iFTex=1024;
    else                         iFTex=512; 
    gTexFrameName=malloc(sizeof(textureWndCacheEntry));
+   memset(gTexFrameName, 0, sizeof(textureWndCacheEntry));
    gTexName=gTexFrameName;
    p=(char *)malloc(iFTex*iFTex*4);
    memset(p,0,iFTex*iFTex*4);
@@ -2828,6 +2837,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
    //--------------------------------------------------// 
    // 4bit texture load ..
    case 0:
+    SysPrintf("4bit texture load\r\n");
     if(GlobalTextIL)
      {
       unsigned int TXV,TXU,n_xi,n_yi;
@@ -2865,7 +2875,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
 
     row=4;do
      {
-      *px    =LTCOL(*wSRCPtr);
+      *px    =LTCOL(*wSRCPtr+0);
       *(px+1)=LTCOL(*(wSRCPtr+1));
       *(px+2)=LTCOL(*(wSRCPtr+2));
       *(px+3)=LTCOL(*(wSRCPtr+3));
@@ -2902,6 +2912,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
    //--------------------------------------------------// 
    // 8bit texture load ..
    case 1:
+    SysPrintf("8bit texture load\r\n");
     if(GlobalTextIL)
      {
       unsigned int TXV,TXU,n_xi,n_yi;
@@ -2979,6 +2990,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
    //--------------------------------------------------// 
    // 16bit texture load ..
    case 2:
+    SysPrintf("16bit texture load\r\n");
     start=((pageid-16*pmult)<<6)+262144*pmult;
 
     wSRCPtr = psxVuw + start + (y1<<10) + x1;
@@ -3037,8 +3049,10 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
 
  if(bOpaquePass)
   {
+   SysPrintf("bOpaquePass\r\n");
    if(bSmallAlpha)
     {
+	 SysPrintf("bSmallAlpha\r\n");
      for(column=0;column<dy;column++)
       {
        for(row=0;row<dx;row++)
@@ -3078,6 +3092,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
     }
    else
     {
+	 SysPrintf("no bSmallAlpha\r\n");
      for(column=0;column<dy;column++)
       {
        for(row=0;row<dx;row++)
@@ -3118,8 +3133,9 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
       }
     }
   }
- else
- for(column=0;column<dy;column++)
+ else {
+  SysPrintf("no bOpaquePass\r\n");
+  for(column=0;column<dy;column++)
   {
    for(row=0;row<dx;row++)
     {
@@ -3146,6 +3162,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
      ta++;
     }
   }
+ }
 
  DefineSubTextureSort();
 }
@@ -4174,6 +4191,7 @@ void DefineSubTextureSortHiRes(void)
  if(gTexName==NULL)             
   {
    gTexName=malloc(sizeof(textureWndCacheEntry));
+   memset(gTexName, 0, sizeof(textureWndCacheEntry));
    glGenTextures(1, &gTexName->texname);
    glBindTexture(GL_TEXTURE_2D, gTexName->texname);
 
@@ -4261,8 +4279,146 @@ void DefineSubTextureSortHiRes(void)
 #endif
 }
 
-/////////////////////////////////////////////////////////////////////////////
+inline u32 GXGetRGBA8888_RGBA8( u64 *src, u16 x, u16 i, u8 palette )
+{
+//set palette = 0 for AR texels and palette = 1 for GB texels
+	u32 c = ((u32*)src)[x^i]; // 0xAARRGGBB
+	u16 color = (palette & 1) ? /* GGBB */ (u16) ((c >> 8) & 0x0000FFFF) : /* AARR */ (u16) (((c & 0x000000FF) << 8) | (c >> 24));
+	//u16 color = (palette & 1) ? /* GGBB */ (u16) (c & 0xFFFF) : /* AARR */ (u16) ((c >> 16) & 0xFFFF);
+	return (u32) color;
+}
 
+#define XXH_PRIVATE_API
+#define XXH_FORCE_MEMORY_ACCESS 2
+#define XXH_FORCE_NATIVE_FORMAT 1
+#define XXH_FORCE_ALIGN_CHECK 0
+#include "../Gamecube/xxhash.h"
+u32 Hash_Calculate( u32 hash, void *buffer, u32 count )
+{
+    return XXH32(buffer, count, hash);
+}
+
+GXSubTexture* convertTex32bppToGX(u8 *rgba8888Tex) {
+
+	u8 *dest = NULL;
+	u32	GXsize, k, l;
+	u8 *src;
+	u32 numBytes, bpl;
+	u32 x, y, j, tx, ty;
+	u16 clampSClamp;
+	u16 clampTClamp;
+
+	GXSubTexture *entry = malloc(sizeof(GXSubTexture));
+	memset(entry, 0, sizeof(GXSubTexture));
+	
+	entry->xPos = XTexS;
+	entry->yPos = YTexS;
+	entry->realWidth = DXTexS;
+	entry->realHeight = DYTexS;
+	entry->GXtexfmt = GX_TF_RGBA8;
+	entry->gl_ux_xycoords[0] = gl_ux[7];
+	entry->gl_ux_xycoords[1] = gl_ux[6]-gl_ux[7];
+	entry->gl_ux_xycoords[2] = gl_ux[5];
+	entry->gl_ux_xycoords[3] = gl_ux[4]-gl_ux[5];
+	
+	GXsize = 4;
+	//If realWidth or realHeight do not match the GX texture block size, then specify a compatible blocksize
+	int blockWidth = (GXsize == 1) ? 8 : 4;
+	int blockHeight = 4;
+	if(DXTexS % blockWidth || DXTexS == 0)
+	{
+		entry->GXrealWidth = DXTexS + blockWidth - (DXTexS % blockWidth);
+	}
+	else
+		entry->GXrealWidth = DXTexS;
+	if(DYTexS % blockHeight || DYTexS == 0)
+	{
+		entry->GXrealHeight = DYTexS + blockHeight - (DYTexS % blockHeight);
+	}
+	else
+		entry->GXrealHeight = DYTexS;
+
+	u32 textureBytes = (entry->GXrealWidth * entry->GXrealHeight) * GXsize;
+	
+	if (textureBytes > 0)
+	{
+		dest = (u8*) malloc(textureBytes);
+	}
+
+	entry->GXtexture = (u16*) dest;
+	//SysPrintf("Texture made: GXrealWidth %ld GXrealHeight: %ld\r\n",entry->GXrealWidth,entry->GXrealHeight);
+	//SysPrintf("Texture made: DXTexS %ld DYTexS: %ld\r\n",DXTexS,DYTexS);
+	
+	bpl = DXTexS << 3 >> 1;
+	numBytes = bpl * DYTexS;
+	entry->crc = Hash_Calculate(0xFFFFFFFF, rgba8888Tex, numBytes);
+
+	clampSClamp = DXTexS - 1;
+	clampTClamp = DYTexS - 1;
+
+	//SysPrintf("Texture made in GXrealWidth %ld GXrealHeight: %ld\r\n",entry->GXrealWidth,entry->GXrealHeight);
+	//SysPrintf("Texture made: entry->GXtexture %08X dest: %08X\r\n",entry->GXtexture,dest);
+	//SysPrintf("Texture made: XTexS %ld YTexS: %ld\r\n",XTexS,YTexS);
+	//SysPrintf("Texture made: clampSClamp %ld clampTClamp: %ld\r\n",clampSClamp,clampTClamp);
+	//SysPrintf("Texture made: bpl %ld numBytes: %ld\r\n",bpl,numBytes);
+	//SysPrintf("Texture made: DXTexS %ld DYTexS: %ld\r\n",DXTexS,DYTexS);
+	
+	for (y = 0; y < DYTexS; y+=4)
+	{
+		for (x = 0; x < DXTexS; x+=4)
+		{
+			j = 0;
+			__asm__ volatile("dcbz %y0" : "=Z"(dest[0]) :: "memory");
+			__asm__ volatile("dcbz %y0" : "=Z"(dest[32]) :: "memory");
+			for (k = 0; k < 4; k++)
+			{
+				ty = min(y+k, clampTClamp);
+				src = &rgba8888Tex[(bpl * ty)];
+				//SysPrintf("Grabbing from %ld %08X\r\n", bpl * ty, src);
+				for (l = 0; l < 4; l++)
+				{
+					tx = min(x+l, clampSClamp);
+					((u16*)dest)[j] =		(u16) GXGetRGBA8888_RGBA8( (u64*)src, tx, 0, 0 );	// AARR texels
+					((u16*)dest)[j+16] =	(u16) GXGetRGBA8888_RGBA8( (u64*)src, tx, 0, 1 );	// GGBB texels -> next 32B block
+					j++;
+				}
+			}
+			__asm__ volatile("dcbf %y0" : "=Z"(dest[0]) :: "memory");
+			__asm__ volatile("dcbf %y0" : "=Z"(dest[32]) :: "memory");
+			dest += 64;
+		}
+		_sync();
+	}
+	GX_InitTexObj(&entry->GXtex, entry->GXtexture, entry->GXrealWidth
+		, entry->GXrealHeight, entry->GXtexfmt, 
+		iClampType ? GX_CLAMP : GX_REPEAT, 
+ 		iClampType ? GX_CLAMP : GX_REPEAT, GX_FALSE); 
+	if(iFilterType)
+		GX_InitTexObjLOD(&entry->GXtex, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+	else
+		GX_InitTexObjLOD(&entry->GXtex, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_TRUE, GX_TRUE, GX_ANISO_4);
+	return entry;
+}
+
+
+bool compareGxSubTex(GXSubTexture *subTex) {
+	//SysPrintf("Compare GX Subtex: subTex->xPos (%ld) subTex->yPos (%ld) subTex->realWidth (%ld) subTex->realHeight (%ld)\r\n",
+    //       subTex->xPos, subTex->yPos, subTex->realWidth, subTex->realHeight);
+	if( 
+		subTex->gl_ux_xycoords[0] == gl_ux[7] &&
+		subTex->gl_ux_xycoords[1] == (gl_ux[6]-gl_ux[7]) &&
+		subTex->gl_ux_xycoords[2] == gl_ux[5] &&
+		subTex->gl_ux_xycoords[3] == (gl_ux[4]-gl_ux[5])) {
+	//		SysPrintf("Found GX Subtex: XTexS (%ld) YTexS (%ld) DXTexS (%ld) DYTexS (%ld)\r\n",
+    //       XTexS, YTexS, DXTexS, DYTexS);
+		return TRUE;
+	}
+	//SysPrintf("Didn't find GX Subtex: XTexS (%ld) YTexS (%ld) DXTexS (%ld) DYTexS (%ld)\r\n",
+    //       XTexS, YTexS, DXTexS, DYTexS);
+	return FALSE;
+}
+
+static int tcount = 0;
 void DefineSubTextureSort(void)
 {
  if(iHiResTextures)
@@ -4274,6 +4430,7 @@ void DefineSubTextureSort(void)
  if(gTexName==NULL)
   {
    gTexName=malloc(sizeof(textureWndCacheEntry));
+   memset(gTexName, 0, sizeof(textureWndCacheEntry));
    glGenTextures(1, &gTexName->texname);
    glBindTexture(GL_TEXTURE_2D, gTexName->texname);
 
@@ -4297,7 +4454,68 @@ void DefineSubTextureSort(void)
  glTexSubImage2D(GL_TEXTURE_2D, 0, XTexS, YTexS,
                  DXTexS, DYTexS,
                  giWantedFMT, giWantedTYPE, texturepart);
+#else
+ if(gTexName==NULL)
+ {
+  gTexName=memalign(32, sizeof(textureWndCacheEntry));
+  memset(gTexName, 0, sizeof(textureWndCacheEntry));
+ }
+
+  setOrCreateGXSubTex();
+
+/*
+// tcount++;
+if(DXTexS > 20){
+	  char filename[1024];
+	  memset(filename, 0, 1024);
+	  sprintf(filename, "sd:/tex-%ld-%ld.raw",  DXTexS, DYTexS);
+	  FILE* f = fopen(filename, "wb" );
+	  fwrite(texturepart, 1, 512*512*4, f);
+	  fclose(f);
+	  SysPrintf("Done!\r\n");
+//if(tcount == 10) {
+	exit(1);}*/
+//}
+
 #endif
+}
+
+void setOrCreateGXSubTex() {
+	gTexName->current = NULL;
+	// Look at the list of textures
+	if(gTexName->gxSubTex == NULL) {
+		//SysPrintf("Creating New sub GX Texture: XTexS (%ld) YTexS (%ld) DXTexS (%ld) DYTexS (%ld)\r\n",XTexS, YTexS, DXTexS, DYTexS);
+		// Empty list, create, set current & return
+		gTexName->gxSubTex = convertTex32bppToGX(texturepart);
+		gTexName->current = gTexName->gxSubTex;
+		return;
+	}
+	else {
+		// List has some stuff, check each entry
+		GXSubTexture *subTex = gTexName->gxSubTex;
+		while(subTex != NULL) {
+			if(compareGxSubTex(subTex)) {
+				gTexName->current = subTex;
+				return;
+			}
+			subTex = subTex->next;
+		}
+	}
+	// We've got nothing, create it.
+	// TODO check texture cache and free some older stuff
+	//SysPrintf("Creating New sub GX Texture: XTexS (%ld) YTexS (%ld) DXTexS (%ld) DYTexS (%ld)\r\n",XTexS, YTexS, DXTexS, DYTexS);
+	gTexName->current = convertTex32bppToGX(texturepart);
+	if(gTexName->gxSubTex == NULL)
+		gTexName->gxSubTex = gTexName->current;
+	GXSubTexture *subTex = gTexName->gxSubTex; 
+	while(subTex->next != NULL) {
+		subTex = subTex->next;
+	}
+	subTex->next = gTexName->current;
+	tcount++;
+	if(tcount == 50) {
+		  exit(1);
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -5002,10 +5220,10 @@ textureWndCacheEntry* SelectSubTextureS(long TextureMode, unsigned long GivenClu
 
  // found? fine
  usLRUTexPage=iCache;
- if(!OPtr) return uiStexturePage[iCache];
+ if(!OPtr) {return uiStexturePage[iCache];}
 
  // not found? upload texture and store infos in cache
- gTexName=uiStexturePage[iCache];
+ gTexName=uiStexturePage[iCache];	
  LoadSubTexFn(GlobalTexturePage,TextureMode,cx,cy);
  uiStexturePage[iCache]=gTexName;
  *OPtr=ubOpaqueDraw;
