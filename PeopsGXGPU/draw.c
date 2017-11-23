@@ -337,6 +337,25 @@ void SetExtGLFuncs(void)
 
    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);    
   }
+#else
+ /*if(bAdvancedBlend)
+  {
+   bUseMultiPass=FALSE;bGLBlend=TRUE;                  // -> no need for 2 passes, perfect
+
+   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);    
+   glTexEnvf(GL_TEXTURE_ENV, COMBINE_RGB_EXT, GL_MODULATE);     
+   glTexEnvf(GL_TEXTURE_ENV, COMBINE_ALPHA_EXT, GL_MODULATE);     
+   glTexEnvf(GL_TEXTURE_ENV, RGB_SCALE_EXT, 2.0f);    
+  }
+ else  */                                                // no advanced blending wanted/available:
+  {
+   if(bAdvancedBlend) bUseMultiPass=TRUE;              // -> pseudo-advanced with 2 passes
+   else               bUseMultiPass=FALSE;             // -> or simple 'bright color' mode
+   bGLBlend=FALSE;                                     // -> no ext blending!
+
+   //glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);    
+   //GX_SetTevOp(GX_TEVSTAGE0,GX_MODULATE);
+  }
 #endif
  //----------------------------------------------------//
  // init standard tex quality 0-2, and big alpha mode 3
@@ -361,6 +380,8 @@ void SetExtGLFuncs(void)
    TCF[1]=XP8RGBA_1;
 #ifndef __GX__
    glAlphaFunc(GL_GREATER,0.49f);
+#else
+   GX_SetAlphaCompare(GX_GREATER,(u8) 127,GX_AOP_AND,GX_ALWAYS,0);
 #endif
   }
  else                                                  // no opaque mode?
@@ -369,6 +390,8 @@ void SetExtGLFuncs(void)
    PalTexturedColourFn=P8RGBA;                         // -> init col func
 #ifndef __GX__
    glAlphaFunc(GL_NOTEQUAL,0);                         // --> set alpha func
+#else
+   GX_SetAlphaCompare(GX_NEQUAL,(u8) 0,GX_AOP_AND,GX_ALWAYS,0);
 #endif
   }
 
@@ -504,6 +527,11 @@ void SetExtGLFuncs(void)
  bBlendEnable=FALSE;                                   // init blending: off
 #ifndef __GX__
  glDisable(GL_BLEND);
+#else
+ GX_SetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_CLEAR);
+ GX_SetColorUpdate(GX_ENABLE);
+ GX_SetAlphaUpdate(GX_ENABLE);
+ GX_SetDstAlpha(GX_DISABLE, 0xFF);
 #endif
 
  SetScanTrans();                                       // init scan lines (if wanted)
@@ -688,7 +716,10 @@ int GLinitialize()
   }
  GX_SetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_CLEAR); 
  GX_SetAlphaCompare(GX_ALWAYS,0,GX_AOP_AND,GX_ALWAYS,0);
-
+ GX_SetColorUpdate(GX_ENABLE);
+ GX_SetAlphaUpdate(GX_ENABLE);
+ GX_SetDstAlpha(GX_DISABLE, 0xFF);
+ 
  GXColor color = {0,0,0,0};
  GX_SetCopyClear(color, 0xFFFFFF);                     // first buffer clear
  SetExtGLFuncs();                                      // init all kind of stuff (tex function pointers)

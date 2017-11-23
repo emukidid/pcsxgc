@@ -1266,7 +1266,7 @@ void ReadConfig(void)                                  // read config (linux fil
  bUseFastMdec=TRUE;
  dwCfgFixes=0;
  bUseFixes=FALSE;
- iFrameTexType=1;
+ iFrameTexType=0;
  iFrameReadType=0;
  bUse15bitMdec=FALSE;
  iShowFPS=0;
@@ -1275,7 +1275,7 @@ void ReadConfig(void)                                  // read config (linux fil
 #ifndef __GX__
  iVRamSize=0;
 #else
- iVRamSize=32;	//Wii
+ iVRamSize=16;	//Wii
  //TODO GC
 #endif
  iTexGarbageCollection=1;
@@ -1283,7 +1283,7 @@ void ReadConfig(void)                                  // read config (linux fil
  iHiResTextures=0;
  iForceVSync=-1;
 
- ReadConfigFile();                                     // read file
+ //ReadConfigFile();                                     // read file
 
  if(!iColDepth)  iColDepth=32;                         // adjust color info
  if(iUseMask)    iZBufferDepth=16;                     // set zbuffer depth 

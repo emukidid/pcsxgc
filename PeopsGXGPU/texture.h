@@ -29,19 +29,6 @@
 
 #define TEXTUREPAGESIZE 256*256
 
-typedef struct GXSubTextureTag
-{
-	GXTexObj    GXtex;
-	u16		    *GXtexture;
-	u8			GXtexfmt;
-	u32			GXrealWidth, GXrealHeight;	// Actual dimensions of GX texture
-	u32			xPos, yPos;
-	u32			realWidth, realHeight;
-	u32			crc;
-	u32			gl_ux_xycoords[4];
-	struct GXSubTextureTag *next;
-}GXSubTexture;
-
 // "texture window" cache entry
 typedef struct textureWndCacheEntryTag
 {
@@ -52,8 +39,10 @@ typedef struct textureWndCacheEntryTag
  short          used;
  EXLong         pos;
  GLuint         texname;
- GXSubTexture	*gxSubTex;
- GXSubTexture	*current;
+ GXTexObj    	GXtexObj;
+ u16		    *GXtexture;
+ u8				GXtexfmt;
+ u32 			GXrealWidth,GXrealHeight;
 } textureWndCacheEntry;
 
 // "standard texture" cache entry (12 byte per entry, as small as possible... we need lots of them)

@@ -182,10 +182,8 @@ unsigned short (*PTCF[2]) (unsigned short);
 //---------------------------------------------
 #ifdef __GX__
 heap_cntrl* GXtexCache;
-#undef malloc
-#undef free
-#define malloc(size) __lwp_heap_allocate(GXtexCache,size)
-#define free(ptr) __lwp_heap_free(GXtexCache,ptr)
+#define malloc_gx(size) __lwp_heap_allocate(GXtexCache,size)
+#define free_gx(ptr) __lwp_heap_free(GXtexCache,ptr)
 #endif //__GX__
 
 textureWndCacheEntry     wcWndtexStore[MAXWNDTEXCACHE];
@@ -256,9 +254,18 @@ unsigned long CP8RGBAEx(unsigned long BGR)
  return SWAP32(l);
 }
 
+#define CLUT_BLUE(v) ((v & 0x7C00)>>10)
+#define CLUT_GREEN(v) ((v & 0x03E0)>>5)
+#define CLUT_RED(v) ((v & 0x001F))
 unsigned long XP8RGBA_0(unsigned long BGR) {
+ BGR = SWAP16(BGR);
  if(!(BGR&0xffff)) return (0x50000000);
- return (((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000);
+
+ //return (((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000);
+ u32 ret = 0xFF000000|(((CLUT_RED(BGR) * 255) / 31)<<16)
+	|(((CLUT_GREEN(BGR)* 255) / 31)<<8)|(((CLUT_BLUE(BGR)* 255) / 31));
+ //SysPrintf("Got %08X returning %08X\r\n", BGR, ret);
+ return ret;
 }
 
 unsigned long XP8RGBAEx_0(unsigned long BGR)
@@ -328,10 +335,12 @@ unsigned long CP8BGRAEx_0(unsigned long BGR)
 
 unsigned long XP8RGBA_1(unsigned long BGR)
 {
-	SysPrintf("13\r\n");
- if(!(BGR&0xffff)) return SWAP32(0x50000000);
- if(!(BGR&0x8000)) {ubOpaqueDraw=1;return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff));}
- return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000);
+ SysPrintf("13\r\n");
+ BGR= SWAP16(BGR);
+ if(!(BGR&0xffff)) return (0x50000000);
+ u32 ret = (((CLUT_RED(BGR) * 255) / 31)<<16)|(((CLUT_GREEN(BGR)* 255) / 31)<<8)|((CLUT_BLUE(BGR)* 255)/31); 
+ if(!(BGR&0x8000)) {ubOpaqueDraw=1;return ret;}
+ return (ret|0xff000000);
 }
 
 unsigned long XP8RGBAEx_1(unsigned long BGR)
@@ -361,8 +370,11 @@ unsigned long XP8BGRAEx_1(unsigned long BGR)
 unsigned long P8RGBA(unsigned long BGR)
 {
 	SysPrintf("17\r\n");
+	BGR=SWAP16(BGR);
+	 u32 ret = 0xFF000000|(((CLUT_RED(BGR) * 255) / 31)<<16)
+	|(((CLUT_GREEN(BGR)* 255) / 31)<<8)|(((CLUT_BLUE(BGR)* 255) / 31));
  if(!(BGR&0xffff)) return 0;
- return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000);
+ return ret|0xFF000000;//SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000);
 }
 
 unsigned long P8BGRA(unsigned long BGR)
@@ -500,8 +512,10 @@ void CheckTextureMemory(void)
    free(p);
    glGetError();
 #else
-	gTexBlurName = malloc(sizeof(textureWndCacheEntry));
-	memset(gTexBlurName, 0, sizeof(textureWndCacheEntry));
+   gTexBlurName = malloc(sizeof(textureWndCacheEntry));
+   memset(gTexBlurName, 0, sizeof(textureWndCacheEntry));
+   gTexName=gTexBlurName;
+   createGXTexture(gTexName, iFTexA, iFTexB);
 #endif
    iRam-=iFTexA*iFTexB*3;
    iFTexA=(iResX*256)/iFTexA;
@@ -534,7 +548,7 @@ void CheckTextureMemory(void)
 
    for(i=0;i<MAXSORTTEX;i++)
     uiStexturePage[i]=NULL;
- 
+	SysPrintf("iSortTexCnt: %i\r\n", iSortTexCnt);
    return;
   }
 
@@ -581,7 +595,7 @@ void CheckTextureMemory(void)
  else  iSortTexCnt=iCnt-3+min(1,iHiResTextures);       // place for menu&texwnd
 
  if(iSortTexCnt<8) iSortTexCnt=8;
-
+SysPrintf("iSortTexCnt2: %i\r\n", iSortTexCnt);
 } 
 
 ////////////////////////////////////////////////////////////////////////
@@ -636,12 +650,12 @@ void InitializeTextureStore()
  for(i=0;i<3;i++)                                    // -> info for 32*3
   for(j=0;j<MAXTPAGES;j++)
    {                                               
-    pscSubtexStore[i][j]=(textureSubCacheEntryS *)malloc(CSUBSIZES*sizeof(textureSubCacheEntryS));
+    pscSubtexStore[i][j]=(textureSubCacheEntryS *)malloc_gx(CSUBSIZES*sizeof(textureSubCacheEntryS));
     memset(pscSubtexStore[i][j],0,CSUBSIZES*sizeof(textureSubCacheEntryS));
    }
  for(i=0;i<MAXSORTTEX;i++)                           // -> info 0..511
   {
-   pxSsubtexLeft[i]=(EXLong *)malloc(CSUBSIZE*sizeof(EXLong));
+   pxSsubtexLeft[i]=(EXLong *)malloc_gx(CSUBSIZE*sizeof(EXLong));
    memset(pxSsubtexLeft[i],0,CSUBSIZE*sizeof(EXLong));
    uiStexturePage[i]=NULL;
   }
@@ -673,6 +687,9 @@ void CleanupTextureStore()
 #ifndef __GX__
    if(tsx->texname)                                    // -> some tex?
     glDeleteTextures(1,&tsx->texname);                 // --> delete it
+#else
+	if(tsx->GXtexture)
+	 free_gx(tsx->GXtexture);
 #endif
   }
  iMaxTexWnds=0;                                        // no more tex wnds
@@ -680,25 +697,34 @@ void CleanupTextureStore()
 #ifndef __GX__
  if(gTexMovieName!=NULL)                               // some movie tex?
   glDeleteTextures(1, &gTexMovieName->texname);        // -> delete it
+#else
+ if(gTexMovieName != NULL && gTexMovieName->GXtexture)
+  free_gx(gTexMovieName->GXtexture);
 #endif
  gTexMovieName=NULL;                                   // no more movie tex
  //----------------------------------------------------//
 #ifndef __GX__
  if(gTexFrameName!=NULL)                               // some 15bit framebuffer tex?
   glDeleteTextures(1, &gTexFrameName->texname);        // -> delete it
+#else
+ if(gTexFrameName != NULL && gTexFrameName->GXtexture)
+  free_gx(gTexFrameName->GXtexture);
 #endif
  gTexFrameName=NULL;                                   // no more movie tex
  //----------------------------------------------------//
 #ifndef __GX__
  if(gTexBlurName!=NULL)                                // some 15bit framebuffer tex?
   glDeleteTextures(1, &gTexBlurName->texname);         // -> delete it
+#else
+ if(gTexBlurName != NULL && gTexBlurName->GXtexture)
+  free_gx(gTexBlurName->GXtexture);
 #endif
  gTexBlurName=NULL;                                    // no more movie tex
  //----------------------------------------------------//
  for(i=0;i<3;i++)                                    // -> loop
   for(j=0;j<MAXTPAGES;j++)                           // loop tex pages
    {
-    free(pscSubtexStore[i][j]);                      // -> clean mem
+    free_gx(pscSubtexStore[i][j]);                      // -> clean mem
    }
  for(i=0;i<MAXSORTTEX;i++)
   {
@@ -707,11 +733,12 @@ void CleanupTextureStore()
 #ifndef __GX__
      glDeleteTextures(1,&uiStexturePage[i]->texname);
 #else
-	//TODO clear GX stuff
+     if(uiStexturePage[i]->GXtexture)
+      free_gx(uiStexturePage[i]->GXtexture);
 #endif
      uiStexturePage[i]=NULL;                         // --> delete it
     }
-   free(pxSsubtexLeft[i]);                           // -> clean mem
+   free_gx(pxSsubtexLeft[i]);                           // -> clean mem
   }
  //----------------------------------------------------//
 }
@@ -732,7 +759,7 @@ void ResetTextureArea(BOOL bDelTex)
  if(bDelTex) {glBindTexture(GL_TEXTURE_2D,0);gTexName=NULL;}
  //----------------------------------------------------//
 #else
- if(bDelTex) {gTexName=NULL;}
+ if(bDelTex) {if(gTexName->GXtexture != NULL) free_gx(gTexName->GXtexture); gTexName=NULL;}
 #endif
  tsx=wcWndtexStore;
  for(i=0;i<MAXWNDTEXCACHE;i++,tsx++)
@@ -742,6 +769,8 @@ void ResetTextureArea(BOOL bDelTex)
     {
 #ifndef __GX__
      glDeleteTextures(1,&tsx->texname);
+#else
+	 if(tsx->GXtexture != NULL) free_gx(tsx->GXtexture);
 #endif
      tsx->texname=0;
     }
@@ -768,7 +797,7 @@ void ResetTextureArea(BOOL bDelTex)
     {glDeleteTextures(1,&uiStexturePage[i]->texname);uiStexturePage[i]=NULL;}
 #else
    if(bDelTex && uiStexturePage[i] != NULL)
-    {uiStexturePage[i]=NULL;}
+    {if(uiStexturePage[i]->GXtexture != NULL) free_gx(uiStexturePage[i]->GXtexture); uiStexturePage[i]=NULL;}
 #endif
   }
 }
@@ -1018,7 +1047,14 @@ void DefineTextureWnd(void)
               TWin.Position.y1, 
               0, giWantedFMT, giWantedTYPE, texturepart);
 #else
-	// We don't care about texture window
+ if(gTexName==NULL)
+ {
+  gTexName=malloc(sizeof(textureWndCacheEntry));
+  memset(gTexName, 0, sizeof(textureWndCacheEntry));
+  createGXTexture(gTexName, TWin.Position.x1, TWin.Position.y1);
+ }
+
+  updateGXSubTexture(gTexName, texturepart, 0, 0, TWin.Position.x1, TWin.Position.y1);
 #endif
 }
 
@@ -1789,7 +1825,14 @@ void DefinePalTextureWnd(void)
               TWin.Position.y1, 
               0, GL_COLOR_INDEX, GL_UNSIGNED_BYTE,texturepart);
 #else
+ if(gTexName==NULL)
+ {
+  gTexName=malloc(sizeof(textureWndCacheEntry));
+  memset(gTexName, 0, sizeof(textureWndCacheEntry));
+  createGXTexture(gTexName, TWin.Position.x1, TWin.Position.y1);
+ }
 
+  updateGXSubTexture(gTexName, texturepart, 0, 0, TWin.Position.x1, TWin.Position.y1);
 #endif
 }
 
@@ -1990,6 +2033,8 @@ textureWndCacheEntry* LoadTextureWnd(long pageid,long TextureMode,unsigned long 
            gTexName=ts;
 #ifndef __GX__
            glBindTexture(GL_TEXTURE_2D, gTexName->texname);
+#else
+		   GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
 #endif
           }
          UploadTexWndPal(TextureMode,cx,cy);
@@ -2099,6 +2144,19 @@ void DefinePackedTextureMovie(void)
                  GL_RGBA,
                  GL_UNSIGNED_SHORT_5_5_5_1_EXT,
                  texturepart);
+#else
+ if(gTexMovieName==NULL)
+ {
+  gTexMovieName=malloc(sizeof(textureWndCacheEntry));
+  memset(gTexMovieName, 0, sizeof(textureWndCacheEntry));
+  gTexName=gTexMovieName;
+  createGXTexture(gTexName, 256, 256);
+ }
+ else {
+  gTexName=gTexMovieName;
+ }
+
+  updateGXSubTexture(gTexName, texturepart, 0, 0, (xrMovieArea.x1-xrMovieArea.x0), (xrMovieArea.y1-xrMovieArea.y0));
 #endif
 }
 
@@ -2140,6 +2198,19 @@ void DefineTextureMovie(void)
                  (xrMovieArea.x1-xrMovieArea.x0), 
                  (xrMovieArea.y1-xrMovieArea.y0), 
                  GL_RGBA, GL_UNSIGNED_BYTE, texturepart);
+#else
+ if(gTexMovieName==NULL)
+ {
+  gTexMovieName=malloc(sizeof(textureWndCacheEntry));
+  memset(gTexMovieName, 0, sizeof(textureWndCacheEntry));
+  gTexName=gTexMovieName;
+  createGXTexture(gTexName, 256, 256);
+ }
+ else {
+  gTexName=gTexMovieName;
+ }
+
+  updateGXSubTexture(gTexName, texturepart, 0, 0, (xrMovieArea.x1-xrMovieArea.x0), (xrMovieArea.y1-xrMovieArea.y0));
 #endif
 }
 
@@ -2587,6 +2658,9 @@ textureWndCacheEntry* BlackFake15BitTexture(void)
       }
 #ifndef __GX__
      glTexImage2D(GL_TEXTURE_2D, 0, giWantedRGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, texturepart);
+#else
+	 createGXTexture(gTexName, 4, 4);
+	 updateGXSubTexture(gTexName, texturepart, 0, 0, 4, 4);
 #endif
     }
    else
@@ -2594,10 +2668,12 @@ textureWndCacheEntry* BlackFake15BitTexture(void)
      gTexName=gTexFrameName;
 #ifndef __GX__
      glBindTexture(GL_TEXTURE_2D, gTexName->texname);
+#else
+	GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
 #endif
     }
    ubOpaqueDraw=0;
-	SysPrintf("\r\n\r\nBlackFake15BitTexture\r\n\r\n");
+	//SysPrintf("\r\n\r\nBlackFake15BitTexture\r\n\r\n");
    return gTexName;
   }
  return 0;
@@ -2612,6 +2688,7 @@ int iFTex=512;
 
 textureWndCacheEntry* Fake15BitTexture(void)
 {
+	//SysPrintf("Fake15BitTexture\r\n");
  long pmult;short x1,x2,y1,y2;int iYAdjust;
  float ScaleX,ScaleY;RECT rSrc;
 
@@ -2668,9 +2745,9 @@ textureWndCacheEntry* Fake15BitTexture(void)
    gTexFrameName=malloc(sizeof(textureWndCacheEntry));
    memset(gTexFrameName, 0, sizeof(textureWndCacheEntry));
    gTexName=gTexFrameName;
+#ifndef __GX__
    p=(char *)malloc(iFTex*iFTex*4);
    memset(p,0,iFTex*iFTex*4);
-#ifndef __GX__
    glGenTextures(1, &gTexFrameName->texname);
    glBindTexture(GL_TEXTURE_2D, gTexName->texname);
 
@@ -2680,15 +2757,18 @@ textureWndCacheEntry* Fake15BitTexture(void)
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
    glTexImage2D(GL_TEXTURE_2D, 0, 3, iFTex, iFTex, 0, GL_RGB, GL_UNSIGNED_BYTE, p);
    glGetError();
-#endif
-
    free(p);
+#else
+   createGXTexture(gTexName, iFTex, iFTex);
+#endif
   }
  else 
   {
-   gTexName=gTexFrameName;
+    gTexName=gTexFrameName;
 #ifndef __GX__
    glBindTexture(GL_TEXTURE_2D, gTexName->texname);
+#else
+   GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
 #endif
   }
  x1+=PreviousPSXDisplay.Range.x0;
@@ -2837,7 +2917,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
    //--------------------------------------------------// 
    // 4bit texture load ..
    case 0:
-    SysPrintf("4bit texture load\r\n");
+    //SysPrintf("4bit texture load\r\n");
     if(GlobalTextIL)
      {
       unsigned int TXV,TXU,n_xi,n_yi;
@@ -2875,14 +2955,18 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
 
     row=4;do
      {
-      *px    =LTCOL(*wSRCPtr+0);
-      *(px+1)=LTCOL(*(wSRCPtr+1));
-      *(px+2)=LTCOL(*(wSRCPtr+2));
-      *(px+3)=LTCOL(*(wSRCPtr+3));
+      *px    =LTCOL((*wSRCPtr+0));
+      *(px+1)=LTCOL((*wSRCPtr+1));
+      *(px+2)=LTCOL((*(wSRCPtr+2)));
+      *(px+3)=LTCOL((*(wSRCPtr+3)));	// TODO dump & fix.
       row--;px+=4;wSRCPtr+=4;
+	  
      }
     while (row);
-
+	int i;
+	//for(i = 0; i < 4; i++)
+	//	SysPrintf("0x%08X: %08X %08X %08X %08X\r\n", i*4, *(pa+i+0),*(pa+i+1),*(pa+i+2),*(pa+i+3));
+	
     x2a=x2?(x2-1):0;//if(x2) x2a=x2-1; else x2a=0;
     sxm=x1&1;sxh=x1>>1;
     j=sxm?(x1+1):x1;//if(sxm) j=x1+1; else j=x1;
@@ -2896,6 +2980,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
        {
         *ta    =*(pa+(*cSRCPtr & 0xF)); 
         *(ta+1)=*(pa+((*cSRCPtr >> 4) & 0xF)); 
+//		SysPrintf("Used %i + %i\r\n", *cSRCPtr & 0xF, ((*cSRCPtr >> 4) & 0xF));
         cSRCPtr++;ta+=2;
        }
 
@@ -2904,9 +2989,9 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
         *ta++=*(pa+(*cSRCPtr & 0xF)); row++;
         if(row<=x2) *ta++=*(pa+((*cSRCPtr >> 4) & 0xF));
        }
-
       ta+=xalign;
      }
+//exit(1);
 
     break;
    //--------------------------------------------------// 
@@ -4283,89 +4368,82 @@ inline u32 GXGetRGBA8888_RGBA8( u64 *src, u16 x, u16 i, u8 palette )
 {
 //set palette = 0 for AR texels and palette = 1 for GB texels
 	u32 c = ((u32*)src)[x^i]; // 0xAARRGGBB
-	u16 color = (palette & 1) ? /* GGBB */ (u16) ((c >> 8) & 0x0000FFFF) : /* AARR */ (u16) (((c & 0x000000FF) << 8) | (c >> 24));
-	//u16 color = (palette & 1) ? /* GGBB */ (u16) (c & 0xFFFF) : /* AARR */ (u16) ((c >> 16) & 0xFFFF);
+	//u16 color = (palette & 1) ? /* GGBB */ (u16) ((c >> 8) & 0x0000FFFF) : /* AARR */ (u16) (((c & 0x000000FF) << 8) | (c >> 24));
+	u16 color = (palette & 1) ? /* GGBB */ (u16) (c & 0xFFFF) : /* AARR */ (u16) ((c >> 16) & 0xFFFF);
 	return (u32) color;
 }
 
-#define XXH_PRIVATE_API
-#define XXH_FORCE_MEMORY_ACCESS 2
-#define XXH_FORCE_NATIVE_FORMAT 1
-#define XXH_FORCE_ALIGN_CHECK 0
-#include "../Gamecube/xxhash.h"
-u32 Hash_Calculate( u32 hash, void *buffer, u32 count )
-{
-    return XXH32(buffer, count, hash);
-}
 
-GXSubTexture* convertTex32bppToGX(u8 *rgba8888Tex) {
+void createGXTexture(textureWndCacheEntry *entry, u32 width, u32 height) {
 
-	u8 *dest = NULL;
-	u32	GXsize, k, l;
-	u8 *src;
-	u32 numBytes, bpl;
-	u32 x, y, j, tx, ty;
-	u16 clampSClamp;
-	u16 clampTClamp;
-
-	GXSubTexture *entry = malloc(sizeof(GXSubTexture));
-	memset(entry, 0, sizeof(GXSubTexture));
-	
-	entry->xPos = XTexS;
-	entry->yPos = YTexS;
-	entry->realWidth = DXTexS;
-	entry->realHeight = DYTexS;
+	u32 GXsize = 4;
 	entry->GXtexfmt = GX_TF_RGBA8;
-	entry->gl_ux_xycoords[0] = gl_ux[7];
-	entry->gl_ux_xycoords[1] = gl_ux[6]-gl_ux[7];
-	entry->gl_ux_xycoords[2] = gl_ux[5];
-	entry->gl_ux_xycoords[3] = gl_ux[4]-gl_ux[5];
-	
-	GXsize = 4;
 	//If realWidth or realHeight do not match the GX texture block size, then specify a compatible blocksize
 	int blockWidth = (GXsize == 1) ? 8 : 4;
 	int blockHeight = 4;
-	if(DXTexS % blockWidth || DXTexS == 0)
+	if(width % blockWidth || width == 0)
 	{
-		entry->GXrealWidth = DXTexS + blockWidth - (DXTexS % blockWidth);
+		entry->GXrealWidth = width + blockWidth - (width % blockWidth);
 	}
 	else
-		entry->GXrealWidth = DXTexS;
-	if(DYTexS % blockHeight || DYTexS == 0)
+		entry->GXrealWidth = width;
+	if(height % blockHeight || height == 0)
 	{
-		entry->GXrealHeight = DYTexS + blockHeight - (DYTexS % blockHeight);
+		entry->GXrealHeight = height + blockHeight - (height % blockHeight);
 	}
 	else
-		entry->GXrealHeight = DYTexS;
+		entry->GXrealHeight = height;
 
 	u32 textureBytes = (entry->GXrealWidth * entry->GXrealHeight) * GXsize;
 	
 	if (textureBytes > 0)
 	{
-		dest = (u8*) malloc(textureBytes);
+		entry->GXtexture = (u16*)malloc_gx(textureBytes);
+		memset(entry->GXtexture, 0, textureBytes);	// TODO remove this.
 	}
+	//SysPrintf("Texture made: GXrealWidth %i GXrealHeight: %i textureBytes %i\r\n",entry->GXrealWidth,entry->GXrealHeight, textureBytes);
+	//SysPrintf("Texture made: DXTexS %i DYTexS: %i \r\n",DXTexS,DYTexS);
 
-	entry->GXtexture = (u16*) dest;
-	//SysPrintf("Texture made: GXrealWidth %ld GXrealHeight: %ld\r\n",entry->GXrealWidth,entry->GXrealHeight);
-	//SysPrintf("Texture made: DXTexS %ld DYTexS: %ld\r\n",DXTexS,DYTexS);
 	
-	bpl = DXTexS << 3 >> 1;
-	numBytes = bpl * DYTexS;
-	entry->crc = Hash_Calculate(0xFFFFFFFF, rgba8888Tex, numBytes);
+	GX_InitTexObj(&entry->GXtexObj, entry->GXtexture, entry->GXrealWidth
+		, entry->GXrealHeight, entry->GXtexfmt, 
+		iClampType ? GX_CLAMP : GX_REPEAT, 
+ 		iClampType ? GX_CLAMP : GX_REPEAT, GX_FALSE); 
+	if(iFilterType)
+		GX_InitTexObjLOD(&entry->GXtexObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+	else
+		GX_InitTexObjLOD(&entry->GXtexObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_TRUE, GX_TRUE, GX_ANISO_4);
+}
 
-	clampSClamp = DXTexS - 1;
-	clampTClamp = DYTexS - 1;
+void updateGXSubTexture(textureWndCacheEntry *entry, u8 *rgba8888Tex, u32 xStartPos, u32 yStartPos,
+                 u32 width, u32 height) {
 
-	//SysPrintf("Texture made in GXrealWidth %ld GXrealHeight: %ld\r\n",entry->GXrealWidth,entry->GXrealHeight);
-	//SysPrintf("Texture made: entry->GXtexture %08X dest: %08X\r\n",entry->GXtexture,dest);
-	//SysPrintf("Texture made: XTexS %ld YTexS: %ld\r\n",XTexS,YTexS);
-	//SysPrintf("Texture made: clampSClamp %ld clampTClamp: %ld\r\n",clampSClamp,clampTClamp);
-	//SysPrintf("Texture made: bpl %ld numBytes: %ld\r\n",bpl,numBytes);
-	//SysPrintf("Texture made: DXTexS %ld DYTexS: %ld\r\n",DXTexS,DYTexS);
+	u8 *dest = NULL;
+	u32	GXsize, k, l;
+	u8 *src;
+	u32 bpl;
+	u32 x, y, j, tx, ty;
+
+	//SysPrintf("Texture update: xStartPos %ld yStartPos: %ld\r\n",xStartPos,yStartPos);
+	//SysPrintf("Texture update: original width %ld height: %ld\r\n",width,height);
+	dest = (u16*)entry->GXtexture;
+	if(!dest) {SysPrintf("DEST IS NULL!!!\r\n"); *(u32*)0=0x1337;}
+
 	
-	for (y = 0; y < DYTexS; y+=4)
+	bpl = width << 3 >> 1;
+
+	u32 gxBytesPerLine = (256 / 4) * 64;
+	u32 gxBytesAtLineStart = (xStartPos / 4) * 64;
+	u32 gxBytesActualTex = (width / 4) * 64;
+	dest+= gxBytesPerLine * (yStartPos / 4);
+	
+	u16 clampSClamp = DXTexS - 1;
+	u16 clampTClamp = DYTexS - 1;
+	
+	for (y = 0; y < height; y+=4)
 	{
-		for (x = 0; x < DXTexS; x+=4)
+		dest += gxBytesAtLineStart;
+		for (x = 0; x < width; x+=4)
 		{
 			j = 0;
 			__asm__ volatile("dcbz %y0" : "=Z"(dest[0]) :: "memory");
@@ -4374,7 +4452,6 @@ GXSubTexture* convertTex32bppToGX(u8 *rgba8888Tex) {
 			{
 				ty = min(y+k, clampTClamp);
 				src = &rgba8888Tex[(bpl * ty)];
-				//SysPrintf("Grabbing from %ld %08X\r\n", bpl * ty, src);
 				for (l = 0; l < 4; l++)
 				{
 					tx = min(x+l, clampSClamp);
@@ -4387,36 +4464,11 @@ GXSubTexture* convertTex32bppToGX(u8 *rgba8888Tex) {
 			__asm__ volatile("dcbf %y0" : "=Z"(dest[32]) :: "memory");
 			dest += 64;
 		}
+		dest += (gxBytesPerLine - (gxBytesAtLineStart+gxBytesActualTex)-64);
 		_sync();
 	}
-	GX_InitTexObj(&entry->GXtex, entry->GXtexture, entry->GXrealWidth
-		, entry->GXrealHeight, entry->GXtexfmt, 
-		iClampType ? GX_CLAMP : GX_REPEAT, 
- 		iClampType ? GX_CLAMP : GX_REPEAT, GX_FALSE); 
-	if(iFilterType)
-		GX_InitTexObjLOD(&entry->GXtex, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-	else
-		GX_InitTexObjLOD(&entry->GXtex, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_TRUE, GX_TRUE, GX_ANISO_4);
-	return entry;
 }
 
-
-bool compareGxSubTex(GXSubTexture *subTex) {
-	//SysPrintf("Compare GX Subtex: subTex->xPos (%ld) subTex->yPos (%ld) subTex->realWidth (%ld) subTex->realHeight (%ld)\r\n",
-    //       subTex->xPos, subTex->yPos, subTex->realWidth, subTex->realHeight);
-	if( 
-		subTex->gl_ux_xycoords[0] == gl_ux[7] &&
-		subTex->gl_ux_xycoords[1] == (gl_ux[6]-gl_ux[7]) &&
-		subTex->gl_ux_xycoords[2] == gl_ux[5] &&
-		subTex->gl_ux_xycoords[3] == (gl_ux[4]-gl_ux[5])) {
-	//		SysPrintf("Found GX Subtex: XTexS (%ld) YTexS (%ld) DXTexS (%ld) DYTexS (%ld)\r\n",
-    //       XTexS, YTexS, DXTexS, DYTexS);
-		return TRUE;
-	}
-	//SysPrintf("Didn't find GX Subtex: XTexS (%ld) YTexS (%ld) DXTexS (%ld) DYTexS (%ld)\r\n",
-    //       XTexS, YTexS, DXTexS, DYTexS);
-	return FALSE;
-}
 
 static int tcount = 0;
 void DefineSubTextureSort(void)
@@ -4455,68 +4507,44 @@ void DefineSubTextureSort(void)
                  DXTexS, DYTexS,
                  giWantedFMT, giWantedTYPE, texturepart);
 #else
+ 
  if(gTexName==NULL)
  {
   gTexName=memalign(32, sizeof(textureWndCacheEntry));
   memset(gTexName, 0, sizeof(textureWndCacheEntry));
+  createGXTexture(gTexName, 256, 256);
  }
 
-  setOrCreateGXSubTex();
-
+  updateGXSubTexture(gTexName, texturepart, XTexS, YTexS, DXTexS, DYTexS);
+  /*
+  char filename[1024];
+  memset(filename, 0, 1024);
+  sprintf(filename, "sd:/tp_%i_%i_%i_%i.raw",  DXTexS, DYTexS, XTexS, YTexS);
+  FILE* f = fopen(filename, "wb" );
+  fwrite(texturepart, 1, 256*256*4, f);
+  fclose(f);
+  
+  memset(filename, 0, 1024);
+  sprintf(filename, "sd:/tex_%i_%i_%i_%i.raw",  DXTexS, DYTexS, XTexS, YTexS);
+  f = fopen(filename, "wb" );
+  fwrite(gTexName->GXtexture, 1, 256*256*4, f);
+  fclose(f);
+  SysPrintf("Done!\r\n");*/
 /*
-// tcount++;
-if(DXTexS > 20){
+  tcount++;
+  if(tcount == 1) {
 	  char filename[1024];
 	  memset(filename, 0, 1024);
-	  sprintf(filename, "sd:/tex-%ld-%ld.raw",  DXTexS, DYTexS);
+	  sprintf(filename, "sd:/tex_%i_%i_%i_%i.raw",  DXTexS, DYTexS, XTexS, YTexS);
 	  FILE* f = fopen(filename, "wb" );
-	  fwrite(texturepart, 1, 512*512*4, f);
+	  fwrite(gTexName->GXtexture, 1, 1024*1024, f);
 	  fclose(f);
 	  SysPrintf("Done!\r\n");
-//if(tcount == 10) {
-	exit(1);}*/
-//}
+  }*/
 
 #endif
 }
 
-void setOrCreateGXSubTex() {
-	gTexName->current = NULL;
-	// Look at the list of textures
-	if(gTexName->gxSubTex == NULL) {
-		//SysPrintf("Creating New sub GX Texture: XTexS (%ld) YTexS (%ld) DXTexS (%ld) DYTexS (%ld)\r\n",XTexS, YTexS, DXTexS, DYTexS);
-		// Empty list, create, set current & return
-		gTexName->gxSubTex = convertTex32bppToGX(texturepart);
-		gTexName->current = gTexName->gxSubTex;
-		return;
-	}
-	else {
-		// List has some stuff, check each entry
-		GXSubTexture *subTex = gTexName->gxSubTex;
-		while(subTex != NULL) {
-			if(compareGxSubTex(subTex)) {
-				gTexName->current = subTex;
-				return;
-			}
-			subTex = subTex->next;
-		}
-	}
-	// We've got nothing, create it.
-	// TODO check texture cache and free some older stuff
-	//SysPrintf("Creating New sub GX Texture: XTexS (%ld) YTexS (%ld) DXTexS (%ld) DYTexS (%ld)\r\n",XTexS, YTexS, DXTexS, DYTexS);
-	gTexName->current = convertTex32bppToGX(texturepart);
-	if(gTexName->gxSubTex == NULL)
-		gTexName->gxSubTex = gTexName->current;
-	GXSubTexture *subTex = gTexName->gxSubTex; 
-	while(subTex->next != NULL) {
-		subTex = subTex->next;
-	}
-	subTex->next = gTexName->current;
-	tcount++;
-	if(tcount == 50) {
-		  exit(1);
-	}
-}
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -4578,6 +4606,9 @@ void DoTexGarbageCollection(void)
 
 unsigned char * CheckTextureInSubSCache(long TextureMode,unsigned long GivenClutId,unsigned short * pCache)
 {
+	//heap_iblock heapBlock;
+	//__lwp_heap_getinfo(GXtexCache, &heapBlock);
+	//SysPrintf("used: %i free: %i\r\n", heapBlock.used_size, heapBlock.free_size);
  textureSubCacheEntryS * tsx, * tsb, *tsg;//, *tse=NULL;
  int i,iMax;EXLong npos;
  unsigned char cx,cy;
@@ -4633,7 +4664,9 @@ unsigned char * CheckTextureInSubSCache(long TextureMode,unsigned long GivenClut
  cXAdj=1;cYAdj=1;
 
  rx=(int)gl_ux[6]-(int)gl_ux[7];
+ rx+=(4-(rx%4));
  ry=(int)gl_ux[4]-(int)gl_ux[5];
+ ry+=(4-(ry%4));
 
  tsx=NULL;tsb=tsg+1;
  for(i=0;i<iMax;i++,tsb++)
@@ -4695,8 +4728,8 @@ unsigned char * CheckTextureInSubSCache(long TextureMode,unsigned long GivenClut
 
 ENDLOOP3:
 
- rx+=3;if(rx>255) {cXAdj=0;rx=255;}
- ry+=3;if(ry>255) {cYAdj=0;ry=255;}
+ rx+=4;if(rx>255) {cXAdj=0;rx=255;}
+ ry+=4;if(ry>255) {cYAdj=0;ry=255;}
 
  iC=usLRUTexPage;
 
@@ -4893,8 +4926,8 @@ BOOL GetCompressTexturePlace(textureSubCacheEntryS * tsx)
  rx=(int)tsx->pos.c[2]-(int)tsx->pos.c[3];
  ry=(int)tsx->pos.c[0]-(int)tsx->pos.c[1];
 
- rx+=3;if(rx>255) {cXAdj=0;rx=255;}
- ry+=3;if(ry>255) {cYAdj=0;ry=255;}
+ rx+=4;if(rx>255) {cXAdj=0;rx=255;}
+ ry+=4;if(ry>255) {cYAdj=0;ry=255;}
 
  iC=usLRUTexPage;
 
