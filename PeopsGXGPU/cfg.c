@@ -1229,21 +1229,16 @@ void ReadConfigFile()
 void ReadConfig(void)                                  // read config (linux file)
 {
  iResX=640;iResY=480;
- iColDepth=16;
+ iColDepth=1;	//32-bit
  bChangeRes=FALSE;
  bWindowMode=TRUE;
  iUseScanLines=0;
  bFullScreen=FALSE;
  bFullVRam=FALSE;
- iFilterType=0;
+ iFilterType=0;	// None
  bAdvancedBlend=FALSE;
  bDrawDither=FALSE;
  bUseLines=FALSE;
-#ifndef __GX__
- bUseFrameLimit=1;
- bUseFrameSkip=0;
- iFrameLimit=2;
-#else //!__GX__
  if (frameLimit == FRAMELIMIT_AUTO)
  {
 	 bUseFrameLimit=1;
@@ -1255,15 +1250,14 @@ void ReadConfig(void)                                  // read config (linux fil
 	 iFrameLimit=0;
  }
  bUseFrameSkip = frameSkip;
-#endif //__GX__
  fFrameRate=200.0f;
- iOffscreenDrawing=2;
- bOpaquePass=TRUE;
+ iOffscreenDrawing=2;	//Standard - OK for most games
+ bOpaquePass=FALSE;
  bUseAntiAlias=FALSE;
- iTexQuality=0;
+ iTexQuality=3;	//R8 G8 B8 A8 - Best colors, more ram needed
  iUseMask=0;
  iZBufferDepth=0;
- bUseFastMdec=TRUE;
+ bUseFastMdec=FALSE;
  dwCfgFixes=0;
  bUseFixes=FALSE;
  iFrameTexType=0;

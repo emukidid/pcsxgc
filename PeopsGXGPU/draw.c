@@ -140,7 +140,7 @@ int            iShowFPS=0;
 // OGL extension support
 
 int                iForceVSync=-1;
-int                iUseExts=1;
+int                iUseExts=0;
 BOOL               bGLExt;
 BOOL               bGLFastMovie=FALSE;
 BOOL               bGLSoft;
@@ -381,7 +381,7 @@ void SetExtGLFuncs(void)
 #ifndef __GX__
    glAlphaFunc(GL_GREATER,0.49f);
 #else
-   GX_SetAlphaCompare(GX_GREATER,(u8) 127,GX_AOP_AND,GX_ALWAYS,0);
+   GX_SetAlphaCompare(GX_GREATER,(u8) 125,GX_AOP_AND,GX_ALWAYS,0);
 #endif
   }
  else                                                  // no opaque mode?

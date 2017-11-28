@@ -212,7 +212,6 @@ unsigned short BGR24to16 (unsigned long BGR)
 unsigned long DoubleBGR2RGB (unsigned long BGR)
 {
  unsigned long ebx,eax,edx;
- BGR=SWAP32(BGR);
  ebx=(BGR&0x000000ff)<<1;
  if(ebx&0x00000100) ebx=0x000000ff;
 
@@ -227,7 +226,6 @@ unsigned long DoubleBGR2RGB (unsigned long BGR)
 
 unsigned short BGR24to16 (unsigned long BGR)
 {
-	BGR=SWAP32(BGR);
  return ((BGR>>3)&0x1f)|((BGR&0xf80000)>>9)|((BGR&0xf800)>>6);
 }
 
@@ -309,6 +307,47 @@ void PRIMdrawTexturedQuad(OGLVertex* vertex1, OGLVertex* vertex2,
  GX_End();
   //exit(1);
 #endif
+}
+
+void PRIMdrawTexturedQuadCol0(OGLVertex* vertex1, OGLVertex* vertex2, 
+                                   OGLVertex* vertex3, OGLVertex* vertex4) 
+{
+
+//SysPrintf("PRIMdrawTexturedQuad textured (%s)\r\n", (gTexName!=NULL?"YES":"NO"));
+//PrintVertexInfo(vertex1, vertex2, vertex3, vertex4);
+ GX_InvalidateTexAll();
+ GX_InvVtxCache();
+ GX_ClearVtxDesc();
+		
+ GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
+ //set vertex description here
+ GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+ GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+ GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+ 
+ Mtx GXmodelView2D;
+ guMtxIdentity(GXmodelView2D);
+ GX_LoadPosMtxImm(GXmodelView2D,GX_PNMTX0);
+ 
+ //set vertex attribute formats here
+ GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+ GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+ GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+ GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
+  GX_Position3f32( (f32) vertex1->x, (f32) vertex1->y, (f32) vertex1->z );	// top left
+  GX_TexCoord2f32( (f32) vertex1->sow, (f32) vertex1->tow );
+  GX_Color1u32((vertex1->c.lcol));
+  GX_Position3f32( (f32) vertex4->x, (f32) vertex4->y, (f32) vertex4->z );	// bottom left
+  GX_TexCoord2f32( (f32) vertex4->sow, (f32) vertex4->tow );
+  GX_Color1u32((vertex1->c.lcol));
+  GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );	// top right
+  GX_TexCoord2f32( (f32) vertex2->sow, (f32) vertex2->tow );
+  GX_Color1u32((vertex1->c.lcol));
+  GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );	// bottom right
+  GX_TexCoord2f32( (f32) vertex3->sow, (f32) vertex3->tow );
+  GX_Color1u32((vertex1->c.lcol));
+ GX_End();
+
 }
 
 ///////////////////////////////////////////////////////// 
@@ -1723,14 +1762,14 @@ void UploadScreenEx(long Position)
 
  if(!PSXDisplay.DisplayMode.x) return;
  if(!PSXDisplay.DisplayMode.y) return;
+ bOldSmoothShaded=FALSE;
+ bBlendEnable=FALSE;
+ bTexEnabled=FALSE;
 #ifndef __GX__
  glDisable(GL_SCISSOR_TEST);
  glShadeModel(GL_FLAT);
- bOldSmoothShaded=FALSE;
  glDisable(GL_BLEND);
- bBlendEnable=FALSE;
  glDisable(GL_TEXTURE_2D);
- bTexEnabled=FALSE;
  glDisable(GL_ALPHA_TEST);
 
  glPixelZoom(((float)rRatioRect.right)/((float)PSXDisplay.DisplayMode.x),
@@ -2490,9 +2529,9 @@ void primBlkFill(unsigned char * baseAddr)
      glClear(uiBufferBits); 
 #else
 	//SysPrintf("primBlkFill\r\n");
-	GXColor color = {RED(GETLE32(&gpuData[0]))
-						  , GREEN(GETLE32(&gpuData[0]))
-						  , BLUE(GETLE32(&gpuData[0])), 0xff};
+	GXColor color = {RED((gpuData[0]))
+						  , GREEN((gpuData[0]))
+						  , BLUE((gpuData[0])), 0xff};
 	GX_SetCopyClear(color, 0xFFFFFF);
 #endif
      gl_z=0.0f;
@@ -2507,7 +2546,7 @@ void primBlkFill(unsigned char * baseAddr)
        SetRenderMode((unsigned long)0x01000000, FALSE);
        vertex[0].c.lcol=0xff000000;
        SETCOL(vertex[0]); 
-	   //SysPrintf("primBlkFill 2\r\n");
+	   SysPrintf("primBlkFill 2\r\n");
        if(ly0>pd->DisplayPosition.y)
         {
          vertex[0].x=0;vertex[0].y=0;
@@ -2552,7 +2591,7 @@ void primBlkFill(unsigned char * baseAddr)
  // try this:
  if (IsCompleteInsideNextScreen(sprtX, sprtY, sprtW, sprtH))
   {
-   lClearOnSwapColor = COLOR(GETLE32(&gpuData[0]));
+   lClearOnSwapColor = GETLE32(&gpuData[0]);
    lClearOnSwap = 1;
   }
 
@@ -2843,7 +2882,7 @@ void primTileS(unsigned char * baseAddr)
    if(IsPrimCompleteInsideNextScreen(lx0,ly0,lx2,ly2) ||
       (ly0==-6 && ly2==10))                            // OH MY GOD... I DIDN'T WANT TO DO IT... BUT I'VE FOUND NO OTHER WAY... HACK FOR GRADIUS SHOOTER :(
     {
-     lClearOnSwapColor = COLOR(GETLE32(&gpuData[0]));
+     lClearOnSwapColor = GETLE32(&gpuData[0]);
      lClearOnSwap = 1;
     }
 
@@ -3043,6 +3082,7 @@ void DrawMultiBlur(void)
 #ifndef __GX__
  if(bDrawMultiPass) {obm1=obm2=GL_SRC_ALPHA;}
 #else
+ if(bDrawMultiPass) {obm1=obm2=GX_BL_SRCALPHA;}
 #endif
 
  GlobalTextABR=lABR;
@@ -3067,7 +3107,7 @@ void DrawMultiFilterSprite(void)
  lDST=DrawSemiTrans;
  vertex[0].c.col[3]=ubGloAlpha/2;                      // -> set color with
  SETCOL(vertex[0]);                                    //    texture alpha
- PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
+ PRIMdrawTexturedQuadCol0(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
  vertex[0].x+=POFF;vertex[1].x+=POFF;
  vertex[2].x+=POFF;vertex[3].x+=POFF;
  vertex[0].y+=POFF;vertex[1].y+=POFF;
@@ -3188,11 +3228,15 @@ void primSprt8(unsigned char * baseAddr)
 #ifndef __GX__
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+#else
+	 GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_NEAR,GX_NEAR);
 #endif
      PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
 #ifndef __GX__
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+#else
+	 GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_LINEAR,GX_LINEAR);
 #endif
      SetZMask4O();
     }
@@ -3311,11 +3355,15 @@ void primSprt16(unsigned char * baseAddr)
 #ifndef __GX__
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+#else
+	 GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_NEAR,GX_NEAR);
 #endif
      PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
 #ifndef __GX__
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+#else
+	 GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_LINEAR,GX_LINEAR);
 #endif
      SetZMask4O();
     }
@@ -3485,11 +3533,15 @@ void primSprtSRest(unsigned char * baseAddr,unsigned short type)
 #ifndef __GX__
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+#else
+	 GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_NEAR,GX_NEAR);
 #endif
      PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
 #ifndef __GX__
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+#else
+	 GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_LINEAR,GX_LINEAR);
 #endif
      SetZMask4O();
     }
@@ -3620,11 +3672,15 @@ void primSprtS(unsigned char * baseAddr)
 #ifndef __GX__
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+#else
+	 GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_NEAR,GX_NEAR);
 #endif
      PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
 #ifndef __GX__
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+#else
+	 GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_LINEAR,GX_LINEAR);
 #endif
      SetZMask4O();
     }
@@ -4483,11 +4539,15 @@ void primPolyFT4(unsigned char * baseAddr)
 #ifndef __GX__
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+#else
+	 GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_NEAR,GX_NEAR);
 #endif
-     PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[3], &vertex[2]);
+     PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
 #ifndef __GX__
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+#else
+	 GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_LINEAR,GX_LINEAR);
 #endif
      SetZMask4O();
     }
@@ -4715,7 +4775,7 @@ void primPolyGT4(unsigned char *baseAddr)
    vertex[0].c.col[3]=ubGloAlpha;
    SETCOL(vertex[0]); 
 
-   PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[3], &vertex[2]);
+   PRIMdrawTexturedQuadCol0(&vertex[0], &vertex[1], &vertex[3], &vertex[2]);
   
    if(ubOpaqueDraw)
     {
