@@ -279,11 +279,9 @@ void PRIMdrawTexturedQuad(OGLVertex* vertex1, OGLVertex* vertex2,
 #else
 //SysPrintf("PRIMdrawTexturedQuad textured (%s)\r\n", (gTexName!=NULL?"YES":"NO"));
 //PrintVertexInfo(vertex1, vertex2, vertex3, vertex4);
- GX_InvalidateTexAll();
  GX_InvVtxCache();
  GX_ClearVtxDesc();
 		
- GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
  //set vertex description here
  GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
  GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
@@ -315,11 +313,9 @@ void PRIMdrawTexturedQuadCol0(OGLVertex* vertex1, OGLVertex* vertex2,
 
 //SysPrintf("PRIMdrawTexturedQuad textured (%s)\r\n", (gTexName!=NULL?"YES":"NO"));
 //PrintVertexInfo(vertex1, vertex2, vertex3, vertex4);
- GX_InvalidateTexAll();
  GX_InvVtxCache();
  GX_ClearVtxDesc();
 		
- GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
  //set vertex description here
  GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
  GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
@@ -370,11 +366,9 @@ void PRIMdrawTexturedTri(OGLVertex* vertex1, OGLVertex* vertex2,
  //SysPrintf("PRIMdrawTexturedTri textured (%s)\r\n", (gTexName!=NULL?"YES":"NO"));
  //PrintVertexInfo3(vertex1, vertex2, vertex3);
  
- GX_InvalidateTexAll();
  GX_InvVtxCache();
  GX_ClearVtxDesc();
 		
- GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
  
  Mtx GXmodelView2D;
  guMtxIdentity(GXmodelView2D);
@@ -421,11 +415,9 @@ void PRIMdrawTexGouraudTriColor(OGLVertex* vertex1, OGLVertex* vertex2,
  //SysPrintf("PRIMdrawTexGouraudTriColor textured (%s)\r\n", (gTexName!=NULL?"YES":"NO"));
  //PrintVertexInfo3(vertex1, vertex2, vertex3);
  
- GX_InvalidateTexAll();
  GX_InvVtxCache();
  GX_ClearVtxDesc();
 		
- GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
  
  Mtx GXmodelView2D;
  guMtxIdentity(GXmodelView2D);
@@ -480,11 +472,9 @@ void PRIMdrawTexGouraudTriColorQuad(OGLVertex* vertex1, OGLVertex* vertex2,
  //SysPrintf("PRIMdrawTexGouraudTriColorQuad textured (%s)\r\n", (gTexName!=NULL?"YES":"NO"));
  //PrintVertexInfo(vertex1, vertex2, vertex3, vertex4);
  
- GX_InvalidateTexAll();
  GX_InvVtxCache();
  GX_ClearVtxDesc();
 		
- GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
  
  Mtx GXmodelView2D;
  guMtxIdentity(GXmodelView2D);
@@ -1224,7 +1214,7 @@ void SetRenderMode(unsigned long DrawAttributes,BOOL bSCol)
 #else
    if(gTexName!=currTex)
     {
-     gTexName=currTex;
+     gTexName=currTex;GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
     }
 #endif
 
@@ -1258,7 +1248,7 @@ void SetRenderMode(unsigned long DrawAttributes,BOOL bSCol)
    GX_SetNumTexGens (0);
    GX_SetTevOrder (GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
    GX_SetTevOp (GX_TEVSTAGE0, GX_PASSCLR);
-   //GX_InvalidateTexAll();
+   GX_InvalidateTexAll();
    bTexEnabled=FALSE;
   }     
 #endif

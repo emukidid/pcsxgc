@@ -1252,7 +1252,7 @@ void ReadConfig(void)                                  // read config (linux fil
  bUseFrameSkip = frameSkip;
  fFrameRate=200.0f;
  iOffscreenDrawing=2;	//Standard - OK for most games
- bOpaquePass=FALSE;
+ bOpaquePass=TRUE;
  bUseAntiAlias=FALSE;
  iTexQuality=3;	//R8 G8 B8 A8 - Best colors, more ram needed
  iUseMask=0;

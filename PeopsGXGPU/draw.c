@@ -249,7 +249,7 @@ void GetExtInfos(void)
       iClampType=GL_TO_EDGE_CLAMP;
  else 
 #endif
-  iClampType=GL_CLAMP;
+  iClampType=GX_CLAMP;
 
  glColorTableEXTEx=(PFNGLCOLORTABLEEXT)NULL;           // init ogl palette func pointer
 #ifndef __GX__
@@ -1388,6 +1388,8 @@ void assignTextureSprite(void)
 #ifndef __GX__
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+#else
+       GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_NEAR,GX_NEAR);
 #endif
        gLastTex=gTexName;gLastFMode=0;
       }
@@ -1450,6 +1452,8 @@ void assignTexture3(void)
 #ifndef __GX__
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+#else
+       GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_LINEAR,GX_LINEAR);
 #endif
        gLastTex=gTexName;gLastFMode=1;
       }
@@ -1522,6 +1526,8 @@ void assignTexture4(void)
 #ifndef __GX__
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+#else
+       GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_LINEAR,GX_LINEAR);
 #endif
        gLastTex=gTexName;gLastFMode=1;
       }

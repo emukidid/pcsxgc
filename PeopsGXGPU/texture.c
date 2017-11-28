@@ -99,7 +99,7 @@ textureWndCacheEntry*        gTexFrameName=NULL;
 int           iTexGarbageCollection=1;
 unsigned long dwTexPageComp=0;
 int           iVRamSize=0;
-int           iClampType=GL_CLAMP;
+int           iClampType=GX_CLAMP;
 
 void               (*LoadSubTexFn) (int,int,short,short);
 unsigned long      (*PalTexturedColourFn)  (unsigned long);
@@ -250,16 +250,9 @@ void createGXTexture(textureWndCacheEntry *entry, u32 width, u32 height) {
 	}
 	//SysPrintf("Texture made: GXrealWidth %i GXrealHeight: %i textureBytes %i\r\n",entry->GXrealWidth,entry->GXrealHeight, textureBytes);
 	//SysPrintf("Texture made: DXTexS %i DYTexS: %i \r\n",DXTexS,DYTexS);
-
 	
 	GX_InitTexObj(&entry->GXtexObj, entry->GXtexture, entry->GXrealWidth
-		, entry->GXrealHeight, entry->GXtexfmt, 
-		iClampType ? GX_CLAMP : GX_REPEAT, 
- 		iClampType ? GX_CLAMP : GX_REPEAT, GX_FALSE); 
-	if(iFilterType)
-		GX_InitTexObjLOD(&entry->GXtexObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-	else
-		GX_InitTexObjLOD(&entry->GXtexObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_TRUE, GX_TRUE, GX_ANISO_4);
+		, entry->GXrealHeight, entry->GXtexfmt, iClampType, iClampType, GX_FALSE); 
 }
 
 void updateGXSubTexture(textureWndCacheEntry *entry, u8 *rgba8888Tex, u32 xStartPos, u32 yStartPos,
@@ -271,11 +264,7 @@ void updateGXSubTexture(textureWndCacheEntry *entry, u8 *rgba8888Tex, u32 xStart
 	u32 bpl;
 	u32 x, y, j, tx, ty;
 
-	//SysPrintf("Texture update: xStartPos %ld yStartPos: %ld\r\n",xStartPos,yStartPos);
-	//SysPrintf("Texture update: original width %ld height: %ld\r\n",width,height);
 	dest = (u8*)entry->GXtexture;
-	if(!dest) {SysPrintf("DEST IS NULL!!!\r\n"); *(u32*)0=0x1337;}
-
 	
 	bpl = width << 3 >> 1;
 
@@ -368,7 +357,7 @@ unsigned long CP8RGBAEx(unsigned long BGR)
 #define CLUT_RED(v) ((v & 0x001F))
 unsigned long XP8RGBA_0(unsigned long BGR) {
  BGR = SWAP16(BGR);
- if(!(BGR&0xffff)) return (0x50000000);
+ if(!(BGR&0xffff)) return 0x50000000;
 
  //return (((((BGR<<19)&0xf80000)|((BGR<<6)&0xf800)|((BGR>>10)&0xf8))&0xffffff)|0xff000000);
  //return (((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000);
@@ -380,9 +369,13 @@ unsigned long XP8RGBA_0(unsigned long BGR) {
 
 unsigned long XP8RGBAEx_0(unsigned long BGR)
 {
-	SysPrintf("6\r\n");
- if(!(BGR&0xffff)) return SWAP32(0x03000000);
- return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000);
+//SysPrintf("6\r\n");
+ BGR = SWAP16(BGR);
+ if(!(BGR&0xffff)) return 0x03000000;
+ u32 ret = 0xFF000000|(((CLUT_RED(BGR) * 255) / 31)<<16)
+	|(((CLUT_GREEN(BGR)* 255) / 31)<<8)|(((CLUT_BLUE(BGR)* 255) / 31));
+ return ret;
+ //return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000);
 }
 
 unsigned long XP8BGRA_0(unsigned long BGR)
@@ -445,7 +438,7 @@ unsigned long CP8BGRAEx_0(unsigned long BGR)
 
 unsigned long XP8RGBA_1(unsigned long BGR)
 {
- SysPrintf("13\r\n");
+ //SysPrintf("13\r\n");
  BGR= SWAP16(BGR);
  if(!(BGR&0xffff)) return (0x50000000);
  u32 ret = (((CLUT_RED(BGR) * 255) / 31)<<16)|(((CLUT_GREEN(BGR)* 255) / 31)<<8)|((CLUT_BLUE(BGR)* 255)/31); 
@@ -455,10 +448,13 @@ unsigned long XP8RGBA_1(unsigned long BGR)
 
 unsigned long XP8RGBAEx_1(unsigned long BGR)
 {
-	SysPrintf("14\r\n");
- if(!(BGR&0xffff)) return SWAP32(0x03000000);
- if(!(BGR&0x8000)) {ubOpaqueDraw=1;return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff));}
- return SWAP32(((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000);
+	//SysPrintf("14\r\n");
+ BGR=SWAP16(BGR);
+ if(!(BGR&0xffff)) return 0x03000000;
+ u32 ret = (((CLUT_RED(BGR) * 255) / 31)<<16)
+	|(((CLUT_GREEN(BGR)* 255) / 31)<<8)|(((CLUT_BLUE(BGR)* 255) / 31));
+ if(!(BGR&0x8000)) {ubOpaqueDraw=1;return ret;}
+ return ret|0xff000000;
 }
 
 unsigned long XP8BGRA_1(unsigned long BGR)
@@ -620,10 +616,10 @@ void CheckTextureMemory(void)
    free(p);
    glGetError();
 #else
-   gTexBlurName = malloc(sizeof(textureWndCacheEntry));
-   memset(gTexBlurName, 0, sizeof(textureWndCacheEntry));
    gTexName=gTexBlurName;
    createGXTexture(gTexName, iFTexA, iFTexB);
+   GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_NEAR,GX_NEAR);
+   GX_InitTexObjWrapMode(&gTexName->GXtexObj,GX_CLAMP,GX_CLAMP);
 #endif
    iRam-=iFTexA*iFTexB*3;
    iFTexA=(iResX*256)/iFTexA;
@@ -1159,10 +1155,13 @@ void DefineTextureWnd(void)
  {
   gTexName=malloc(sizeof(textureWndCacheEntry));
   memset(gTexName, 0, sizeof(textureWndCacheEntry));
-  createGXTexture(gTexName, TWin.Position.x1, TWin.Position.y1);
  }
-
+  u8 magFilt = iFilterType && iFilterType<3 && iHiResTextures!=2 ? GX_LINEAR : GX_NEAR;
+  createGXTexture(gTexName, TWin.Position.x1, TWin.Position.y1);
   updateGXSubTexture(gTexName, texturepart, 0, 0, TWin.Position.x1, TWin.Position.y1);
+  GX_InitTexObjFilterMode(&gTexName->GXtexObj,magFilt,magFilt);
+  GX_InitTexObjWrapMode(&gTexName->GXtexObj,GX_REPEAT,GX_REPEAT);
+  GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
 #endif
 }
 
@@ -1172,7 +1171,7 @@ void DefineTextureWnd(void)
 
 void LoadStretchPackedWndTexturePage(int pageid, int mode, short cx, short cy)
 {
- SysPrintf("LoadStretchPackedWndTexturePage\r\n");
+ //SysPrintf("LoadStretchPackedWndTexturePage\r\n");
  unsigned long start,row,column,j,sxh,sxm,ldx,ldy,ldxo;
  unsigned int   palstart;
  unsigned short *px,*pa,*ta;
@@ -1937,10 +1936,13 @@ void DefinePalTextureWnd(void)
  {
   gTexName=malloc(sizeof(textureWndCacheEntry));
   memset(gTexName, 0, sizeof(textureWndCacheEntry));
-  createGXTexture(gTexName, TWin.Position.x1, TWin.Position.y1);
  }
-
+  u8 magFilt = iFilterType && iFilterType<3 && iHiResTextures!=2 ? GX_LINEAR : GX_NEAR;
+  createGXTexture(gTexName, TWin.Position.x1, TWin.Position.y1);
   updateGXSubTexture(gTexName, texturepart, 0, 0, TWin.Position.x1, TWin.Position.y1);
+  GX_InitTexObjFilterMode(&gTexName->GXtexObj,magFilt,magFilt);
+  GX_InitTexObjWrapMode(&gTexName->GXtexObj,GX_REPEAT,GX_REPEAT);
+  GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
 #endif
 }
 
@@ -2260,12 +2262,15 @@ void DefinePackedTextureMovie(void)
   memset(gTexMovieName, 0, sizeof(textureWndCacheEntry));
   gTexName=gTexMovieName;
   createGXTexture(gTexName, 256, 256);
+  u8 magFilt = !bUseFastMdec ? GX_LINEAR : GX_NEAR;
+  GX_InitTexObjFilterMode(&gTexName->GXtexObj,magFilt,magFilt);
+  GX_InitTexObjWrapMode(&gTexName->GXtexObj,iClampType,iClampType);
  }
  else {
   gTexName=gTexMovieName;
  }
-
-  updateGXSubTexture(gTexName, texturepart, 0, 0, (xrMovieArea.x1-xrMovieArea.x0), (xrMovieArea.y1-xrMovieArea.y0));
+ updateGXSubTexture(gTexName, texturepart, 0, 0, (xrMovieArea.x1-xrMovieArea.x0), (xrMovieArea.y1-xrMovieArea.y0));
+ GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
 #endif
 }
 
@@ -2273,7 +2278,7 @@ void DefinePackedTextureMovie(void)
 
 void DefineTextureMovie(void)
 {
-	SysPrintf("DefineTextureMovie\r\n");
+	//SysPrintf("DefineTextureMovie\r\n");
 #ifndef __GX__
  if(gTexMovieName==NULL)
   {
@@ -2315,12 +2320,15 @@ void DefineTextureMovie(void)
   memset(gTexMovieName, 0, sizeof(textureWndCacheEntry));
   gTexName=gTexMovieName;
   createGXTexture(gTexName, 256, 256);
+  u8 magFilt = !bUseFastMdec ? GX_LINEAR : GX_NEAR;
+  GX_InitTexObjFilterMode(&gTexName->GXtexObj,magFilt,magFilt);
+  GX_InitTexObjWrapMode(&gTexName->GXtexObj,GX_REPEAT,GX_REPEAT);
  }
  else {
   gTexName=gTexMovieName;
  }
-
   updateGXSubTexture(gTexName, texturepart, 0, 0, (xrMovieArea.x1-xrMovieArea.x0), (xrMovieArea.y1-xrMovieArea.y0));
+  GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
 #endif
 }
 
@@ -2342,7 +2350,7 @@ void DefineTextureMovie(void)
 
 unsigned char * LoadDirectMovieFast(void)
 {
-	SysPrintf("LoadDirectMovieFast\r\n");
+	//SysPrintf("LoadDirectMovieFast\r\n");
  long row,column;
  unsigned int startxy;
 
@@ -2387,7 +2395,7 @@ unsigned char * LoadDirectMovieFast(void)
 
 textureWndCacheEntry* LoadTextureMovieFast(void)
 {
-	SysPrintf("LoadTextureMovieFast\r\n");
+	//SysPrintf("LoadTextureMovieFast\r\n");
  long row,column;
  unsigned int start,startxy;
 
@@ -2491,7 +2499,7 @@ textureWndCacheEntry* LoadTextureMovieFast(void)
 
 textureWndCacheEntry* LoadTextureMovie(void)
 {
-	SysPrintf("LoadTextureMovie\r\n");
+	//SysPrintf("LoadTextureMovie\r\n");
  short row,column,dx;
  unsigned int startxy;
  BOOL b_X,b_Y;
@@ -2712,7 +2720,7 @@ textureWndCacheEntry* LoadTextureMovie(void)
 
 textureWndCacheEntry* BlackFake15BitTexture(void)
 {
-	SysPrintf("BlackFake15BitTexture\r\n");
+	//SysPrintf("BlackFake15BitTexture\r\n");
  long pmult;short x1,x2,y1,y2;
 
  if(PSXDisplay.InterlacedTest) return 0;
@@ -2775,6 +2783,9 @@ textureWndCacheEntry* BlackFake15BitTexture(void)
 #else
 	 createGXTexture(gTexName, 4, 4);
 	 updateGXSubTexture(gTexName, texturepart, 0, 0, 4, 4);
+	 GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_NEAR,GX_NEAR);
+	 GX_InitTexObjWrapMode(&gTexName->GXtexObj,iClampType,iClampType);
+	 GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
 #endif
     }
    else
@@ -2783,14 +2794,14 @@ textureWndCacheEntry* BlackFake15BitTexture(void)
 #ifndef __GX__
      glBindTexture(GL_TEXTURE_2D, gTexName->texname);
 #else
-	GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
+	 GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
 #endif
     }
    ubOpaqueDraw=0;
 	//SysPrintf("\r\n\r\nBlackFake15BitTexture\r\n\r\n");
    return gTexName;
   }
- return 0;
+ return NULL;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2802,7 +2813,7 @@ int iFTex=512;
 
 textureWndCacheEntry* Fake15BitTexture(void)
 {
- SysPrintf("Fake15BitTexture\r\n");
+ //SysPrintf("Fake15BitTexture\r\n");
  long pmult;short x1,x2,y1,y2;int iYAdjust;
  float ScaleX,ScaleY;RECT rSrc;
 
@@ -2877,7 +2888,10 @@ textureWndCacheEntry* Fake15BitTexture(void)
    memset(p,0,iFTex*iFTex*4);
    createGXTexture(gTexName, iFTex, iFTex);
    updateGXSubTexture(gTexName, texturepart, 0, 0, iFTex, iFTex);
+   GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_NEAR, GX_NEAR);
+   GX_InitTexObjWrapMode(&gTexName->GXtexObj,iClampType, iClampType);
    free(p);
+   GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
 #endif
   }
  else 
@@ -3043,7 +3057,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
    //--------------------------------------------------// 
    // 4bit texture load ..
    case 0:
-    SysPrintf("4bit texture load\r\n");
+    //SysPrintf("4bit texture load\r\n");
     if(GlobalTextIL)
      {
 		SysPrintf("GlobalTextIL\r\n");
@@ -3120,7 +3134,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
    //--------------------------------------------------// 
    // 8bit texture load ..
    case 1:
-    SysPrintf("8bit texture load\r\n");
+    //SysPrintf("8bit texture load\r\n");
     if(GlobalTextIL)
      {
 		 SysPrintf("GlobalTextIL\r\n");
@@ -3199,7 +3213,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
    //--------------------------------------------------// 
    // 16bit texture load ..
    case 2:
-    SysPrintf("16bit texture load\r\n");
+    //SysPrintf("16bit texture load\r\n");
     start=((pageid-16*pmult)<<6)+262144*pmult;
 
     wSRCPtr = psxVuw + start + (y1<<10) + x1;
@@ -3388,7 +3402,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
 
 void LoadPackedSubTexturePageSort(int pageid, int mode, short cx, short cy)
 {
-	SysPrintf("LoadPackedSubTexturePageSort\r\n");
+	//SysPrintf("LoadPackedSubTexturePageSort\r\n");
  unsigned long  start,row,column,j,sxh,sxm;
  unsigned int   palstart;
  unsigned short *px,*pa,*ta;
@@ -4396,7 +4410,7 @@ void Super2xSaI_ex5(unsigned char *srcPtr, DWORD srcPitch,
 
 void DefineSubTextureSortHiRes(void)
 {
-	SysPrintf("DefineSubTextureSortHiRes\r\n");
+	//SysPrintf("DefineSubTextureSortHiRes\r\n");
 #ifndef __GX__
  int x,y,dx2;
  if(gTexName==NULL)             
@@ -4533,10 +4547,12 @@ void DefineSubTextureSort(void)
   gTexName=memalign(32, sizeof(textureWndCacheEntry));
   memset(gTexName, 0, sizeof(textureWndCacheEntry));
   createGXTexture(gTexName, 256, 256);
+  u8 magFilt = iFilterType ? GX_LINEAR : GX_NEAR;
+  GX_InitTexObjFilterMode(&gTexName->GXtexObj,magFilt,magFilt);
+  GX_InitTexObjWrapMode(&gTexName->GXtexObj,iClampType,iClampType);
  }
-
   updateGXSubTexture(gTexName, texturepart, XTexS, YTexS, DXTexS, DYTexS);
-
+  GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
  /* if(tcount) {
     char filename[1024];
     memset(filename, 0, 1024);
