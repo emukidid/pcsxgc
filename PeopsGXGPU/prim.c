@@ -324,7 +324,7 @@ void PRIMdrawTexturedQuadCol0(OGLVertex* vertex1, OGLVertex* vertex2,
  Mtx GXmodelView2D;
  guMtxIdentity(GXmodelView2D);
  GX_LoadPosMtxImm(GXmodelView2D,GX_PNMTX0);
- 
+ //SysPrintf("PRIMdrawTexturedQuad\r\n");
  //set vertex attribute formats here
  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
@@ -332,16 +332,16 @@ void PRIMdrawTexturedQuadCol0(OGLVertex* vertex1, OGLVertex* vertex2,
  GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
   GX_Position3f32( (f32) vertex1->x, (f32) vertex1->y, (f32) vertex1->z );	// top left
   GX_TexCoord2f32( (f32) vertex1->sow, (f32) vertex1->tow );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex4->x, (f32) vertex4->y, (f32) vertex4->z );	// bottom left
   GX_TexCoord2f32( (f32) vertex4->sow, (f32) vertex4->tow );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );	// top right
   GX_TexCoord2f32( (f32) vertex2->sow, (f32) vertex2->tow );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );	// bottom right
   GX_TexCoord2f32( (f32) vertex3->sow, (f32) vertex3->tow );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
  GX_End();
 
 }
@@ -414,7 +414,7 @@ void PRIMdrawTexGouraudTriColor(OGLVertex* vertex1, OGLVertex* vertex2,
 #else
  //SysPrintf("PRIMdrawTexGouraudTriColor textured (%s)\r\n", (gTexName!=NULL?"YES":"NO"));
  //PrintVertexInfo3(vertex1, vertex2, vertex3);
- 
+ //SysPrintf("PRIMdrawTexGouraudTriColor\r\n");
  GX_InvVtxCache();
  GX_ClearVtxDesc();
 		
@@ -434,13 +434,13 @@ void PRIMdrawTexGouraudTriColor(OGLVertex* vertex1, OGLVertex* vertex2,
  GX_Begin(GX_TRIANGLES, GX_VTXFMT0, 3);
   GX_Position3f32( (f32) vertex1->x, (f32) vertex1->y, (f32) vertex1->z );
   GX_TexCoord2f32( (f32) vertex1->sow, (f32) vertex1->tow );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );
   GX_TexCoord2f32( (f32) vertex2->sow, (f32) vertex2->tow );
-  GX_Color1u32((vertex2->c.lcol));
+  GX_Color4u8(vertex2->c.col[3], vertex2->c.col[2], vertex2->c.col[1], vertex2->c.col[0]);
   GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );
   GX_TexCoord2f32( (f32) vertex3->sow, (f32) vertex3->tow );
-  GX_Color1u32((vertex3->c.lcol));
+  GX_Color4u8(vertex3->c.col[3], vertex3->c.col[2], vertex3->c.col[1], vertex3->c.col[0]);
  GX_End();
 #endif
 }
@@ -474,7 +474,7 @@ void PRIMdrawTexGouraudTriColorQuad(OGLVertex* vertex1, OGLVertex* vertex2,
  
  GX_InvVtxCache();
  GX_ClearVtxDesc();
-		
+ //SysPrintf("PRIMdrawTexGouraudTriColorQuad\r\n");
  
  Mtx GXmodelView2D;
  guMtxIdentity(GXmodelView2D);
@@ -491,16 +491,16 @@ void PRIMdrawTexGouraudTriColorQuad(OGLVertex* vertex1, OGLVertex* vertex2,
  GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
   GX_Position3f32( (f32) vertex1->x, (f32) vertex1->y, (f32) vertex1->z );
   GX_TexCoord2f32( (f32) vertex1->sow, (f32) vertex1->tow );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );
   GX_TexCoord2f32( (f32) vertex2->sow, (f32) vertex2->tow );
-  GX_Color1u32((vertex2->c.lcol));
+  GX_Color4u8(vertex2->c.col[3], vertex2->c.col[2], vertex2->c.col[1], vertex2->c.col[0]);
   GX_Position3f32( (f32) vertex4->x, (f32) vertex4->y, (f32) vertex4->z );
   GX_TexCoord2f32( (f32) vertex4->sow, (f32) vertex4->tow );
-  GX_Color1u32((vertex4->c.lcol));
+  GX_Color4u8(vertex4->c.col[3], vertex4->c.col[2], vertex4->c.col[1], vertex4->c.col[0]);
   GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );
   GX_TexCoord2f32( (f32) vertex3->sow, (f32) vertex3->tow );
-  GX_Color1u32((vertex3->c.lcol));
+  GX_Color4u8(vertex3->c.col[3], vertex3->c.col[2], vertex3->c.col[1], vertex3->c.col[0]);
  GX_End();
 #endif
 }
@@ -519,7 +519,7 @@ void PRIMdrawTri(OGLVertex* vertex1, OGLVertex* vertex2, OGLVertex* vertex3)
  //set vertex description here
  GX_InvVtxCache();
  GX_ClearVtxDesc();
- 
+ //SysPrintf("PRIMdrawTri\r\n");
  Mtx GXmodelView2D;
  guMtxIdentity(GXmodelView2D);
  GX_LoadPosMtxImm(GXmodelView2D,GX_PNMTX0);
@@ -531,11 +531,11 @@ void PRIMdrawTri(OGLVertex* vertex1, OGLVertex* vertex2, OGLVertex* vertex3)
  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
  GX_Begin(GX_TRIANGLES, GX_VTXFMT0, 3);
   GX_Position3f32( (f32) vertex1->x, (f32) vertex1->y, (f32) vertex1->z );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
  GX_End();
 #endif
 }
@@ -556,7 +556,7 @@ void PRIMdrawTri2(OGLVertex* vertex1, OGLVertex* vertex2,
  //set vertex description here
  GX_InvVtxCache();
  GX_ClearVtxDesc();
- 
+ //SysPrintf("PRIMdrawTri2\r\n");
  Mtx GXmodelView2D;
  guMtxIdentity(GXmodelView2D);
  GX_LoadPosMtxImm(GXmodelView2D,GX_PNMTX0);
@@ -568,13 +568,13 @@ void PRIMdrawTri2(OGLVertex* vertex1, OGLVertex* vertex2,
  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
  GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
   GX_Position3f32( (f32) vertex1->x, (f32) vertex1->y, (f32) vertex1->z );
-  GX_Color1u32(vertex1->c.lcol);
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );
-  GX_Color1u32(vertex1->c.lcol);
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );
-  GX_Color1u32(vertex1->c.lcol);
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex4->x, (f32) vertex4->y, (f32) vertex4->z );
-  GX_Color1u32(vertex1->c.lcol);
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
  GX_End();
 #endif
 }
@@ -599,7 +599,7 @@ void PRIMdrawGouraudTriColor(OGLVertex* vertex1, OGLVertex* vertex2,
  //set vertex description here
  GX_InvVtxCache();
  GX_ClearVtxDesc();
- 
+ //SysPrintf("PRIMdrawGouraudTriColor\r\n");
  Mtx GXmodelView2D;
  guMtxIdentity(GXmodelView2D);
  GX_LoadPosMtxImm(GXmodelView2D,GX_PNMTX0);
@@ -611,11 +611,11 @@ void PRIMdrawGouraudTriColor(OGLVertex* vertex1, OGLVertex* vertex2,
  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
  GX_Begin(GX_TRIANGLES, GX_VTXFMT0, 3);
   GX_Position3f32( (f32) vertex1->x, (f32) vertex1->y, (f32) vertex1->z );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );
-  GX_Color1u32((vertex2->c.lcol));
+  GX_Color4u8(vertex2->c.col[3], vertex2->c.col[2], vertex2->c.col[1], vertex2->c.col[0]);
   GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );
-  GX_Color1u32((vertex3->c.lcol));
+  GX_Color4u8(vertex3->c.col[3], vertex3->c.col[2], vertex3->c.col[1], vertex3->c.col[0]);
  GX_End();
 #endif
 }
@@ -643,7 +643,10 @@ void PRIMdrawGouraudTri2Color(OGLVertex* vertex1, OGLVertex* vertex2,
  //set vertex description here
  GX_InvVtxCache();
  GX_ClearVtxDesc();
- 
+// SysPrintf("PRIMdrawGouraudTri2Color\r\n");
+//SysPrintf("Using colour as %02X%02X%02X%02X is: %08X\r\n"
+//	, vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0], vertex1->c.lcol);
+
  Mtx GXmodelView2D;
  guMtxIdentity(GXmodelView2D);
  GX_LoadPosMtxImm(GXmodelView2D,GX_PNMTX0);
@@ -655,13 +658,13 @@ void PRIMdrawGouraudTri2Color(OGLVertex* vertex1, OGLVertex* vertex2,
  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
  GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
   GX_Position3f32( (f32) vertex1->x, (f32) vertex1->y, (f32) vertex1->z );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );
-  GX_Color1u32((vertex3->c.lcol));
+  GX_Color4u8(vertex3->c.col[3], vertex3->c.col[2], vertex3->c.col[1], vertex3->c.col[0]);
   GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );
-  GX_Color1u32((vertex2->c.lcol));
+  GX_Color4u8(vertex2->c.col[3], vertex2->c.col[2], vertex2->c.col[1], vertex2->c.col[0]);
   GX_Position3f32( (f32) vertex4->x, (f32) vertex4->y, (f32) vertex4->z );
-  GX_Color1u32((vertex4->c.lcol));
+  GX_Color4u8(vertex4->c.col[3], vertex4->c.col[2], vertex4->c.col[1], vertex4->c.col[0]);
  GX_End();
 #endif
 }
@@ -684,7 +687,7 @@ void PRIMdrawFlatLine(OGLVertex* vertex1, OGLVertex* vertex2,OGLVertex* vertex3,
  //set vertex description here
  GX_InvVtxCache();
  GX_ClearVtxDesc();
- 
+ //SysPrintf("PRIMdrawFlatLine\r\n");
  Mtx GXmodelView2D;
  guMtxIdentity(GXmodelView2D);
  GX_LoadPosMtxImm(GXmodelView2D,GX_PNMTX0);
@@ -696,13 +699,13 @@ void PRIMdrawFlatLine(OGLVertex* vertex1, OGLVertex* vertex2,OGLVertex* vertex3,
  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
  GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
   GX_Position3f32( (f32) vertex1->x, (f32) vertex1->y, (f32) vertex1->z );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex4->x, (f32) vertex4->y, (f32) vertex4->z );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
  GX_End();
 #endif
 }
@@ -730,7 +733,7 @@ void PRIMdrawGouraudLine(OGLVertex* vertex1, OGLVertex* vertex2,OGLVertex* verte
  //set vertex description here
  GX_InvVtxCache();
  GX_ClearVtxDesc();
- 
+ //SysPrintf("PRIMdrawGouraudLine\r\n");
  Mtx GXmodelView2D;
  guMtxIdentity(GXmodelView2D);
  GX_LoadPosMtxImm(GXmodelView2D,GX_PNMTX0);
@@ -742,13 +745,13 @@ void PRIMdrawGouraudLine(OGLVertex* vertex1, OGLVertex* vertex2,OGLVertex* verte
  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
  GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
   GX_Position3f32( (f32) vertex1->x, (f32) vertex1->y, (f32) vertex1->z );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex4->x, (f32) vertex4->y, (f32) vertex4->z );
-  GX_Color1u32((vertex4->c.lcol));
+  GX_Color4u8(vertex4->c.col[3], vertex4->c.col[2], vertex4->c.col[1], vertex4->c.col[0]);
   GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );
-  GX_Color1u32((vertex2->c.lcol));
+  GX_Color4u8(vertex2->c.col[3], vertex2->c.col[2], vertex2->c.col[1], vertex2->c.col[0]);
   GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );
-  GX_Color1u32((vertex3->c.lcol));
+  GX_Color4u8(vertex3->c.col[3], vertex3->c.col[2], vertex3->c.col[1], vertex3->c.col[0]);
  GX_End();
 #endif
 }
@@ -773,7 +776,10 @@ void PRIMdrawQuad(OGLVertex* vertex1, OGLVertex* vertex2,
  Mtx GXmodelView2D;
  guMtxIdentity(GXmodelView2D);
  GX_LoadPosMtxImm(GXmodelView2D,GX_PNMTX0);
- 
+//SysPrintf("PRIMdrawQuad\r\n");
+// SysPrintf("Using colour as %02X%02X%02X%02X is: %08X\r\n"
+//	, vertex1->c.col[3], vertex1->c.col[1], vertex1->c.col[2], vertex1->c.col[0], vertex1->c.lcol);
+
  GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
  GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
  //set vertex attribute formats here
@@ -781,13 +787,13 @@ void PRIMdrawQuad(OGLVertex* vertex1, OGLVertex* vertex2,
  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
  GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
   GX_Position3f32( (f32) vertex1->x, (f32) vertex1->y, (f32) vertex1->z );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex4->x, (f32) vertex4->y, (f32) vertex4->z );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
   GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );
-  GX_Color1u32((vertex1->c.lcol));
+  GX_Color4u8(vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0]);
  GX_End();
 #endif
 }
@@ -1228,7 +1234,7 @@ void SetRenderMode(unsigned long DrawAttributes,BOOL bSCol)
 	 GX_SetNumChans (0);
      GX_SetNumTexGens (1);
      GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
-     //GX_SetNumTevStages (1);
+     GX_SetNumTevStages (1);
      GX_SetTevOrder (GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
      GX_SetTevOp (GX_TEVSTAGE0, GX_REPLACE);
 	 //GX_InvalidateTexAll();
@@ -1246,9 +1252,10 @@ void SetRenderMode(unsigned long DrawAttributes,BOOL bSCol)
    //disable textures
    GX_SetNumChans (1);
    GX_SetNumTexGens (0);
+   GX_SetNumTevStages (1);
    GX_SetTevOrder (GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
    GX_SetTevOp (GX_TEVSTAGE0, GX_PASSCLR);
-   GX_InvalidateTexAll();
+   //GX_InvalidateTexAll();
    bTexEnabled=FALSE;
   }     
 #endif
@@ -1269,7 +1276,7 @@ void SetRenderMode(unsigned long DrawAttributes,BOOL bSCol)
           vertex[0].c.lcol=DoubleBGR2RGB(DrawAttributes);
      else vertex[0].c.lcol=DrawAttributes;
     }
-   vertex[0].c.col[3]=ubGloAlpha;                      // -> set color with
+   vertex[0].c.col[0]=ubGloAlpha;                      // -> set color with
    SETCOL(vertex[0]);                                  //    texture alpha
   }
  
@@ -2519,9 +2526,7 @@ void primBlkFill(unsigned char * baseAddr)
      glClear(uiBufferBits); 
 #else
 	//SysPrintf("primBlkFill\r\n");
-	GXColor color = {RED((gpuData[0]))
-						  , GREEN((gpuData[0]))
-						  , BLUE((gpuData[0])), 0xff};
+	GXColor color = {lClearOnSwapColor&0xFF,(lClearOnSwapColor>>8) & 0xFF,(lClearOnSwapColor>>16) & 0xFF,128};
 	GX_SetCopyClear(color, 0xFFFFFF);
 #endif
      gl_z=0.0f;
@@ -2894,7 +2899,7 @@ void primTileS(unsigned char * baseAddr)
  if(bIgnoreNextTile) {bIgnoreNextTile=FALSE;return;}
 
  vertex[0].c.lcol=GETLE32(&gpuData[0]);
- vertex[0].c.col[3]=ubGloColAlpha;
+ vertex[0].c.col[0]=ubGloColAlpha;
  SETCOL(vertex[0]); 
  
  PRIMdrawQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
@@ -2941,7 +2946,7 @@ void primTile1(unsigned char * baseAddr)
  SetRenderMode(GETLE32(&gpuData[0]), FALSE);
  SetZMask4NT();
 
- vertex[0].c.lcol=GETLE32(&gpuData[0]);vertex[0].c.col[3]=ubGloColAlpha;
+ vertex[0].c.lcol=GETLE32(&gpuData[0]);vertex[0].c.col[0]=ubGloColAlpha;
  SETCOL(vertex[0]); 
 
  PRIMdrawQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
@@ -2988,7 +2993,7 @@ void primTile8(unsigned char * baseAddr)
  SetZMask4NT();
 
  vertex[0].c.lcol=GETLE32(&gpuData[0]);
- vertex[0].c.col[3]=ubGloColAlpha;
+ vertex[0].c.col[0]=ubGloColAlpha;
  SETCOL(vertex[0]); 
 
  PRIMdrawQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
@@ -3035,7 +3040,7 @@ void primTile16(unsigned char * baseAddr)
  SetZMask4NT();
 
  vertex[0].c.lcol=GETLE32(&gpuData[0]);
- vertex[0].c.col[3]=ubGloColAlpha;
+ vertex[0].c.col[0]=ubGloColAlpha;
  SETCOL(vertex[0]); 
 
  PRIMdrawQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
@@ -3095,7 +3100,7 @@ void DrawMultiFilterSprite(void)
 
  lABR=GlobalTextABR;
  lDST=DrawSemiTrans;
- vertex[0].c.col[3]=ubGloAlpha/2;                      // -> set color with
+ vertex[0].c.col[0]=ubGloAlpha/2;                      // -> set color with
  SETCOL(vertex[0]);                                    //    texture alpha
  PRIMdrawTexturedQuadCol0(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
  vertex[0].x+=POFF;vertex[1].x+=POFF;
@@ -3726,7 +3731,7 @@ void primPolyF4(unsigned char *baseAddr)
  SetRenderMode(GETLE32(&gpuData[0]), FALSE);
  SetZMask4NT();
 
- vertex[0].c.lcol=GETLE32(&gpuData[0]);vertex[0].c.col[3]=ubGloColAlpha;
+ vertex[0].c.lcol=GETLE32(&gpuData[0]);vertex[0].c.col[0]=ubGloColAlpha;
  SETCOL(vertex[0]); 
 
  PRIMdrawTri2(&vertex[0], &vertex[1], &vertex[2],&vertex[3]);
@@ -3844,7 +3849,7 @@ void primPolyG4(unsigned char * baseAddr)
  vertex[2].c.lcol=GETLE32(&gpuData[4]);
  vertex[3].c.lcol=GETLE32(&gpuData[6]);
 
- vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=vertex[3].c.col[3]=ubGloAlpha;
+ vertex[0].c.col[0]=vertex[1].c.col[0]=vertex[2].c.col[0]=vertex[3].c.col[0]=ubGloAlpha;
 
 
  PRIMdrawGouraudTri2Color(&vertex[0],&vertex[1], &vertex[2], &vertex[3]);
@@ -4602,7 +4607,7 @@ void primPolyGT3(unsigned char *baseAddr)
    // eat this...
    if(bGLBlend) vertex[0].c.lcol=0x7f7f7f;
    else         vertex[0].c.lcol=0xffffff;
-   vertex[0].c.col[3]=ubGloAlpha;
+   vertex[0].c.col[0]=ubGloAlpha;
    SETCOL(vertex[0]); 
 
    PRIMdrawTexturedTri(&vertex[0], &vertex[1], &vertex[2]);
@@ -4629,7 +4634,7 @@ void primPolyGT3(unsigned char *baseAddr)
    vertex[1].c.lcol=GETLE32(&gpuData[3]);
    vertex[2].c.lcol=GETLE32(&gpuData[6]);
   }
- vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=ubGloAlpha;
+ vertex[0].c.col[0]=vertex[1].c.col[0]=vertex[2].c.col[0]=ubGloAlpha;
 
  PRIMdrawTexGouraudTriColor(&vertex[0], &vertex[1], &vertex[2]);
 
@@ -4647,7 +4652,7 @@ void primPolyGT3(unsigned char *baseAddr)
      vertex[0].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[0]));
      vertex[1].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[3]));
      vertex[2].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[6]));
-     vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=ubGloAlpha;
+     vertex[0].c.col[0]=vertex[1].c.col[0]=vertex[2].c.col[0]=ubGloAlpha;
     }
    DEFOPAQUEON
    PRIMdrawTexGouraudTriColor(&vertex[0], &vertex[1], &vertex[2]);
@@ -4695,7 +4700,7 @@ void primPolyG3(unsigned char *baseAddr)
  vertex[0].c.lcol=GETLE32(&gpuData[0]);
  vertex[1].c.lcol=GETLE32(&gpuData[2]);
  vertex[2].c.lcol=GETLE32(&gpuData[4]);
- vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=ubGloColAlpha; 
+ vertex[0].c.col[0]=vertex[1].c.col[0]=vertex[2].c.col[0]=ubGloColAlpha; 
 
  PRIMdrawGouraudTriColor(&vertex[0], &vertex[1], &vertex[2]);
 
@@ -4762,7 +4767,7 @@ void primPolyGT4(unsigned char *baseAddr)
    //if(!bUseMultiPass) vertex[0].lcol=DoubleBGR2RGB(gpuData[0]); else vertex[0].lcol=gpuData[0];
    if(bGLBlend) vertex[0].c.lcol=0x7f7f7f;
    else          vertex[0].c.lcol=0xffffff;
-   vertex[0].c.col[3]=ubGloAlpha;
+   vertex[0].c.col[0]=ubGloAlpha;
    SETCOL(vertex[0]); 
 
    PRIMdrawTexturedQuadCol0(&vertex[0], &vertex[1], &vertex[3], &vertex[2]);
@@ -4793,7 +4798,7 @@ void primPolyGT4(unsigned char *baseAddr)
    vertex[3].c.lcol=GETLE32(&gpuData[9]);
   }
 
- vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=vertex[3].c.col[3]=ubGloAlpha; 
+ vertex[0].c.col[0]=vertex[1].c.col[0]=vertex[2].c.col[0]=vertex[3].c.col[0]=ubGloAlpha; 
 
  PRIMdrawTexGouraudTriColorQuad(&vertex[0], &vertex[1], &vertex[3],&vertex[2]);
  
@@ -4812,7 +4817,7 @@ void primPolyGT4(unsigned char *baseAddr)
      vertex[1].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[3]));
      vertex[2].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[6]));
      vertex[3].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[9]));
-     vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=vertex[3].c.col[3]=ubGloAlpha; 
+     vertex[0].c.col[0]=vertex[1].c.col[0]=vertex[2].c.col[0]=vertex[3].c.col[0]=ubGloAlpha; 
     }
    ubGloAlpha=ubGloColAlpha=0xff;   
    DEFOPAQUEON
@@ -4859,7 +4864,7 @@ void primPolyF3(unsigned char *baseAddr)
  SetZMask3NT();
 
  vertex[0].c.lcol=gpuData[0];
- vertex[0].c.col[3]=ubGloColAlpha;
+ vertex[0].c.col[0]=ubGloColAlpha;
  SETCOL(vertex[0]); 
 
  PRIMdrawTri(&vertex[0], &vertex[1], &vertex[2]);
@@ -4909,7 +4914,7 @@ void primLineGEx(unsigned char *baseAddr)
  SetZMask4NT();
 
  vertex[0].c.lcol=vertex[3].c.lcol=GETLE32(&gpuData[0]);
- vertex[0].c.col[3]=vertex[3].c.col[3]=ubGloColAlpha; 
+ vertex[0].c.col[0]=vertex[3].c.col[0]=ubGloColAlpha; 
  ly1 = (short)((GETLE32(&gpuData[1])>>16) & 0xffff);
  lx1 = (short)(GETLE32(&gpuData[1]) & 0xffff);
 
@@ -4923,7 +4928,7 @@ void primLineGEx(unsigned char *baseAddr)
    ly0 = ly1;lx0=lx1;
    vertex[1].c.lcol=vertex[2].c.lcol=vertex[0].c.lcol;
    vertex[0].c.lcol=vertex[3].c.lcol=GETLE32(&gpuData[i]);
-   vertex[0].c.col[3]=vertex[3].c.col[3]=ubGloColAlpha; 
+   vertex[0].c.col[0]=vertex[3].c.col[0]=ubGloColAlpha; 
 
    i++;
 
@@ -4972,7 +4977,7 @@ void primLineG2(unsigned char *baseAddr)
 
  vertex[0].c.lcol=vertex[3].c.lcol=GETLE32(&gpuData[0]);
  vertex[1].c.lcol=vertex[2].c.lcol=GETLE32(&gpuData[2]);
- vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=vertex[3].c.col[3]=ubGloColAlpha; 
+ vertex[0].c.col[0]=vertex[1].c.col[0]=vertex[2].c.col[0]=vertex[3].c.col[0]=ubGloColAlpha; 
 
  bDrawTextured = FALSE;
  bDrawSmoothShaded = TRUE;
@@ -5040,7 +5045,7 @@ void primLineFEx(unsigned char *baseAddr)
  SetZMask4NT();
 
  vertex[0].c.lcol=GETLE32(&gpuData[0]);
- vertex[0].c.col[3]=ubGloColAlpha; 
+ vertex[0].c.col[0]=ubGloColAlpha; 
 
  ly1 = (short)((GETLE32(&gpuData[1])>>16) & 0xffff);
  lx1 = (short)(GETLE32(&gpuData[1]) & 0xffff);
@@ -5102,7 +5107,7 @@ void primLineF2(unsigned char *baseAddr)
  SetZMask4NT();
 
  vertex[0].c.lcol=GETLE32(&gpuData[0]);
- vertex[0].c.col[3]=ubGloColAlpha; 
+ vertex[0].c.col[0]=ubGloColAlpha; 
 
  if(iOffscreenDrawing)
   {

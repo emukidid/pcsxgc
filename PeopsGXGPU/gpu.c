@@ -1579,18 +1579,18 @@ void updateDisplay(void)                               // UPDATE DISPLAY
    if(bDisplayNotSet)                                  // -> set new vals
     SetOGLDisplaySettings(1);
 
+   
+#ifndef __GX__
    g=((GLclampf)GREEN(lClearOnSwapColor))/255.0f;      // -> get col
    b=((GLclampf)BLUE(lClearOnSwapColor))/255.0f;
    r=((GLclampf)RED(lClearOnSwapColor))/255.0f;
-   
-#ifndef __GX__
    glDisable(GL_SCISSOR_TEST);                       
    glClearColor(r,g,b,128);                            // -> clear 
    glClear(uiBufferBits);
    glEnable(GL_SCISSOR_TEST);                       
 #else
  //SysPrintf("UpdateDisplay ClearOnSwap\r\n");
- GXColor color = {r,g,b,128};
+ GXColor color = {lClearOnSwapColor&0xFF,(lClearOnSwapColor>>8) & 0xFF,(lClearOnSwapColor>>16) & 0xFF,128};
  GX_SetCopyClear(color, 0xFFFFFF);                     // first buffer clear
 #endif
    lClearOnSwap=0;                                     // -> done
