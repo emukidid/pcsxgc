@@ -45,7 +45,7 @@
 #include <gccore.h>
 #include "gxsupp.h"
 #define DEFOPAQUEON  GX_SetAlphaCompare(GX_EQUAL,(u8) 0,GX_AOP_AND,GX_ALWAYS,0);bBlendEnable=FALSE;GX_SetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_CLEAR);
-#define DEFOPAQUEOFF GX_SetAlphaCompare(GX_GREATER,(u8) 128,GX_AOP_AND,GX_ALWAYS,0);
+#define DEFOPAQUEOFF GX_SetAlphaCompare(GX_GREATER,(u8) 125,GX_AOP_AND,GX_ALWAYS,0);
 #endif
 
 ////////////////////////////////////////////////////////////////////////                                          
@@ -277,7 +277,7 @@ void PRIMdrawTexturedQuad(OGLVertex* vertex1, OGLVertex* vertex2,
   glVertex3fv(&vertex3->x);
  glEnd();
 #else
-//SysPrintf("PRIMdrawTexturedQuad textured (%s)\r\n", (gTexName!=NULL?"YES":"NO"));
+//SysPrintf("PRIMdrawTexturedQuad\r\n");
 //PrintVertexInfo(vertex1, vertex2, vertex3, vertex4);
  GX_InvVtxCache();
  GX_ClearVtxDesc();
@@ -311,7 +311,7 @@ void PRIMdrawTexturedQuadCol0(OGLVertex* vertex1, OGLVertex* vertex2,
                                    OGLVertex* vertex3, OGLVertex* vertex4) 
 {
 
-//SysPrintf("PRIMdrawTexturedQuad textured (%s)\r\n", (gTexName!=NULL?"YES":"NO"));
+//SysPrintf("PRIMdrawTexturedQuad\r\n");
 //PrintVertexInfo(vertex1, vertex2, vertex3, vertex4);
  GX_InvVtxCache();
  GX_ClearVtxDesc();
@@ -324,7 +324,6 @@ void PRIMdrawTexturedQuadCol0(OGLVertex* vertex1, OGLVertex* vertex2,
  Mtx GXmodelView2D;
  guMtxIdentity(GXmodelView2D);
  GX_LoadPosMtxImm(GXmodelView2D,GX_PNMTX0);
- //SysPrintf("PRIMdrawTexturedQuad\r\n");
  //set vertex attribute formats here
  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
@@ -363,7 +362,7 @@ void PRIMdrawTexturedTri(OGLVertex* vertex1, OGLVertex* vertex2,
   glVertex3fv(&vertex3->x);
  glEnd();
 #else
- //SysPrintf("PRIMdrawTexturedTri textured (%s)\r\n", (gTexName!=NULL?"YES":"NO"));
+ //SysPrintf("PRIMdrawTexturedTri\r\n");
  //PrintVertexInfo3(vertex1, vertex2, vertex3);
  
  GX_InvVtxCache();
@@ -412,9 +411,8 @@ void PRIMdrawTexGouraudTriColor(OGLVertex* vertex1, OGLVertex* vertex2,
   glVertex3fv(&vertex3->x);
  glEnd();
 #else
- //SysPrintf("PRIMdrawTexGouraudTriColor textured (%s)\r\n", (gTexName!=NULL?"YES":"NO"));
- //PrintVertexInfo3(vertex1, vertex2, vertex3);
  //SysPrintf("PRIMdrawTexGouraudTriColor\r\n");
+ //PrintVertexInfo3(vertex1, vertex2, vertex3);
  GX_InvVtxCache();
  GX_ClearVtxDesc();
 		
@@ -469,12 +467,11 @@ void PRIMdrawTexGouraudTriColorQuad(OGLVertex* vertex1, OGLVertex* vertex2,
   glVertex3fv(&vertex3->x);
  glEnd();
 #else
- //SysPrintf("PRIMdrawTexGouraudTriColorQuad textured (%s)\r\n", (gTexName!=NULL?"YES":"NO"));
+ //SysPrintf("PRIMdrawTexGouraudTriColorQuad\r\n");
  //PrintVertexInfo(vertex1, vertex2, vertex3, vertex4);
  
  GX_InvVtxCache();
  GX_ClearVtxDesc();
- //SysPrintf("PRIMdrawTexGouraudTriColorQuad\r\n");
  
  Mtx GXmodelView2D;
  guMtxIdentity(GXmodelView2D);
@@ -643,7 +640,7 @@ void PRIMdrawGouraudTri2Color(OGLVertex* vertex1, OGLVertex* vertex2,
  //set vertex description here
  GX_InvVtxCache();
  GX_ClearVtxDesc();
-// SysPrintf("PRIMdrawGouraudTri2Color\r\n");
+ //SysPrintf("PRIMdrawGouraudTri2Color\r\n");
 //SysPrintf("Using colour as %02X%02X%02X%02X is: %08X\r\n"
 //	, vertex1->c.col[3], vertex1->c.col[2], vertex1->c.col[1], vertex1->c.col[0], vertex1->c.lcol);
 
@@ -872,10 +869,17 @@ void SetSemiTrans(void)
     }
   }
 #else
+	//SysPrintf("SetSemiTrans\r\n");
   if(!DrawSemiTrans)                                    // no semi trans at all?
   {
    if(bBlendEnable)
-    {GX_SetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_CLEAR); bBlendEnable=FALSE;}          // -> don't wanna blend
+    {
+		GX_SetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_CLEAR); 
+		GX_SetColorUpdate(GX_ENABLE);
+		GX_SetAlphaUpdate(GX_ENABLE);
+		GX_SetDstAlpha(GX_FALSE, 0xFF);
+		bBlendEnable=FALSE;
+	}          // -> don't wanna blend
    ubGloAlpha=ubGloColAlpha=255;                       // -> full alpha
    return;                                             // -> and bye
   }
@@ -884,7 +888,7 @@ void SetSemiTrans(void)
  ubGloAlpha=ubGloColAlpha=TransSets[GlobalTextABR].alpha;
  
  if(!bBlendEnable)
-  {GX_SetBlendMode(GX_BM_BLEND, GX_BL_ONE, GX_BL_ONE, GX_LO_CLEAR);bBlendEnable=TRUE;}              // wanna blend
+  {GX_SetBlendMode(GX_BM_BLEND, obm1, obm2, GX_LO_CLEAR);bBlendEnable=TRUE;}              // wanna blend
 
 
  if(TransSets[GlobalTextABR].srcFac!=obm1 || 
@@ -1762,6 +1766,7 @@ void UploadScreenEx(long Position)
  bOldSmoothShaded=FALSE;
  bBlendEnable=FALSE;
  bTexEnabled=FALSE;
+ //SysPrintf("UploadScreenEx\r\n");
 #ifndef __GX__
  glDisable(GL_SCISSOR_TEST);
  glShadeModel(GL_FLAT);
@@ -1842,7 +1847,7 @@ void UploadScreen(long Position)
 {
  short x, y, YStep, XStep, U, s, UStep,ux[4],vy[4];
  short xa,xb,ya,yb;
-
+ //SysPrintf("Upload\r\n");
  if(xrUploadArea.x0>1023) xrUploadArea.x0=1023;
  if(xrUploadArea.x1>1024) xrUploadArea.x1=1024;
  if(xrUploadArea.y0>iGPUHeightMask)  xrUploadArea.y0=iGPUHeightMask;
@@ -2541,7 +2546,7 @@ void primBlkFill(unsigned char * baseAddr)
        SetRenderMode((unsigned long)0x01000000, FALSE);
        vertex[0].c.lcol=0xff000000;
        SETCOL(vertex[0]); 
-	   SysPrintf("primBlkFill 2\r\n");
+	   //SysPrintf("primBlkFill 2\r\n");
        if(ly0>pd->DisplayPosition.y)
         {
          vertex[0].x=0;vertex[0].y=0;

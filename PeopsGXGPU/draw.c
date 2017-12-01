@@ -700,7 +700,7 @@ int GLinitialize()
  Mtx44 GXprojection;
  guMtxIdentity(GXprojection);
  guMtxIdentity(GXmodelViewIdent);
- guOrtho(GXprojection, 0, PSXDisplay.DisplayMode.y, 0, PSXDisplay.DisplayMode.x, 0.0f, 1.0f);
+ guOrtho(GXprojection, 0, PSXDisplay.DisplayMode.y, 0, PSXDisplay.DisplayMode.x, -1.0f, 1.0f);
  GX_LoadProjectionMtx(GXprojection, GX_ORTHOGRAPHIC); 
  GX_LoadPosMtxImm(GXmodelViewIdent,GX_PNMTX0);
  GX_LoadTexMtxImm(GXmodelViewIdent,GX_TEXMTX0,GX_MTX2x4);
@@ -714,8 +714,8 @@ int GLinitialize()
   {
    GX_SetZMode(GX_DISABLE,GX_ALWAYS,GX_FALSE);
   }
- GX_SetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_CLEAR); 
- GX_SetAlphaCompare(GX_ALWAYS,0,GX_AOP_AND,GX_ALWAYS,0);
+ GX_SetBlendMode(GX_BM_BLEND, GX_BL_ZERO, GX_BL_ONE, GX_LO_CLEAR); 
+ GX_SetAlphaCompare(GX_ALWAYS,127,GX_AOP_AND,GX_ALWAYS,0);
  GX_SetColorUpdate(GX_ENABLE);
  GX_SetAlphaUpdate(GX_ENABLE);
  GX_SetDstAlpha(GX_DISABLE, 0xFF);
@@ -1604,6 +1604,7 @@ void SetOGLDisplaySettings(BOOL DisplaySet)
 #ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
 #else
+	SysPrintf("SetScissor1\r\n");
 	GX_SetScissor((u32)rC.left,(u32)rC.top,(u32)rC.right,(u32)rC.bottom);
 #endif
      bSetClip=FALSE; 
@@ -1699,6 +1700,7 @@ void SetOGLDisplaySettings(BOOL DisplaySet)
 #ifndef __GX__
    glScissor(r.left,r.top,r.right,r.bottom);
 #else
+	SysPrintf("SetScissor2\r\n");
    GX_SetScissor((u32)r.left,(u32)r.top,(u32)r.right,(u32)r.bottom);
 #endif
    rC=r;

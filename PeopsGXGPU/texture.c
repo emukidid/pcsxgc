@@ -258,6 +258,8 @@ void createGXTexture(textureWndCacheEntry *entry, u32 width, u32 height) {
 void updateGXSubTexture(textureWndCacheEntry *entry, u8 *rgba8888Tex, u32 xStartPos, u32 yStartPos,
                  u32 width, u32 height) {
 
+	//SysPrintf("Update texture: tex size %i,%i update at %i,%i with %i,%i\r\n"
+	//		, entry->GXrealWidth, entry->GXrealHeight, xStartPos, yStartPos, width, height);
 	u8 *dest = NULL;
 	u32	k, l;
 	u8 *src;
@@ -273,8 +275,8 @@ void updateGXSubTexture(textureWndCacheEntry *entry, u8 *rgba8888Tex, u32 xStart
 	u32 gxBytesActualTex = (width / 4) * 64;
 	dest+= gxBytesPerLine * (yStartPos / 4);
 	
-	u16 clampSClamp = DXTexS - 1;
-	u16 clampTClamp = DYTexS - 1;
+	u16 clampSClamp = width - 1;
+	u16 clampTClamp = height - 1;
 	
 	for (y = 0; y < height; y+=4)
 	{
@@ -300,9 +302,11 @@ void updateGXSubTexture(textureWndCacheEntry *entry, u8 *rgba8888Tex, u32 xStart
 			__asm__ volatile("dcbf %y0" : "=Z"(dest[32]) :: "memory");
 			dest += 64;
 		}
-		dest += (gxBytesPerLine - (gxBytesAtLineStart+gxBytesActualTex)-64);
+		if(width != entry->GXrealWidth)
+			dest += (gxBytesPerLine - (gxBytesAtLineStart+gxBytesActualTex)-64);
 		_sync();
 	}
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2319,6 +2323,7 @@ void DefineTextureMovie(void)
   gTexMovieName=malloc(sizeof(textureWndCacheEntry));
   memset(gTexMovieName, 0, sizeof(textureWndCacheEntry));
   gTexName=gTexMovieName;
+  //SysPrintf("Texture made for movie\r\n");
   createGXTexture(gTexName, 256, 256);
   u8 magFilt = !bUseFastMdec ? GX_LINEAR : GX_NEAR;
   GX_InitTexObjFilterMode(&gTexName->GXtexObj,magFilt,magFilt);
@@ -2327,7 +2332,22 @@ void DefineTextureMovie(void)
  else {
   gTexName=gTexMovieName;
  }
+ //SysPrintf("Texture updated for movie %i,%i\r\n",(xrMovieArea.x1-xrMovieArea.x0), (xrMovieArea.y1-xrMovieArea.y0));
   updateGXSubTexture(gTexName, texturepart, 0, 0, (xrMovieArea.x1-xrMovieArea.x0), (xrMovieArea.y1-xrMovieArea.y0));
+  //char filename[1024];
+  //  memset(filename, 0, 1024);
+  //  sprintf(filename, "sd:/mov_%i_%i_%i_%i.raw",  0, 0, (xrMovieArea.x1-xrMovieArea.x0), (xrMovieArea.y1-xrMovieArea.y0));
+  //  FILE* f = fopen(filename, "wb" );
+  //  fwrite(texturepart, 1, 256*256*4, f);
+  //  fclose(f);
+  //  
+  //  memset(filename, 0, 1024);
+  //  sprintf(filename, "sd:/tex_%i_%i_%i_%i.raw",  0, 0, 256, 256);
+  //  f = fopen(filename, "wb" );
+  //  fwrite(gTexName->GXtexture, 1, 256*256*4, f);
+  //  fclose(f);
+  //  SysPrintf("Done!\r\n");
+  //  exit(1);
   GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
 #endif
 }
@@ -2367,7 +2387,7 @@ unsigned char * LoadDirectMovieFast(void)
      pD=(unsigned char *)&psxVuw[startxy];
      for(row=xrMovieArea.x0;row<xrMovieArea.x1;row++)
       {
-       *ta++=*((unsigned long *)pD)|0xff000000;
+       *ta++=(*((unsigned long *)pD)>>8)|0xff000000;
        pD+=3;
       }
     }
@@ -2395,7 +2415,7 @@ unsigned char * LoadDirectMovieFast(void)
 
 textureWndCacheEntry* LoadTextureMovieFast(void)
 {
-	//SysPrintf("LoadTextureMovieFast\r\n");
+	SysPrintf("LoadTextureMovieFast\r\n");
  long row,column;
  unsigned int start,startxy;
 
@@ -2468,7 +2488,7 @@ textureWndCacheEntry* LoadTextureMovieFast(void)
        pD=(unsigned char *)&psxVuw[startxy];
        for(row=xrMovieArea.x0;row<xrMovieArea.x1;row++)
         {
-         *ta++=*((unsigned long *)pD)|0xff000000;
+         *ta++=(*((unsigned long *)pD)>>8)|0xff000000;
          pD+=3;
         }
       }
@@ -2628,7 +2648,7 @@ textureWndCacheEntry* LoadTextureMovie(void)
          pD=(unsigned char *)&psxVuw[startxy];
          for(row=xrMovieArea.x0;row<xrMovieArea.x1;row++)
           {
-           *ta++=*((unsigned long *)pD)|0xff000000;
+		   *ta++=(*((unsigned long *)pD)>>8)|0xff000000;
            pD+=3;
           }
          *ta++=ta[-1];
@@ -2649,7 +2669,7 @@ textureWndCacheEntry* LoadTextureMovie(void)
          pD=(unsigned char *)&psxVuw[startxy];
          for(row=xrMovieArea.x0;row<xrMovieArea.x1;row++)
           {
-           *ta++=*((unsigned long *)pD)|0xff000000;
+           *ta++=(*((unsigned long *)pD)>>8)|0xff000000;
            pD+=3;
           }
         }

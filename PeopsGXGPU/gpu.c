@@ -1837,12 +1837,14 @@ void SetAspectRatio(void)
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
      glClear(uiBufferBits);
 #else
+	 GX_SetScissor(rC.left,rC.top,rC.right,rC.bottom);
 #endif
      rC.left=iResX-rC.right;
 #ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
      glClear(uiBufferBits);
 #else
+	 GX_SetScissor(rC.left,rC.top,rC.right,rC.bottom);
 #endif
     }
 
@@ -1856,12 +1858,14 @@ void SetAspectRatio(void)
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
      glClear(uiBufferBits);
 #else
+	 GX_SetScissor(rC.left,rC.top,rC.right,rC.bottom);
 #endif
      rC.top=iResY-rC.bottom;
 #ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
      glClear(uiBufferBits);
 #else
+	 GX_SetScissor(rC.left,rC.top,rC.right,rC.bottom);
 #endif
     }
    
@@ -1907,10 +1911,14 @@ void updateDisplayIfChanged(void)
    glOrtho(0,PSXDisplay.DisplayModeNew.x,              // -> new psx resolution
              PSXDisplay.DisplayModeNew.y, 0, -1, 1);
 #else
+	SysPrintf("updateDisplayIfChanged\r\n");
    Mtx44 GXprojection;
    guMtxIdentity(GXprojection);
-   guOrtho(GXprojection, 0, PSXDisplay.DisplayModeNew.y, 0, PSXDisplay.DisplayModeNew.x, 0.0f, 1.0f);
+   guMtxIdentity(GXmodelViewIdent);
+   guOrtho(GXprojection, 0, PSXDisplay.DisplayModeNew.y, 0, PSXDisplay.DisplayModeNew.x, -1.0f, 1.0f);
    GX_LoadProjectionMtx(GXprojection, GX_ORTHOGRAPHIC); 
+   GX_LoadPosMtxImm(GXmodelViewIdent,GX_PNMTX0);
+   GX_LoadTexMtxImm(GXmodelViewIdent,GX_TEXMTX0,GX_MTX2x4);
 #endif
    if(bKeepRatio) SetAspectRatio();
   }
