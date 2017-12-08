@@ -41,15 +41,15 @@ static char recROM[0x080000] __attribute__((aligned(32)));	/* and here */
 
 static u32 pc;			/* recompiler pc */
 static u32 pcold;		/* recompiler oldpc */
-static int count;		/* recompiler intruction count */
-static int branch;		/* set for branch */
+static s32 count;		/* recompiler intruction count */
+static s32 branch;		/* set for branch */
 static u32 target;		/* branch target */
 static u32 resp;
 static u32 cop2readypc = 0;
 static u32 idlecyclecount = 0;
 static iRegisters iRegs[34];
 
-int psxCP2time[64] = {
+s32 psxCP2time[64] = {
         2 , 16, 1 , 1 , 1 , 1 , 8 , 1 , // 00
         1 , 1 , 1 , 1 , 6 , 1 , 1 , 1 , // 08
         8 , 8 , 8 , 19, 13, 1 , 44, 1 , // 10
@@ -68,26 +68,26 @@ static void (*recCP2[64])();
 static void (*recCP2BSC[32])();
 
 static HWRegister HWRegisters[NUM_HW_REGISTERS];
-static int HWRegUseCount;
-static int DstCPUReg;
-static int UniqueRegAlloc;
+static s32 HWRegUseCount;
+static s32 DstCPUReg;
+static s32 UniqueRegAlloc;
 
-static int GetFreeHWReg();
+static s32 GetFreeHWReg();
 static void InvalidateCPURegs();
-static void DisposeHWReg(int index);
-static void FlushHWReg(int index);
+static void DisposeHWReg(s32 index);
+static void FlushHWReg(s32 index);
 static void FlushAllHWReg();
-static void MapPsxReg32(int reg);
-static void FlushPsxReg32(int hwreg);
-static int UpdateHWRegUsage(int hwreg, int usage);
-static int GetHWReg32(int reg);
-static int PutHWReg32(int reg);
-static int GetSpecialIndexFromHWRegs(int which);
-static int GetHWRegFromCPUReg(int cpureg);
-static int MapRegSpecial(int which);
-static void FlushRegSpecial(int hwreg);
-static int GetHWRegSpecial(int which);
-static int PutHWRegSpecial(int which);
+static void MapPsxReg32(s32 reg);
+static void FlushPsxReg32(s32 hwreg);
+static s32 UpdateHWRegUsage(s32 hwreg, s32 usage);
+static s32 GetHWReg32(s32 reg);
+static s32 PutHWReg32(s32 reg);
+static s32 GetSpecialIndexFromHWRegs(s32 which);
+static s32 GetHWRegFromCPUReg(s32 cpureg);
+static s32 MapRegSpecial(s32 which);
+static void FlushRegSpecial(s32 hwreg);
+static s32 GetHWRegSpecial(s32 which);
+static s32 PutHWRegSpecial(s32 which);
 static void recRecompile();
 static void recError();
 
@@ -97,9 +97,9 @@ u32 dyna_total = RECMEM_SIZE;
 
 /* --- Generic register mapping --- */
 
-static int GetFreeHWReg()
+static s32 GetFreeHWReg()
 {
-	int i, least, index;
+	s32 i, least, index;
 	
 	if (DstCPUReg != -1) {
 		index = GetHWRegFromCPUReg(DstCPUReg);
@@ -165,7 +165,7 @@ static int GetFreeHWReg()
 	return index;
 }
 
-static void FlushHWReg(int index)
+static void FlushHWReg(s32 index)
 {
 	if (index < 0) return;
 	if (HWRegisters[index].usage == HWUSAGE_NONE) return;
@@ -184,7 +184,7 @@ static void FlushHWReg(int index)
 }
 
 // get rid of a mapped register without flushing the contents to the memory
-static void DisposeHWReg(int index)
+static void DisposeHWReg(s32 index)
 {
 	if (index < 0) return;
 	if (HWRegisters[index].usage == HWUSAGE_NONE) return;
@@ -198,9 +198,9 @@ static void DisposeHWReg(int index)
 }
 
 // operated on cpu registers
-__inline static void FlushCPURegRange(int start, int end)
+__inline static void FlushCPURegRange(s32 start, s32 end)
 {
-	int i;
+	s32 i;
 	
 	if (end <= 0) end = 31;
 	if (start <= 0) start = 0;
@@ -229,9 +229,9 @@ static void InvalidateCPURegs()
 
 /* --- Mapping utility functions --- */
 
-static void MoveHWRegToCPUReg(int cpureg, int hwreg)
+static void MoveHWRegToCPUReg(s32 cpureg, s32 hwreg)
 {
-	int dstreg;
+	s32 dstreg;
 	
 	if (HWRegisters[hwreg].code == cpureg)
 		return;
@@ -255,7 +255,7 @@ static void MoveHWRegToCPUReg(int cpureg, int hwreg)
 	HWRegisters[hwreg].code = cpureg;
 }
 
-static int UpdateHWRegUsage(int hwreg, int usage)
+static s32 UpdateHWRegUsage(s32 hwreg, s32 usage)
 {
 	HWRegisters[hwreg].lastUsed = ++HWRegUseCount;    
 	if (usage & HWUSAGE_WRITE) {
@@ -269,9 +269,9 @@ static int UpdateHWRegUsage(int hwreg, int usage)
 	return HWRegisters[hwreg].code;
 }
 
-static int GetHWRegFromCPUReg(int cpureg)
+static s32 GetHWRegFromCPUReg(s32 cpureg)
 {
-	int i;
+	s32 i;
 	for (i=0; i<NUM_HW_REGISTERS; i++) {
 		if (HWRegisters[i].code == cpureg) {
 			return i;
@@ -283,14 +283,14 @@ static int GetHWRegFromCPUReg(int cpureg)
 }
 
 // this function operates on cpu registers
-void SetDstCPUReg(int cpureg)
+void SetDstCPUReg(s32 cpureg)
 {
 	DstCPUReg = cpureg;
 }
 
-static void ReserveArgs(int args)
+static void ReserveArgs(s32 args)
 {
-	int index, i;
+	s32 index, i;
 	
 	for (i=0; i<args; i++) {
 		index = GetHWRegFromCPUReg(3+i);
@@ -300,7 +300,7 @@ static void ReserveArgs(int args)
 
 static void ReleaseArgs()
 {
-	int i;
+	s32 i;
 	
 	for (i=0; i<NUM_HW_REGISTERS; i++) {
 		if (HWRegisters[i].usage & HWUSAGE_ARG) {
@@ -312,9 +312,9 @@ static void ReleaseArgs()
 
 /* --- Psx register mapping --- */
 
-static void MapPsxReg32(int reg)
+static void MapPsxReg32(s32 reg)
 {
-    int hwreg = GetFreeHWReg();
+    s32 hwreg = GetFreeHWReg();
     HWRegisters[hwreg].flush = FlushPsxReg32;
     HWRegisters[hwreg].private = reg;
     
@@ -326,9 +326,9 @@ static void MapPsxReg32(int reg)
     iRegs[reg].state |= ST_MAPPED;
 }
 
-static void FlushPsxReg32(int hwreg)
+static void FlushPsxReg32(s32 hwreg)
 {
-	int reg = HWRegisters[hwreg].private;
+	s32 reg = HWRegisters[hwreg].private;
 	
 	if (iRegs[reg].reg == -1) {
 		SysPrintf("error: flushing unmapped psx register");
@@ -346,9 +346,9 @@ static void FlushPsxReg32(int hwreg)
 	iRegs[reg].state = ST_UNK;
 }
 
-static int GetHWReg32(int reg)
+static s32 GetHWReg32(s32 reg)
 {
-	int usage = HWUSAGE_PSXREG | HWUSAGE_READ;
+	s32 usage = HWUSAGE_PSXREG | HWUSAGE_READ;
 	
 	if (reg == 0) {
 		return GetHWRegSpecial(REG_RZERO);
@@ -368,7 +368,7 @@ static int GetHWReg32(int reg)
 		HWRegisters[iRegs[reg].reg].usage &= ~HWUSAGE_RESERVED;
 	}
 	else if (DstCPUReg != -1) {
-		int dst = DstCPUReg;
+		s32 dst = DstCPUReg;
 		DstCPUReg = -1;
 		
 		if (HWRegisters[iRegs[reg].reg].code < 13) {
@@ -383,16 +383,16 @@ static int GetHWReg32(int reg)
 	return UpdateHWRegUsage(iRegs[reg].reg, usage);
 }
 
-static int PutHWReg32(int reg)
+static s32 PutHWReg32(s32 reg)
 {
-	int usage = HWUSAGE_PSXREG | HWUSAGE_WRITE;
+	s32 usage = HWUSAGE_PSXREG | HWUSAGE_WRITE;
 	if (reg == 0) {
 		return PutHWRegSpecial(REG_WZERO);
 	}
 	
 	if (DstCPUReg != -1 && IsMapped(reg)) {
 		if (HWRegisters[iRegs[reg].reg].code != DstCPUReg) {
-			int tmp = DstCPUReg;
+			s32 tmp = DstCPUReg;
 			DstCPUReg = -1;
 			DisposeHWReg(iRegs[reg].reg);
 			DstCPUReg = tmp;
@@ -411,9 +411,9 @@ static int PutHWReg32(int reg)
 
 /* --- Special register mapping --- */
 
-static int GetSpecialIndexFromHWRegs(int which)
+static s32 GetSpecialIndexFromHWRegs(s32 which)
 {
-	int i;
+	s32 i;
 	for (i=0; i<NUM_HW_REGISTERS; i++) {
 		if (HWRegisters[i].usage & HWUSAGE_SPECIAL) {
 			if (HWRegisters[i].private == which) {
@@ -424,18 +424,18 @@ static int GetSpecialIndexFromHWRegs(int which)
 	return -1;
 }
 
-static int MapRegSpecial(int which)
+static s32 MapRegSpecial(s32 which)
 {
-	int hwreg = GetFreeHWReg();
+	s32 hwreg = GetFreeHWReg();
 	HWRegisters[hwreg].flush = FlushRegSpecial;
 	HWRegisters[hwreg].private = which;
 	
 	return hwreg;
 }
 
-static void FlushRegSpecial(int hwreg)
+static void FlushRegSpecial(s32 hwreg)
 {
-	int which = HWRegisters[hwreg].private;
+	s32 which = HWRegisters[hwreg].private;
 	
 	if (!(HWRegisters[hwreg].usage & HWUSAGE_WRITE))
 		return;
@@ -453,10 +453,10 @@ static void FlushRegSpecial(int hwreg)
 	}
 }
 
-static int GetHWRegSpecial(int which)
+static s32 GetHWRegSpecial(s32 which)
 {
-	int index = GetSpecialIndexFromHWRegs(which);
-	int usage = HWUSAGE_READ | HWUSAGE_SPECIAL;
+	s32 index = GetSpecialIndexFromHWRegs(which);
+	s32 usage = HWUSAGE_READ | HWUSAGE_SPECIAL;
 	
 	if (index == -1) {
 		usage |= HWUSAGE_INITED;
@@ -500,7 +500,7 @@ static int GetHWRegSpecial(int which)
 		HWRegisters[index].usage &= ~HWUSAGE_RESERVED;
 	}
 	else if (DstCPUReg != -1) {
-		int dst = DstCPUReg;
+		s32 dst = DstCPUReg;
 		DstCPUReg = -1;
 		
 		MoveHWRegToCPUReg(dst, index);
@@ -509,14 +509,14 @@ static int GetHWRegSpecial(int which)
 	return UpdateHWRegUsage(index, usage);
 }
 
-static int PutHWRegSpecial(int which)
+static s32 PutHWRegSpecial(s32 which)
 {
-	int index = GetSpecialIndexFromHWRegs(which);
-	int usage = HWUSAGE_WRITE | HWUSAGE_SPECIAL;
+	s32 index = GetSpecialIndexFromHWRegs(which);
+	s32 usage = HWUSAGE_WRITE | HWUSAGE_SPECIAL;
 	
 	if (DstCPUReg != -1 && index != -1) {
 		if (HWRegisters[index].code != DstCPUReg) {
-			int tmp = DstCPUReg;
+			s32 tmp = DstCPUReg;
 			DstCPUReg = -1;
 			DisposeHWReg(index);
 			DstCPUReg = tmp;
@@ -560,7 +560,7 @@ static int PutHWRegSpecial(int which)
 	return UpdateHWRegUsage(index, usage);
 }
 
-static void MapConst(int reg, u32 _const) {
+static void MapConst(s32 reg, u32 _const) {
 	if (reg == 0)
 		return;
 	if (IsConst(reg) && iRegs[reg].k == _const)
@@ -571,13 +571,13 @@ static void MapConst(int reg, u32 _const) {
 	iRegs[reg].state = ST_CONST;
 }
 
-static void MapCopy(int dst, int src)
+static void MapCopy(s32 dst, s32 src)
 {
     // do it the lazy way for now
     MR(PutHWReg32(dst), GetHWReg32(src));
 }
 
-static void iFlushReg(u32 nextpc, int reg) {
+static void iFlushReg(u32 nextpc, s32 reg) {
 	if (!IsMapped(reg) && IsConst(reg)) {
 		GetHWReg32(reg);
 	}
@@ -587,7 +587,7 @@ static void iFlushReg(u32 nextpc, int reg) {
 }
 
 static void iFlushRegs(u32 nextpc) {
-	int i;
+	s32 i;
 
 	for (i=1; i<NUM_REGISTERS; i++) {
 		iFlushReg(nextpc, i);
@@ -611,7 +611,7 @@ static void iRet() {
     Return();
 }
 
-static int iLoadTest() {
+static s32 iLoadTest() {
 	u32 tmp;
 
 	// check for load delay
@@ -648,7 +648,7 @@ static int iLoadTest() {
 
 /* set a pending branch */
 static void SetBranch() {
-	int treg;
+	s32 treg;
 	branch = 1;
 	psxRegs.code = PSXMu32(pc);
 	pc+=4;
@@ -757,10 +757,10 @@ static void iJump(u32 branchPC) {
 	BCTR();
 }
 
-static void iBranch(u32 branchPC, int savectx) {
+static void iBranch(u32 branchPC, s32 savectx) {
 	HWRegister HWRegistersS[NUM_HW_REGISTERS];
 	iRegisters iRegsS[NUM_REGISTERS];
-	int HWRegUseCountS = 0;
+	s32 HWRegUseCountS = 0;
 	u32 respold=0;
 	u32 *b1, *b2;
 
@@ -855,7 +855,7 @@ static void iBranch(u32 branchPC, int savectx) {
 
 
 void iDumpRegs() {
-	int i, j;
+	s32 i, j;
 
 	printf("%08lx %08lx\n", psxRegs.pc, psxRegs.cycle);
 	for (i=0; i<4; i++) {
@@ -929,8 +929,8 @@ static void rec##f() { \
 	cop2readypc = pc + psxCP2time[_fFunct_(psxRegs.code)]; \
 }
 
-static int allocMem() {
-	int i;
+static s32 allocMem() {
+	s32 i;
 
 	for (i=0; i<0x80; i++) psxRecLUT[i + 0x0000] = (u32)&recRAM[(i & 0x1f) << 16];
 	memcpy(psxRecLUT + 0x8000, psxRecLUT, 0x80 * 4);
@@ -941,7 +941,7 @@ static int allocMem() {
 	return 0;
 }
 
-static int recInit() {
+static s32 recInit() {
 	return allocMem();
 }
 
@@ -1076,7 +1076,7 @@ static void recSLTI() {
 		if (_Imm_ == 0) {
 			SRWI(PutHWReg32(_Rt_), GetHWReg32(_Rs_), 31);
 		} else {
-			int reg;
+			s32 reg;
 			CMPWI(GetHWReg32(_Rs_), _Imm_);
 			reg = PutHWReg32(_Rt_);
 			LI(reg, 1);
@@ -1093,7 +1093,7 @@ static void recSLTIU() {
 	if (IsConst(_Rs_)) {
 		MapConst(_Rt_, iRegs[_Rs_].k < _ImmU_);
 	} else {
-		int reg;
+		s32 reg;
 		CMPLWI(GetHWReg32(_Rs_), _Imm_);
 		reg = PutHWReg32(_Rt_);
 		LI(reg, 1);
@@ -1250,7 +1250,7 @@ static void recSLT() {
 		SRWI(PutHWReg32(_Rd_), GetHWReg32(_Rd_), 31);
 		ADDZE(PutHWReg32(_Rd_), GetHWReg32(_Rd_));
 		RLWINM(PutHWReg32(_Rd_), GetHWReg32(_Rd_), 0, 31, 31);*/
-        int reg;
+        s32 reg;
         CMPW(GetHWReg32(_Rs_), GetHWReg32(_Rt_));
         reg = PutHWReg32(_Rd_);
         LI(reg, 1);
@@ -1370,7 +1370,7 @@ static void recDIVU() {
 
 static void preMemRead()
 {
-	int rs;
+	s32 rs;
 	
 	ReserveArgs(1);
 	if (_Rs_ != _Rt_) {
@@ -1387,9 +1387,9 @@ static void preMemRead()
 	//FlushAllHWReg();
 }
 
-static void preMemWrite(int size)
+static void preMemWrite(s32 size)
 {
-	int rs;
+	s32 rs;
 	
 	ReserveArgs(2);
 	rs = GetHWReg32(_Rs_);
@@ -1415,7 +1415,7 @@ static void recLB() {
 	
     if (IsConst(_Rs_)) {
         u32 addr = iRegs[_Rs_].k + _Imm_;
-        int t = addr >> 16;
+        s32 t = addr >> 16;
 		if (!_Rt_) return;
         if ((t & 0xfff0)  == 0xbfc0) {	// Static BIOS read
             MapConst(_Rt_, psxRs8(addr));
@@ -1448,7 +1448,7 @@ static void recLBU() {
 
     if (IsConst(_Rs_)) {
         u32 addr = iRegs[_Rs_].k + _Imm_;
-        int t = addr >> 16;
+        s32 t = addr >> 16;
 		if (!_Rt_) return;
         if ((t & 0xfff0)  == 0xbfc0) {	// Static BIOS read
             MapConst(_Rt_, psxRu8(addr));
@@ -1497,7 +1497,7 @@ static void recLH() {
 
 	if (IsConst(_Rs_)) {
 		u32 addr = iRegs[_Rs_].k + _Imm_;
-		int t = addr >> 16;
+		s32 t = addr >> 16;
 		if (!_Rt_) return;
 		if ((t & 0xfff0)  == 0xbfc0) {	// Static BIOS read
 			MapConst(_Rt_, psxRs16(addr));
@@ -1530,7 +1530,7 @@ static void recLHU() {
 
 	if (IsConst(_Rs_)) {
 		u32 addr = iRegs[_Rs_].k + _Imm_;
-		int t = addr >> 16;
+		s32 t = addr >> 16;
 		if (!_Rt_) return;
 	
 		if ((t & 0xfff0) == 0xbfc0) {	// Static BIOS read
@@ -1626,7 +1626,7 @@ static void recLW() {
 	if (IsConst(_Rs_)) {
 		if (!_Rt_) return;
 		u32 addr = iRegs[_Rs_].k + _Imm_;
-		int t = addr >> 16;
+		s32 t = addr >> 16;
 
 		if ((t & 0xfff0) == 0xbfc0) {	// Static BIOS read
 			MapConst(_Rt_, psxRu32(addr));
@@ -1715,7 +1715,7 @@ static void recSB() {
 
 	if (IsConst(_Rs_)) {
 		u32 addr = iRegs[_Rs_].k + _Imm_;
-		int t = addr >> 16;
+		s32 t = addr >> 16;
 		
 		if ((t & 0x1fe0) == 0 && (t & 0x1fff) != 0) {	// Write to PSX MEM
 			LIW(PutHWRegSpecial(PSXMEM), (u32)&psxM[addr & 0x1fffff]);
@@ -1738,7 +1738,7 @@ static void recSH() {
 
 	if (IsConst(_Rs_)) {
 		u32 addr = iRegs[_Rs_].k + _Imm_;
-		int t = addr >> 16;
+		s32 t = addr >> 16;
 
 		if ((t & 0x1fe0) == 0 && (t & 0x1fff) != 0) {
 			LIW(PutHWRegSpecial(PSXMEM), (u32)&psxM[addr & 0x1fffff]);
@@ -1761,7 +1761,7 @@ static void recSW() {
 
 	if (IsConst(_Rs_)) {
 		u32 addr = iRegs[_Rs_].k + _Imm_;
-		int t = addr >> 16;
+		s32 t = addr >> 16;
 
 		if ((t & 0x1fe0) == 0 && (t & 0x1fff) != 0) {
 			LIW(PutHWRegSpecial(PSXMEM), (u32)&psxM[addr & 0x1fffff]);
@@ -2387,7 +2387,7 @@ static void (*recCP2BSC[32])() = {
 static void recRecompile() {
 	char *p;
 	u32 *ptr;
-	int i;
+	s32 i;
 	
 	cop2readypc = 0;
 	idlecyclecount = 0;

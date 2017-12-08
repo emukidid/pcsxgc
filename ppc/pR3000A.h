@@ -109,13 +109,13 @@ extern void SysRunGui();
 extern void SysMessage(char *fmt, ...);
 extern void SysReset();
 extern void SysPrintf(char *fmt, ...);
-extern int stop;
+extern s32 stop;
 
 /* structs */
 typedef struct {
-	int state;
+	s32 state;
 	u32 k;
-	int reg;
+	s32 reg;
 } iRegisters;
 
 // Remember to invalidate the special registers if they are modified by compiler
@@ -136,13 +136,13 @@ enum {
 };
 
 typedef struct {
-    int code;
+    s32 code;
     u32 k;
-    int usage;
-    int lastUsed;
+    s32 usage;
+    s32 lastUsed;
     
-    void (*flush)(int hwreg);
-    int private;
+    void (*flush)(s32 hwreg);
+    s32 private;
 } HWRegister;
 
 #endif
