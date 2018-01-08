@@ -149,7 +149,7 @@ BOOL               bGLBlend;
 PFNGLBLENDEQU      glBlendEquationEXTEx=NULL;
 PFNGLCOLORTABLEEXT glColorTableEXTEx=NULL;
 #else
-#include "gxsupp.h"
+#include "glgx.h"
 #define PFNGLBLENDEQU void*
 #define PFNGLCOLORTABLEEXT void*
 void*    glBlendEquationEXTEx=NULL;
@@ -338,23 +338,31 @@ void SetExtGLFuncs(void)
    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);    
   }
 #else
- /*if(bAdvancedBlend)
+ GX_SetNumChans (1);
+ GX_SetNumTexGens (1);
+ GX_SetNumTevStages (1);
+ //GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
+ if(bAdvancedBlend)
   {
    bUseMultiPass=FALSE;bGLBlend=TRUE;                  // -> no need for 2 passes, perfect
 
-   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);    
-   glTexEnvf(GL_TEXTURE_ENV, COMBINE_RGB_EXT, GL_MODULATE);     
-   glTexEnvf(GL_TEXTURE_ENV, COMBINE_ALPHA_EXT, GL_MODULATE);     
-   glTexEnvf(GL_TEXTURE_ENV, RGB_SCALE_EXT, 2.0f);    
+   //glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);
+   //glTexEnvf(GL_TEXTURE_ENV, COMBINE_RGB_EXT, GL_MODULATE);     
+   //glTexEnvf(GL_TEXTURE_ENV, COMBINE_ALPHA_EXT, GL_MODULATE);     
+   //glTexEnvf(GL_TEXTURE_ENV, RGB_SCALE_EXT, 2.0f);    
+   GX_SetTevOrder (GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+   GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+   GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+   GX_SetTevOp(GX_TEVSTAGE0,GX_MODULATE);
   }
- else  */                                                // no advanced blending wanted/available:
+ else                                                  // no advanced blending wanted/available:
   {
    if(bAdvancedBlend) bUseMultiPass=TRUE;              // -> pseudo-advanced with 2 passes
    else               bUseMultiPass=FALSE;             // -> or simple 'bright color' mode
    bGLBlend=FALSE;                                     // -> no ext blending!
 
    //glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);    
-   //GX_SetTevOp(GX_TEVSTAGE0,GX_MODULATE);
+   GX_SetTevOp(GX_TEVSTAGE0,GX_PASSCLR);
   }
 #endif
  //----------------------------------------------------//
@@ -528,7 +536,7 @@ void SetExtGLFuncs(void)
 #ifndef __GX__
  glDisable(GL_BLEND);
 #else
- GX_SetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_CLEAR);
+ GX_SetBlendMode(GX_BM_NONE, GX_BL_ZERO, GX_BL_ONE, GX_LO_CLEAR);
  GX_SetColorUpdate(GX_ENABLE);
  GX_SetAlphaUpdate(GX_ENABLE);
  GX_SetDstAlpha(GX_DISABLE, 0xFF);
@@ -690,12 +698,12 @@ int GLinitialize()
   }
 #else
  //GX
- GX_SetViewport((f32) rRatioRect.left
+ gxViewport((f32) rRatioRect.left
 				,(f32) iResY-(rRatioRect.top+rRatioRect.bottom)
 				,(f32) rRatioRect.right
 				,(f32) rRatioRect.bottom, 0.0f, 1.0f);	// init viewport by ratio rect
- GX_SetScissor((u32) rRatioRect.left,(u32) iResY-(rRatioRect.top+rRatioRect.bottom)
-				,(u32) iResX,(u32) iResY);	//Set to the same size as the viewport.
+ gxScissor(0, 0, iResX, iResY);
+ gxEnable(GX_SCISSOR_TEST);
 
  Mtx44 GXprojection;
  guMtxIdentity(GXprojection);
@@ -716,12 +724,14 @@ int GLinitialize()
   }
  GX_SetBlendMode(GX_BM_BLEND, GX_BL_ZERO, GX_BL_ONE, GX_LO_CLEAR); 
  GX_SetAlphaCompare(GX_ALWAYS,127,GX_AOP_AND,GX_ALWAYS,0);
+ GX_SetAlphaCompare(GX_ALWAYS,0,GX_AOP_AND,GX_ALWAYS,0);
+ GX_SetZCompLoc(GX_FALSE); //Zcomp after texturing
  GX_SetColorUpdate(GX_ENABLE);
  GX_SetAlphaUpdate(GX_ENABLE);
  GX_SetDstAlpha(GX_DISABLE, 0xFF);
  
- GXColor color = {0,0,0,0};
- GX_SetCopyClear(color, 0xFFFFFF);                     // first buffer clear
+ gxClearColor(0.0f, 0.0f, 0.0f, 0.0f);                 // first buffer clear
+ gxClear(uiBufferBits);                     			// first buffer clear
  SetExtGLFuncs();                                      // init all kind of stuff (tex function pointers)
 #endif
 
@@ -773,7 +783,7 @@ int GLinitialize()
  glFlush();                                            // we are done...
  glFinish();                           
 #else
- PEOPS_GX_Flush();
+ gxFlush();
 #endif
 
  CreateScanLines();                                    // setup scanline stuff (if wanted)
@@ -1604,8 +1614,7 @@ void SetOGLDisplaySettings(BOOL DisplaySet)
 #ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
 #else
-	SysPrintf("SetScissor1\r\n");
-	GX_SetScissor((u32)rC.left,(u32)rC.top,(u32)rC.right,(u32)rC.bottom);
+	gxScissor((u32)rC.left,(u32)rC.top,(u32)rC.right,(u32)rC.bottom);
 #endif
      bSetClip=FALSE; 
     }
@@ -1700,8 +1709,7 @@ void SetOGLDisplaySettings(BOOL DisplaySet)
 #ifndef __GX__
    glScissor(r.left,r.top,r.right,r.bottom);
 #else
-	SysPrintf("SetScissor2\r\n");
-   GX_SetScissor((u32)r.left,(u32)r.top,(u32)r.right,(u32)r.bottom);
+   gxScissor((u32)r.left,(u32)r.top,(u32)r.right,(u32)r.bottom);
 #endif
    rC=r;
    bSetClip=FALSE;

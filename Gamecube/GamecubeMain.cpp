@@ -603,7 +603,7 @@ void SysClose()
 
 void SysPrintf(const char *fmt, ...) 
 {
-#if 1
+#if 0
 	va_list list;
 	char msg[512];
 
