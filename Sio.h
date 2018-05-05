@@ -34,13 +34,9 @@ extern "C" {
 
 #define MCD_SIZE	(1024 * 8 * 16)
 
-#ifdef HW_RVL
-#include "Gamecube/MEM2.h"
 extern unsigned char *Mcd1Data;
 extern unsigned char *Mcd2Data;
-#else
-extern unsigned char Mcd1Data[MCD_SIZE], Mcd2Data[MCD_SIZE];
-#endif
+
 
 void sioWrite8(unsigned char value);
 void sioWriteStat16(unsigned short value);

@@ -72,7 +72,11 @@
 #include <gccore.h>
 #include <ogc/lwp_heap.h>
 #include <ogc/machine/processor.h>
+#ifdef HW_RVL
 #include "../Gamecube/MEM2.h"
+#else
+#include "../Gamecube/ARAM.h"
+#endif
 #include "../Gamecube/DEBUG.h"
 #include "swap.h"
 #include <malloc.h>
@@ -734,7 +738,6 @@ void InitializeTextureStore()
  {
   GXtexCache = (heap_cntrl*)memalign(32, sizeof(heap_cntrl));
   __lwp_heap_init(GXtexCache, TEXCACHE_LO,TEXCACHE_SIZE, 32);
-  // TODO GC
  }
 #endif //__GX__
  

@@ -42,6 +42,10 @@ extern "C" {
 #include "fileBrowser/fileBrowser-CARD.h"
 #include "fileBrowser/fileBrowser-SMB.h"
 #include "gc_input/controller.h"
+#ifdef HW_DOL
+#include "ARAM.h"
+#include "vm/vm.h"
+#endif
 }
 
 #ifdef WII
@@ -349,6 +353,8 @@ int main(int argc, char *argv[])
 	}
 	
 	DI_Init();    // first
+#else
+	VM_Init(ARAM_SIZE, MRAM_BACKING);		// Setup Virtual Memory with the entire ARAM
 #endif
 	
 	loadSettings(argc, argv);
@@ -599,6 +605,18 @@ void SysClose()
 	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
 	if (emuLog != NULL) fclose(emuLog);
 #endif
+}
+
+void print_gecko(const char *fmt, ...) {
+	va_list list;
+	char msg[512];
+
+	va_start(list, fmt);
+	vsprintf(msg, fmt, list);
+	va_end(list);
+
+	//if (Config.PsxOut) printf ("%s", msg);
+	DEBUG_print(msg, DBG_USBGECKO);
 }
 
 void SysPrintf(const char *fmt, ...) 
