@@ -389,7 +389,7 @@ void SetExtGLFuncs(void)
 #ifndef __GX__
    glAlphaFunc(GL_GREATER,0.49f);
 #else
-   GX_SetAlphaCompare(GX_GREATER,(u8) 125,GX_AOP_AND,GX_ALWAYS,0);
+   gxAlphaFunc(GX_GREATER, 125);
 #endif
   }
  else                                                  // no opaque mode?
@@ -399,7 +399,7 @@ void SetExtGLFuncs(void)
 #ifndef __GX__
    glAlphaFunc(GL_NOTEQUAL,0);                         // --> set alpha func
 #else
-   GX_SetAlphaCompare(GX_NEQUAL,(u8) 0,GX_AOP_AND,GX_ALWAYS,0);
+   gxAlphaFunc(GX_NEQUAL, 0);
 #endif
   }
 
@@ -536,10 +536,10 @@ void SetExtGLFuncs(void)
 #ifndef __GX__
  glDisable(GL_BLEND);
 #else
- GX_SetBlendMode(GX_BM_NONE, GX_BL_ZERO, GX_BL_ONE, GX_LO_CLEAR);
- GX_SetColorUpdate(GX_ENABLE);
- GX_SetAlphaUpdate(GX_ENABLE);
- GX_SetDstAlpha(GX_DISABLE, 0xFF);
+ gxDisable(GX_BLEND);
+ //GX_SetColorUpdate(GX_ENABLE);
+ //GX_SetAlphaUpdate(GX_ENABLE);
+ //GX_SetDstAlpha(GX_DISABLE, 0xFF);
 #endif
 
  SetScanTrans();                                       // init scan lines (if wanted)
@@ -733,6 +733,7 @@ int GLinitialize()
  gxClearColor(0.0f, 0.0f, 0.0f, 0.0f);                 // first buffer clear
  gxClear(uiBufferBits);                     			// first buffer clear
  SetExtGLFuncs();                                      // init all kind of stuff (tex function pointers)
+ gxEnable(GX_ALPHA_TEST);
 #endif
 
  ubGloAlpha=127;                                       // init some drawing vars

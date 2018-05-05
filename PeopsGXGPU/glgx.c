@@ -2,8 +2,10 @@
 
 Mtx GXmodelViewIdent;
 
-static scissor gxCurScissor;
-static scissor gxCurViewPort;
+static scissor gxCurScissor = {0, 0, 640, 480};
+static scissor gxCurViewPort = {0, 0, 640, 480};
+static alphacomp gxAlphaComp = {GX_ALWAYS, 0};
+static blendfunc gxCurBlendFunc;
 static GXColor _clearcolor;
 static float _cleardepth;
 
@@ -12,20 +14,47 @@ void gxScissor(u32 x,u32 y,u32 width,u32 height) {
 	gxCurScissor.y = y;
 	gxCurScissor.width = width;
 	gxCurScissor.height = height;
+	//print_gecko("gxScissor set to x %d, y %d, width %d, height %d\r\n",
+	//	gxCurScissor.x, gxCurScissor.y, gxCurScissor.width, gxCurScissor.height);
 }
 
 void gxViewport(f32 xOrig,f32 yOrig,f32 wd,f32 ht,f32 nearZ,f32 farZ) {
-	GX_SetViewport(xOrig, yOrig, wd, ht, nearZ, farZ);
 	gxCurViewPort.x = (u32)xOrig;
 	gxCurViewPort.y = (u32)yOrig;
 	gxCurViewPort.width = (u32)wd;
 	gxCurViewPort.height = (u32)ht;
+	GX_SetViewport(xOrig, yOrig, wd, ht, nearZ, farZ);
+	//print_gecko("Viewport set to xOrig %.2f, yOrig %.2f, wd %.2f, ht %.2f, nearZ %.2f, farZ %.2f\r\n",
+	//	xOrig, yOrig, wd, ht, nearZ, farZ);
+}
+
+void gxAlphaFunc(u8 func, u8 ref) {
+	gxAlphaComp.func = func;
+	gxAlphaComp.ref = ref;
+	// Enabled, set it immediately too
+	if(gxAlphaComp.enabled) {
+		GX_SetAlphaCompare(gxAlphaComp.func,gxAlphaComp.ref,GX_AOP_AND,GX_ALWAYS,0);
+	}
+}
+
+void gxBlendFunc(u8 srcfact, u8 destfact) {
+	gxCurBlendFunc.srcfact = srcfact;
+	gxCurBlendFunc.destfact = destfact;
+	GX_SetBlendMode(gxCurBlendFunc.enabled ? GX_BM_BLEND:GX_BM_NONE, gxCurBlendFunc.srcfact, gxCurBlendFunc.destfact, GX_LO_CLEAR);
 }
 
 void gxEnable(u32 type) {
 	switch (type) {
 		case GX_SCISSOR_TEST:
 			GX_SetScissor(gxCurScissor.x, gxCurScissor.y, gxCurScissor.width, gxCurScissor.height);
+			break;
+		case GX_ALPHA_TEST:
+			GX_SetAlphaCompare(gxAlphaComp.func,gxAlphaComp.ref,GX_AOP_AND,GX_ALWAYS,0);
+			gxAlphaComp.enabled = 1;
+			break;
+		case GX_BLEND:
+			GX_SetBlendMode(GX_BM_BLEND, gxCurBlendFunc.srcfact, gxCurBlendFunc.destfact, GX_LO_CLEAR);
+			gxCurBlendFunc.enabled = 1;
 			break;
 	}
 }
@@ -35,16 +64,27 @@ void gxDisable(u32 type) {
 		case GX_SCISSOR_TEST:
 			GX_SetScissor(gxCurViewPort.x, gxCurViewPort.y, gxCurViewPort.width, gxCurViewPort.height);
 			break;
+		case GX_ALPHA_TEST:
+			GX_SetAlphaCompare(GX_ALWAYS,0,GX_AOP_AND,GX_ALWAYS,0);
+			gxAlphaComp.enabled = 0;
+			break;
+		case GX_BLEND:
+			GX_SetBlendMode(GX_BM_NONE, gxCurBlendFunc.srcfact, gxCurBlendFunc.destfact, GX_LO_CLEAR);
+			gxCurBlendFunc.enabled = 0;
+			break;
 	}
+}
+
+void gxSwapBuffers() {
+	GX_CopyDisp (xfb[whichfb], GX_TRUE);
+	GX_DrawDone();
+	VIDEO_SetNextFramebuffer(xfb[whichfb]);
+	whichfb ^= 1;
 }
 
 void gxFlush()
 {
-	GX_CopyDisp (xfb[whichfb], GX_TRUE);
-	GX_DrawDone();
-	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();
-	whichfb ^= 1;
 }
 
 void gxClearColor(	GLclampf red,
@@ -64,15 +104,7 @@ static void draw_axis_align_blanker_quad()
 	float y1 = gxCurViewPort.y;
 	float x2 = gxCurViewPort.width;
 	float y2 = gxCurViewPort.height;
-	/*Mtx44 GXprojection2D;
-	Mtx identity_matrix;
-
-	guMtxIdentity(identity_matrix);
-	GX_LoadPosMtxImm(identity_matrix,GX_PNMTX1);
-	guOrtho(GXprojection2D, x1, y2, y1, x2, 0, 1.0f);
-	GX_LoadProjectionMtx(GXprojection2D, GX_ORTHOGRAPHIC); //load current 2D projection matrix
-	GX_SetCurrentMtx(GX_PNMTX1);
-	*/
+	
 	//draw rectangle from ulx,uly to lrx,lry
 	GX_ClearVtxDesc();
 	GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);

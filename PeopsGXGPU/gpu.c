@@ -1146,8 +1146,11 @@ void PaintBlackBorders(void)
  glEnable(GL_SCISSOR_TEST);
 #else
 	gxDisable(GX_SCISSOR_TEST);
+	gxDisable(GX_ALPHA_TEST);
+	if(bBlendEnable)     {gxDisable(GX_BLEND);bBlendEnable=FALSE;}
 	// TODO
 	gxEnable(GX_SCISSOR_TEST);
+	gxEnable(GX_ALPHA_TEST);
 #endif
 }
 
@@ -1294,8 +1297,10 @@ void SetScanLines(void)
  glEnable(GL_SCISSOR_TEST);   
 #else
  gxDisable(GX_SCISSOR_TEST);
+ gxDisable(GX_ALPHA_TEST);
  //TODO
  gxEnable(GX_SCISSOR_TEST);
+ gxEnable(GX_ALPHA_TEST);
 #endif 
 }
 
@@ -1372,9 +1377,9 @@ void BlurBackBuffer(void)
 	
  if(bKeepRatio) gxViewport(0,0,iResX, iResY, 0.0f, 1.0f);
  gxDisable(GX_SCISSOR_TEST);
- //glDisable(GL_ALPHA_TEST);
+ gxDisable(GX_ALPHA_TEST);
  //if(bOldSmoothShaded) {glShadeModel(GL_FLAT);bOldSmoothShaded=FALSE;}
- //if(bBlendEnable)     {glDisable(GL_BLEND);bBlendEnable=FALSE;}
+ if(bBlendEnable)     {gxDisable(GX_BLEND);bBlendEnable=FALSE;}
  if(!bTexEnabled)     {bTexEnabled=TRUE;}
  //if(iZBufferDepth)    glDisable(GL_DEPTH_TEST);    
  //if(bDrawDither)      glDisable(GL_DITHER); 
@@ -1417,8 +1422,8 @@ void BlurBackBuffer(void)
  GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
  DrawMultiBlur();                                      // draw the backbuffer texture to create blur effect
 
- //glEnable(GL_ALPHA_TEST);
- //glEnable(GL_SCISSOR_TEST);
+ gxEnable(GX_ALPHA_TEST);
+ gxEnable(GX_SCISSOR_TEST);
  //if(iZBufferDepth)  glEnable(GL_DEPTH_TEST);    
  //if(bDrawDither)    glEnable(GL_DITHER);    
  //if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);    
@@ -1428,7 +1433,6 @@ void BlurBackBuffer(void)
              iResY-(rRatioRect.top+rRatioRect.bottom),
              rRatioRect.right, 
              rRatioRect.bottom, 0.0f, 1.0f);
- gxEnable(GX_SCISSOR_TEST);
 #endif
 }
 
@@ -1491,11 +1495,11 @@ void UnBlurBackBuffer(void)
              rRatioRect.right, 
              rRatioRect.bottom);                         // init viewport
 #else
- gxDisable(GX_SCISSOR_TEST);
  if(bKeepRatio) gxViewport(0,0,iResX,iResY, 0.0f, 1.0f);
 
- //glDisable(GL_ALPHA_TEST);
- if(bBlendEnable)    {/*glDisable(GL_BLEND);*/bBlendEnable=FALSE;}
+ gxDisable(GX_SCISSOR_TEST);
+ gxDisable(GX_ALPHA_TEST);
+ if(bBlendEnable)    {gxDisable(GX_BLEND); bBlendEnable=FALSE;}
  if(!bTexEnabled)    {/*glEnable(GL_TEXTURE_2D);*/bTexEnabled=TRUE;}
  //if(iZBufferDepth)    glDisable(GL_DEPTH_TEST);    
  //if(bDrawDither)      glDisable(GL_DITHER); 
@@ -1531,7 +1535,8 @@ void UnBlurBackBuffer(void)
  // simply draw the backbuffer texture (without blur)
  XPRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
 
- //glEnable(GL_ALPHA_TEST);
+ gxEnable(GX_ALPHA_TEST);
+ gxEnable(GX_SCISSOR_TEST);
  //if(iZBufferDepth)  glEnable(GL_DEPTH_TEST);    
  //if(bDrawDither)    glEnable(GL_DITHER);                  // dither mode
  //if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);   
@@ -1541,7 +1546,6 @@ void UnBlurBackBuffer(void)
              iResY-(rRatioRect.top+rRatioRect.bottom),
              rRatioRect.right, 
              rRatioRect.bottom, 0.0f, 1.0f);
- gxEnable(GX_SCISSOR_TEST);
 #endif
 }
 
@@ -1640,6 +1644,11 @@ void updateDisplay(void)                               // UPDATE DISPLAY
  //reset swap table from GUI/DEBUG
  //GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
  GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);*/
+ 
+ Mtx44 GXprojection;
+ guMtxIdentity(GXprojection);
+ guOrtho(GXprojection, 0, PSXDisplay.DisplayMode.y, 0, PSXDisplay.DisplayMode.x, -1.0f, 1.0f);
+ GX_LoadProjectionMtx(GXprojection, GX_ORTHOGRAPHIC); 
 #endif
 
  if(iBlurBuffer && !bSkipNextFrame)                    // "blur display" activated?
@@ -1673,15 +1682,14 @@ void updateDisplay(void)                               // UPDATE DISPLAY
   {
    if(!bSkipNextFrame) 
     {
-#ifdef _WINDOWS
      if(iDrawnSomething)
+#ifdef _WINDOWS
       SwapBuffers(wglGetCurrentDC());                  // -> to skip or not to skip
 #else
-	 if(iDrawnSomething)
 #ifndef __GX__
       glXSwapBuffers(display,window);
 #else
-	  gxFlush();
+	  gxSwapBuffers();
 #endif
 #endif
     }
@@ -1695,15 +1703,14 @@ void updateDisplay(void)                               // UPDATE DISPLAY
   }
  else                                                  // no skip ?
   {
-#ifdef _WINDOWS
    if(iDrawnSomething)
+#ifdef _WINDOWS
     SwapBuffers(wglGetCurrentDC());                    // -> swap
 #else
 #ifndef __GX__
-   if(iDrawnSomething)
     glXSwapBuffers(display,window);
 #else
-	gxFlush();
+	gxSwapBuffers();
 #endif
 #endif
   }
@@ -1856,11 +1863,11 @@ void updateFrontDisplay(void)
    ReleaseDC(hWWindow,hdc);                            // -> ! important !
   }
 #else
-#ifndef __GX__
  if(iDrawnSomething)                                   // linux:
+#ifndef __GX__
   glXSwapBuffers(display,window);
 #else
-  gxFlush();
+  gxSwapBuffers();
 #endif
 #endif
 

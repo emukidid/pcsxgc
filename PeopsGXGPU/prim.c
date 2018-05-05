@@ -44,8 +44,8 @@
 #else	
 #include <gccore.h>
 #include "glgx.h"
-#define DEFOPAQUEON  GX_SetAlphaCompare(GX_EQUAL,(u8) 0,GX_AOP_AND,GX_ALWAYS,0);bBlendEnable=FALSE;GX_SetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_CLEAR);
-#define DEFOPAQUEOFF GX_SetAlphaCompare(GX_GREATER,(u8) 125,GX_AOP_AND,GX_ALWAYS,0);
+#define DEFOPAQUEON  gxAlphaFunc(GX_EQUAL, 0); bBlendEnable=FALSE;gxDisable(GX_BLEND);
+#define DEFOPAQUEOFF gxAlphaFunc(GX_GREATER, (u8)125);
 #endif
 
 ////////////////////////////////////////////////////////////////////////                                          
@@ -876,10 +876,7 @@ void SetSemiTrans(void)
   {
    if(bBlendEnable)
     {
-		GX_SetBlendMode(GX_BM_NONE, GX_BL_ZERO, GX_BL_ONE, GX_LO_CLEAR); 
-		GX_SetColorUpdate(GX_ENABLE);
-		GX_SetAlphaUpdate(GX_ENABLE);
-		GX_SetDstAlpha(GX_FALSE, 0xFF);
+		gxDisable(GX_BLEND);
 		bBlendEnable=FALSE;
 	}          // -> don't wanna blend
    ubGloAlpha=ubGloColAlpha=255;                       // -> full alpha
@@ -890,7 +887,7 @@ void SetSemiTrans(void)
  ubGloAlpha=ubGloColAlpha=TransSets[GlobalTextABR].alpha;
  
  if(!bBlendEnable)
-  {GX_SetBlendMode(GX_BM_BLEND, obm1, obm2, GX_LO_CLEAR);bBlendEnable=TRUE;}              // wanna blend
+  {gxEnable(GX_BLEND);bBlendEnable=TRUE;}              // wanna blend
 
 
  if(TransSets[GlobalTextABR].srcFac!=obm1 || 
@@ -898,12 +895,11 @@ void SetSemiTrans(void)
   {
      obm1=TransSets[GlobalTextABR].srcFac;
      obm2=TransSets[GlobalTextABR].dstFac;
-	 GX_SetBlendMode(GX_BM_BLEND, obm1, obm2, GX_LO_CLEAR);
-   
+     gxBlendFunc(obm1,obm2);                           // set blend func
   }
-  GX_SetColorUpdate(GX_ENABLE);
-  GX_SetAlphaUpdate(GX_ENABLE);
-  GX_SetDstAlpha(GX_DISABLE, 0xFF);
+  //GX_SetColorUpdate(GX_ENABLE);
+  //GX_SetAlphaUpdate(GX_ENABLE);
+  //GX_SetDstAlpha(GX_DISABLE, 0xFF);
 #endif
 }
 
@@ -922,10 +918,10 @@ void SetScanTrans(void)                                // blending for scan line
 #else
  obm1=TransSets[0].srcFac;
  obm2=TransSets[0].dstFac;
- GX_SetBlendMode(GX_BM_BLEND, obm1, obm2, GX_LO_CLEAR);	
- GX_SetColorUpdate(GX_ENABLE);
- GX_SetAlphaUpdate(GX_ENABLE);
- GX_SetDstAlpha(GX_DISABLE, 0xFF);
+ gxBlendFunc(obm1, obm2);
+ //GX_SetColorUpdate(GX_ENABLE);
+ //GX_SetAlphaUpdate(GX_ENABLE);
+ //GX_SetDstAlpha(GX_DISABLE, 0xFF);
 #endif
 }
 
@@ -944,10 +940,10 @@ void SetScanTexTrans(void)                             // blending for scan mask
 #else
  obm1=TransSets[2].srcFac;
  obm2=TransSets[2].dstFac;
- GX_SetBlendMode(GX_BM_BLEND, obm1, obm2, GX_LO_CLEAR);	
- GX_SetColorUpdate(GX_ENABLE);
- GX_SetAlphaUpdate(GX_ENABLE);
- GX_SetDstAlpha(GX_DISABLE, 0xFF);
+ gxBlendFunc(obm1, obm2);
+ //GX_SetColorUpdate(GX_ENABLE);
+ //GX_SetAlphaUpdate(GX_ENABLE);
+ //GX_SetDstAlpha(GX_DISABLE, 0xFF);
 #endif
 }
 
@@ -1074,16 +1070,16 @@ void SetSemiTransMulti(int Pass)
   }
 
  if(!bBlendEnable)
-  {GX_SetBlendMode(GX_BM_NONE, GX_BL_ZERO, GX_BL_ONE, GX_LO_CLEAR);bBlendEnable=TRUE;}              // wanna blend
+  {gxEnable(GX_BLEND);bBlendEnable=TRUE;}              // wanna blend
 
  if(bm1!=obm1 || bm2!=obm2)
   {
-   GX_SetBlendMode(GX_BM_BLEND, bm1, bm2, GX_LO_CLEAR);                               // set blend func
+   gxBlendFunc(bm1, bm2);                               // set blend func
    obm1=bm1;obm2=bm2;
   }
-  GX_SetColorUpdate(GX_ENABLE);
-  GX_SetAlphaUpdate(GX_ENABLE);
-  GX_SetDstAlpha(GX_DISABLE, 0xFF);
+  //GX_SetColorUpdate(GX_ENABLE);
+  //GX_SetAlphaUpdate(GX_ENABLE);
+  //GX_SetDstAlpha(GX_DISABLE, 0xFF);
 #endif
 }
 
@@ -1795,6 +1791,8 @@ void UploadScreenEx(long Position)
              -1.0f*(((float)rRatioRect.bottom)/((float)PSXDisplay.DisplayMode.y)));
 #else
  gxDisable(GX_SCISSOR_TEST);
+ gxDisable(GX_ALPHA_TEST);
+ gxDisable(GX_BLEND);
 #endif
  //----------------------------------------------------//
 
@@ -1858,6 +1856,7 @@ void UploadScreenEx(long Position)
  glEnable(GL_ALPHA_TEST);
  glEnable(GL_SCISSOR_TEST);
 #else
+ gxEnable(GX_ALPHA_TEST);
  gxEnable(GX_SCISSOR_TEST);
 #endif
 }
