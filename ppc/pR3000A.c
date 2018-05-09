@@ -1409,22 +1409,23 @@ static void recLB() {
 	
 	u32 *endload, *fastload, *endload2;
 	preMemRead();
+	s32 tmp1 = PutHWRegSpecial(TMP1), tmp2 = PutHWRegSpecial(TMP2);
 
 	// Begin actual PPC generation	
-	RLWINM(14, 3, 16, 16, 31);		//r15 = (Addr>>16) & 0xFFFF
-	CMPWI(14, 0x1f80);				//If AddrHi == 0x1f80, interpret load
+	RLWINM(tmp1, 3, 16, 16, 31);		//r15 = (Addr>>16) & 0xFFFF
+	CMPWI(tmp1, 0x1f80);				//If AddrHi == 0x1f80, interpret load
 	BNE_L(fastload);
 	
 	CALLFunc((u32)psxDynaMemRead8);
 	B_L(endload);
 	B_DST(fastload);
-	SLWI(14, 14, 2);
-	LWZX(15, 14, GetHWRegSpecial(PSXRLUT));	// r15 = (char *)(psxMemRLUT[Addr16]);
-	CMPWI(15, 0);
-	RLWINM(14, 3, 0, 16, 31);				// r14 = (Addr) & 0xFFFF
+	SLWI(tmp1, tmp1, 2);
+	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXRLUT));	// r15 = (char *)(psxMemRLUT[Addr16]);
+	CMPWI(tmp2, 0);
+	RLWINM(tmp1, 3, 0, 16, 31);				// r14 = (Addr) & 0xFFFF
 	LI(3, 0);
 	BEQ_L(endload2);
-	LBZX(3, 15, 14);						// rt = swap32(&psxmem + addr&0x1fffff) 
+	LBZX(3, tmp2, tmp1);						// rt = swap32(&psxmem + addr&0x1fffff) 
 
 	B_DST(endload);
 	B_DST(endload2);
@@ -1459,22 +1460,23 @@ static void recLBU() {
     }
 	u32 *endload, *fastload, *endload2;
 	preMemRead();
-
+	s32 tmp1 = PutHWRegSpecial(TMP1), tmp2 = PutHWRegSpecial(TMP2);
+	
 	// Begin actual PPC generation	
-	RLWINM(14, 3, 16, 16, 31);		//r15 = (Addr>>16) & 0xFFFF
-	CMPWI(14, 0x1f80);				//If AddrHi == 0x1f80, interpret load
+	RLWINM(tmp1, 3, 16, 16, 31);		//r15 = (Addr>>16) & 0xFFFF
+	CMPWI(tmp1, 0x1f80);				//If AddrHi == 0x1f80, interpret load
 	BNE_L(fastload);
 	
 	CALLFunc((u32)psxDynaMemRead8);
 	B_L(endload);
 	B_DST(fastload);
-	SLWI(14, 14, 2);
-	LWZX(15, 14, GetHWRegSpecial(PSXRLUT));	// r15 = (char *)(psxMemRLUT[Addr16]);
-	CMPWI(15, 0);
-	RLWINM(14, 3, 0, 16, 31);				// r14 = (Addr) & 0xFFFF
+	SLWI(tmp1, tmp1, 2);
+	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXRLUT));	// r15 = (char *)(psxMemRLUT[Addr16]);
+	CMPWI(tmp2, 0);
+	RLWINM(tmp1, 3, 0, 16, 31);				// r14 = (Addr) & 0xFFFF
 	LI(3, 0);
 	BEQ_L(endload2);
-	LBZX(3, 15, 14);						// rt = swap32(&psxmem + addr&0x1fffff) 
+	LBZX(3, tmp2, tmp1);						// rt = swap32(&psxmem + addr&0x1fffff) 
 
 	B_DST(endload);
 	B_DST(endload2);
@@ -1511,22 +1513,23 @@ static void recLH() {
     
 	u32 *endload, *fastload, *endload2;
 	preMemRead();
+	s32 tmp1 = PutHWRegSpecial(TMP1), tmp2 = PutHWRegSpecial(TMP2);
 	
 	// Begin actual PPC generation	
-	RLWINM(14, 3, 16, 16, 31);		//r15 = (Addr>>16) & 0xFFFF
-	CMPWI(14, 0x1f80);				//If AddrHi == 0x1f80, interpret load
+	RLWINM(tmp1, 3, 16, 16, 31);		//r15 = (Addr>>16) & 0xFFFF
+	CMPWI(tmp1, 0x1f80);				//If AddrHi == 0x1f80, interpret load
 	BNE_L(fastload);
 	
 	CALLFunc((u32)psxDynaMemRead16);
 	B_L(endload);
 	B_DST(fastload);
-	SLWI(14, 14, 2);
-	LWZX(15, 14, GetHWRegSpecial(PSXRLUT));	// r15 = (char *)(psxMemRLUT[Addr16]);
-	CMPWI(15, 0);
-	RLWINM(14, 3, 0, 16, 31);				// r14 = (Addr) & 0xFFFF
+	SLWI(tmp1, tmp1, 2);
+	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXRLUT));	// r15 = (char *)(psxMemRLUT[Addr16]);
+	CMPWI(tmp2, 0);
+	RLWINM(tmp1, 3, 0, 16, 31);					// r14 = (Addr) & 0xFFFF
 	LI(3, 0);
 	BEQ_L(endload2);
-	LHBRX(3, 15, 14);						// rt = swap32(&psxmem + addr&0x1fffff) 
+	LHBRX(3, tmp2, tmp1);						// rt = swap32(&psxmem + addr&0x1fffff) 
 
 	B_DST(endload);
 	B_DST(endload2);
@@ -1608,21 +1611,22 @@ static void recLHU() {
 
 	u32 *endload, *fastload, *endload2;
 	preMemRead();
+	s32 tmp1 = PutHWRegSpecial(TMP1), tmp2 = PutHWRegSpecial(TMP2);
 	// Begin actual PPC generation	
-	RLWINM(14, 3, 16, 16, 31);		//r15 = (Addr>>16) & 0xFFFF
-	CMPWI(14, 0x1f80);				//If AddrHi == 0x1f80, interpret load
+	RLWINM(tmp1, 3, 16, 16, 31);		//r15 = (Addr>>16) & 0xFFFF
+	CMPWI(tmp1, 0x1f80);				//If AddrHi == 0x1f80, interpret load
 	BNE_L(fastload);
 	
 	CALLFunc((u32)psxDynaMemRead16);
 	B_L(endload);
 	B_DST(fastload);
-	SLWI(14, 14, 2);
-	LWZX(15, 14, GetHWRegSpecial(PSXRLUT));	// r15 = (char *)(psxMemRLUT[Addr16]);
-	CMPWI(15, 0);
-	RLWINM(14, 3, 0, 16, 31);				// r14 = (Addr) & 0xFFFF
+	SLWI(tmp1, tmp1, 2);
+	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXRLUT));	// r15 = (char *)(psxMemRLUT[Addr16]);
+	CMPWI(tmp2, 0);
+	RLWINM(tmp1, 3, 0, 16, 31);					// r14 = (Addr) & 0xFFFF
 	LI(3, 0);
 	BEQ_L(endload2);
-	LHBRX(3, 15, 14);						// rt = swap32(&psxmem + addr&0x1fffff) 
+	LHBRX(3, tmp2, tmp1);						// rt = swap32(&psxmem + addr&0x1fffff) 
 
 	B_DST(endload);
 	B_DST(endload2);
@@ -1693,21 +1697,22 @@ static void recLW() {
 	u32 *endload, *fastload, *endload2;
 	preMemRead();
 
+	s32 tmp1 = PutHWRegSpecial(TMP1), tmp2 = PutHWRegSpecial(TMP2);
 	// Begin actual PPC generation	
-	RLWINM(14, 3, 16, 16, 31);		//r15 = (Addr>>16) & 0xFFFF
-	CMPWI(14, 0x1f80);				//If AddrHi == 0x1f80, interpret load
+	RLWINM(tmp1, 3, 16, 16, 31);		//r15 = (Addr>>16) & 0xFFFF
+	CMPWI(tmp1, 0x1f80);				//If AddrHi == 0x1f80, interpret load
 	BNE_L(fastload);
 	
 	CALLFunc((u32)psxDynaMemRead32);
 	B_L(endload);
 	B_DST(fastload);
-	SLWI(14, 14, 2);
-	LWZX(15, 14, GetHWRegSpecial(PSXRLUT));	// r15 = (char *)(psxMemRLUT[Addr16]);
-	CMPWI(15, 0);
-	RLWINM(14, 3, 0, 16, 31);				// r14 = (Addr) & 0xFFFF
+	SLWI(tmp1, tmp1, 2);
+	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXRLUT));	// r15 = (char *)(psxMemRLUT[Addr16]);
+	CMPWI(tmp2, 0);
+	RLWINM(tmp1, 3, 0, 16, 31);				// r14 = (Addr) & 0xFFFF
 	LI(3, 0);
 	BEQ_L(endload2);
-	LWBRX(3, 15, 14);						// rt = swap32(&psxmem + addr&0x1fffff) 
+	LWBRX(3, tmp2, tmp1);						// rt = swap32(&psxmem + addr&0x1fffff) 
 
 	B_DST(endload);
 	B_DST(endload2);

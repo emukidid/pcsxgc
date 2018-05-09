@@ -11,7 +11,7 @@
 #include "../PsxCommon.h"
 #include "ppc_mnemonics.h"
 
-#define NUM_HW_REGISTERS 26
+#define NUM_HW_REGISTERS 28
 
 /* general defines */
 #define write8(val)  *(u8 *)ppcPtr = val; ppcPtr++;

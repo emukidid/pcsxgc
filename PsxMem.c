@@ -165,11 +165,11 @@ u32 psxMemRead32(u32 mem) {
 }
 
 // These will assume mem is within the special mem range 0x1f800000 0x1f80FFFF
-u32 psxDynaMemRead8(u32 mem) {
+u8 psxDynaMemRead8(u32 mem) {
 	return (mem < 0x1f801000) ? psxHu8(mem) : psxHwRead8(mem);
 }
 
-u32 psxDynaMemRead16(u32 mem) {
+u16 psxDynaMemRead16(u32 mem) {
 	return (mem < 0x1f801000) ? psxHu16(mem) : psxHwRead16(mem);
 }
 u32 psxDynaMemRead32(u32 mem) {
