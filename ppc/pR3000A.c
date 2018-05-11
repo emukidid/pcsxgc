@@ -534,7 +534,6 @@ static s32 PutHWRegSpecial(s32 which)
 					case ARG3:
 					case TMP1:
 					case TMP2:
-					case TMP3:
 						MoveHWRegToCPUReg(3+(which-ARG1), index);
 						HWRegisters[index].flush = NULL;
 						
@@ -959,7 +958,7 @@ __inline static void execute() {
 #ifdef PROFILE
 		start_section(CORE_SECTION);
 #endif
-	recRun(*recFunc, (u32)&psxRegs, (u32)&psxM, (u32)&psxMemRLUT);
+	recRun(*recFunc, (u32)&psxRegs, (u32)&psxM, (u32)&psxMemRLUT, (u32)&psxMemWLUT, (u32)&psxRecLUT);
 #ifdef PROFILE
 		end_section(CORE_SECTION);
 #endif
@@ -1755,7 +1754,7 @@ static void recSB() {
 
 	preMemWrite(1);
 	u32 *endstore, *faststore, *endstore2;
-	s32 tmp1 = PutHWRegSpecial(TMP1), tmp2 = PutHWRegSpecial(TMP2), tmp3 = PutHWRegSpecial(TMP3);
+	s32 tmp1 = PutHWRegSpecial(TMP1), tmp2 = PutHWRegSpecial(TMP2);
 	// Begin actual PPC generation	
 	RLWINM(tmp1, 3, 16, 16, 31);		//tmp1 = (Addr>>16) & 0xFFFF
 	CMPWI(tmp1, 0x1f80);				//If AddrHi == 0x1f80, interpret store
@@ -1766,22 +1765,20 @@ static void recSB() {
 	B_DST(faststore);
 	// Lookup the Write LUT, do the store
 	SLWI(tmp1, tmp1, 2);
-	LIW(tmp3, (u32)&psxMemWLUT);			// TODO remove this if I can get special regs working
-	LWZX(tmp2, tmp1, tmp3);					// tmp2 = (char *)(psxMemWLUT[Addr16]);
+	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXWLUT));		// tmp2 = (char *)(psxMemWLUT[Addr16]);
 	CMPWI(tmp2, 0);
 	RLWINM(tmp1, 3, 0, 16, 31);				// tmp1 = (Addr) & 0xFFFF
 	BEQ_L(endstore2);
 	ADD(tmp2, tmp2, tmp1);
 	STB(4, 0, tmp2);						// *(u8 *)(p + (mem & 0xffff)) = value;
 	// Invalidate Dynarec memory
-	LIW(tmp3, (u32)&psxRecLUT);				// TODO remove this if I can get special regs working
 	RLWINM(tmp1, 3, 16, 16, 31);			// tmp1 = (Addr>>16) & 0xFFFF
 	SLWI(tmp1, tmp1, 2);
-	LWZX(tmp2, tmp1, tmp3);
+	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXRECLUT));
 	RLWINM(tmp1, 3, 0, 16, 29);				// tmp1 = (Addr) & 0xFFFC
 	ADD(tmp2, tmp2, tmp1);
-	LI(tmp3, 0);
-	STW(tmp3, 0, tmp2);						// recClear(mem, 1)
+	LI(tmp1, 0);
+	STW(tmp1, 0, tmp2);						// recClear(mem, 1)
 	
 	B_DST(endstore);
 	B_DST(endstore2);
@@ -1815,7 +1812,7 @@ static void recSH() {
 
 	preMemWrite(2);
 	u32 *endstore, *faststore, *endstore2;
-	s32 tmp1 = PutHWRegSpecial(TMP1), tmp2 = PutHWRegSpecial(TMP2), tmp3 = PutHWRegSpecial(TMP3);
+	s32 tmp1 = PutHWRegSpecial(TMP1), tmp2 = PutHWRegSpecial(TMP2);
 	// Begin actual PPC generation	
 	RLWINM(tmp1, 3, 16, 16, 31);		//tmp1 = (Addr>>16) & 0xFFFF
 	CMPWI(tmp1, 0x1f80);				//If AddrHi == 0x1f80, interpret store
@@ -1826,22 +1823,20 @@ static void recSH() {
 	B_DST(faststore);
 	// Lookup the Write LUT, do the store
 	SLWI(tmp1, tmp1, 2);
-	LIW(tmp3, (u32)&psxMemWLUT);			// TODO remove this if I can get special regs working
-	LWZX(tmp2, tmp1, tmp3);					// tmp2 = (char *)(psxMemWLUT[Addr16]);
+	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXWLUT));	// tmp2 = (char *)(psxMemWLUT[Addr16]);
 	CMPWI(tmp2, 0);
 	RLWINM(tmp1, 3, 0, 16, 31);				// tmp1 = (Addr) & 0xFFFF
 	BEQ_L(endstore2);
 	ADD(tmp2, tmp2, tmp1);
 	STHBRX(4, 0, tmp2);						// *(u8 *)(p + (mem & 0xffff)) = value;
 	// Invalidate Dynarec memory
-	LIW(tmp3, (u32)&psxRecLUT);				// TODO remove this if I can get special regs working
 	RLWINM(tmp1, 3, 16, 16, 31);			// tmp1 = (Addr>>16) & 0xFFFF
 	SLWI(tmp1, tmp1, 2);
-	LWZX(tmp2, tmp1, tmp3);
+	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXRECLUT));
 	RLWINM(tmp1, 3, 0, 16, 29);				// tmp1 = (Addr) & 0xFFFC
 	ADD(tmp2, tmp2, tmp1);
-	LI(tmp3, 0);
-	STW(tmp3, 0, tmp2);						// recClear(mem, 1)
+	LI(tmp1, 0);
+	STW(tmp1, 0, tmp2);						// recClear(mem, 1)
 	
 	B_DST(endstore);
 	B_DST(endstore2);
@@ -1875,7 +1870,7 @@ static void recSW() {
 
 	preMemWrite(4);
 	u32 *endstore, *faststore, *endstore2, *endstore3;
-	s32 tmp1 = PutHWRegSpecial(TMP1), tmp2 = PutHWRegSpecial(TMP2), tmp3 = PutHWRegSpecial(TMP3);
+	s32 tmp1 = PutHWRegSpecial(TMP1), tmp2 = PutHWRegSpecial(TMP2);
 	// Begin actual PPC generation	
 	RLWINM(tmp1, 3, 16, 16, 31);		//tmp1 = (Addr>>16) & 0xFFFF
 	CMPWI(tmp1, 0x1f80);				//If AddrHi == 0x1f80, interpret store
@@ -1886,22 +1881,20 @@ static void recSW() {
 	B_DST(faststore);
 	// Lookup the Write LUT, do the store
 	SLWI(tmp1, tmp1, 2);
-	LIW(tmp3, (u32)&psxMemWLUT);			// TODO remove this if I can get special regs working
-	LWZX(tmp2, tmp1, tmp3);					// tmp2 = (char *)(psxMemWLUT[Addr16]);
+	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXWLUT));		// tmp2 = (char *)(psxMemWLUT[Addr16]);
 	CMPWI(tmp2, 0);
 	RLWINM(tmp1, 3, 0, 16, 31);				// tmp1 = (Addr) & 0xFFFF
 	BEQ_L(endstore2);
 	ADD(tmp2, tmp2, tmp1);
 	STWBRX(4, 0, tmp2);						// *(u8 *)(p + (mem & 0xffff)) = value;
 	// Invalidate Dynarec memory
-	LIW(tmp3, (u32)&psxRecLUT);				// TODO remove this if I can get special regs working
 	RLWINM(tmp1, 3, 16, 16, 31);			// tmp1 = (Addr>>16) & 0xFFFF
 	SLWI(tmp1, tmp1, 2);
-	LWZX(tmp2, tmp1, tmp3);
+	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXRECLUT));
 	RLWINM(tmp1, 3, 0, 16, 29);				// tmp1 = (Addr) & 0xFFFC
 	ADD(tmp2, tmp2, tmp1);
-	LI(tmp3, 0);
-	STW(tmp3, 0, tmp2);						// recClear(mem, 1)
+	LI(tmp1, 0);
+	STW(tmp1, 0, tmp2);						// recClear(mem, 1)
 	B_L(endstore3);
 	B_DST(endstore2);
 	CALLFunc((u32)psxMemWrite32);
@@ -2559,6 +2552,14 @@ static void recRecompile() {
 	HWRegisters[2].usage = HWUSAGE_SPECIAL | HWUSAGE_RESERVED | HWUSAGE_HARDWIRED;
 	HWRegisters[2].private = PSXRLUT;
 	HWRegisters[2].k = (u32)&psxMemRLUT;
+	
+	HWRegisters[3].usage = HWUSAGE_SPECIAL | HWUSAGE_RESERVED | HWUSAGE_HARDWIRED;
+	HWRegisters[3].private = PSXWLUT;
+	HWRegisters[3].k = (u32)&psxMemWLUT;
+	
+	HWRegisters[4].usage = HWUSAGE_SPECIAL | HWUSAGE_RESERVED | HWUSAGE_HARDWIRED;
+	HWRegisters[4].private = PSXRECLUT;
+	HWRegisters[4].k = (u32)&psxRecLUT;
 
 	// reserve the special psxRegs.cycle register
 	//HWRegisters[1].usage = HWUSAGE_SPECIAL | HWUSAGE_RESERVED | HWUSAGE_HARDWIRED;
@@ -2596,17 +2597,18 @@ static void recRecompile() {
 
 		if (branch) {
 			branch = 0;
-			break;
+			DCFlushRange((u8*)ptr,(u32)(u8*)ppcPtr-(u32)(u8*)ptr);
+			ICInvalidateRange((u8*)ptr,(u32)(u8*)ppcPtr-(u32)(u8*)ptr);
+			dyna_used = ((u32)ppcPtr - (u32)recMem)/1024;
+			return;
 		}
 	}
-	if(!branch) {
-		iFlushRegs(pc);
-		LIW(PutHWRegSpecial(PSXPC), pc);
-		iRet();
-	}
+	iFlushRegs(pc);
+	LIW(PutHWRegSpecial(PSXPC), pc);
+	iRet();
 
-  DCFlushRange((u8*)ptr,(u32)(u8*)ppcPtr-(u32)(u8*)ptr);
-  ICInvalidateRange((u8*)ptr,(u32)(u8*)ppcPtr-(u32)(u8*)ptr);
+	DCFlushRange((u8*)ptr,(u32)(u8*)ppcPtr-(u32)(u8*)ptr);
+	ICInvalidateRange((u8*)ptr,(u32)(u8*)ppcPtr-(u32)(u8*)ptr);
   
 #ifdef TAG_CODE
 	sprintf((char *)ppcPtr, "PC=%08x", pcold);  //causes misalignment

@@ -123,9 +123,8 @@ enum {
     ARG1 = 3,
     ARG2 = 4,
     ARG3 = 5,
-	TMP1,
-	TMP2,
-	TMP3,
+	TMP1 = 6,
+	TMP2 = 7,
     PSXREGS,	// ptr
 	PSXMEM,		// ptr
 	PSXRLUT,	// ptr

@@ -51,6 +51,8 @@ recRun:
 	mr	r31, r4         # save hw1 to r31
 	mr	r30, r5         # save hw2 to r30
 	mr	r29, r6         # save hw3 to r29
+	mr	r28, r7         # save hw4 to r28
+	mr	r27, r8         # save hw5 to r27
 	bctrl               # branch to ctr (*func)
 
 # void returnPC()
