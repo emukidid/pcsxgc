@@ -40,7 +40,7 @@
 #include "menu.h"
 #include "gpu.h"
 
-unsigned long  dwCoreFlags=0;
+u32  dwCoreFlags=0;
 PSXPoint_t     ptCursorPoint[8];
 unsigned short usCursorActive=0;
 
@@ -1430,9 +1430,9 @@ void DisplayPic(void)
 void ShowGpuPic(void)
 {
  HRSRC hR;HGLOBAL hG;
- unsigned long * pRMem;
+ u32 * pRMem;
  unsigned char * pMem;
- int x,y;unsigned long * pDMem;
+ int x,y;u32 * pDMem;
 
  if(gTexPicName) {DestroyPic();return;}                // turn off any screen pic, if it does already exist
 
@@ -1441,13 +1441,13 @@ void ShowGpuPic(void)
  hR=FindResource(hInst,MAKEINTRESOURCE(IDB_GPU),RT_BITMAP); // load bitmap from resource
  hG=LoadResource(hInst,hR);
  
- pRMem=((unsigned long *)LockResource(hG))+10;         // get long ptr to bmp data
+ pRMem=((u32 *)LockResource(hG))+10;         // get s32 ptr to bmp data
 
  pMem=(unsigned char *)malloc(128*96*3);               // change the data upside-down
 
  for(y=0;y<96;y++)
   {
-   pDMem=(unsigned long *)(pMem+(95-y)*128*3);
+   pDMem=(u32 *)(pMem+(95-y)*128*3);
    for(x=0;x<96;x++) *pDMem++=*pRMem++;
   }
 
@@ -1553,7 +1553,7 @@ void ShowGunCursor(void)
 #ifndef __GX__
  int iPlayer;
  GLfloat fX,fY,fDX,fDY,fYS,fXS;
- const unsigned long crCursorColor32[8]={0xff00ff00,0xffff0000,0xff0000ff,0xffff00ff,0xffffff00,0xff00ffff,0xffffffff,0xff7f7f7f};
+ const u32 crCursorColor32[8]={0xff00ff00,0xffff0000,0xff0000ff,0xffff00ff,0xffffff00,0xff00ffff,0xffffffff,0xff7f7f7f};
 
  if(!gTexCursorName)                                   // create gun cursor texture the first time
   {

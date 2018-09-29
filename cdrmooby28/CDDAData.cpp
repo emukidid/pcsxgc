@@ -82,7 +82,7 @@ static void* CDDAThread(void* userData){
 
 // this callback repeats one track over and over
 int CDDACallbackRepeat(  void *inputBuffer, void *outputBuffer,
-                     unsigned long framesPerBuffer,
+                     u32 framesPerBuffer,
                      /*PaTimestamp outTime,*/ void *userData )
 {
    unsigned int i;
@@ -127,7 +127,7 @@ int CDDACallbackRepeat(  void *inputBuffer, void *outputBuffer,
 
 // this callback plays through one track once and stops
 int CDDACallbackOneTrackStop(  void *inputBuffer, void *outputBuffer,
-                     unsigned long framesPerBuffer,
+                     u32 framesPerBuffer,
                      /*PaTimestamp outTime,*/ void *userData )
 {
    unsigned int i;

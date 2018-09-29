@@ -22,22 +22,29 @@
  *
 **/
 
-
+#ifndef __SWITCH__
 #include <fat.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/dir.h>
-#include <dirent.h>
-#include "fileBrowser.h"
 #include <sdcard/gcsd.h>
 #include <iso9660.h>
 #include <di/di.h>
 #include <ogc/dvd.h>
+#else
+#include <switch.h>
+#endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/dir.h>
+#include <dirent.h>
+#include "fileBrowser.h"
 
-extern BOOL hasLoadedROM;
+
+extern bool hasLoadedROM;
 extern int stop;
 
+#ifndef __SWITCH__
 #ifdef HW_RVL
 #include <sdcard/wiisd_io.h>
 #include <ogc/usbstorage.h>
@@ -134,10 +141,10 @@ fileBrowser_file biosDir_DVD =
 
 void continueRemovalThread()
 {
-  //if(rThreadRun)
- //   return;
- // rThreadRun = 1;
- // LWP_ResumeThread(removalThread);
+  if(rThreadRun)
+    return;
+  rThreadRun = 1;
+  LWP_ResumeThread(removalThread);
 }
 
 void pauseRemovalThread()
@@ -204,15 +211,42 @@ void InitRemovalThread()
   rThreadCreated = 1;
 }
 
+#else
+fileBrowser_file topLevel_SWITCH_Default =
+	{ "/switch/wiisx/isos", // file name
+	  0, // sector
+	  0, // offset
+	  0, // size
+	  FILE_BROWSER_ATTR_DIR
+	 };
+
+fileBrowser_file saveDir_SWITCH_Default =
+	{ "/switch/wiisx/saves",
+	  0,
+	  0,
+	  0,
+	  FILE_BROWSER_ATTR_DIR
+	 };
+
+fileBrowser_file biosDir_SWITCH_Default =
+	{ "/switch/wiisx/bios",
+	  0,
+	  0,
+	  0,
+	  FILE_BROWSER_ATTR_DIR
+	 };
+#endif
+
 int fileBrowser_libfat_readDir(fileBrowser_file* file, fileBrowser_file** dir){
-
-  pauseRemovalThread();
-
+#ifndef __SWITCH__
+	pauseRemovalThread();
+#endif
+	printf("Opening dir: %s\n", file->name);
 	DIR* dp = opendir( file->name );
 	if(!dp) return FILE_BROWSER_ERROR;
+	printf("SUCCESS!\n");
 	struct dirent *entry;
 	struct stat fstat;
-	
 	// Set everything up to read
 	int num_entries = 2, i = 0;
 	*dir = malloc( num_entries * sizeof(fileBrowser_file) );
@@ -224,6 +258,7 @@ int fileBrowser_libfat_readDir(fileBrowser_file* file, fileBrowser_file** dir){
 			*dir = realloc( *dir, num_entries * sizeof(fileBrowser_file) ); 
 		}
 		sprintf((*dir)[i].name, "%s/%s", file->name, entry->d_name);
+		printf("Entry: %s\n", (*dir)[i].name);
 		stat((*dir)[i].name,&fstat);
 		(*dir)[i].offset = 0;
 		(*dir)[i].size   = fstat.st_size;
@@ -233,8 +268,9 @@ int fileBrowser_libfat_readDir(fileBrowser_file* file, fileBrowser_file** dir){
 	}
 	
 	closedir(dp);
+#ifndef __SWITCH__
 	continueRemovalThread();
-
+#endif
 	return num_entries;
 }
 
@@ -258,7 +294,9 @@ int fileBrowser_libfat_seekFile(fileBrowser_file* file, unsigned int where, unsi
 }
 
 int fileBrowser_libfat_readFile(fileBrowser_file* file, void* buffer, unsigned int length){
-  pauseRemovalThread();
+#ifndef __SWITCH__
+	pauseRemovalThread();
+#endif
 	FILE* f = fopen( file->name, "rb" );
 	if(!f) return FILE_BROWSER_ERROR;
 
@@ -267,12 +305,16 @@ int fileBrowser_libfat_readFile(fileBrowser_file* file, void* buffer, unsigned i
 	if(bytes_read > 0) file->offset += bytes_read;
 
 	fclose(f);
+#ifndef __SWITCH__
 	continueRemovalThread();
+#endif
 	return bytes_read;
 }
 
 int fileBrowser_libfat_writeFile(fileBrowser_file* file, void* buffer, unsigned int length){
-  pauseRemovalThread();
+#ifndef __SWITCH__
+	pauseRemovalThread();
+#endif
 	FILE* f = fopen( file->name, "wb" );
 	if(!f) return FILE_BROWSER_ERROR;
 
@@ -281,7 +323,9 @@ int fileBrowser_libfat_writeFile(fileBrowser_file* file, void* buffer, unsigned 
 	if(bytes_read > 0) file->offset += bytes_read;
 
 	fclose(f);
+#ifndef __SWITCH__
 	continueRemovalThread();
+#endif
 	return bytes_read;
 }
 
@@ -290,11 +334,11 @@ int fileBrowser_libfat_writeFile(fileBrowser_file* file, void* buffer, unsigned 
     - returns 1 on ok
 */
 int fileBrowser_libfat_init(fileBrowser_file* f){
-
+#ifndef __SWITCH__
 	int res = 0;
 
 	if(!rThreadCreated) {
-	 	//InitRemovalThread();
+	 	InitRemovalThread();
  	}
 
 	pauseRemovalThread();
@@ -388,6 +432,9 @@ int fileBrowser_libfat_init(fileBrowser_file* f){
 	continueRemovalThread();
 	return res; 				// Already mounted
 #endif
+#else
+	return 1;
+#endif
 }
 
 int fileBrowser_libfat_deinit(fileBrowser_file* f){
@@ -404,20 +451,26 @@ int fileBrowser_libfat_deinit(fileBrowser_file* f){
 static FILE* fd;
 
 int fileBrowser_libfatROM_deinit(fileBrowser_file* f){
-  pauseRemovalThread();
+#ifndef __SWITCH__
+	pauseRemovalThread();
+#endif
   
 	if(fd) {
 		fclose(fd);
 	}
 	
 	fd = NULL;
+#ifndef __SWITCH__
 	continueRemovalThread();
+#endif
 	return 0;
 }
 
 int fileBrowser_libfatROM_readFile(fileBrowser_file* file, void* buffer, unsigned int length){
+#ifndef __SWITCH__
   if(stop)     //do this only in the menu
     pauseRemovalThread();
+#endif
 	if(!fd) fd = fopen( file->name, "rb");
 
 	fseek(fd, file->offset, SEEK_SET);
@@ -425,9 +478,10 @@ int fileBrowser_libfatROM_readFile(fileBrowser_file* file, void* buffer, unsigne
 	if(bytes_read > 0) {
   	file->offset += bytes_read;
 	}
-
+#ifndef __SWITCH__
 	if(stop)
 	  continueRemovalThread();
+#endif
 	return bytes_read;
 }
 

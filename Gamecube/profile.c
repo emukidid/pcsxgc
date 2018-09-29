@@ -45,17 +45,17 @@ char * profile_strings[] = {
 	SECTION_NAME_8
 };
 
-extern long long gettime();
-extern unsigned int diff_sec(long long, long long);
+extern s32 s32 gettime();
+extern unsigned int diff_sec(s32 s32, s32 s32);
 
 typedef struct {
-	long long start;
-	long long timeused;
-	long long subtract;	// amount to remove taken by overlapping section(s)
+	s32 s32 start;
+	s32 s32 timeused;
+	s32 s32 subtract;	// amount to remove taken by overlapping section(s)
 }_profile_section;
 
 static _profile_section profile_section[NUM_SECTIONS];
-static long long last_refresh;
+static s32 s32 last_refresh;
 
 void start_section(int section_type)
 {
@@ -65,8 +65,8 @@ void start_section(int section_type)
 void end_section(int section_type)
 {
    if(profile_section[section_type].start == 0) return;
-   long long end = gettime();
-   long long timeused = end - profile_section[section_type].start;
+   s32 s32 end = gettime();
+   s32 s32 timeused = end - profile_section[section_type].start;
    profile_section[section_type].timeused += timeused;
    profile_section[section_type].start = 0;
    
@@ -84,8 +84,8 @@ void refresh_stat()
 	int i;
 	for(i=0; i<NUM_SECTIONS; i++)
 		end_section(i);
-	long long this_tick = gettime();
-	long long time_in_refresh = this_tick - last_refresh;
+	s32 s32 this_tick = gettime();
+	s32 s32 time_in_refresh = this_tick - last_refresh;
 	if(diff_sec(last_refresh, this_tick) >= 1)
 	{
 		for(i=0; i<NUM_SECTIONS; i++) {

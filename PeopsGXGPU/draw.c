@@ -116,7 +116,7 @@ BOOL           bCheckMask=FALSE;
 int            iUseMask=0;
 int            iSetMask=0;
 unsigned short sSetMask=0;
-unsigned long  lSetMask=0;
+u32  lSetMask=0;
 
 // drawing/coord vars
 
@@ -1201,14 +1201,14 @@ void offsetST(void)
 
 ///////////////////////////////////////////////////////// 
 
-void offsetScreenUpload(long Position)
+void offsetScreenUpload(s32 Position)
 {
  if(bDisplayNotSet)
   SetOGLDisplaySettings(1);
 
  if(Position==-1)
   {
-   long lmdx,lmdy;
+   s32 lmdx,lmdy;
 
    lmdx=xrUploadArea.x0;
    lmdy=xrUploadArea.y0;

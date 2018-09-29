@@ -24,6 +24,7 @@
 #ifndef WIISXCONFIG_H
 #define WIISXCONFIG_H
 
+#include <switch/types.h>
 
 extern char audioEnabled;
 enum audioEnabled
@@ -104,6 +105,9 @@ enum nativeSaveDevice
 {
 	NATIVESAVEDEVICE_NONE=-1,
 	NATIVESAVEDEVICE_SD,
+#ifdef __SWITCH__
+	NATIVESAVEDEVICE_SWITCH,
+#endif
 	NATIVESAVEDEVICE_USB,
 	NATIVESAVEDEVICE_CARDA,
 	NATIVESAVEDEVICE_CARDB
@@ -113,6 +117,9 @@ extern char saveStateDevice;
 enum saveStateDevice
 {
 	SAVESTATEDEVICE_SD=0,
+#ifdef __SWITCH__
+	SAVESTATEDEVICE_SWITCH,
+#endif
 	SAVESTATEDEVICE_USB
 };
 
@@ -137,6 +144,9 @@ extern char biosDevice;
 enum biosDevice
 {
 	BIOSDEVICE_HLE=0,
+#ifdef __SWITCH__
+	BIOSDEVICE_SWITCH,
+#endif
 	BIOSDEVICE_SD,
 	BIOSDEVICE_USB
 };
@@ -184,6 +194,9 @@ enum padType
 {
 	PADTYPE_NONE=0,
 	PADTYPE_GAMECUBE,
+#ifdef __SWITCH__
+	PADTYPE_SWITCH,
+#endif
 	PADTYPE_WII
 };
 

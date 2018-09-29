@@ -301,7 +301,7 @@ void psxRcntUpdate()
             setIrq( 0x01 );
 
             GPU_updateLace();
-            EmuUpdate();
+			EmuUpdate();
         }
     }
 #ifdef PROFILE

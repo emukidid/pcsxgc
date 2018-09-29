@@ -27,7 +27,7 @@
 #ifndef _PRIMDRAW_H_
 #define _PRIMDRAW_H_
 
-void UploadScreen (long Position);
-void PrepareFullScreenUpload (long Position);
+void UploadScreen (s32 Position);
+void PrepareFullScreenUpload (s32 Position);
 
 #endif // _PRIMDRAW_H_

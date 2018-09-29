@@ -38,7 +38,7 @@
 // KeyBoard handler stuff
 ////////////////////////////////////////////////////////////////////////
 
-unsigned long   ulKeybits=0;                     
+u32   ulKeybits=0;                     
 
 #ifdef _WINDOWS
 
@@ -108,7 +108,7 @@ void InitKeyHandler(void)
  if(!pOldWinProc)
   {      
    pOldWinProc = (WNDPROC)GetWindowLong(hWWindow, GWL_WNDPROC );
-   SetWindowLong(hWWindow, GWL_WNDPROC, (long)key_winproc);
+   SetWindowLong(hWWindow, GWL_WNDPROC, (s32)key_winproc);
   }
 } 
 
@@ -118,7 +118,7 @@ void ExitKeyHandler(void)
 {
  if(pOldWinProc)
   SetWindowLong(hWWindow,GWL_WNDPROC,              // set old proc
-                (long)pOldWinProc);
+                (s32)pOldWinProc);
  pOldWinProc = 0;                                      
 }
 

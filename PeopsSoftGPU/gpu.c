@@ -114,10 +114,10 @@
 
 #include "stdafx.h"
 
-#ifdef __GX__
+#ifdef __SWITCH__
 #include "../Gamecube/DEBUG.h"
 #include "../Gamecube/wiiSXconfig.h"
-#endif //__GX__
+#endif //__SWITCH__
 
 #ifdef _WINDOWS
 
@@ -144,7 +144,6 @@
 #include "menu.h"
 #include "key.h"
 #include "fps.h"
-#include "swap.h"
 
 //#define SMALLDEBUG
 //#include <dbgout.h>
@@ -161,18 +160,12 @@ const  unsigned char build    = 18;   // increase that with each version
 #ifdef _WINDOWS
 static char *libraryName      = "P.E.Op.S. Soft Driver";
 #else
-#ifdef _MACGL
-static char *libraryName      = "P.E.Op.S. SoftGL Driver";
-static char *libraryInfo      = "P.E.Op.S. SoftGL Driver V1.16\nCoded by Pete Bernert and the P.E.Op.S. team\n"
-										  "Macintosh port by Gil Pedersen\n";
-#else
 #ifndef _SDL
 static char *libraryName      = "P.E.Op.S. SoftX Driver";
 static char *libraryInfo      = "P.E.Op.S. SoftX Driver V1.18\nCoded by Pete Bernert and the P.E.Op.S. team\n";
 #else
 static char *libraryName      = "P.E.Op.S. SoftSDL Driver";
 static char *libraryInfo      = "P.E.Op.S. SoftSDL Driver V1.18\nCoded by Pete Bernert and the P.E.Op.S. team\n";
-#endif
 #endif
 #endif
 
@@ -182,30 +175,30 @@ static char *PluginAuthor     = "Pete Bernert and the P.E.Op.S. team";
 // memory image of the PSX vram 
 ////////////////////////////////////////////////////////////////////////
 
-unsigned char  psxVSecure[(iGPUHeight*2)*1024 + (1024*1024)];
+unsigned char  *psxVSecure;
 unsigned char  *psxVub;
 signed   char  *psxVsb;
 unsigned short *psxVuw;
 unsigned short *psxVuw_eom;
 signed   short *psxVsw;
-unsigned long  *psxVul;
-signed   long  *psxVsl;
+u32  *psxVul;
+s32  *psxVsl;
 
 ////////////////////////////////////////////////////////////////////////
 // GPU globals
 ////////////////////////////////////////////////////////////////////////
 
-static long       lGPUdataRet;
-long              lGPUstatusRet;
+static s32       lGPUdataRet;
+s32              lGPUstatusRet;
 char              szDispBuf[64];
 char              szMenuBuf[36];
 char              szDebugText[512];
-unsigned long     ulStatusControl[256];      
+u32     ulStatusControl[256];      
 
-static unsigned   long gpuDataM[256];
+static u32 gpuDataM[256];
 static unsigned   char gpuCommand = 0;
-static long       gpuDataC = 0;
-static long       gpuDataP = 0;
+static s32       gpuDataC = 0;
+static s32       gpuDataP = 0;
 
 VRAMLoad_t        VRAMWrite;
 VRAMLoad_t        VRAMRead;
@@ -219,10 +212,10 @@ int               iWindowMode;
 short             sDispWidths[8] = {256,320,512,640,368,384,512,640};
 PSXDisplay_t      PSXDisplay;
 PSXDisplay_t      PreviousPSXDisplay;
-long              lSelectedSlot=0;
+s32              lSelectedSlot=0;
 BOOL              bChangeWinMode=FALSE;
 BOOL              bDoLazyUpdate=FALSE;
-unsigned long     lGPUInfoVals[16];
+u32     lGPUInfoVals[16];
 int               iFakePrimBusy=0;
 int               iRumbleVal=0;
 int               iRumbleTime=0;
@@ -291,8 +284,8 @@ BOOL FreeKernel32(void)
 ////////////////////////////////////////////////////////////////////////
 
 /*
-unsigned long PCADDR;
-void CALLBACK GPUdebugSetPC(unsigned long addr)
+u32 PCADDR;
+void CALLBACK GPUdebugSetPC(u32 addr)
 {
  PCADDR=addr;
 }
@@ -301,11 +294,11 @@ void CALLBACK GPUdebugSetPC(unsigned long addr)
 #include <time.h>
 time_t tStart;
 
-#ifndef __GX__
+#ifndef __SWITCH__
 void CALLBACK GPUdisplayText(char * pText)             // some debug func
-#else //!__GX__
+#else //!__SWITCH__
 void PEOPS_GPUdisplayText(char * pText)             // some debug func
-#endif //__GX__
+#endif //__SWITCH__
 {
  if(!pText) {szDebugText[0]=0;return;}
  if(strlen(pText)>511) return;
@@ -315,7 +308,7 @@ void PEOPS_GPUdisplayText(char * pText)             // some debug func
 
 ////////////////////////////////////////////////////////////////////////
 
-void CALLBACK GPUdisplayFlags(unsigned long dwFlags)   // some info func
+void CALLBACK GPUdisplayFlags(u32 dwFlags)   // some info func
 {
  dwCoreFlags=dwFlags;
  BuildDispMenu(0);
@@ -330,12 +323,12 @@ char * CALLBACK PSEgetLibName(void)
  return libraryName;
 }
 
-unsigned long CALLBACK PSEgetLibType(void)
+u32 CALLBACK PSEgetLibType(void)
 {
  return  PSE_LT_GPU;
 }
 
-unsigned long CALLBACK PSEgetLibVersion(void)
+u32 CALLBACK PSEgetLibVersion(void)
 {
  return version<<16|revision<<8|build;
 }
@@ -438,12 +431,12 @@ void CALLBACK GPUmakeSnapshot(void)                    // snapshot of whole vram
  FILE *bmpfile;
  char filename[256];     
  unsigned char header[0x36];
- long size,height;
+ s32 size,height;
  unsigned char line[1024*3];
  short i,j;
  unsigned char empty[2]={0,0};
  unsigned short color;
- unsigned long snapshotnr = 0;
+ u32 snapshotnr = 0;
  
  height=iGPUHeight;
 
@@ -514,32 +507,32 @@ void CALLBACK GPUmakeSnapshot(void)                    // snapshot of whole vram
 // INIT, will be called after lib load... well, just do some var init...
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
-long CALLBACK GPUinit()                                // GPU INIT
-#else //!__GX__
-long PEOPS_GPUinit()                                // GPU INIT
-#endif // __GX__
+#ifndef __SWITCH__
+s32 CALLBACK GPUinit()                                // GPU INIT
+#else //!__SWITCH__
+s32 PEOPS_GPUinit()                                // GPU INIT
+#endif // __SWITCH__
 {
- memset(ulStatusControl,0,256*sizeof(unsigned long));  // init save state scontrol field
+ memset(ulStatusControl,0,256*sizeof(u32));  // init save state scontrol field
 
  szDebugText[0]=0;                                     // init debug text buffer
 
- //psxVSecure=(unsigned char *)malloc((iGPUHeight*2)*1024 + (1024*1024)); // always alloc one extra MB for soft drawing funcs security
- //if(!psxVSecure) return -1;
+ psxVSecure=(unsigned char *)malloc((iGPUHeight*2)*1024 + (1024*1024)); // always alloc one extra MB for soft drawing funcs security
+ if(!psxVSecure) return -1;
 
  //!!! ATTENTION !!!
  psxVub=psxVSecure+512*1024;                           // security offset into double sized psx vram!
 
  psxVsb=(signed char *)psxVub;                         // different ways of accessing PSX VRAM
  psxVsw=(signed short *)psxVub;
- psxVsl=(signed long *)psxVub;
+ psxVsl=(s32 *)psxVub;
  psxVuw=(unsigned short *)psxVub;
- psxVul=(unsigned long *)psxVub;
+ psxVul=(u32 *)psxVub;
 
  psxVuw_eom=psxVuw+1024*iGPUHeight;                    // pre-calc of end of vram
                         
  memset(psxVSecure,0x00,(iGPUHeight*2)*1024 + (1024*1024));
- memset(lGPUInfoVals,0x00,16*sizeof(unsigned long));
+ memset(lGPUInfoVals,0x00,16*sizeof(u32));
  
  SetFPSHandler();   
 
@@ -583,7 +576,7 @@ long PEOPS_GPUinit()                                // GPU INIT
 ////////////////////////////////////////////////////////////////////////
 
 #ifdef _WINDOWS
-long CALLBACK GPUopen(HWND hwndGPU)                    // GPU OPEN
+s32 CALLBACK GPUopen(HWND hwndGPU)                    // GPU OPEN
 {
  hWGPU = hwndGPU;                                      // store hwnd
 
@@ -610,13 +603,13 @@ long CALLBACK GPUopen(HWND hwndGPU)                    // GPU OPEN
 
 #else
 
-#ifndef __GX__
-long GPUopen(unsigned long * disp,char * CapText,char * CfgFile)
-#else //!__GX__
-long PEOPS_GPUopen(unsigned long * disp,char * CapText,char * CfgFile)
-#endif // __GX__
+#ifndef __SWITCH__
+s32 GPUopen(u32 * disp,char * CapText,char * CfgFile)
+#else //!__SWITCH__
+s32 PEOPS_GPUopen(u32 * disp,char * CapText,char * CfgFile)
+#endif // __SWITCH__
 {
- unsigned long d;
+ u32 d;
 
  pCaptionText=CapText;
 
@@ -625,8 +618,6 @@ long PEOPS_GPUopen(unsigned long * disp,char * CapText,char * CfgFile)
 #endif
 
  ReadConfig();                                         // read registry
-
- iShowFPS=1;	//Default config turns this off..
 
  InitFPS();
 
@@ -647,11 +638,11 @@ long PEOPS_GPUopen(unsigned long * disp,char * CapText,char * CfgFile)
 // time to leave...
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
-long CALLBACK GPUclose()                               // GPU CLOSE
-#else //!__GX__
-long PEOPS_GPUclose()
-#endif // __GX__
+#ifndef __SWITCH__
+s32 CALLBACK GPUclose()                               // GPU CLOSE
+#else //!__SWITCH__
+s32 PEOPS_GPUclose()
+#endif // __SWITCH__
 {
 #ifdef _WINDOWS
  if(RECORD_RECORDING==TRUE) {RECORD_Stop();RECORD_RECORDING=FALSE;BuildDispMenu(0);}
@@ -673,20 +664,16 @@ long PEOPS_GPUclose()
 // I shot the sheriff
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
-long CALLBACK GPUshutdown()                            // GPU SHUTDOWN
-#else //!__GX__
-long PEOPS_GPUshutdown()
-#endif // __GX__
+#ifndef __SWITCH__
+s32 CALLBACK GPUshutdown()                            // GPU SHUTDOWN
+#else //!__SWITCH__
+s32 PEOPS_GPUshutdown()
+#endif // __SWITCH__
 {
  // screensaver: release the handle for kernel32.dll
  FreeKernel32();
 
-// free(psxVSecure);
- 
-#ifdef _MACGL
- CGReleaseAllDisplays();
-#endif
+ free(psxVSecure);
 
  return 0;                                             // nothinh to do
 }
@@ -751,13 +738,13 @@ void updateDisplay(void)                               // UPDATE DISPLAY
 
 void ChangeDispOffsetsX(void)                          // X CENTER
 {
- long lx,l;
+ s32 lx,l;
 
  if(!PSXDisplay.Range.x1) return;
 
  l=PreviousPSXDisplay.DisplayMode.x;
 
- l*=(long)PSXDisplay.Range.x1;
+ l*=(s32)PSXDisplay.Range.x1;
  l/=2560;lx=l;l&=0xfffffff8;
 
  if(l==PreviousPSXDisplay.Range.y1) return;            // abusing range.y1 for
@@ -940,21 +927,12 @@ void CALLBACK GPUcursor(int iPlayer,int x,int y)
 // update lace is called evry VSync
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
+#ifndef __SWITCH__
 void CALLBACK GPUupdateLace(void)                      // VSYNC
-#else //!__GX__
+#else //!__SWITCH__
 void PEOPS_GPUupdateLace(void)
-#endif //__GX__
+#endif //__SWITCH__
 {
-#ifdef PROFILE
-	start_section(GFX_SECTION);
-#endif
-#ifdef PEOPS_SDLOG
-	DEBUG_print("append",DBG_SDGECKOAPPEND);
-	sprintf(txtbuffer,"Calling GPUupdateLace()\r\n");
-	DEBUG_print(txtbuffer,DBG_SDGECKOPRINT);
-	DEBUG_print("close",DBG_SDGECKOCLOSE);
-#endif //PEOPS_SDLOG
  if(!(dwActFixes&1))
   lGPUstatusRet^=0x80000000;                           // odd/even bit
 
@@ -994,24 +972,18 @@ if(RECORD_RECORDING)
 #endif
 
  bDoVSyncUpdate=FALSE;                                 // vsync done
-#ifdef PROFILE
-	end_section(GFX_SECTION);
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
 // process read request from GPU status register
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
-unsigned long CALLBACK GPUreadStatus(void)             // READ STATUS
-#else //!__GX__
-unsigned long PEOPS_GPUreadStatus(void)
-#endif // __GX__
+#ifndef __SWITCH__
+u32 CALLBACK GPUreadStatus(void)             // READ STATUS
+#else //!__SWITCH__
+u32 PEOPS_GPUreadStatus(void)
+#endif // __SWITCH__
 {
-#ifdef PROFILE
-	start_section(GFX_SECTION);
-#endif
  if(dwActFixes&1)
   {
    static int iNumRead=0;                              // odd/even hack
@@ -1040,9 +1012,7 @@ unsigned long PEOPS_GPUreadStatus(void)
     }
 //   auxprintf("2 %08x\n",lGPUstatusRet);
   }
-#ifdef PROFILE
-	end_section(GFX_SECTION);
-#endif
+
  return lGPUstatusRet;
 }
 
@@ -1051,16 +1021,13 @@ unsigned long PEOPS_GPUreadStatus(void)
 // these are always single packet commands.
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
-void CALLBACK GPUwriteStatus(unsigned long gdata)      // WRITE STATUS
-#else //!__GX__
-void PEOPS_GPUwriteStatus(unsigned long gdata)
-#endif // __GX__
+#ifndef __SWITCH__
+void CALLBACK GPUwriteStatus(u32 gdata)      // WRITE STATUS
+#else //!__SWITCH__
+void PEOPS_GPUwriteStatus(u32 gdata)
+#endif // __SWITCH__
 {
-#ifdef PROFILE
-	start_section(GFX_SECTION);
-#endif
- unsigned long lCommand=(gdata>>24)&0xff;
+ u32 lCommand=(gdata>>24)&0xff;
 
  ulStatusControl[lCommand]=gdata;                      // store command for freezing
 
@@ -1069,7 +1036,7 @@ void PEOPS_GPUwriteStatus(unsigned long gdata)
    //--------------------------------------------------//
    // reset gpu
    case 0x00:
-    memset(lGPUInfoVals,0x00,16*sizeof(unsigned long));
+    memset(lGPUInfoVals,0x00,16*sizeof(u32));
     lGPUstatusRet=0x14802000;
     PSXDisplay.Disabled=1;
     DataWriteMode=DataReadMode=DR_NORMAL;
@@ -1082,9 +1049,6 @@ void PEOPS_GPUwriteStatus(unsigned long gdata)
     PSXDisplay.RGB24=FALSE;
     PSXDisplay.Interlaced=FALSE;
     bUsingTWin = FALSE;
-#ifdef PROFILE
-	end_section(GFX_SECTION);
-#endif
     return;
    //--------------------------------------------------//
    // dis/enable display 
@@ -1096,9 +1060,6 @@ void PEOPS_GPUwriteStatus(unsigned long gdata)
     if(PSXDisplay.Disabled) 
          lGPUstatusRet|=GPUSTATUS_DISPLAYDISABLED;
     else lGPUstatusRet&=~GPUSTATUS_DISPLAYDISABLED;
-#ifdef PROFILE
-	end_section(GFX_SECTION);
-#endif
     return;
 
    //--------------------------------------------------//
@@ -1111,9 +1072,7 @@ void PEOPS_GPUwriteStatus(unsigned long gdata)
     if(gdata==0x03) DataReadMode =DR_VRAMTRANSFER;
     lGPUstatusRet&=~GPUSTATUS_DMABITS;                 // Clear the current settings of the DMA bits
     lGPUstatusRet|=(gdata << 29);                      // Set the DMA bits according to the received data
-#ifdef PROFILE
-	end_section(GFX_SECTION);
-#endif
+
     return;
    //--------------------------------------------------//
    // setting display position
@@ -1182,11 +1141,7 @@ void PEOPS_GPUwriteStatus(unsigned long gdata)
        if(UseFrameSkip)  updateDisplay();
        if(dwActFixes&64) bDoLazyUpdate=TRUE;
       }
-    }
-#ifdef PROFILE
-	end_section(GFX_SECTION);
-#endif
-	return;
+    }return;
    //--------------------------------------------------//
    // setting width
    case 0x06:
@@ -1197,9 +1152,7 @@ void PEOPS_GPUwriteStatus(unsigned long gdata)
     PSXDisplay.Range.x1-=PSXDisplay.Range.x0;
 
     ChangeDispOffsetsX();
-#ifdef PROFILE
-	end_section(GFX_SECTION);
-#endif
+
     return;
    //--------------------------------------------------//
    // setting height
@@ -1223,9 +1176,6 @@ void PEOPS_GPUwriteStatus(unsigned long gdata)
 
        updateDisplayIfChanged();
       }
-#ifdef PROFILE
-	end_section(GFX_SECTION);
-#endif
      return;
     }
    //--------------------------------------------------//
@@ -1275,18 +1225,14 @@ void PEOPS_GPUwriteStatus(unsigned long gdata)
     else lGPUstatusRet&=~GPUSTATUS_RGB24;
 
     updateDisplayIfChanged();
-#ifdef PROFILE
-	end_section(GFX_SECTION);
-#endif
+
     return;
    //--------------------------------------------------//
    // ask about GPU version and other stuff
    case 0x10: 
 
     gdata&=0xff;
-#ifdef PROFILE
-	end_section(GFX_SECTION);
-#endif
+
     switch(gdata) 
      {
       case 0x02:
@@ -1315,16 +1261,13 @@ void PEOPS_GPUwriteStatus(unsigned long gdata)
     return;
    //--------------------------------------------------//
   }   
-#ifdef PROFILE
-	end_section(GFX_SECTION);
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
 // vram read/write helpers, needed by LEWPY's optimized vram read/write :)
 ////////////////////////////////////////////////////////////////////////
 
-__inline void FinishedVRAMWrite(void)
+void FinishedVRAMWrite(void)
 {
 /*
 // NEWX
@@ -1351,7 +1294,7 @@ __inline void FinishedVRAMWrite(void)
  VRAMWrite.RowsRemaining = 0;
 }
 
-__inline void FinishedVRAMRead(void)
+void FinishedVRAMRead(void)
 {
  // Set register to NORMAL operation
  DataReadMode = DR_NORMAL;
@@ -1371,16 +1314,14 @@ __inline void FinishedVRAMRead(void)
 // core read from vram
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
-void CALLBACK GPUreadDataMem(unsigned long * pMem, int iSize)
-#else //!__GX__
-void PEOPS_GPUreadDataMem(unsigned long * pMem, int iSize)
-#endif //__GX__
+#ifndef __SWITCH__
+void CALLBACK GPUreadDataMem(u32 * pMem, int iSize)
+#else //!__SWITCH__
+void PEOPS_GPUreadDataMem(u32 * pMem, int iSize)
+#endif //__SWITCH__
 {
  int i;
-#ifdef PROFILE
-	start_section(GFX_SECTION);
-#endif
+
  if(DataReadMode!=DR_VRAMTRANSFER) return;
 
  GPUIsBusy;
@@ -1397,7 +1338,7 @@ void PEOPS_GPUreadDataMem(unsigned long * pMem, int iSize)
    if ((VRAMRead.ColsRemaining > 0) && (VRAMRead.RowsRemaining > 0))
     {
      // lower 16 bit
-     lGPUdataRet=(unsigned long)GETLE16(VRAMRead.ImagePtr);
+     lGPUdataRet=(u32)*VRAMRead.ImagePtr;
 
      VRAMRead.ImagePtr++;
      if(VRAMRead.ImagePtr>=psxVuw_eom) VRAMRead.ImagePtr-=iGPUHeight*1024;
@@ -1412,8 +1353,9 @@ void PEOPS_GPUreadDataMem(unsigned long * pMem, int iSize)
       }
 
      // higher 16 bit (always, even if it's an odd width)
-     lGPUdataRet|=(unsigned long)GETLE16(VRAMRead.ImagePtr)<<16;
-     PUTLE32(pMem, lGPUdataRet); pMem++;
+     lGPUdataRet|=(u32)(*VRAMRead.ImagePtr)<<16;
+
+     *pMem++=lGPUdataRet;
 
      if(VRAMRead.ColsRemaining <= 0)
       {FinishedVRAMRead();goto ENDREAD;}
@@ -1436,21 +1378,18 @@ void PEOPS_GPUreadDataMem(unsigned long * pMem, int iSize)
 
 ENDREAD:
  GPUIsIdle;
-#ifdef PROFILE
-	end_section(GFX_SECTION);
-#endif
 }
 
 
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
-unsigned long CALLBACK GPUreadData(void)
-#else //!__GX__
-unsigned long PEOPS_GPUreadData(void)
-#endif //__GX__
+#ifndef __SWITCH__
+u32 CALLBACK GPUreadData(void)
+#else //!__SWITCH__
+u32 PEOPS_GPUreadData(void)
+#endif //__SWITCH__
 {
- unsigned long l;
+ u32 l;
  PEOPS_GPUreadDataMem(&l,1);
  return lGPUdataRet;
 }
@@ -1530,26 +1469,15 @@ const unsigned char primTableCX[256] =
     0,0,0,0,0,0,0,0
 };
 
-#ifndef __GX__
-void CALLBACK GPUwriteDataMem(unsigned long * pMem, int iSize)
-#else //!__GX__
-void PEOPS_GPUwriteDataMem(unsigned long * pMem, int iSize)
-#endif // __GX__
+#ifndef __SWITCH__
+void CALLBACK GPUwriteDataMem(u32 * pMem, int iSize)
+#else //!__SWITCH__
+void PEOPS_GPUwriteDataMem(u32 * pMem, int iSize)
+#endif // __SWITCH__
 {
-#ifdef PROFILE
-	start_section(GFX_SECTION);
-#endif
  unsigned char command;
- unsigned long gdata=0;
+ u32 gdata=0;
  int i=0;
-
-#ifdef PEOPS_SDLOG
- int jj,jjmax;
-	DEBUG_print("append",DBG_SDGECKOAPPEND);
-	sprintf(txtbuffer,"Calling GPUwriteDataMem(): mode = %d, *pmem = 0x%8x, iSize = %d\r\n",DataWriteMode,GETLE32(pMem),iSize);
-	DEBUG_print(txtbuffer,DBG_SDGECKOPRINT);
-	DEBUG_print("close",DBG_SDGECKOCLOSE);
-#endif //PEOPS_SDLOG
 
  GPUIsBusy;
  GPUIsNotReadyForCommands;
@@ -1574,9 +1502,9 @@ STARTVRAM:
        if(i>=iSize) {goto ENDVRAM;}
        i++;
 
-       gdata=GETLE32(pMem); pMem++;
+       gdata=*pMem++;
 
-       PUTLE16(VRAMWrite.ImagePtr, (unsigned short)gdata); VRAMWrite.ImagePtr++;
+       *VRAMWrite.ImagePtr++ = (unsigned short)gdata;
        if(VRAMWrite.ImagePtr>=psxVuw_eom) VRAMWrite.ImagePtr-=iGPUHeight*1024;
        VRAMWrite.RowsRemaining --;
 
@@ -1585,7 +1513,7 @@ STARTVRAM:
          VRAMWrite.ColsRemaining--;
          if (VRAMWrite.ColsRemaining <= 0)             // last pixel is odd width
           {
-           gdata=(gdata&0xFFFF)|(((unsigned long)GETLE16(VRAMWrite.ImagePtr))<<16);
+           gdata=(gdata&0xFFFF)|(((u32)(*VRAMWrite.ImagePtr))<<16);
            FinishedVRAMWrite();
            bDoVSyncUpdate=TRUE;
            goto ENDVRAM;
@@ -1594,7 +1522,7 @@ STARTVRAM:
          VRAMWrite.ImagePtr += 1024 - VRAMWrite.Width;
         }
 
-       PUTLE16(VRAMWrite.ImagePtr, (unsigned short)(gdata>>16)); VRAMWrite.ImagePtr++;
+       *VRAMWrite.ImagePtr++ = (unsigned short)(gdata>>16);
        if(VRAMWrite.ImagePtr>=psxVuw_eom) VRAMWrite.ImagePtr-=iGPUHeight*1024;
        VRAMWrite.RowsRemaining --;
       }
@@ -1621,32 +1549,32 @@ ENDVRAM:
     {
      if(DataWriteMode==DR_VRAMTRANSFER) goto STARTVRAM;
 
-     gdata=GETLE32(pMem); pMem++; i++;
-
+     gdata=*pMem++;i++;
+ 
      if(gpuDataC == 0)
       {
        command = (unsigned char)((gdata>>24) & 0xff);
- 
+
 //if(command>=0xb0 && command<0xc0) auxprintf("b0 %x!!!!!!!!!\n",command);
 
        if(primTableCX[command])
         {
          gpuDataC = primTableCX[command];
          gpuCommand = command;
-         PUTLE32(&gpuDataM[0], gdata);
+         gpuDataM[0] = gdata;
          gpuDataP = 1;
         }
        else continue;
       }
      else
       {
-       PUTLE32(&gpuDataM[gpuDataP], gdata);
+       gpuDataM[gpuDataP] = gdata;
        if(gpuDataC>128)
         {
          if((gpuDataC==254 && gpuDataP>=3) ||
             (gpuDataC==255 && gpuDataP>=4 && !(gpuDataP&1)))
           {
-           if((gdata & 0xF000F000) == 0x50005000)
+           if((gpuDataM[gpuDataP] & 0xF000F000) == 0x50005000)
             gpuDataP=gpuDataC-1;
           }
         }
@@ -1655,25 +1583,11 @@ ENDVRAM:
  
      if(gpuDataP == gpuDataC)
       {
-#ifdef PEOPS_SDLOG
-	DEBUG_print("append",DBG_SDGECKOAPPEND);
-	sprintf(txtbuffer,"  primeFunc[%d](",gpuCommand);
-	DEBUG_print(txtbuffer,DBG_SDGECKOPRINT);
-	jjmax = (gpuDataC>128) ? 6 : gpuDataP;
-	for(jj = 0; jj<jjmax; jj++)
-	{
-		sprintf(txtbuffer," 0x%8x",gpuDataM[jj]);
-		DEBUG_print(txtbuffer,DBG_SDGECKOPRINT);
-	}
-	sprintf(txtbuffer,")\r\n");
-	DEBUG_print(txtbuffer,DBG_SDGECKOPRINT);
-	DEBUG_print("close",DBG_SDGECKOCLOSE);
-#endif //PEOPS_SDLOG
        gpuDataC=gpuDataP=0;
        primFunc[gpuCommand]((unsigned char *)gpuDataM);
 
-//       if(dwEmuFixes&0x0001 || dwActFixes&0x0400)      // hack for emulating "gpu busy" in some games
-//        iFakePrimBusy=4;
+       if(dwEmuFixes&0x0001 || dwActFixes&0x0400)      // hack for emulating "gpu busy" in some games
+        iFakePrimBusy=4;
       }
     } 
   }
@@ -1681,21 +1595,17 @@ ENDVRAM:
  lGPUdataRet=gdata;
 
  GPUIsReadyForCommands;
- GPUIsIdle;   
-#ifdef PROFILE
-	end_section(GFX_SECTION);
-#endif 
+ GPUIsIdle;                
 }
 
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
-void CALLBACK GPUwriteData(unsigned long gdata)
-#else //!__GX__
-void PEOPS_GPUwriteData(unsigned long gdata)
-#endif // __GX__
+#ifndef __SWITCH__
+void CALLBACK GPUwriteData(u32 gdata)
+#else //!__SWITCH__
+void PEOPS_GPUwriteData(u32 gdata)
+#endif // __SWITCH__
 {
- PUTLE32(&gdata, gdata);
  PEOPS_GPUwriteDataMem(&gdata,1);
 }
 
@@ -1703,16 +1613,16 @@ void PEOPS_GPUwriteData(unsigned long gdata)
 // this functions will be removed soon (or 'soonish')... not really needed, but some emus want them
 ////////////////////////////////////////////////////////////////////////
 
-void CALLBACK GPUsetMode(unsigned long gdata)
+void CALLBACK GPUsetMode(u32 gdata)
 {
 // Peops does nothing here...
 // DataWriteMode=(gdata&1)?DR_VRAMTRANSFER:DR_NORMAL;
 // DataReadMode =(gdata&2)?DR_VRAMTRANSFER:DR_NORMAL;
 }
 
-long CALLBACK GPUgetMode(void)
+s32 CALLBACK GPUgetMode(void)
 {
- long iT=0;
+ s32 iT=0;
 
  if(DataWriteMode==DR_VRAMTRANSFER) iT|=0x1;
  if(DataReadMode ==DR_VRAMTRANSFER) iT|=0x2;
@@ -1723,7 +1633,7 @@ long CALLBACK GPUgetMode(void)
 // call config dlg
 ////////////////////////////////////////////////////////////////////////
 
-long CALLBACK GPUconfigure(void)
+s32 CALLBACK GPUconfigure(void)
 {
 #ifdef _WINDOWS
  HWND hWP=GetActiveWindow();
@@ -1762,9 +1672,9 @@ void SetFixes(void)
 // process gpu commands
 ////////////////////////////////////////////////////////////////////////
 
-unsigned long lUsedAddr[3];
+u32 lUsedAddr[3];
 
-__inline BOOL CheckForEndlessLoop(unsigned long laddr)
+BOOL CheckForEndlessLoop(u32 laddr)
 {
  if(laddr==lUsedAddr[1]) return TRUE;
  if(laddr==lUsedAddr[2]) return TRUE;
@@ -1774,26 +1684,16 @@ __inline BOOL CheckForEndlessLoop(unsigned long laddr)
  lUsedAddr[0]=laddr;
  return FALSE;
 }
-
-#ifndef __GX__
-long CALLBACK GPUdmaChain(unsigned long * baseAddrL, unsigned long addr)
-#else //!__GX__
-long PEOPS_GPUdmaChain(unsigned long * baseAddrL, unsigned long addr)
-#endif // __GX__
+extern char psxM[0x00220000] __attribute__((aligned(32)));
+#ifndef __SWITCH__
+s32 CALLBACK GPUdmaChain(u32 * baseAddrL, u32 addr)
+#else //!__SWITCH__
+s32 PEOPS_GPUdmaChain(u32 * baseAddrL, u32 addr)
+#endif // __SWITCH__
 {
-#ifdef PROFILE
-	start_section(GFX_SECTION);
-#endif
- unsigned long dmaMem;
+ u32 dmaMem;
  unsigned char * baseAddrB;
  short count;unsigned int DMACommandCounter = 0;
-
- #ifdef PEOPS_SDLOG
-	DEBUG_print("append",DBG_SDGECKOAPPEND);
-	sprintf(txtbuffer,"Calling GPUdmaChain(): *baseAddrL = 0x%8x, addr = 0x%8x\r\n",baseAddrL, addr);
-	DEBUG_print(txtbuffer,DBG_SDGECKOPRINT);
-	DEBUG_print("close",DBG_SDGECKOCLOSE);
-#endif //PEOPS_SDLOG
 
  GPUIsBusy;
 
@@ -1810,17 +1710,14 @@ long PEOPS_GPUdmaChain(unsigned long * baseAddrL, unsigned long addr)
    count = baseAddrB[addr+3];
 
    dmaMem=addr+4;
-
    if(count>0) PEOPS_GPUwriteDataMem(&baseAddrL[dmaMem>>2],count);
 
-   addr = GETLE32(&baseAddrL[addr>>2])&0xffffff;
+   addr = baseAddrL[addr>>2]&0xffffff;
   }
  while (addr != 0xffffff);
 
  GPUIsIdle;
-#ifdef PROFILE
-	end_section(GFX_SECTION);
-#endif
+
  return 0;
 }
 
@@ -1861,7 +1758,7 @@ void CALLBACK GPUabout(void)                           // ABOUT
 // We are ever fine ;)
 ////////////////////////////////////////////////////////////////////////
 
-long CALLBACK GPUtest(void)
+s32 CALLBACK GPUtest(void)
 {
  // if test fails this function should return negative value for error (unable to continue)
  // and positive value for warning (can continue but output might be crappy)
@@ -1874,24 +1771,24 @@ long CALLBACK GPUtest(void)
 
 typedef struct GPUFREEZETAG
 {
- unsigned long ulFreezeVersion;      // should be always 1 for now (set by main emu)
- unsigned long ulStatus;             // current gpu status
- unsigned long ulControl[256];       // latest control register values
- //unsigned char psxVRam[1024*1024*2]; // current VRam image (full 2 MB for ZN)
+ u32 ulFreezeVersion;      // should be always 1 for now (set by main emu)
+ u32 ulStatus;             // current gpu status
+ u32 ulControl[256];       // latest control register values
+ unsigned char psxVRam[1024*1024*2]; // current VRam image (full 2 MB for ZN)
 } GPUFreeze_t;
 
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
-long CALLBACK GPUfreeze(unsigned long ulGetFreezeData,GPUFreeze_t * pF)
-#else //!__GX__
-long PEOPS_GPUfreeze(unsigned long ulGetFreezeData,GPUFreeze_t * pF)
-#endif //__GX__
+#ifndef __SWITCH__
+s32 CALLBACK GPUfreeze(u32 ulGetFreezeData,GPUFreeze_t * pF)
+#else //!__SWITCH__
+s32 PEOPS_GPUfreeze(u32 ulGetFreezeData,GPUFreeze_t * pF)
+#endif //__SWITCH__
 {
  //----------------------------------------------------//
  if(ulGetFreezeData==2)                                // 2: info, which save slot is selected? (just for display)
   {
-   long lSlotNum=*((long *)pF);
+   s32 lSlotNum=*((s32 *)pF);
    if(lSlotNum<0) return 0;
    if(lSlotNum>8) return 0;
    lSelectedSlot=lSlotNum+1;
@@ -1902,34 +1799,23 @@ long PEOPS_GPUfreeze(unsigned long ulGetFreezeData,GPUFreeze_t * pF)
  if(!pF)                    return 0;                  // some checks
  if(pF->ulFreezeVersion!=1) return 0;
 
- if(ulGetFreezeData==1)                                // 1: get data (Save State)
+ if(ulGetFreezeData==1)                                // 1: get data
   {
    pF->ulStatus=lGPUstatusRet;
-   memcpy(pF->ulControl,ulStatusControl,256*sizeof(unsigned long));
-   //memcpy(pF->psxVRam,  psxVub,         1024*iGPUHeight*2); //done in Misc.c
+   memcpy(pF->ulControl,ulStatusControl,256*sizeof(u32));
+   memcpy(pF->psxVRam,  psxVub,         1024*iGPUHeight*2);
 
    return 1;
   }
 
- if(ulGetFreezeData!=0) return 0;                      // 0: set data (Load State)
+ if(ulGetFreezeData!=0) return 0;                      // 0: set data
 
  lGPUstatusRet=pF->ulStatus;
- memcpy(ulStatusControl,pF->ulControl,256*sizeof(unsigned long));
- //memcpy(psxVub,         pF->psxVRam,  1024*iGPUHeight*2); //done in Misc.c
+ memcpy(ulStatusControl,pF->ulControl,256*sizeof(u32));
+ memcpy(psxVub,         pF->psxVRam,  1024*iGPUHeight*2);
 
 // RESET TEXTURE STORE HERE, IF YOU USE SOMETHING LIKE THAT
 
-#ifndef __GX__
- GPUwriteStatus(ulStatusControl[0]);
- GPUwriteStatus(ulStatusControl[1]);
- GPUwriteStatus(ulStatusControl[2]);
- GPUwriteStatus(ulStatusControl[3]);
- GPUwriteStatus(ulStatusControl[8]);                   // try to repair things
- GPUwriteStatus(ulStatusControl[6]);
- GPUwriteStatus(ulStatusControl[7]);
- GPUwriteStatus(ulStatusControl[5]);
- GPUwriteStatus(ulStatusControl[4]);
-#else //!__GX__
  PEOPS_GPUwriteStatus(ulStatusControl[0]);
  PEOPS_GPUwriteStatus(ulStatusControl[1]);
  PEOPS_GPUwriteStatus(ulStatusControl[2]);
@@ -1939,7 +1825,6 @@ long PEOPS_GPUfreeze(unsigned long ulGetFreezeData,GPUFreeze_t * pF)
  PEOPS_GPUwriteStatus(ulStatusControl[7]);
  PEOPS_GPUwriteStatus(ulStatusControl[5]);
  PEOPS_GPUwriteStatus(ulStatusControl[4]);
-#endif //__GX__
 
  return 1;
 }
@@ -2314,12 +2199,12 @@ void CALLBACK GPUgetScreenPic(unsigned char * pMem)
     }
    else       
     {
-     unsigned long sx;
+     u32 sx;
      for(y=0;y<96;y++)
       {
        for(x=0;x<128;x++)
         {
-         sx=*((unsigned long *)((ps)+
+         sx=*((u32 *)((ps)+
               r.top*xddsd.lPitch+
               (((int)((float)y*YS))*xddsd.lPitch)+
                r.left*4+
@@ -2412,12 +2297,12 @@ void CALLBACK GPUgetScreenPic(unsigned char * pMem)
     }
    else       
     {
-     unsigned long sx;
+     u32 sx;
      for(y=0;y<96;y++)
       {
        for(x=0;x<128;x++)
         {
-         sx=*((unsigned long *)((ps)+
+         sx=*((u32 *)((ps)+
               r.top*xddsd.lPitch+
               (((int)((float)y*YS))*xddsd.lPitch)+
                r.left*4+
@@ -2484,7 +2369,7 @@ extern char * Xpixels;
 
 void GPUgetScreenPic(unsigned char * pMem)
 {
-#if 0  
+#if 0
  unsigned short c;unsigned char * pf;int x,y;
 
  float XS=(float)iResX/128;
@@ -2500,7 +2385,7 @@ void GPUgetScreenPic(unsigned char * pMem)
 
    if(iDesktopCol==16)
     {
-     long lPitch=iResX<<1;
+     s32 lPitch=iResX<<1;
      unsigned short sx;
 #ifdef USE_DGA2
      if (!iWindowMode) lPitch+= (dgaDev->mode.imageWidth - dgaDev->mode.viewportWidth) * 2;
@@ -2522,7 +2407,7 @@ void GPUgetScreenPic(unsigned char * pMem)
    else
    if(iDesktopCol==15)
     {
-     long lPitch=iResX<<1;
+     s32 lPitch=iResX<<1;
      unsigned short sx;
 #ifdef USE_DGA2
      if (!iWindowMode) lPitch+= (dgaDev->mode.imageWidth - dgaDev->mode.viewportWidth) * 2;
@@ -2543,8 +2428,8 @@ void GPUgetScreenPic(unsigned char * pMem)
     }
    else
     {
-     long lPitch=iResX<<2;
-     unsigned long sx;
+     s32 lPitch=iResX<<2;
+     u32 sx;
 #ifdef USE_DGA2
      if (!iWindowMode) lPitch+= (dgaDev->mode.imageWidth - dgaDev->mode.viewportWidth) * 4;
 #endif
@@ -2552,7 +2437,7 @@ void GPUgetScreenPic(unsigned char * pMem)
       {
        for(x=0;x<128;x++)
         {
-         sx=*((unsigned long *)((ps)+
+         sx=*((u32 *)((ps)+
               (((int)((float)y*YS))*lPitch)+
                ((int)((float)x*XS))*4));
          *(pf+0)=(sx&0xff);
@@ -2597,7 +2482,7 @@ void GPUgetScreenPic(unsigned char * pMem)
    *(pf+(127*3))=0xff;*pf++=0xff;
    pf+=127*3;                                          // offset to next line
   }
-  #endif
+#endif
 }
 #endif
 
@@ -2618,18 +2503,18 @@ void CALLBACK GPUshowScreenPic(unsigned char * pMem)
 
 ////////////////////////////////////////////////////////////////////////
 
-void CALLBACK GPUsetfix(unsigned long dwFixBits)
+void CALLBACK GPUsetfix(u32 dwFixBits)
 {
  dwEmuFixes=dwFixBits;
 }
 
 ////////////////////////////////////////////////////////////////////////
 
-void CALLBACK GPUsetframelimit(unsigned long option)
+void CALLBACK GPUsetframelimit(u32 option)
 {
  bInitCap = TRUE;
 
-#ifndef __GX__
+#ifndef __SWITCH__
  if(option==1)
   {
    UseFrameLimit=1;UseFrameSkip=0;iFrameLimit=2;
@@ -2640,7 +2525,7 @@ void CALLBACK GPUsetframelimit(unsigned long option)
   {
    UseFrameLimit=0;
   }
-#else //!__GX__
+#else //!__SWITCH__
  if (frameLimit == FRAMELIMIT_AUTO)
  {
 	UseFrameLimit=1;
@@ -2654,14 +2539,14 @@ void CALLBACK GPUsetframelimit(unsigned long option)
  }
  UseFrameSkip = frameSkip;
  BuildDispMenu(0);
-#endif //__GX__
+#endif //__SWITCH__
 }
 
 ////////////////////////////////////////////////////////////////////////
 
 #ifdef _WINDOWS
 
-void CALLBACK GPUvisualVibration(unsigned long iSmall, unsigned long iBig)
+void CALLBACK GPUvisualVibration(u32 iSmall, u32 iBig)
 {
  int iVibVal;
 

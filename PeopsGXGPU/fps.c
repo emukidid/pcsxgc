@@ -287,7 +287,7 @@ void FrameSkip(void)
    dwLastLace=dwLaceCnt;                               // store curr count (frame limitation helper)
    dwWaitTime=dwLaceCnt*dwFrameRateTicks;              // calc the 'real psx lace time'
 
-   if(_ticks_since_last_update>dwWaitTime)             // hey, we needed way too long for that frame...
+   if(_ticks_since_last_update>dwWaitTime)             // hey, we needed way too s32 for that frame...
     {
      if(bUseFrameLimit)                                // if limitation, we skip just next frame,
       {                                                // and decide after, if we need to do more
@@ -335,11 +335,11 @@ void FrameSkip(void)
 void calcfps(void)
 {
  static DWORD curticks,_ticks_since_last_update,lastticks;
- static long   fps_cnt = 0;
+ static s32   fps_cnt = 0;
  static DWORD  fps_tck = 1;
  static LARGE_INTEGER  CurrentTime;
  static LARGE_INTEGER  LastTime;
- static long   fpsskip_cnt = 0;
+ static s32   fpsskip_cnt = 0;
  static DWORD  fpsskip_tck = 1;
 
  if(bIsPerformanceCounter)
@@ -467,7 +467,7 @@ void PCFrameCap(void)
 void PCcalcfps(void)
 {
  static DWORD curticks,_ticks_since_last_update,lastticks;
- static long  fps_cnt = 0;
+ static s32  fps_cnt = 0;
  static float fps_acc = 0;
  static LARGE_INTEGER  CurrentTime;
  static LARGE_INTEGER  LastTime;
@@ -612,27 +612,27 @@ void SetFrameRateConfig(void)
 
 #ifdef __GX__
 // prototypes
- long long gettime(void);
- unsigned int diff_usec(long long start,long long end);
+ s32 s32 gettime(void);
+ unsigned int diff_usec(s32 s32 start,s32 s32 end);
 #endif //__GX__
 
 // hehehe... using same func name as with win32 ;) wow, are we genius ;)
-unsigned long timeGetTime()
+u32 timeGetTime()
 {
 #ifndef __GX__
  struct timeval tv;
  gettimeofday(&tv, 0);                                // well, maybe there are better ways
  return tv.tv_sec * 100000 + tv.tv_usec/10;           // to do that in linux, but at least it works
 #else //!__GX__
- long long nowTick = gettime();
+ s32 s32 nowTick = gettime();
  return diff_usec(0,nowTick)/10;
 #endif //__GX__
 }
 
 void FrameCap(void)
 {
- static unsigned long curticks, lastticks, _ticks_since_last_update;
- static unsigned long TicksToWait = 0;
+ static u32 curticks, lastticks, _ticks_since_last_update;
+ static u32 TicksToWait = 0;
  bool Waiting = TRUE;
 
   {
@@ -743,7 +743,7 @@ void FrameSkip(void)
    dwLastLace=dwLaceCnt;                               // store curr count (frame limitation helper)
    dwWaitTime=dwLaceCnt*dwFrameRateTicks;              // calc the 'real psx lace time'
 
-   if(_ticks_since_last_update>dwWaitTime)             // hey, we needed way too long for that frame...
+   if(_ticks_since_last_update>dwWaitTime)             // hey, we needed way too s32 for that frame...
     {
      if(bUseFrameLimit)                                // if limitation, we skip just next frame,
       {                                                // and decide after, if we need to do more
@@ -780,11 +780,11 @@ void FrameSkip(void)
  
 void calcfps(void) 
 { 
- static unsigned long curticks,_ticks_since_last_update,lastticks; 
- static long   fps_cnt = 0;
- static unsigned long  fps_tck = 1; 
- static long           fpsskip_cnt = 0;
- static unsigned long  fpsskip_tck = 1;
+ static u32 curticks,_ticks_since_last_update,lastticks; 
+ static s32   fps_cnt = 0;
+ static u32  fps_tck = 1; 
+ static s32           fpsskip_cnt = 0;
+ static u32  fpsskip_tck = 1;
  
   { 
    curticks = timeGetTime(); 
@@ -827,8 +827,8 @@ void calcfps(void)
 
 void PCFrameCap (void) 
 {
- static unsigned long curticks, lastticks, _ticks_since_last_update;
- static unsigned long TicksToWait = 0;
+ static u32 curticks, lastticks, _ticks_since_last_update;
+ static u32 TicksToWait = 0;
  bool Waiting = TRUE; 
  
  while (Waiting) 
@@ -840,7 +840,7 @@ void PCFrameCap (void)
     { 
      Waiting = FALSE; 
      lastticks = curticks; 
-     TicksToWait = (TIMEBASE / (unsigned long)fFrameRateHz); 
+     TicksToWait = (TIMEBASE / (u32)fFrameRateHz); 
     } 
   } 
 } 
@@ -849,8 +849,8 @@ void PCFrameCap (void)
  
 void PCcalcfps(void) 
 { 
- static unsigned long curticks,_ticks_since_last_update,lastticks; 
- static long  fps_cnt = 0; 
+ static u32 curticks,_ticks_since_last_update,lastticks; 
+ static s32  fps_cnt = 0; 
  static float fps_acc = 0;
  float CurrentFPS=0;     
   
@@ -880,7 +880,7 @@ void SetAutoFrameCap(void)
  if(iFrameLimit==1)
   {
    fFrameRateHz = fFrameRate;
-   dwFrameRateTicks=(TIMEBASE / (unsigned long)fFrameRateHz);
+   dwFrameRateTicks=(TIMEBASE / (u32)fFrameRateHz);
    return;
   }
 
@@ -907,7 +907,7 @@ void SetAutoFrameCap(void)
       else fFrameRateHz=33868800.0f/566107.50f;        // 59.82750
     }
 
-   dwFrameRateTicks=(TIMEBASE / (unsigned long)fFrameRateHz);
+   dwFrameRateTicks=(TIMEBASE / (u32)fFrameRateHz);
   }
 }
 
@@ -923,7 +923,7 @@ void SetFrameRateConfig(void)
    else               fFrameRateHz=fFrameRate;         // else set user framerate
   }
 
- dwFrameRateTicks=(TIMEBASE / (unsigned long)fFrameRateHz);
+ dwFrameRateTicks=(TIMEBASE / (u32)fFrameRateHz);
 
  if(iFrameLimit==2) SetAutoFrameCap();
 }
@@ -973,7 +973,7 @@ void CheckFrameRate(void)                              // called in updatelace (
 
 ////////////////////////////////////////////////////////////////////////
 
-void CALLBACK GPUsetframelimit(unsigned long option)   // new EPSXE interface func: main emu can enable/disable fps limitation this way
+void CALLBACK GPUsetframelimit(u32 option)   // new EPSXE interface func: main emu can enable/disable fps limitation this way
 {
  bInitCap = TRUE;
 

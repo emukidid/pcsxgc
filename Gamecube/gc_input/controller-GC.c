@@ -24,7 +24,7 @@
  *
 **/
 
-
+#ifndef __SWITCH__
 #include <string.h>
 #include <ogc/pad.h>
 #include "controller.h"
@@ -246,3 +246,4 @@ static void refreshAvailable(void){
 	for(i=0; i<4; ++i)
 		controller_GC.available[i] = (gc_connected & (1<<i));
 }
+#endif

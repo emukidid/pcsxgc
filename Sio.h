@@ -34,8 +34,13 @@ extern "C" {
 
 #define MCD_SIZE	(1024 * 8 * 16)
 
+#if defined(HW_DOL) || defined(HW_RVL)
 extern unsigned char *Mcd1Data;
 extern unsigned char *Mcd2Data;
+#else
+extern unsigned char Mcd1Data[];
+extern unsigned char Mcd2Data[];
+#endif
 
 
 void sioWrite8(unsigned char value);

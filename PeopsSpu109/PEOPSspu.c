@@ -156,12 +156,12 @@ int             iUseDBufIrq=0;
 SPUCHAN         s_chan[MAXCHAN+1];                     // channel + 1 infos (1 is security for fmod handling)
 REVERBInfo      rvb;
 
-unsigned long   dwNoiseVal=1;                          // global noise generator
+u32   dwNoiseVal=1;                          // global noise generator
 
 unsigned short  spuCtrl=0;                             // some vars to store psx reg infos
 unsigned short  spuStat=0;
 unsigned short  spuIrq=0;             
-unsigned long   spuAddr=0xffffffff;                    // address into spu mem
+u32   spuAddr=0xffffffff;                    // address into spu mem
 int             bEndThread=0;                          // thread handlers
 int             bThreadEnded=0;
 int             bSpuInit=0;
@@ -185,11 +185,11 @@ static char  spu_stack[SPU_STACK_SIZE];
 #endif
 #endif
 
-unsigned long dwNewChannel=0;                          // flags for faster testing, if new channel starts
+u32 dwNewChannel=0;                          // flags for faster testing, if new channel starts
 
 void (CALLBACK *irqCallback)(void)=0;                  // func of main emu, called on spu irq
 void (CALLBACK *cddavCallback)(unsigned short,unsigned short)=0;
-void (CALLBACK *irqQSound)(unsigned char *,long *,long)=0;      
+void (CALLBACK *irqQSound)(unsigned char *,s32 *,s32)=0;      
 
 // certain globals (were local before, but with the new timeproc I need em global)
 
@@ -468,7 +468,7 @@ INLINE int iGetInterpolationVal(SPUCHAN * pChannel)
    //--------------------------------------------------//
    case 3:                                             // cubic interpolation
     {
-     long xd;int gpos;
+     s32 xd;int gpos;
      xd = ((pChannel->spos) >> 1)+1;
      gpos = pChannel->SB[28];
 
@@ -884,13 +884,13 @@ ENDX:   ;
 
     if(irqQSound)
      {
-      long * pl=(long *)XAPlay;
+      s32 * pl=(s32 *)XAPlay;
       short * ps=(short *)pSpuBuffer;
       int g,iBytes=((unsigned char *)pS)-((unsigned char *)pSpuBuffer);
       iBytes/=2;
       for(g=0;g<iBytes;g++) {*pl++=*ps++;}
        
-      irqQSound((unsigned char *)pSpuBuffer,(long *)XAPlay,iBytes/2);
+      irqQSound((unsigned char *)pSpuBuffer,(s32 *)XAPlay,iBytes/2);
      }
 
     //-------------------------------------------------//
@@ -935,7 +935,7 @@ DWORD WINAPI MAINThreadEx(LPVOID lpParameter)
 //  1 time every 'cycle' cycles... harhar
 ////////////////////////////////////////////////////////////////////////
 
-void CALLBACK PEOPS_SPUasync(unsigned long cycle)
+void CALLBACK PEOPS_SPUasync(u32 cycle)
 {
 
  if(iSpuAsyncWait)
@@ -1012,7 +1012,7 @@ void CALLBACK PEOPS_SPUplayADPCMchannel(xa_decode_t *xap)
 // SPUINIT: this func will be called first by the main emu
 ////////////////////////////////////////////////////////////////////////
               
-long CALLBACK PEOPS_SPUinit(void)
+s32 CALLBACK PEOPS_SPUinit(void)
 {
  spuMemC=(unsigned char *)spuMem;                      // just small setup
  memset((void *)s_chan,0,MAXCHAN*sizeof(SPUCHAN));
@@ -1126,7 +1126,7 @@ void SetupStreams(void)
  sRVBPlay = &sRVBStart[0];
 
  //XAStart =                                             // alloc xa buffer
-  //(unsigned long *)malloc(44100*4);
+  //(u32 *)malloc(44100*4);
  XAPlay  = &XAStart[0];
  XAFeed  = &XAStart[0];
  XAEnd   = &XAStart[0] + 44100;
@@ -1178,9 +1178,9 @@ void RemoveStreams(void)
 ////////////////////////////////////////////////////////////////////////
    
 #ifdef _WINDOWS
-long CALLBACK SPUopen(HWND hW)                          
+s32 CALLBACK SPUopen(HWND hW)                          
 #else
-long PEOPS_SPUopen(void)
+s32 PEOPS_SPUopen(void)
 #endif
 {
  if(bSPUIsOpen) return 0;                              // security for some stupid main emus
@@ -1252,7 +1252,7 @@ void PEOPS_SPUsetConfigFile(char * pCfg)
 // SPUCLOSE: called before shutdown
 ////////////////////////////////////////////////////////////////////////
 
-long CALLBACK PEOPS_SPUclose(void)
+s32 CALLBACK PEOPS_SPUclose(void)
 {
  if(!bSPUIsOpen) return 0;                             // some security
 
@@ -1278,7 +1278,7 @@ long CALLBACK PEOPS_SPUclose(void)
 // SPUSHUTDOWN: called by main emu on final exit
 ////////////////////////////////////////////////////////////////////////
 
-long CALLBACK PEOPS_SPUshutdown(void)
+s32 CALLBACK PEOPS_SPUshutdown(void)
 {
  return 0;
 }
@@ -1287,7 +1287,7 @@ long CALLBACK PEOPS_SPUshutdown(void)
 // SPUTEST: we don't test, we are always fine ;)
 ////////////////////////////////////////////////////////////////////////
 
-long CALLBACK PEOPS_SPUtest(void)
+s32 CALLBACK PEOPS_SPUtest(void)
 {
  return 0;
 }
@@ -1296,7 +1296,7 @@ long CALLBACK PEOPS_SPUtest(void)
 // SPUCONFIGURE: call config dialog
 ////////////////////////////////////////////////////////////////////////
 
-long CALLBACK PEOPS_SPUconfigure(void)
+s32 CALLBACK PEOPS_SPUconfigure(void)
 {
 #ifdef _WINDOWS
  DialogBox(hInst,MAKEINTRESOURCE(IDD_CFGDLG),
@@ -1346,12 +1346,12 @@ char * CALLBACK PSEgetLibName(void)
  return libraryName;
 }
 
-unsigned long CALLBACK PSEgetLibType(void)
+u32 CALLBACK PSEgetLibType(void)
 {
  return  PSE_LT_SPU;
 }
 
-unsigned long CALLBACK PSEgetLibVersion(void)
+u32 CALLBACK PSEgetLibVersion(void)
 {
  return version<<16|revision<<8|build;
 }

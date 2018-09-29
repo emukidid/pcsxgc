@@ -188,7 +188,7 @@ TODO:
 - Isolate D-cache from RAM
 */
 
-static inline u32 *Read_ICache(u32 pc, boolean isolate) {
+inline u32 *Read_ICache(u32 pc, boolean isolate) {
 	u32 pc_bank, pc_offset, pc_cache;
 	u8 *IAddr, *ICode;
 
@@ -252,7 +252,7 @@ static inline u32 *Read_ICache(u32 pc, boolean isolate) {
 	return (u32 *)PSXM(pc);
 }
 
-#if defined(HW_RVL) || defined(HW_DOL) || defined(BIG_ENDIAN)
+#if defined(HW_RVL) || defined(HW_DOL) || defined(__BIG_ENDIAN__)
 
 #define _i32(x) *(s32 *)&x
 #define _u32(x) x

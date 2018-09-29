@@ -49,8 +49,8 @@
 typedef struct
 {
  char          szSPUName[8];
- unsigned long ulFreezeVersion;
- unsigned long ulFreezeSize;
+ u32 ulFreezeVersion;
+ u32 ulFreezeSize;
  unsigned char cSPUPort[0x200];
  //unsigned char cSPURam[0x80000];
  xa_decode_t   xaS;     
@@ -59,11 +59,11 @@ typedef struct
 typedef struct
 {
  unsigned short  spuIrq;
- unsigned long   pSpuIrq;
- unsigned long   dummy0;
- unsigned long   dummy1;
- unsigned long   dummy2;
- unsigned long   dummy3;
+ u32   pSpuIrq;
+ u32   dummy0;
+ u32   dummy1;
+ u32   dummy2;
+ u32   dummy3;
 
  SPUCHAN  s_chan[MAXCHAN];   
 
@@ -78,7 +78,7 @@ void LoadStateUnknown(SPUFreeze_t * pF);               // unknown format
 // SPUFREEZE: called by main emu on savestate load/save
 ////////////////////////////////////////////////////////////////////////
 //TODO: ENDIAN FIX ME!!
-long CALLBACK PEOPS_SPUfreeze(unsigned long ulFreezeMode,SPUFreeze_t * pF)
+s32 CALLBACK PEOPS_SPUfreeze(u32 ulFreezeMode,SPUFreeze_t * pF)
 {
  int i;SPUOSSFreeze_t * pFO;
 
@@ -110,17 +110,17 @@ long CALLBACK PEOPS_SPUfreeze(unsigned long ulFreezeMode,SPUFreeze_t * pF)
    pFO=(SPUOSSFreeze_t *)(pF+1);                       // store special stuff
 
    pFO->spuIrq=spuIrq;
-   if(pSpuIrq)  pFO->pSpuIrq  = (unsigned long)pSpuIrq-(unsigned long)spuMemC;
+   if(pSpuIrq)  pFO->pSpuIrq  = (u32)pSpuIrq-(u32)spuMemC;
 
    for(i=0;i<MAXCHAN;i++)
     {
      memcpy((void *)&pFO->s_chan[i],(void *)&s_chan[i],sizeof(SPUCHAN));
      if(pFO->s_chan[i].pStart)
-      pFO->s_chan[i].pStart-=(unsigned long)spuMemC;
+      pFO->s_chan[i].pStart-=(u32)spuMemC;
      if(pFO->s_chan[i].pCurr)
-      pFO->s_chan[i].pCurr-=(unsigned long)spuMemC;
+      pFO->s_chan[i].pCurr-=(u32)spuMemC;
      if(pFO->s_chan[i].pLoop)
-      pFO->s_chan[i].pLoop-=(unsigned long)spuMemC;
+      pFO->s_chan[i].pLoop-=(u32)spuMemC;
     }
 
    SetupTimer();                                       // sound processing on again
@@ -195,9 +195,9 @@ void LoadStateV5(SPUFreeze_t * pF)
   {
    memcpy((void *)&s_chan[i],(void *)&pFO->s_chan[i],sizeof(SPUCHAN));
 
-   s_chan[i].pStart+=(unsigned long)spuMemC;
-   s_chan[i].pCurr+=(unsigned long)spuMemC;
-   s_chan[i].pLoop+=(unsigned long)spuMemC;
+   s_chan[i].pStart+=(u32)spuMemC;
+   s_chan[i].pCurr+=(u32)spuMemC;
+   s_chan[i].pLoop+=(u32)spuMemC;
    s_chan[i].iMute=0;
    s_chan[i].iIrqDone=0;
   }

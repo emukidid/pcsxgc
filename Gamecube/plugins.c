@@ -210,18 +210,18 @@ void CALLBACK GPUbusy( int ticks )
     psxRegs.intCycle[PSXINT_GPUBUSY].sCycle = psxRegs.cycle;
 }
 
-long CALLBACK GPU__configure(void) { return 0; }
-long CALLBACK GPU__test(void) { return 0; }
+s32 CALLBACK GPU__configure(void) { return 0; }
+s32 CALLBACK GPU__test(void) { return 0; }
 void CALLBACK GPU__about(void) {}
 void CALLBACK GPU__makeSnapshot(void) {}
 void CALLBACK GPU__keypressed(int key) {}
-long CALLBACK GPU__getScreenPic(unsigned char *pMem) { return -1; }
-long CALLBACK GPU__showScreenPic(unsigned char *pMem) { return -1; }
+s32 CALLBACK GPU__getScreenPic(unsigned char *pMem) { return -1; }
+s32 CALLBACK GPU__showScreenPic(unsigned char *pMem) { return -1; }
 void CALLBACK GPU__clearDynarec(void (CALLBACK *callback)(void)) {}
 void CALLBACK GPU__vBlank(int val) {}
 void CALLBACK GPU__registerCallback(void (CALLBACK *callback)(int)) {}
 void CALLBACK GPU__idle(void) {}
-void CALLBACK GPU__visualVibration(unsigned long iSmall, unsigned long iBig) {}
+void CALLBACK GPU__visualVibration(u32 iSmall, u32 iBig) {}
 void CALLBACK GPU__cursor(int player, int x, int y) {}
 
 #define LoadGpuSym1(dest, name) \
@@ -276,10 +276,10 @@ static int LoadGPUplugin(const char *GPUdll) {
 
 void *hCDRDriver = NULL;
 
-long CALLBACK CDR__play(unsigned char *sector) { return 0; }
-long CALLBACK CDR__stop(void) { return 0; }
+s32 CALLBACK CDR__play(unsigned char *sector) { return 0; }
+s32 CALLBACK CDR__stop(void) { return 0; }
 
-long CALLBACK CDR__getStatus(struct CdrStat *stat) {
+s32 CALLBACK CDR__getStatus(struct CdrStat *stat) {
 	if (cdOpenCaseTime < 0 || cdOpenCaseTime > (s64)time(NULL))
 		stat->Status = 0x10;
 	else
@@ -289,10 +289,10 @@ long CALLBACK CDR__getStatus(struct CdrStat *stat) {
 }
 
 char* CALLBACK CDR__getDriveLetter(void) { return NULL; }
-long CALLBACK CDR__configure(void) { return 0; }
-long CALLBACK CDR__test(void) { return 0; }
+s32 CALLBACK CDR__configure(void) { return 0; }
+s32 CALLBACK CDR__test(void) { return 0; }
 void CALLBACK CDR__about(void) {}
-long CALLBACK CDR__setfilename(char*filename) { return 0; }
+s32 CALLBACK CDR__setfilename(char*filename) { return 0; }
 
 #define LoadCdrSym1(dest, name) \
 	LoadSym(CDR_##dest, CDR##dest, name, TRUE);
@@ -343,9 +343,9 @@ static int LoadCDRplugin(const char *CDRdll) {
 
 void *hSPUDriver = NULL;
 
-long CALLBACK SPU__configure(void) { return 0; }
+s32 CALLBACK SPU__configure(void) { return 0; }
 void CALLBACK SPU__about(void) {}
-long CALLBACK SPU__test(void) { return 0; }
+s32 CALLBACK SPU__test(void) { return 0; }
 
 #define LoadSpuSym1(dest, name) \
 	LoadSym(SPU_##dest, SPU##dest, name, TRUE);
@@ -479,12 +479,12 @@ unsigned char CALLBACK PAD1__poll(unsigned char value) {
     return _PADpoll(value);
 }*/
 
-long CALLBACK PAD1__configure(void) { return 0; }
+s32 CALLBACK PAD1__configure(void) { return 0; }
 void CALLBACK PAD1__about(void) {}
-long CALLBACK PAD1__test(void) { return 0; }
-long CALLBACK PAD1__query(void) { return 3; }
-long CALLBACK PAD1__keypressed() { return 0; }
-void CALLBACK PAD1__registerVibration(void (CALLBACK *callback)(unsigned long, unsigned long)) {}
+s32 CALLBACK PAD1__test(void) { return 0; }
+s32 CALLBACK PAD1__query(void) { return 3; }
+s32 CALLBACK PAD1__keypressed() { return 0; }
+void CALLBACK PAD1__registerVibration(void (CALLBACK *callback)(u32, u32)) {}
 void CALLBACK PAD1__registerCursor(void (CALLBACK *callback)(int, int, int)) {}
 
 #define LoadPad1Sym1(dest, name) \
@@ -537,12 +537,12 @@ unsigned char CALLBACK PAD2__poll(unsigned char value) {
 	return _PADpoll(value);
 }
 */
-long CALLBACK PAD2__configure(void) { return 0; }
+s32 CALLBACK PAD2__configure(void) { return 0; }
 void CALLBACK PAD2__about(void) {}
-long CALLBACK PAD2__test(void) { return 0; }
-long CALLBACK PAD2__query(void) { return PSE_PAD_USE_PORT1 | PSE_PAD_USE_PORT2; }
-long CALLBACK PAD2__keypressed() { return 0; }
-void CALLBACK PAD2__registerVibration(void (CALLBACK *callback)(unsigned long, unsigned long)) {}
+s32 CALLBACK PAD2__test(void) { return 0; }
+s32 CALLBACK PAD2__query(void) { return PSE_PAD_USE_PORT1 | PSE_PAD_USE_PORT2; }
+s32 CALLBACK PAD2__keypressed() { return 0; }
+void CALLBACK PAD2__registerVibration(void (CALLBACK *callback)(u32, u32)) {}
 void CALLBACK PAD2__registerCursor(void (CALLBACK *callback)(int, int, int)) {}
 
 #define LoadPad2Sym1(dest, name) \
@@ -587,8 +587,8 @@ void *hNETDriver = NULL;
 
 void CALLBACK NET__setInfo(netInfo *info) {}
 void CALLBACK NET__keypressed(int key) {}
-long CALLBACK NET__configure(void) { return 0; }
-long CALLBACK NET__test(void) { return 0; }
+s32 CALLBACK NET__configure(void) { return 0; }
+s32 CALLBACK NET__test(void) { return 0; }
 void CALLBACK NET__about(void) {}
 
 #define LoadNetSym1(dest, name) \
@@ -633,38 +633,38 @@ static int LoadNETplugin(const char *NETdll) {
 
 void *hSIO1Driver = NULL;
 
-long CALLBACK SIO1__init(void) { return 0; }
-long CALLBACK SIO1__shutdown(void) { return 0; }
-long CALLBACK SIO1__open(void) { return 0; }
-long CALLBACK SIO1__close(void) { return 0; }
-long CALLBACK SIO1__configure(void) { return 0; }
-long CALLBACK SIO1__test(void) { return 0; }
+s32 CALLBACK SIO1__init(void) { return 0; }
+s32 CALLBACK SIO1__shutdown(void) { return 0; }
+s32 CALLBACK SIO1__open(void) { return 0; }
+s32 CALLBACK SIO1__close(void) { return 0; }
+s32 CALLBACK SIO1__configure(void) { return 0; }
+s32 CALLBACK SIO1__test(void) { return 0; }
 void CALLBACK SIO1__about(void) {}
 void CALLBACK SIO1__pause(void) {}
 void CALLBACK SIO1__resume(void) {}
-long CALLBACK SIO1__keypressed(int key) { return 0; }
+s32 CALLBACK SIO1__keypressed(int key) { return 0; }
 void CALLBACK SIO1__writeData8(unsigned char val) {}
 void CALLBACK SIO1__writeData16(unsigned short val) {}
-void CALLBACK SIO1__writeData32(unsigned long val) {}
+void CALLBACK SIO1__writeData32(u32 val) {}
 void CALLBACK SIO1__writeStat16(unsigned short val) {}
-void CALLBACK SIO1__writeStat32(unsigned long val) {}
+void CALLBACK SIO1__writeStat32(u32 val) {}
 void CALLBACK SIO1__writeMode16(unsigned short val) {}
-void CALLBACK SIO1__writeMode32(unsigned long val) {}
+void CALLBACK SIO1__writeMode32(u32 val) {}
 void CALLBACK SIO1__writeCtrl16(unsigned short val) {}
-void CALLBACK SIO1__writeCtrl32(unsigned long val) {}
+void CALLBACK SIO1__writeCtrl32(u32 val) {}
 void CALLBACK SIO1__writeBaud16(unsigned short val) {}
-void CALLBACK SIO1__writeBaud32(unsigned long val) {}
+void CALLBACK SIO1__writeBaud32(u32 val) {}
 unsigned char CALLBACK SIO1__readData8(void) { return 0; }
 unsigned short CALLBACK SIO1__readData16(void) { return 0; }
-unsigned long CALLBACK SIO1__readData32(void) { return 0; }
+u32 CALLBACK SIO1__readData32(void) { return 0; }
 unsigned short CALLBACK SIO1__readStat16(void) { return 0; }
-unsigned long CALLBACK SIO1__readStat32(void) { return 0; }
+u32 CALLBACK SIO1__readStat32(void) { return 0; }
 unsigned short CALLBACK SIO1__readMode16(void) { return 0; }
-unsigned long CALLBACK SIO1__readMode32(void) { return 0; }
+u32 CALLBACK SIO1__readMode32(void) { return 0; }
 unsigned short CALLBACK SIO1__readCtrl16(void) { return 0; }
-unsigned long CALLBACK SIO1__readCtrl32(void) { return 0; }
+u32 CALLBACK SIO1__readCtrl32(void) { return 0; }
 unsigned short CALLBACK SIO1__readBaud16(void) { return 0; }
-unsigned long CALLBACK SIO1__readBaud32(void) { return 0; }
+u32 CALLBACK SIO1__readBaud32(void) { return 0; }
 void CALLBACK SIO1__registerCallback(void (CALLBACK *callback)(void)) {};
 
 void CALLBACK SIO1irq(void) {
@@ -796,11 +796,11 @@ void ReleasePlugins() {
 
 	if (Config.UseNet && hNETDriver != NULL) NET_shutdown();
 
-	if (hCDRDriver != NULL) SysCloseLibrary(hCDRDriver); hCDRDriver = NULL;
-	if (hGPUDriver != NULL) SysCloseLibrary(hGPUDriver); hGPUDriver = NULL;
-	if (hSPUDriver != NULL) SysCloseLibrary(hSPUDriver); hSPUDriver = NULL;
-	if (hPAD1Driver != NULL) SysCloseLibrary(hPAD1Driver); hPAD1Driver = NULL;
-	if (hPAD2Driver != NULL) SysCloseLibrary(hPAD2Driver); hPAD2Driver = NULL;
+	if (hCDRDriver != NULL) { SysCloseLibrary(hCDRDriver); hCDRDriver = NULL; }
+	if (hGPUDriver != NULL) { SysCloseLibrary(hGPUDriver); hGPUDriver = NULL; }
+	if (hSPUDriver != NULL) { SysCloseLibrary(hSPUDriver); hSPUDriver = NULL; }
+	if (hPAD1Driver != NULL) { SysCloseLibrary(hPAD1Driver); hPAD1Driver = NULL; }
+	if (hPAD2Driver != NULL) { SysCloseLibrary(hPAD2Driver); hPAD2Driver = NULL; }
 
 	if (Config.UseNet && hNETDriver != NULL) {
 		SysCloseLibrary(hNETDriver); hNETDriver = NULL;

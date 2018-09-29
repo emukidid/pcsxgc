@@ -75,6 +75,7 @@ extern "C" {
 /* ****************************
 *  Definitions
 ******************************/
+#include <switch/types.h>
 #include <stddef.h>   /* size_t */
 typedef enum { XXH_OK=0, XXH_ERROR } XXH_errorcode;
 
@@ -116,7 +117,7 @@ but also want to avoid symbol collisions with other libraries which may also inc
 you can use XXH_NAMESPACE, to automatically prefix any public symbol from xxhash library
 with the value of XXH_NAMESPACE (therefore, avoid NULL and numeric values).
 
-Note that no change is required within the calling program as long as it includes `xxhash.h` :
+Note that no change is required within the calling program as s32 as it includes `xxhash.h` :
 regular symbol name will be automatically translated by this header.
 */
 #ifdef XXH_NAMESPACE
@@ -190,7 +191,7 @@ Obviously, input must be allocated and read accessible.
 The function returns an error code, with 0 meaning OK, and any other value meaning there is an error.
 
 Finally, a hash value can be produced anytime, by using XXH*_digest().
-This function returns the nn-bits hash as an int or long long.
+This function returns the nn-bits hash as an int or s32 s32.
 
 It's still possible to continue inserting input into the hash state after a digest,
 and generate some new hashes later on, by calling again XXH*_digest().
@@ -215,14 +216,14 @@ XXH_PUBLIC_API XXH32_hash_t XXH32_hashFromCanonical(const XXH32_canonical_t* src
 /*-**********************************************************************
 *  64-bits hash
 ************************************************************************/
-typedef unsigned long long XXH64_hash_t;
+typedef u64 XXH64_hash_t;
 
 /*! XXH64() :
     Calculate the 64-bits hash of sequence of length "len" stored at memory address "input".
     "seed" can be used to alter the result predictably.
     This function runs faster on 64-bits systems, but slower on 32-bits systems (see benchmark).
 */
-XXH_PUBLIC_API XXH64_hash_t XXH64 (const void* input, size_t length, unsigned long long seed);
+XXH_PUBLIC_API XXH64_hash_t XXH64 (const void* input, size_t length, u64 seed);
 
 /*======   Streaming   ======*/
 typedef struct XXH64_state_s XXH64_state_t;   /* incomplete type */
@@ -230,7 +231,7 @@ XXH_PUBLIC_API XXH64_state_t* XXH64_createState(void);
 XXH_PUBLIC_API XXH_errorcode  XXH64_freeState(XXH64_state_t* statePtr);
 XXH_PUBLIC_API void XXH64_copyState(XXH64_state_t* dst_state, const XXH64_state_t* src_state);
 
-XXH_PUBLIC_API XXH_errorcode XXH64_reset  (XXH64_state_t* statePtr, unsigned long long seed);
+XXH_PUBLIC_API XXH_errorcode XXH64_reset  (XXH64_state_t* statePtr, u64 seed);
 XXH_PUBLIC_API XXH_errorcode XXH64_update (XXH64_state_t* statePtr, const void* input, size_t length);
 XXH_PUBLIC_API XXH64_hash_t  XXH64_digest (const XXH64_state_t* statePtr);
 
@@ -268,12 +269,12 @@ struct XXH32_state_s {
 
 #ifndef XXH_NO_LONG_LONG   /* remove 64-bits support */
 struct XXH64_state_s {
-   unsigned long long total_len;
-   unsigned long long v1;
-   unsigned long long v2;
-   unsigned long long v3;
-   unsigned long long v4;
-   unsigned long long mem64[4];   /* buffer defined as U64 for alignment */
+   u64 total_len;
+   u64 v1;
+   u64 v2;
+   u64 v3;
+   u64 v4;
+   u64 mem64[4];   /* buffer defined as U64 for alignment */
    unsigned memsize;
    unsigned reserved[2];          /* never read nor write, will be removed in a future version */
 };   /* typedef'd to XXH64_state_t */

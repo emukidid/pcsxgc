@@ -26,7 +26,7 @@ extern "C" {
 #include "../fileBrowser/fileBrowser.h"
 };
 
-// so the funny thing is the subchannel is actually 98 bytes long, but
+// so the funny thing is the subchannel is actually 98 bytes s32, but
 // the first two are sync/identifier blocks, so 96 is ok for this.
 // that and CloneCD Sub files don't write those two blocks... 
 const int SubchannelFrameSize = 96;

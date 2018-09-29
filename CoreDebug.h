@@ -26,7 +26,7 @@
 #ifndef __CORE_DEBUG_H__
 #define __CORE_DEBUG_H__
 
-#include <gctypes.h>
+#include <switch.h>
 #include <stdint.h>
 
 extern char *disRNameCP0[];
@@ -46,21 +46,21 @@ FILE *gteLog;
 
 //#define LOG_STDOUT
 
-//#define PAD_LOG  __Log
-//#define GTE_LOG  __Log
-//#define CDR_LOG  __Log("%8.8lx %8.8lx: ", psxRegs.pc, psxRegs.cycle); __Log
-
-//#define PSXHW_LOG   __Log("%8.8lx %8.8lx: ", psxRegs.pc, psxRegs.cycle); __Log
-//#define PSXBIOS_LOG __Log("%8.8lx %8.8lx: ", psxRegs.pc, psxRegs.cycle); __Log
-//#define PSXDMA_LOG  __Log
-//#define PSXMEM_LOG  __Log("%8.8lx %8.8lx: ", psxRegs.pc, psxRegs.cycle); __Log
-//#define PSXCPU_LOG  __Log
+//#define PAD_LOG  printf
+//#define GTE_LOG  printf
+//#define CDR_LOG  printf("%8.8lx %8.8lx: ", psxRegs.pc, psxRegs.cycle); printf
+//
+//#define PSXHW_LOG   printf("%8.8lx %8.8lx: ", psxRegs.pc, psxRegs.cycle); printf
+//#define PSXBIOS_LOG printf("%8.8lx %8.8lx: ", psxRegs.pc, psxRegs.cycle); printf
+//#define PSXDMA_LOG  printf
+//#define PSXMEM_LOG  printf("%8.8lx %8.8lx: ", psxRegs.pc, psxRegs.cycle); printf
+//#define PSXCPU_LOG  printf
 
 //#define CDRCMD_DEBUG
 
 #if defined (PSXCPU_LOG) || defined(PSXDMA_LOG) || defined(CDR_LOG) || defined(PSXHW_LOG) || \
 	defined(PSXBIOS_LOG) || defined(PSXMEM_LOG) || defined(GTE_LOG)    || defined(PAD_LOG)
-#define EMU_LOG __Log
+#define EMU_LOG printf
 #endif
 
 #endif /* __DEBUG_H__ */

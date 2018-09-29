@@ -74,6 +74,7 @@ static unsigned char adrH, adrL;
 static unsigned int padst;
 static unsigned int gsdonglest;
 
+#if defined(HW_DOL) || defined(HW_RVL)
 #ifdef HW_RVL
 #include "Gamecube/MEM2.h"
 #else
@@ -81,6 +82,11 @@ static unsigned int gsdonglest;
 #endif
 unsigned char *Mcd1Data = (unsigned char*)MCD1_LO;
 unsigned char *Mcd2Data = (unsigned char*)MCD2_LO;
+#else
+unsigned char Mcd1Data[MCD_SIZE];
+unsigned char Mcd2Data[MCD_SIZE];	
+#endif
+
 char mcd1Written = 0;
 char mcd2Written = 0;
 
@@ -88,7 +94,11 @@ char mcd2Written = 0;
 #define DONGLE_SIZE 0x40 * 0x1000
 
 unsigned int DongleBank;
+#if defined(HW_DOL) || defined(HW_RVL)
 unsigned char *DongleData = (unsigned char*)SIODONGLE_LO;
+#else
+unsigned char DongleData[DONGLE_SIZE];
+#endif
 static int DongleInit;
 
 

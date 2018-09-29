@@ -131,7 +131,7 @@ extern void sec2msf(unsigned int s, u8 *msf);
 
 extern u16 *iso_play_cdbuf;
 extern u16 iso_play_bufptr;
-extern long CALLBACK ISOinit(void);
+extern s32 CALLBACK ISOinit(void);
 extern void CALLBACK SPUirq(void);
 extern SPUregisterCallback SPU_registerCallback;
 
@@ -558,7 +558,7 @@ static void CDXA_Attenuation( s16 *buf, int size, int stereo, int attenuate_type
 }
 
 
-void AddIrqQueue(unsigned char irq, unsigned long ecycle) {
+void AddIrqQueue(unsigned char irq, u32 ecycle) {
 	cdr.Irq = irq;
 	cdr.eCycle = ecycle;
 
@@ -2062,7 +2062,7 @@ void cdrWrite1(unsigned char rt) {
     		cdr.Stat = NoIntr;
     		//AddIrqQueue(cdr.Cmd, 0x800);
 
-				// GameShark CDX CD Player: very long time
+				// GameShark CDX CD Player: very s32 time
 				AddIrqQueue(cdr.Cmd, 0x100000);
         break;
 

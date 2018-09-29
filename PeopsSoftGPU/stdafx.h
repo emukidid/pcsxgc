@@ -71,8 +71,8 @@
 #include <stdlib.h> 
 #include <string.h>
 #include <sys/time.h> 
-#include <GL/gl.h>  
-#include <GL/glx.h>  
+#include <EGL/egl.h>    // EGL library
+#include <EGL/eglext.h> // EGL extensions
 #include <math.h> 
 #include <X11/cursorfont.h> 
 
@@ -82,7 +82,10 @@
 #define CALLBACK
 
 #ifndef __GX__
+#ifdef __SWITCH__
+#else
 #include <SDL/SDL.h>
+#endif
 #endif //!__GX__
 #include <stdio.h> 
 #include <stdlib.h> 

@@ -62,8 +62,10 @@ static int bufcount, bufc;
 //int readnopoll( int port );
 //void xbox_read_sticks( unsigned int port, unsigned char *lx, unsigned char *ly, unsigned char *rx, unsigned char *ry ) ;
 
-long PAD__readPort1(PadDataS* ppad)
+s32 PAD__readPort1(PadDataS* ppad)
 {
+#ifdef __SWITCH__
+#else
 	int Control = 0;
 #if defined(WII) && !defined(NO_BT)
 	//Need to switch between Classic and WiimoteNunchuck if user swapped extensions
@@ -97,12 +99,14 @@ long PAD__readPort1(PadDataS* ppad)
 		ppad->controllerType = PSE_PAD_TYPE_STANDARD; // standard
 		ppad->rightJoyX = ppad->rightJoyY = ppad->leftJoyX = ppad->leftJoyY = 128 ;
 	}
-
+#endif
 	return 0 ;
 }
 
-long PAD__readPort2(PadDataS* ppad)
+s32 PAD__readPort2(PadDataS* ppad)
 {
+#ifdef __SWITCH__
+#else
 	int Control = 1;
 #if defined(WII) && !defined(NO_BT)
 	//Need to switch between Classic and WiimoteNunchuck if user swapped extensions
@@ -136,11 +140,13 @@ long PAD__readPort2(PadDataS* ppad)
 		ppad->controllerType = PSE_PAD_TYPE_STANDARD; // standard
 		ppad->rightJoyX = ppad->rightJoyY = ppad->leftJoyX = ppad->leftJoyY = 128 ;
 	}
-
+#endif
 	return 0 ;
 }
 
 unsigned char _PADstartPoll(PadDataS *pad, unsigned int ismultitap) {
+	int i ;
+	unsigned short value ;
 	bufc = 0;
 
 	if ( ismultitap )

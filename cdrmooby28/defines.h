@@ -92,11 +92,11 @@ typedef unsigned char      UINT8;
 typedef unsigned short int UINT16;
 
 #if !defined _WINDOWS && !defined __CYGWIN32__
-typedef long int    INT32;
-typedef unsigned long int  UINT32;
+typedef s32 int    INT32;
+typedef u32   UINT32;
 #endif
 
-#define	INT64 long long
+#define	INT64 s32 s32
 
 #define FPSE_CDROM  5
 
@@ -130,8 +130,8 @@ typedef struct {
 // cdr stat struct
 struct CdrStat
 {
- unsigned long Type;
- unsigned long Status;
+ u32 Type;
+ u32 Status;
  unsigned char Time[3]; // current playing time
 };
 
@@ -178,13 +178,13 @@ typedef unsigned __int64 u64;
 
 typedef char s8;
 typedef short s16;
-typedef long s32;
-typedef long long s64;
+typedef s32 s32;
+typedef s32 s32 s64;
 
 typedef unsigned char u8;
 typedef unsigned short u16;
-typedef unsigned long u32;
-typedef unsigned long long u64;
+typedef u32 u32;
+typedef u64 u64;
 
 #endif
 #endif

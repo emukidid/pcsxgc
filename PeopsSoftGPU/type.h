@@ -10,17 +10,17 @@
 typedef signed char        INT8;
 typedef signed short int   INT16;
 #ifndef _WINDOWS
-typedef signed long int    INT32;
+typedef s32    INT32;
 #endif
 
 typedef unsigned char      UINT8;
 typedef unsigned short int UINT16;
 #ifndef _WINDOWS
-typedef unsigned long int  UINT32;
+typedef u32   UINT32;
 #endif
 
 #ifdef __GNUC__
-#define INT64 long long
+#define INT64 s64
 #else
 #define INT64    __int64
 #endif

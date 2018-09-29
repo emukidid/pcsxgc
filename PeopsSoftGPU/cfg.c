@@ -92,7 +92,7 @@
 
 #include "stdafx.h"
 
-#ifdef __GX__
+#if defined(__GX__) || defined(__SWITCH__)
 #include "../Gamecube/wiiSXconfig.h"
 #endif
 
@@ -117,7 +117,7 @@
 #include <sys/stat.h>
 #undef FALSE
 #undef TRUE
-#define MAKELONG(low,high)     ((unsigned long)(((unsigned short)(low)) | (((unsigned long)((unsigned short)(high))) << 16)))
+#define MAKELONG(low,high)     ((u32)(((unsigned short)(low)) | (((u32)((unsigned short)(high))) << 16)))
 
 #include "externals.h"
 #include "cfg.h"
@@ -879,7 +879,7 @@ void ReadConfig(void)
 
  // predefines
  iResX=640;iResY=480;
- iColDepth=16;
+ iColDepth=32;
  iWindowMode=0;
  UseFrameLimit=1;
  UseFrameSkip=0;
@@ -1003,7 +1003,7 @@ void ReadConfig(void)
 //
 // Recording options
 //
-#define GetDWORD(xa,xb) size=4;if(RegQueryValueEx(myKey,xa,0,&type,(LPBYTE)&temp,&size)==ERROR_SUCCESS) xb=(unsigned long)temp;
+#define GetDWORD(xa,xb) size=4;if(RegQueryValueEx(myKey,xa,0,&type,(LPBYTE)&temp,&size)==ERROR_SUCCESS) xb=(u32)temp;
 #define GetBINARY(xa,xb) size=sizeof(xb);RegQueryValueEx(myKey,xa,0,&type,(LPBYTE)&xb,&size);
 
      GetDWORD("RecordingMode",				    RECORD_RECORDING_MODE);
@@ -1636,14 +1636,15 @@ void ReadConfig(void)
  // defaults
  iResX=640;iResY=480;
  iWinSize=MAKELONG(iResX,iResY);
- iColDepth=16;
+ iColDepth=32;
  iWindowMode=1;
  iUseScanLines=0;
-#ifndef __GX__
- UseFrameLimit=1;
+#if defined(__GX__) || defined(__SWITCH__)
+ UseFrameLimit=0;
  UseFrameSkip=0;
  iFrameLimit=2;
-#else //!__GX__
+
+#else
  if (frameLimit == FRAMELIMIT_AUTO)
  {
 	 UseFrameLimit=1;
@@ -1655,15 +1656,15 @@ void ReadConfig(void)
 	 iFrameLimit=0;
  }
  UseFrameSkip = frameSkip;
-#endif //__GX__
+#endif
  fFrameRate=60.0f;
  dwCfgFixes=0;
  iUseFixes=0;
  iUseNoStretchBlt=1;
-#ifndef __GX__
+#if defined(__GX__) || defined(__SWITCH__)
  iUseDither=0;
 #endif //!__GX__
- iShowFPS=0;
+ iShowFPS=1;
  bSSSPSXLimit=FALSE;
 
  // read sets
@@ -1704,7 +1705,7 @@ void WriteConfig(void) {
  if (!out) {
   // defaults
   iResX=640;iResY=480;
-  iColDepth=16;
+  iColDepth=32;
   iWindowMode=1;
   iUseScanLines=0;
   UseFrameLimit=0;

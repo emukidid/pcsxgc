@@ -44,13 +44,13 @@
 // ADSR func
 ////////////////////////////////////////////////////////////////////////
 
-static unsigned long int RateTable[160];
+static u32 RateTable[160];
 
 void InitADSR(void)                                    // INIT ADSR
 {
- unsigned long r,rs,rd;int i;
+ u32 r,rs,rd;int i;
 
- memset(RateTable,0,sizeof(unsigned long)*160);        // build the rate table according to Neill's rules (see at bottom of file)
+ memset(RateTable,0,sizeof(u32)*160);        // build the rate table according to Neill's rules (see at bottom of file)
 
  r=3;rs=1;rd=0;
 
@@ -78,7 +78,7 @@ INLINE void StartADSR(SPUCHAN * pChannel)              // MIX ADSR
 
 ////////////////////////////////////////////////////////////////////////
 
-static const unsigned long int TableDisp[] = {
+static const u32 TableDisp[] = {
  -0x18+0+32,-0x18+4+32,-0x18+6+32,-0x18+8+32,       // release/decay
  -0x18+9+32,-0x18+10+32,-0x18+11+32,-0x18+12+32,
 
@@ -88,8 +88,8 @@ static const unsigned long int TableDisp[] = {
 
 INLINE int MixADSR(SPUCHAN *ch)
 {    
- unsigned long int disp;
- signed long int EnvelopeVol = ch->ADSRX.EnvelopeVol;
+ u32 disp;
+ s32 EnvelopeVol = ch->ADSRX.EnvelopeVol;
 
  if(ch->bStop)                                  // should be stopped:
   {                                                    // do release
@@ -414,7 +414,7 @@ OLD adsr mixing according to james' rules... has to be called
 every one millisecond
 
 
- long v,v2,lT,l1,l2,l3;
+ s32 v,v2,lT,l1,l2,l3;
 
  if(s_chan[ch].bStop)                                  // psx wants to stop? -> release phase
   {
@@ -424,7 +424,7 @@ every one millisecond
       {
        s_chan[ch].ADSR.ReleaseStartTime=s_chan[ch].ADSR.lTime;
        s_chan[ch].ADSR.ReleaseVol=s_chan[ch].ADSR.lVolume;
-       s_chan[ch].ADSR.ReleaseTime =                   // --> calc how long does it take to reach the wanted sus level
+       s_chan[ch].ADSR.ReleaseTime =                   // --> calc how s32 does it take to reach the wanted sus level
          (s_chan[ch].ADSR.ReleaseTime*
           s_chan[ch].ADSR.ReleaseVol)/1024;
       }

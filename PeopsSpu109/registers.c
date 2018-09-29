@@ -70,9 +70,9 @@
 // WRITE REGISTERS: called by main emu
 ////////////////////////////////////////////////////////////////////////
 
-void CALLBACK PEOPS_SPUwriteRegister(unsigned long reg, unsigned short val)
+void CALLBACK PEOPS_SPUwriteRegister(u32 reg, unsigned short val)
 {
- const unsigned long r=reg&0xfff;
+ const u32 r=reg&0xfff;
 
  regArea[(r-0xc00)>>1] = val;
 
@@ -95,12 +95,12 @@ void CALLBACK PEOPS_SPUwriteRegister(unsigned long reg, unsigned short val)
        break;
      //------------------------------------------------// start
      case 6:      
-       s_chan[ch].pStart=spuMemC+((unsigned long) val<<3);
+       s_chan[ch].pStart=spuMemC+((u32) val<<3);
        break;
      //------------------------------------------------// level with pre-calcs
      case 8:
        {
-        const unsigned long lval=val;unsigned long lx;
+        const u32 lval=val;u32 lx;
         //---------------------------------------------//
         s_chan[ch].ADSRX.AttackModeExp=(lval&0x8000)?1:0; 
         s_chan[ch].ADSRX.AttackRate = ((lval>>8) & 0x007f)^0x7f;
@@ -132,14 +132,14 @@ void CALLBACK PEOPS_SPUwriteRegister(unsigned long reg, unsigned short val)
           lx = ((1<<(lx))*DECAY_MS)/10000L;
           if(!lx) lx=1;
          }
-        s_chan[ch].ADSR.DecayTime =                   // so calc how long does it take to run from 100% to the wanted sus level
+        s_chan[ch].ADSR.DecayTime =                   // so calc how s32 does it take to run from 100% to the wanted sus level
          (lx*(1024-s_chan[ch].ADSR.SustainLevel))/1024;
        }
       break;
      //------------------------------------------------// adsr times with pre-calcs
      case 10:
       {
-       const unsigned long lval=val;unsigned long lx;
+       const u32 lval=val;u32 lx;
        //----------------------------------------------//
        s_chan[ch].ADSRX.SustainModeExp = (lval&0x8000)?1:0;
        s_chan[ch].ADSRX.SustainIncrease= (lval&0x4000)?0:1;
@@ -186,7 +186,7 @@ void CALLBACK PEOPS_SPUwriteRegister(unsigned long reg, unsigned short val)
      //------------------------------------------------//
      case 14:                                          // loop?
        //WaitForSingleObject(s_chan[ch].hMutex,2000);        // -> no multithread fuckups
-       s_chan[ch].pLoop=spuMemC+((unsigned long) val<<3);
+       s_chan[ch].pLoop=spuMemC+((u32) val<<3);
        s_chan[ch].bIgnoreLoop=1;
        //ReleaseMutex(s_chan[ch].hMutex);                    // -> oki, on with the thread
        break;
@@ -202,7 +202,7 @@ void CALLBACK PEOPS_SPUwriteRegister(unsigned long reg, unsigned short val)
    {
     //-------------------------------------------------//
     case H_SPUaddr:
-      spuAddr = (unsigned long) val<<3;
+      spuAddr = (u32) val<<3;
       break;
     //-------------------------------------------------//
     case H_SPUdata:
@@ -224,10 +224,10 @@ void CALLBACK PEOPS_SPUwriteRegister(unsigned long reg, unsigned short val)
        {rvb.StartAddr=rvb.CurrAddr=0;}
       else
        {
-        const long iv=(unsigned long)val<<2;
+        const s32 iv=(u32)val<<2;
         if(rvb.StartAddr!=iv)
          {
-          rvb.StartAddr=(unsigned long)val<<2;
+          rvb.StartAddr=(u32)val<<2;
           rvb.CurrAddr=rvb.StartAddr;
          }
        }
@@ -235,7 +235,7 @@ void CALLBACK PEOPS_SPUwriteRegister(unsigned long reg, unsigned short val)
     //-------------------------------------------------//
     case H_SPUirqAddr:
       spuIrq = val;
-      pSpuIrq=spuMemC+((unsigned long) val<<3);
+      pSpuIrq=spuMemC+((u32) val<<3);
       break;
     //-------------------------------------------------//
     case H_SPUrvolL:
@@ -375,9 +375,9 @@ void CALLBACK PEOPS_SPUwriteRegister(unsigned long reg, unsigned short val)
 // READ REGISTER: called by main emu
 ////////////////////////////////////////////////////////////////////////
 
-unsigned short CALLBACK PEOPS_SPUreadRegister(unsigned long reg)
+unsigned short CALLBACK PEOPS_SPUreadRegister(u32 reg)
 {
- const unsigned long r=reg&0xfff;
+ const u32 r=reg&0xfff;
 
  iSpuAsyncWait=0;
 

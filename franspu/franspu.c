@@ -1,13 +1,17 @@
 #ifndef ALTERNATESPU
 
+#ifdef __SWITCH__
+#include <switch.h>
+#else
 #include <gccore.h>
+#endif
 #include <malloc.h>
 #include "franspu.h"
 #include "../PSXCommon.h"
 #include "../Decode_XA.h"
 #include "../Gamecube/DEBUG.h"
 
-extern void SoundFeedStreamData(unsigned char* pSound,long lBytes);
+extern void SoundFeedStreamData(unsigned char* pSound,s32 lBytes);
 extern void InitADSR(void);
 extern void SetupSound(void);
 extern void RemoveSound(void);
@@ -33,8 +37,8 @@ unsigned int    iVolume = 3;
 typedef struct
 {
 	char          szSPUName[8];
-	unsigned long ulFreezeVersion;
-	unsigned long ulFreezeSize;
+	u32 ulFreezeVersion;
+	u32 ulFreezeSize;
 	unsigned char cSPUPort[0x200];
 	//unsigned char cSPURam[0x80000];
 	xa_decode_t   xaS;     
@@ -43,11 +47,11 @@ typedef struct
 typedef struct
 {
  unsigned short  spuIrq;
- unsigned long   pSpuIrq;
- unsigned long   dummy0;
- unsigned long   dummy1;
- unsigned long   dummy2;
- unsigned long   dummy3;
+ u32   pSpuIrq;
+ u32   dummy0;
+ u32   dummy1;
+ u32   dummy2;
+ u32   dummy3;
 
  SPUCHAN  s_chan[MAXCHAN];   
 
@@ -62,11 +66,11 @@ int	iDisStereo=0;
 SPUCHAN         s_chan[MAXCHAN+1];                     // channel + 1 infos (1 is security for fmod handling)
 REVERBInfo      rvb;
 
-unsigned long   dwNoiseVal=1;                          // global noise generator
+u32   dwNoiseVal=1;                          // global noise generator
 unsigned short  spuCtrl=0;                             // some vars to store psx reg infos
 unsigned short  spuStat=0;
 unsigned short  spuIrq=0;             
-unsigned long   spuAddr=0xffffffff;                    // address into spu mem
+u32   spuAddr=0xffffffff;                    // address into spu mem
 int             bEndThread=0;                          // thread handlers
 int             bSpuInit=0;
 int             bSPUIsOpen=0;
@@ -76,7 +80,7 @@ int SSumL[NSSIZE];
 int iFMod[NSSIZE];
 short * pS;
 
-extern void FRAN_SPU_writeRegister(unsigned long reg, unsigned short val);
+extern void FRAN_SPU_writeRegister(u32 reg, unsigned short val);
 
 // START SOUND... called by main thread to setup a new sound on a channel
 void StartSound(SPUCHAN * pChannel)
@@ -316,7 +320,7 @@ void SPU_async_1ms(SPUCHAN * pChannel,int *SSumL, int *SSumR, int *iFMod)
 	}
 }
 
-void FRAN_SPU_async(unsigned long cycle)
+void FRAN_SPU_async(u32 cycle)
 {
 	if( iSoundMuted > 0 ) return;
 	if(SoundGetBytesBuffered() > 8*1024) return;
@@ -326,9 +330,6 @@ void FRAN_SPU_async(unsigned long cycle)
 		if(iSpuAsyncWait<=64) return;
 		iSpuAsyncWait=0;
 	}
-#ifdef PROFILE
-	start_section(AUDIO_SECTION);
-#endif
 	int i;
 	int t=(cycle?32:40); /* cycle 1=NTSC 16 ms, 0=PAL 20 ms; do two frames */for (i=0;i<t;i++)
 		SPU_async_1ms(s_chan,SSumL,SSumR,iFMod); // Calculates 1 ms of sound
@@ -337,26 +338,17 @@ void FRAN_SPU_async(unsigned long cycle)
 	pSpuBuffer = spuBuffer[whichBuffer =
 			((whichBuffer + 1) % NUM_SPU_BUFFERS)];
 	pS=(short *)pSpuBuffer;
-#ifdef PROFILE
-	end_section(AUDIO_SECTION);
-#endif
 }
 
 // XA AUDIO
 void FRAN_SPU_playADPCMchannel(xa_decode_t *xap)
 {
-#ifdef PROFILE
-	start_section(XA_SECTION);
-#endif
 	if ((iUseXA)&&(xap)&&(xap->freq))
 		FeedXA(xap); // call main XA feeder
-#ifdef PROFILE
-	end_section(XA_SECTION);
-#endif
 }
 
 // SPUINIT: this func will be called first by the main emu
-long FRAN_SPU_init(void)
+s32 FRAN_SPU_init(void)
 {
 	spuMemC=(unsigned char *)spuMem;                      // just small setup
 	memset((void *)s_chan,0,MAXCHAN*sizeof(SPUCHAN));
@@ -384,7 +376,7 @@ s32 FRAN_SPU_open(void)
 	
 	//Setup streams
 	pSpuBuffer = spuBuffer[whichBuffer];            // alloc mixing buffer
-	XAStart = (unsigned long *)memalign(32,44100*4);           // alloc xa buffer
+	XAStart = (u32 *)memalign(32,44100*4);           // alloc xa buffer
 	XAPlay  = XAStart;
 	XAFeed  = XAStart;
 	XAEnd   = XAStart + 44100;
@@ -408,7 +400,7 @@ s32 FRAN_SPU_open(void)
 }
 
 // SPUCLOSE: called before shutdown
-long FRAN_SPU_close(void)
+s32 FRAN_SPU_close(void)
 {
 	if(!bSPUIsOpen) return 0;                             // some security
 	bSPUIsOpen=0;                                         // no more open
@@ -424,7 +416,7 @@ long FRAN_SPU_close(void)
 }
 
 // SPUSHUTDOWN: called by main emu on final exit
-long FRAN_SPU_shutdown(void)
+s32 FRAN_SPU_shutdown(void)
 {
 	return PSE_SPU_ERR_SUCCESS;
 }
@@ -446,9 +438,9 @@ void LoadStateV5(SPUFreeze_t * pF)
   for(i=0;i<MAXCHAN;i++) {
     memcpy((void *)&s_chan[i],(void *)&pFO->s_chan[i],sizeof(SPUCHAN));
     
-    s_chan[i].pStart+=(unsigned long)spuMemC;
-    s_chan[i].pCurr+=(unsigned long)spuMemC;
-    s_chan[i].pLoop+=(unsigned long)spuMemC;
+    s_chan[i].pStart+=(u32)spuMemC;
+    s_chan[i].pCurr+=(u32)spuMemC;
+    s_chan[i].pLoop+=(u32)spuMemC;
     s_chan[i].iIrqDone=0;
   }
 }
@@ -484,7 +476,7 @@ SPUFREEZE: Used for savestates
    Save mode == 1
    Load mode == 0
 */
-long FRAN_SPU_freeze(unsigned long ulFreezeMode,SPUFreeze_t * pF)
+s32 FRAN_SPU_freeze(u32 ulFreezeMode,SPUFreeze_t * pF)
 {
   int i;SPUOSSFreeze_t * pFO;
   if(!pF) return 0;                                     // first check
@@ -515,19 +507,19 @@ long FRAN_SPU_freeze(unsigned long ulFreezeMode,SPUFreeze_t * pF)
     pFO->spuIrq=spuIrq;
    
     if(pSpuIrq) {
-      pFO->pSpuIrq  = (unsigned long)pSpuIrq-(unsigned long)spuMemC;
+      pFO->pSpuIrq  = (u32)pSpuIrq-(u32)spuMemC;
     }
 
     for(i=0;i<MAXCHAN;i++) {
       memcpy((void *)&pFO->s_chan[i],(void *)&s_chan[i],sizeof(SPUCHAN));
       if(pFO->s_chan[i].pStart) {
-        pFO->s_chan[i].pStart-=(unsigned long)spuMemC;
+        pFO->s_chan[i].pStart-=(u32)spuMemC;
       }
       if(pFO->s_chan[i].pCurr) {
-        pFO->s_chan[i].pCurr-=(unsigned long)spuMemC;
+        pFO->s_chan[i].pCurr-=(u32)spuMemC;
       }
       if(pFO->s_chan[i].pLoop) {
-        pFO->s_chan[i].pLoop-=(unsigned long)spuMemC;
+        pFO->s_chan[i].pLoop-=(u32)spuMemC;
       }
     }
 
@@ -590,7 +582,7 @@ void FRAN_SPU_About() {
 	
 }
 
-long FRAN_SPU_test() {
+s32 FRAN_SPU_test() {
 	return PSE_SPU_ERR_SUCCESS;
 }
 

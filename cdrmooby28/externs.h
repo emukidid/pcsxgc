@@ -24,24 +24,24 @@ extern "C"
 {
 
 char * CALLBACK PSEgetLibName(void);
-unsigned long CALLBACK PSEgetLibType(void);
-unsigned long CALLBACK PSEgetLibVersion(void);
+u32 CALLBACK PSEgetLibType(void);
+u32 CALLBACK PSEgetLibVersion(void);
 
 void CALLBACK Mooby2CDRabout(void);
-long CALLBACK Mooby2CDRtest(void);
-long CALLBACK Mooby2CDRconfigure(void);
-long CALLBACK Mooby2CDRclose(void);
-long CALLBACK Mooby2CDRopen(void);
-long CALLBACK Mooby2CDRshutdown(void);
-long CALLBACK Mooby2CDRplay(unsigned char * sector);
-long CALLBACK Mooby2CDRstop(void);
-long CALLBACK Mooby2CDRgetStatus(struct CdrStat *stat) ;
+s32 CALLBACK Mooby2CDRtest(void);
+s32 CALLBACK Mooby2CDRconfigure(void);
+s32 CALLBACK Mooby2CDRclose(void);
+s32 CALLBACK Mooby2CDRopen(void);
+s32 CALLBACK Mooby2CDRshutdown(void);
+s32 CALLBACK Mooby2CDRplay(unsigned char * sector);
+s32 CALLBACK Mooby2CDRstop(void);
+s32 CALLBACK Mooby2CDRgetStatus(struct CdrStat *stat) ;
 char CALLBACK Mooby2CDRgetDriveLetter(void);
-long CALLBACK Mooby2CDRinit(void);
-long CALLBACK Mooby2CDRgetTN(unsigned char *buffer);
+s32 CALLBACK Mooby2CDRinit(void);
+s32 CALLBACK Mooby2CDRgetTN(unsigned char *buffer);
 unsigned char * CALLBACK Mooby2CDRgetBufferSub(void);
-long CALLBACK Mooby2CDRgetTD(unsigned char track, unsigned char *buffer);
-long CALLBACK Mooby2CDRreadTrack(unsigned char *time);
+s32 CALLBACK Mooby2CDRgetTD(unsigned char track, unsigned char *buffer);
+s32 CALLBACK Mooby2CDRreadTrack(unsigned char *time);
 unsigned char * CALLBACK Mooby2CDRgetBuffer(void);
 
 /* FPSE stuff, we don't use it in WiiSX */

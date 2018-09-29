@@ -2,6 +2,10 @@
 #include "DrawString.h"
 #include "DrawStringFont.h"
 
+#if defined(__GX__) || defined(__SWITCH__)
+#include "../Gamecube/wiiSXconfig.h"
+#endif
+
 #define CHAR_W	10
 #define CHAR_H	14
 
@@ -82,7 +86,7 @@ static void drawChar24(char *ptr, int lPitch, char c, int mw, int mh, int mode) 
 static void drawChar32(char *ptr, int lPitch, char c, int mw, int mh, int mode) {
 	int x, y, w, h;
 	int fx, fy;
-	unsigned long *optr;
+	u32 *optr;
 	char *fptr;
 
 	if (mw > CHAR_W) w = CHAR_W; else w = mw;
@@ -93,7 +97,7 @@ static void drawChar32(char *ptr, int lPitch, char c, int mw, int mh, int mode) 
 	fy = font_tc[c*4+1];
 
 	for (y=0; y<h; y++) {
-		optr = (unsigned long*)(ptr + y * lPitch);
+		optr = (u32*)(ptr + y * lPitch);
 		fptr = (char*) font + (fy + y) * 256 + fx;
 		for (x=0; x<w; x++) {
 			if (fptr[x]) optr[x] = 0x00ff00;

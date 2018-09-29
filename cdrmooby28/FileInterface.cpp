@@ -29,7 +29,7 @@ http://mooby.psxfanatics.com
 #include "unrar/unrarlib.h"
 bool RARFileInterface::alreadyUncompressed = false;
 unsigned char* RARFileInterface::theFile = NULL;
-unsigned long RARFileInterface::length = 0;
+u32 RARFileInterface::length = 0;
 #endif
 
 extern "C" {
@@ -47,8 +47,8 @@ using namespace std;
 
 extern Preferences prefs;
 
-FileInterface::FileInterface(const unsigned long requestedFrames, 
-      const unsigned long requiredFrames)
+FileInterface::FileInterface(const u32 requestedFrames, 
+      const u32 requiredFrames)
 {
   
   bufferFrames = 0;

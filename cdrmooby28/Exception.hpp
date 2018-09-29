@@ -36,7 +36,7 @@ public:
    Exception(const std::string& str)
       : line(0) {error.push_back(str);}
 
-   inline void setLine(const unsigned long l) {line = l;}
+   inline void setLine(const u32 l) {line = l;}
    inline void setFile(const std::string& str) {file = str;}
    inline void addText(const std::string& str) {error.push_back(str);}
    inline std::string text() {std::ostringstream str; str << *this;  return str.str();}
@@ -44,7 +44,7 @@ public:
    inline friend std::ostream& operator<<(std::ostream& o, const Exception& m);
 
 private:
-   unsigned long line;
+   u32 line;
    std::string file;
    std::vector<std::string> error;
 };

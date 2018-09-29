@@ -18,7 +18,6 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA 02111-1307 USA.           *
  ***************************************************************************/
 
-#include "./GameCube/DEBUG.h"
 #include "psxcommon.h"
 #include "plugins.h"
 #include "cdrom.h"
@@ -28,11 +27,17 @@
 #include <process.h>
 #include <windows.h>
 #else
+
+#ifdef __SWITCH__
+#include <switch.h>
+#include <errno.h>
+#else
 #include <ogc/lwp.h>
 #include <sys/time.h>
 #define PLAY_STACK_SIZE 1024 // MEM: I could get away with a smaller stack
 static char  play_stack[PLAY_STACK_SIZE];
 #define PLAY_PRIORITY 100
+#endif
 #endif
 
 static FILE *cdHandle = NULL;
@@ -58,7 +63,10 @@ static boolean isMode1ISO = FALSE;
 #ifdef _WIN32
 static HANDLE threadid;
 #else
+#ifdef __SWITCH__
+#else
 static lwp_t threadid;
+#endif
 #endif
 static unsigned int initial_offset = 0;
 static volatile boolean playing = FALSE;
@@ -66,11 +74,11 @@ static boolean cddaBigEndian = FALSE;
 static volatile unsigned int cddaCurOffset = 0;
 
 char* CALLBACK CDR__getDriveLetter(void);
-long CALLBACK CDR__configure(void);
-long CALLBACK CDR__test(void);
+s32 CALLBACK CDR__configure(void);
+s32 CALLBACK CDR__test(void);
 void CALLBACK CDR__about(void);
-long CALLBACK CDR__setfilename(char *filename);
-long CALLBACK CDR__getStatus(struct CdrStat *stat);
+s32 CALLBACK CDR__setfilename(char *filename);
+s32 CALLBACK CDR__getStatus(struct CdrStat *stat);
 
 extern void *hCDRDriver;
 
@@ -128,7 +136,7 @@ static void tok2msf(char *time, char *msf) {
 }
 
 #ifndef _WIN32
-static long GetTickCount(void) {
+static s32 GetTickCount(void) {
 	static time_t		initial_time = 0;
 	struct timeval		now;
 
@@ -154,8 +162,7 @@ static void playthread(void *param)
 static void *playthread(void *param)
 #endif
 {
-
-	long			d, t, i, s;
+	s32			d, t, i, s;
 	unsigned char	tmp;
 	int sec;
 
@@ -165,10 +172,7 @@ static void *playthread(void *param)
 	iso_play_bufptr = 0;
 
 	while (playing) {
-#ifdef PROFILE
-	start_section(CDDA_SECTION);
-#endif
-		d = t - (long)GetTickCount();
+		d = t - (s32)GetTickCount();
 		if (d <= 0) {
 			d = 1;
 		}
@@ -279,10 +283,8 @@ static void *playthread(void *param)
 		// Vib Ribbon: decoded buffer IRQ
 		iso_play_cdbuf = (u16*)sndbuffer;
 		iso_play_bufptr = 0;
-#ifdef PROFILE
-	end_section(CDDA_SECTION);
-#endif
 	}
+
 #ifdef _WIN32
 	_endthread();
 #else
@@ -301,7 +303,10 @@ static void stopCDDA() {
 #ifdef _WIN32
 	WaitForSingleObject(threadid, INFINITE);
 #else
+#ifdef __SWITCH__
+#else
 	LWP_JoinThread(threadid, NULL);
+#endif
 #endif
 
 	if (cddaHandle != NULL) {
@@ -335,7 +340,10 @@ static void startCDDA(unsigned int offset) {
 #ifdef _WIN32
 	threadid = (HANDLE)_beginthread(playthread, 0, NULL);
 #else
+#ifdef __SWITCH__
+#else
 	LWP_CreateThread(&threadid, playthread, NULL, play_stack, PLAY_STACK_SIZE, PLAY_PRIORITY);
+#endif
 #endif
 }
 
@@ -702,23 +710,21 @@ static int opensubfile(const char *isoname) {
 	else {
 		return -1;
 	}
-
 	subHandle = fopen(subname, "rb");
 	if (subHandle == NULL) {
 		return -1;
 	}
-
 	return 0;
 }
 
-long CALLBACK ISOinit(void) {
+s32 CALLBACK ISOinit(void) {
 	assert(cdHandle == NULL);
 	assert(subHandle == NULL);
 
 	return 0; // do nothing
 }
 
-long CALLBACK ISOshutdown(void) {
+s32 CALLBACK ISOshutdown(void) {
 	if (cdHandle != NULL) {
 		fclose(cdHandle);
 		cdHandle = NULL;
@@ -744,7 +750,7 @@ static void PrintTracks(void) {
 
 // This function is invoked by the front-end when opening an ISO
 // file for playback
-long CALLBACK ISOopen(void) {
+s32 CALLBACK ISOopen(void) {
 	u32 modeTest = 0;
 
 	if (cdHandle != NULL) {
@@ -796,7 +802,7 @@ long CALLBACK ISOopen(void) {
 	return 0;
 }
 
-long CALLBACK ISOclose(void) {
+s32 CALLBACK ISOclose(void) {
 	if (cdHandle != NULL) {
 		fclose(cdHandle);
 		cdHandle = NULL;
@@ -813,7 +819,7 @@ long CALLBACK ISOclose(void) {
 // buffer:
 //  byte 0 - start track
 //  byte 1 - end track
-long CALLBACK ISOgetTN(unsigned char *buffer) {
+s32 CALLBACK ISOgetTN(unsigned char *buffer) {
 	buffer[0] = 1;
 
 	if (numtracks > 0) {
@@ -831,7 +837,7 @@ long CALLBACK ISOgetTN(unsigned char *buffer) {
 //  byte 0 - frame
 //  byte 1 - second
 //  byte 2 - minute
-long CALLBACK ISOgetTD(unsigned char track, unsigned char *buffer) {
+s32 CALLBACK ISOgetTD(unsigned char track, unsigned char *buffer) {
 	if( track == 0 ) {
 		unsigned int pos, size;
 		unsigned char time[3];
@@ -884,13 +890,10 @@ static void DecodeRawSubData(void) {
 // read track
 // time: byte 0 - minute; byte 1 - second; byte 2 - frame
 // uses bcd format
-long CALLBACK ISOreadTrack(unsigned char *time) {
+s32 CALLBACK ISOreadTrack(unsigned char *time) {
 	if (cdHandle == NULL) {
 		return -1;
 	}
-#ifdef PROFILE
-	start_section(CDR_SECTION);
-#endif
 
 	if (subChanMixed) {
 		fseek(cdHandle, MSF2SECT(btoi(time[0]), btoi(time[1]), btoi(time[2])) * (CD_FRAMESIZE_RAW + SUB_FRAMESIZE), SEEK_SET);
@@ -920,9 +923,6 @@ long CALLBACK ISOreadTrack(unsigned char *time) {
 			if (subChanRaw) DecodeRawSubData();
 		}
 	}
-#ifdef PROFILE
-	end_section(CDR_SECTION);
-#endif
 	return 0;
 }
 
@@ -934,7 +934,7 @@ unsigned char * CALLBACK ISOgetBuffer(void) {
 // plays cdda audio
 // sector: byte 0 - minute; byte 1 - second; byte 2 - frame
 // does NOT uses bcd format
-long CALLBACK ISOplay(unsigned char *time) {
+s32 CALLBACK ISOplay(unsigned char *time) {
 	if (SPU_playCDDAchannel != NULL) {
 		if (subChanMixed) {
 			startCDDA(MSF2SECT(time[0], time[1], time[2]) * (CD_FRAMESIZE_RAW + SUB_FRAMESIZE));
@@ -947,7 +947,7 @@ long CALLBACK ISOplay(unsigned char *time) {
 }
 
 // stops cdda audio
-long CALLBACK ISOstop(void) {
+s32 CALLBACK ISOstop(void) {
 	stopCDDA();
 	return 0;
 }
@@ -961,11 +961,9 @@ unsigned char* CALLBACK ISOgetBufferSub(void) {
 	return NULL;
 }
 
-long CALLBACK ISOgetStatus(struct CdrStat *stat) {
+s32 CALLBACK ISOgetStatus(struct CdrStat *stat) {
 	u32 sect;
-#ifdef PROFILE
-	start_section(CDR_SECTION);
-#endif
+	
 	CDR__getStatus(stat);
 	
 	if (playing) {
@@ -978,19 +976,15 @@ long CALLBACK ISOgetStatus(struct CdrStat *stat) {
 	
 	// BIOS - boot ID (CD type)
 	stat->Type = ti[1].type;
-#ifdef PROFILE
-	end_section(CDR_SECTION);
-#endif
+	
 	return 0;
 }
 
 // read CDDA sector into buffer
-long CALLBACK ISOreadCDDA(unsigned char m, unsigned char s, unsigned char f, unsigned char *buffer) {
+s32 CALLBACK ISOreadCDDA(unsigned char m, unsigned char s, unsigned char f, unsigned char *buffer) {
 	unsigned char msf[3] = {m, s, f};
 	unsigned char *p;
-#ifdef PROFILE
-	start_section(CDR_SECTION);
-#endif
+
 	msf[0] = itob(msf[0]);
 	msf[1] = itob(msf[1]);
 	msf[2] = itob(msf[2]);
@@ -1012,9 +1006,7 @@ long CALLBACK ISOreadCDDA(unsigned char m, unsigned char s, unsigned char f, uns
 			buffer[i * 2 + 1] = tmp;
 		}
 	}
-#ifdef PROFILE
-	end_section(CDR_SECTION);
-#endif
+
 	return 0;
 }
 

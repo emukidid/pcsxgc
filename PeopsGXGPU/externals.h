@@ -112,11 +112,11 @@
 #define FALSE 0
 #define TRUE  1
 #define LOWORD(l)           ((unsigned short)(l))
-#define HIWORD(l)           ((unsigned short)(((unsigned long)(l) >> 16) & 0xFFFF))
+#define HIWORD(l)           ((unsigned short)(((u32)(l) >> 16) & 0xFFFF))
 #define max(a,b)            (((a) > (b)) ? (a) : (b))
 #define min(a,b)            (((a) < (b)) ? (a) : (b))
-#define DWORD unsigned long
-#define __int64 long long int 
+#define DWORD u32
+#define __int64 s32 s32 int 
 
 typedef struct RECTTAG
 {
@@ -143,8 +143,8 @@ typedef struct VRAMLOADTAG
 
 typedef struct PSXPOINTTAG
 {
- long x;
- long y;
+ s32 x;
+ s32 y;
 } PSXPoint_t;
 
 typedef struct PSXSPOINTTAG
@@ -181,19 +181,19 @@ typedef struct PSXDISPLAYTAG
  PSXPoint_t  DisplayPosition;
  PSXPoint_t  DisplayEnd;
  
- long        Double;
- long        Height;
- long        PAL;
- long        InterlacedNew;
- long        Interlaced;
- long        InterlacedTest;
- long        RGB24New;
- long        RGB24;
+ s32        Double;
+ s32        Height;
+ s32        PAL;
+ s32        InterlacedNew;
+ s32        Interlaced;
+ s32        InterlacedTest;
+ s32        RGB24New;
+ s32        RGB24;
  PSXSPoint_t DrawOffset;
  PSXRect_t   DrawArea;
  PSXPoint_t  GDrawOffset;
  PSXPoint_t  CumulOffset;
- long        Disabled;
+ s32        Disabled;
  PSXRect_t   Range;
 } PSXDisplay_t;
 
@@ -212,7 +212,7 @@ typedef struct OGLVertexTag
 COLTAG
   {
    unsigned char col[4];
-   unsigned long lcol;
+   u32 lcol;
   } c;
 
 } OGLVertex;
@@ -226,7 +226,7 @@ typedef union EXShortTag
 typedef union EXLongTag
 {
  unsigned char c[4];
- unsigned long l;
+ u32 l;
  EXShort       s[2];
 } EXLong;
 
@@ -283,13 +283,13 @@ extern int            iSetMask;
 extern int            iDepthFunc;
 extern BOOL           bCheckMask;
 extern unsigned short sSetMask;
-extern unsigned long  lSetMask;
+extern u32  lSetMask;
 extern int            iShowFPS;
 extern BOOL           bSetClip;
 extern int            iForceVSync;
 extern int            iUseExts;
 extern int            iUsePalTextures;
-extern unsigned long  gTexScanName;
+extern u32  gTexScanName;
 
 #endif
 
@@ -297,8 +297,8 @@ extern unsigned long  gTexScanName;
 
 #ifndef _IN_SOFT
 
-extern long           GlobalTextAddrX,GlobalTextAddrY,GlobalTextTP;
-extern long           GlobalTextREST,GlobalTextABR,GlobalTextPAGE;
+extern s32           GlobalTextAddrX,GlobalTextAddrY,GlobalTextTP;
+extern s32           GlobalTextREST,GlobalTextABR,GlobalTextPAGE;
 extern short          ly0,lx0,ly1,lx1,ly2,lx2,ly3,lx3;
 extern short          g_m1;
 extern short          g_m2;
@@ -340,22 +340,22 @@ extern unsigned char ubGloAlpha;
 extern short         sSprite_ux2;
 extern short         sSprite_vy2;
 extern BOOL          bRenderFrontBuffer;
-extern unsigned long ulOLDCOL;
-extern unsigned long ulClutID;
+extern u32 ulOLDCOL;
+extern u32 ulClutID;
 extern void (*primTableJ[256])(unsigned char *);
 extern void (*primTableSkip[256])(unsigned char *);
 extern unsigned short  usMirror;
-extern unsigned long dwCfgFixes;
-extern unsigned long dwActFixes;
-extern unsigned long dwEmuFixes;
+extern u32 dwCfgFixes;
+extern u32 dwActFixes;
+extern u32 dwEmuFixes;
 extern BOOL          bUseFixes;
 extern int           iSpriteTex;
 extern int           iDrawnSomething;
 
-extern long drawX;
-extern long drawY;
-extern long drawW;
-extern long drawH;
+extern s32 drawX;
+extern s32 drawY;
+extern s32 drawW;
+extern s32 drawH;
 extern short sxmin;
 extern short sxmax;
 extern short symin;
@@ -372,10 +372,10 @@ extern GLint          giWantedRGBA;
 extern GLint          giWantedFMT;
 extern GLint          giWantedTYPE;
 extern void           (*LoadSubTexFn) (int,int,short,short);
-extern long           GlobalTexturePage;
-extern unsigned long  (*TCF[]) (unsigned long);
+extern s32           GlobalTexturePage;
+extern u32  (*TCF[]) (u32);
 extern unsigned short (*PTCF[]) (unsigned short);
-extern unsigned long  (*PalTexturedColourFn) (unsigned long);
+extern u32  (*PalTexturedColourFn) (u32);
 extern BOOL           bUseFastMdec;
 extern BOOL           bUse15bitMdec;
 extern int            iFrameTexType;
@@ -410,32 +410,32 @@ extern char           szDispBuf[];
 extern char           szGPUKeys[];
 extern PSXDisplay_t   PSXDisplay;
 extern PSXDisplay_t   PreviousPSXDisplay;
-extern unsigned long  ulKeybits;
+extern u32  ulKeybits;
 extern TWin_t         TWin;
 extern BOOL           bDisplayNotSet;
-extern long           lGPUstatusRet;
+extern s32           lGPUstatusRet;
 extern short          imageX0,imageX1;
 extern short          imageY0,imageY1;
-extern long           lClearOnSwap,lClearOnSwapColor;
+extern s32           lClearOnSwap,lClearOnSwapColor;
 extern unsigned char  * psxVub;
 extern signed char    * psxVsb;
 extern unsigned short * psxVuw;
 extern signed short   * psxVsw;
-extern unsigned long  * psxVul;
-extern signed long    * psxVsl;
+extern u32  * psxVul;
+extern s32  * psxVsl;
 extern GLfloat        gl_z;
 extern BOOL           bNeedRGB24Update;
 extern BOOL           bChangeWinMode;
 extern GLuint         uiScanLine;
 extern int            iUseScanLines;
-extern long           lSelectedSlot;
+extern s32           lSelectedSlot;
 extern int            iScanBlend;
 extern BOOL           bInitCap;
 extern int            iBlurBuffer;
 extern int            iLastRGB24;
 extern int            iRenderFVR;
 extern int            iNoScreenSaver;
-extern unsigned long  ulGPUInfoVals[];
+extern u32  ulGPUInfoVals[];
 extern BOOL           bNeedInterlaceUpdate;
 extern BOOL           bNeedWriteUpload;
 extern BOOL           bSkipNextFrame;
@@ -451,7 +451,7 @@ extern int bFullScreen;
 
 #ifndef _IN_MENU
 
-extern unsigned long  dwCoreFlags;
+extern u32  dwCoreFlags;
 extern GLuint         gTexPicName;
 extern PSXPoint_t     ptCursorPoint[];
 extern unsigned short usCursorActive;
@@ -486,7 +486,7 @@ extern float          fps_cur;
 
 #ifndef _IN_KEY
 
-extern unsigned long  ulKeybits;
+extern u32  ulKeybits;
 
 #endif
 
@@ -494,7 +494,7 @@ extern unsigned long  ulKeybits;
 
 #ifndef _IN_ZN
 
-extern unsigned long dwGPUVersion;
+extern u32 dwGPUVersion;
 extern int           iGPUHeight;
 extern int           iGPUHeightMask;
 extern int           GlobalTextIL;

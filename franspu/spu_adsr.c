@@ -1,14 +1,14 @@
 
 #include "franspu.h"
 
-static unsigned long int RateTable[160];
+static u32 RateTable[160];
 
 /* INIT ADSR */
 void InitADSR(void)
 {
- 	unsigned long r=3,rs=1,rd=0;
+ 	u32 r=3,rs=1,rd=0;
  	int i;
- 	memset(RateTable,0,sizeof(unsigned long)*160);        // build the rate table according to Neill's rules (see at bottom of file)
+ 	memset(RateTable,0,sizeof(u32)*160);        // build the rate table according to Neill's rules (see at bottom of file)
 
  	for(i=32;i<160;i++)                                   // we start at pos 32 with the real values... everything before is 0
   	{
@@ -27,7 +27,7 @@ void InitADSR(void)
   	}
 }
 
-static const unsigned long int TableDisp[] = {
+static const u32 TableDisp[] = {
  -0x18+0+32,-0x18+4+32,-0x18+6+32,-0x18+8+32,       // release/decay
  -0x18+9+32,-0x18+10+32,-0x18+11+32,-0x18+12+32,
 
@@ -39,8 +39,8 @@ static const unsigned long int TableDisp[] = {
 /* MIX ADSR */
 int MixADSR(SPUCHAN *ch)
 {    
- 	unsigned long int disp;
- 	signed long int EnvelopeVol = ch->ADSRX.EnvelopeVol;
+ 	u32 disp;
+ 	s32 EnvelopeVol = ch->ADSRX.EnvelopeVol;
  	
  	if(ch->bStop)                                  // should be stopped:
   	{                                                    // do release

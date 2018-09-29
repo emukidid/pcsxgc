@@ -75,8 +75,8 @@ void compressIt(FileInterface* cd,
    cd->setCacheMode(FileInterface::oldMode);
    CDTime start(0,2,0);
 		// these hold the info needed for generating the .index or .table file
-   vector<unsigned long> indexTable;
-   vector<unsigned long> sizeTable;
+   vector<u32> indexTable;
+   vector<u32> sizeTable;
 
 		// open the output file
    std::ofstream outfile(outputFileName.c_str(), ios::binary);

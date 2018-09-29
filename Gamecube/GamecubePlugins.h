@@ -38,25 +38,25 @@ typedef struct {
 #define NUM_PLUGINS 8
 
 /* SPU NULL */
-//typedef long (* SPUopen)(void);
-void NULL_SPUwriteRegister(unsigned long reg, unsigned short val);
-unsigned short NULL_SPUreadRegister(unsigned long reg);
+//typedef s32 (* SPUopen)(void);
+void NULL_SPUwriteRegister(u32 reg, unsigned short val);
+unsigned short NULL_SPUreadRegister(u32 reg);
 unsigned short NULL_SPUreadDMA(void);
 void NULL_SPUwriteDMA(unsigned short val);
 void NULL_SPUwriteDMAMem(unsigned short * pusPSXMem,int iSize);
 void NULL_SPUreadDMAMem(unsigned short * pusPSXMem,int iSize);
 void NULL_SPUplayADPCMchannel(xa_decode_t *xap);
-long NULL_SPUinit(void);
-long NULL_SPUopen(void);
+s32 NULL_SPUinit(void);
+s32 NULL_SPUopen(void);
 void NULL_SPUsetConfigFile(char * pCfg);
-long NULL_SPUclose(void);
-long NULL_SPUshutdown(void);
-long NULL_SPUtest(void);
+s32 NULL_SPUclose(void);
+s32 NULL_SPUshutdown(void);
+s32 NULL_SPUtest(void);
 void NULL_SPUregisterCallback(void (*callback)(void));
 void NULL_SPUregisterCDDAVolume(void (*CDDAVcallback)(unsigned short,unsigned short));
 char * NULL_SPUgetLibInfos(void);
 void NULL_SPUabout(void);
-long NULL_SPUfreeze(unsigned long ulFreezeMode,SPUFreeze_t *);
+s32 NULL_SPUfreeze(u32 ulFreezeMode,SPUFreeze_t *);
 
 /* SPU PEOPS 1.9 */
 //dma.c
@@ -65,42 +65,42 @@ void CALLBACK PEOPS_SPUreadDMAMem(unsigned short * pusPSXMem,int iSize);
 void CALLBACK PEOPS_SPUwriteDMA(unsigned short val);
 void CALLBACK PEOPS_SPUwriteDMAMem(unsigned short * pusPSXMem,int iSize);
 //PEOPSspu.c
-void CALLBACK PEOPS_SPUasync(unsigned long cycle);
+void CALLBACK PEOPS_SPUasync(u32 cycle);
 void CALLBACK PEOPS_SPUupdate(void);
 void CALLBACK PEOPS_SPUplayADPCMchannel(xa_decode_t *xap);
-long CALLBACK PEOPS_SPUinit(void);
-long PEOPS_SPUopen(void);
+s32 CALLBACK PEOPS_SPUinit(void);
+s32 PEOPS_SPUopen(void);
 void PEOPS_SPUsetConfigFile(char * pCfg);
-long CALLBACK PEOPS_SPUclose(void);
-long CALLBACK PEOPS_SPUshutdown(void);
-long CALLBACK PEOPS_SPUtest(void);
-long CALLBACK PEOPS_SPUconfigure(void);
+s32 CALLBACK PEOPS_SPUclose(void);
+s32 CALLBACK PEOPS_SPUshutdown(void);
+s32 CALLBACK PEOPS_SPUtest(void);
+s32 CALLBACK PEOPS_SPUconfigure(void);
 void CALLBACK PEOPS_SPUabout(void);
 void CALLBACK PEOPS_SPUregisterCallback(void (CALLBACK *callback)(void));
 void CALLBACK PEOPS_SPUregisterCDDAVolume(void (CALLBACK *CDDAVcallback)(unsigned short,unsigned short));
 //registers.c
-void CALLBACK PEOPS_SPUwriteRegister(unsigned long reg, unsigned short val);
-unsigned short CALLBACK PEOPS_SPUreadRegister(unsigned long reg);
+void CALLBACK PEOPS_SPUwriteRegister(u32 reg, unsigned short val);
+unsigned short CALLBACK PEOPS_SPUreadRegister(u32 reg);
 //freeze.c
-long CALLBACK PEOPS_SPUfreeze(unsigned long ulFreezeMode,SPUFreeze_t * pF);
+s32 CALLBACK PEOPS_SPUfreeze(u32 ulFreezeMode,SPUFreeze_t * pF);
 
 /* franspu */
 //spu_registers.cpp
-void FRAN_SPU_writeRegister(unsigned long reg, unsigned short val);
-unsigned short FRAN_SPU_readRegister(unsigned long reg);
+void FRAN_SPU_writeRegister(u32 reg, unsigned short val);
+unsigned short FRAN_SPU_readRegister(u32 reg);
 //spu_dma.cpp
 unsigned short FRAN_SPU_readDMA(void);
 void FRAN_SPU_readDMAMem(unsigned short * pusPSXMem,int iSize);
 void FRAN_SPU_writeDMA(unsigned short val);
 void FRAN_SPU_writeDMAMem(unsigned short * pusPSXMem,int iSize);
 //spu.cpp
-void FRAN_SPU_async(unsigned long cycle);
+void FRAN_SPU_async(u32 cycle);
 void FRAN_SPU_playADPCMchannel(xa_decode_t *xap);
-long FRAN_SPU_init(void);
+s32 FRAN_SPU_init(void);
 s32 FRAN_SPU_open(void);
-long FRAN_SPU_close(void);
-long FRAN_SPU_shutdown(void);
-long FRAN_SPU_freeze(unsigned long ulFreezeMode,SPUFreeze_t * pF);
+s32 FRAN_SPU_close(void);
+s32 FRAN_SPU_shutdown(void);
+s32 FRAN_SPU_freeze(u32 ulFreezeMode,SPUFreeze_t * pF);
 void FRAN_SPU_setConfigFile(char *cfgfile);
 void FRAN_SPU_About();
 void FRAN_SPU_test();
@@ -108,83 +108,83 @@ void FRAN_SPU_registerCallback(void (*callback)(void));
 void FRAN_SPU_registerCDDAVolume(void (*CDDAVcallback)(unsigned short,unsigned short));
 
 /* CDR */
-long CDR__open(void);
-long CDR__init(void);
-long CDR__shutdown(void);
-long CDR__open(void);
-long CDR__close(void);
-long CDR__getTN(unsigned char *);
-long CDR__getTD(unsigned char , unsigned char *);
-long CDR__readTrack(unsigned char *);
-long CDR__play(unsigned char *sector);
-long CDR__stop(void);
-long CDR__getStatus(struct CdrStat *stat);
+s32 CDR__open(void);
+s32 CDR__init(void);
+s32 CDR__shutdown(void);
+s32 CDR__open(void);
+s32 CDR__close(void);
+s32 CDR__getTN(unsigned char *);
+s32 CDR__getTD(unsigned char , unsigned char *);
+s32 CDR__readTrack(unsigned char *);
+s32 CDR__play(unsigned char *sector);
+s32 CDR__stop(void);
+s32 CDR__getStatus(struct CdrStat *stat);
 unsigned char *CDR__getBuffer(void);
 unsigned char *CDR__getBufferSub(void);
 
 /* NULL GPU */
-//typedef long (* GPUopen)(unsigned long *, char *, char *);
-long GPU__open(void);  
-long GPU__init(void);
-long GPU__shutdown(void);
-long GPU__close(void);
-void GPU__writeStatus(unsigned long);
-void GPU__writeData(unsigned long);
-unsigned long GPU__readStatus(void);
-unsigned long GPU__readData(void);
-long GPU__dmaChain(unsigned long *,unsigned long);
+//typedef s32 (* GPUopen)(u32 *, char *, char *);
+s32 GPU__open(void);  
+s32 GPU__init(void);
+s32 GPU__shutdown(void);
+s32 GPU__close(void);
+void GPU__writeStatus(u32);
+void GPU__writeData(u32);
+u32 GPU__readStatus(void);
+u32 GPU__readData(void);
+s32 GPU__dmaChain(u32 *,u32);
 void GPU__updateLace(void);
 
 /* PEOPS GPU */
-long PEOPS_GPUopen(unsigned long *, char *, char *); 
-long PEOPS_GPUinit(void);
-long PEOPS_GPUshutdown(void);
-long PEOPS_GPUclose(void);
-void PEOPS_GPUwriteStatus(unsigned long);
-void PEOPS_GPUwriteData(unsigned long);
-void PEOPS_GPUwriteDataMem(unsigned long *, int);
-unsigned long PEOPS_GPUreadStatus(void);
-unsigned long PEOPS_GPUreadData(void);
-void PEOPS_GPUreadDataMem(unsigned long *, int);
-long PEOPS_GPUdmaChain(unsigned long *,unsigned long);
+s32 PEOPS_GPUopen(u32 *, char *, char *); 
+s32 PEOPS_GPUinit(void);
+s32 PEOPS_GPUshutdown(void);
+s32 PEOPS_GPUclose(void);
+void PEOPS_GPUwriteStatus(u32);
+void PEOPS_GPUwriteData(u32);
+void PEOPS_GPUwriteDataMem(u32 *, int);
+u32 PEOPS_GPUreadStatus(void);
+u32 PEOPS_GPUreadData(void);
+void PEOPS_GPUreadDataMem(u32 *, int);
+s32 PEOPS_GPUdmaChain(u32 *,u32);
 void PEOPS_GPUupdateLace(void);
 void PEOPS_GPUdisplayText(char *);
-long PEOPS_GPUfreeze(unsigned long,GPUFreeze_t *);
+s32 PEOPS_GPUfreeze(u32,GPUFreeze_t *);
 
 /* PAD */
-//typedef long (* PADopen)(unsigned long *);
-extern long PAD__init(long);
-extern long PAD__shutdown(void);	
+//typedef s32 (* PADopen)(u32 *);
+extern s32 PAD__init(s32);
+extern s32 PAD__shutdown(void);	
 
 /* WiiSX PAD Plugin */
-extern long PAD__open(void);
-extern long PAD__close(void);
+extern s32 PAD__open(void);
+extern s32 PAD__close(void);
 unsigned char PAD__startPoll (int pad);
 unsigned char PAD__poll (const unsigned char value);
-long PAD__readPort1(PadDataS*);
-long PAD__readPort2(PadDataS*);
+s32 PAD__readPort1(PadDataS*);
+s32 PAD__readPort2(PadDataS*);
 
 /* SSSPSX PAD Plugin */
-long SSS_PADopen (void *p);
-long SSS_PADclose (void);
+s32 SSS_PADopen (void *p);
+s32 SSS_PADclose (void);
 unsigned char SSS_PADstartPoll (int pad);
 unsigned char SSS_PADpoll (const unsigned char value);
-long SSS_PADreadPort1 (PadDataS* pads);
-long SSS_PADreadPort2 (PadDataS* pads);
+s32 SSS_PADreadPort1 (PadDataS* pads);
+s32 SSS_PADreadPort2 (PadDataS* pads);
 
 /* CDR ISO Plugin */
-long CALLBACK ISOinit(void);
-long CALLBACK ISOshutdown(void);
-long CALLBACK ISOopen(void);
-long CALLBACK ISOclose(void);
-long CALLBACK ISOgetTN(unsigned char *buffer);
-long CALLBACK ISOgetTD(unsigned char track, unsigned char *buffer);
-long CALLBACK ISOreadTrack(unsigned char *time);
+s32 CALLBACK ISOinit(void);
+s32 CALLBACK ISOshutdown(void);
+s32 CALLBACK ISOopen(void);
+s32 CALLBACK ISOclose(void);
+s32 CALLBACK ISOgetTN(unsigned char *buffer);
+s32 CALLBACK ISOgetTD(unsigned char track, unsigned char *buffer);
+s32 CALLBACK ISOreadTrack(unsigned char *time);
 unsigned char * CALLBACK ISOgetBuffer(void);
-long CALLBACK ISOplay(unsigned char *time);
-long CALLBACK ISOstop(void);
+s32 CALLBACK ISOplay(unsigned char *time);
+s32 CALLBACK ISOstop(void);
 unsigned char* CALLBACK ISOgetBufferSub(void);
-long CALLBACK ISOgetStatus(struct CdrStat *stat);
+s32 CALLBACK ISOgetStatus(struct CdrStat *stat);
 
 #define EMPTY_PLUGIN \
 	{ NULL,      \

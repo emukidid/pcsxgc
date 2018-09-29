@@ -24,7 +24,12 @@
  *
 **/
 
+#ifdef __SWITCH__
+#include <switch.h>
+#else
 #include <gccore.h>
+#include <ogc/pad.h>
+#endif
 #include <stdint.h>
 #include <malloc.h>
 #include <stdio.h>
@@ -34,7 +39,6 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/types.h>
-#include <ogc/pad.h>
 #include "../plugins.h"
 #include "../PsxCommon.h"
 #include "../PSEmu_Plugin_Defs.h"
@@ -70,12 +74,12 @@ static struct
 	int cmdLen;			//# of bytes in pad reply
 } global;
 
-extern void SysPrintf(char *fmt, ...);
+extern void SysPrintf(const char *fmt, ...);
 extern int stop;
 
 /* Controller type, later do this by a Variable in the GUI */
 //extern char controllerType = 0; // 0 = standard, 1 = analog (analog fails on old games)
-extern long  PadFlags;
+extern s32  PadFlags;
 
 extern virtualControllers_t virtualControllers[2];
 
@@ -164,7 +168,7 @@ static void UpdateState (const int pad) //Note: pad = 0 or 1
 	}
 }
 
-long SSS_PADopen (void *p)
+s32 SSS_PADopen (void *p)
 {
 	if (!pad_initialized)
 	{
@@ -179,7 +183,7 @@ long SSS_PADopen (void *p)
 	return 0;
 }
 
-long SSS_PADclose (void)
+s32 SSS_PADclose (void)
 {
 	if (pad_initialized) {
   	pad_initialized=0;
@@ -187,7 +191,7 @@ long SSS_PADclose (void)
 	return 0 ;
 }
 
-long SSS_PADquery (void)
+s32 SSS_PADquery (void)
 {
 	return 3;
 }
@@ -390,7 +394,7 @@ unsigned char SSS_PADpoll (const unsigned char value)
 	return buf[global.curByte++];
 }
 
-long SSS_PADreadPort1 (PadDataS* pads)
+s32 SSS_PADreadPort1 (PadDataS* pads)
 {
 	//#PADreadPort1 not used in PCSX
 /*
@@ -433,7 +437,7 @@ long SSS_PADreadPort1 (PadDataS* pads)
 	return 0;
 }
 
-long SSS_PADreadPort2 (PadDataS* pads)
+s32 SSS_PADreadPort2 (PadDataS* pads)
 {
 	//#PADreadPort2 not used in PCSX
 /*

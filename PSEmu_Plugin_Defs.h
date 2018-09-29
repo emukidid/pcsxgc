@@ -127,19 +127,19 @@ typedef struct
 
   functions that must be exported from PAD Plugin
 
-  long	PADinit(long flags);	// called only once when PSEmu Starts
+  s32	PADinit(s32 flags);	// called only once when PSEmu Starts
   void	PADshutdown(void);		// called when PSEmu exits
-  long	PADopen(PadInitS *);	// called when PSEmu is running program
-  long	PADclose(void);
-  long	PADconfigure(void);
+  s32	PADopen(PadInitS *);	// called when PSEmu is running program
+  s32	PADclose(void);
+  s32	PADconfigure(void);
   void  PADabout(void);
-  long  PADtest(void);			// called from Configure Dialog and after PADopen();
-  long	PADquery(void);
+  s32  PADtest(void);			// called from Configure Dialog and after PADopen();
+  s32	PADquery(void);
 
   unsigned char PADstartPoll(int);
   unsigned char PADpoll(unsigned char);
-  long	PADreadPort1(PadDataS *);
-  long	PADreadPort2(PadDataS *);
+  s32	PADreadPort1(PadDataS *);
+  s32	PADreadPort2(PadDataS *);
 
 */
 
@@ -242,12 +242,12 @@ typedef struct {
 /*
   basic funcs:
 
-   long NETopen(HWND hWnd)
+   s32 NETopen(HWND hWnd)
     opens the connection.
     shall return 0 on success, else -1.
     -1 is also returned if the user selects offline mode.
 
-   long NETclose()
+   s32 NETclose()
     closes the connection.
     shall return 0 on success, else -1.
 
@@ -257,21 +257,21 @@ typedef struct {
    void NETresume()
     this is called when the user resumed the emulator.
 
-   long NETqueryPlayer()
+   s32 NETqueryPlayer()
     returns player number
 
-   long NETsendPadData(void *pData, int Size)
+   s32 NETsendPadData(void *pData, int Size)
     this should be called for the first pad only on each side.
 
-   long NETrecvPadData(void *pData, int Pad)
+   s32 NETrecvPadData(void *pData, int Pad)
     call this for Pad 1/2 to get the data sent by the above func.
 
   extended funcs:
 
-   long NETsendData(void *pData, int Size, int Mode)
+   s32 NETsendData(void *pData, int Size, int Mode)
     sends Size bytes from pData to the other side.
 
-   long NETrecvData(void *pData, int Size, int Mode)
+   s32 NETrecvData(void *pData, int Size, int Mode)
     receives Size bytes from pData to the other side.
 
    void NETsetInfo(netInfo *info);

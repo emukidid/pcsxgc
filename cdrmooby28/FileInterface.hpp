@@ -27,12 +27,12 @@ extern "C" {
 
 // the constants for the number of frames in compressed files as well as
 // how large the required buffers are
-const unsigned long BZIndexBufferFrames = 10;
-const unsigned long BZIndexBufferBytes = BZIndexBufferFrames * bytesPerFrame;
-const unsigned long ZTableBufferFrames = 1;
-const unsigned long ZTableBufferBytes = ZTableBufferFrames * bytesPerFrame;
-const unsigned long UncompressedBufferFrames = 10;
-const unsigned long UncompressedBufferBytes = UncompressedBufferFrames * bytesPerFrame;
+const u32 BZIndexBufferFrames = 10;
+const u32 BZIndexBufferBytes = BZIndexBufferFrames * bytesPerFrame;
+const u32 ZTableBufferFrames = 1;
+const u32 ZTableBufferBytes = ZTableBufferFrames * bytesPerFrame;
+const u32 UncompressedBufferFrames = 10;
+const u32 UncompressedBufferBytes = UncompressedBufferFrames * bytesPerFrame;
 
 // a virtual interface to any CD image type
 class FileInterface
@@ -98,7 +98,7 @@ protected:
     fileBrowser_file *filePtr;      
       
 		// the number of frames buffered (0 for RAR)
-   unsigned long bufferFrames;
+   u32 bufferFrames;
 		// the buffer to the cached data
    unsigned char* fileBuffer;
 		// pointer to the last seeked frame
@@ -128,15 +128,15 @@ protected:
 		// this ensures that the buffer is at least as big as it's required (i.e. .BZ files
 		// need at least 10 frames buffered).
 		// for RAR, requiredFrames = 0
-   FileInterface(const unsigned long requestedFrames, 
-      const unsigned long requiredFrames);
+   FileInterface(const u32 requestedFrames, 
+      const u32 requiredFrames);
 };
 
 // interface to uncompressed files
 class UncompressedFileInterface : public FileInterface
 {
 public:
-   UncompressedFileInterface(const unsigned long bf)
+   UncompressedFileInterface(const u32 bf)
       : FileInterface(bf, UncompressedBufferFrames) 
    {}
    

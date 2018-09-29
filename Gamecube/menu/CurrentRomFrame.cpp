@@ -39,7 +39,7 @@ extern "C" {
 #include "../fileBrowser/fileBrowser-CARD.h"
 extern int LoadMcd(int mcd, fileBrowser_file *savepath);
 extern int SaveMcd(int mcd, fileBrowser_file *savepath);
-extern long CDR_getTN(unsigned char *buffer);
+extern s32 CDR_getTN(unsigned char *buffer);
 }
 
 void Func_ShowRomInfo();
@@ -142,7 +142,7 @@ extern MenuContext *pMenuContext;
 extern char CdromId[10];
 extern char CdromLabel[33];
 extern "C" {
-long MoobyCDRgetTN(unsigned char *buffer);
+s32 MoobyCDRgetTN(unsigned char *buffer);
 };
 
 void Func_ShowRomInfo()

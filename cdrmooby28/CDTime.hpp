@@ -161,7 +161,7 @@ public:
    }
 
 	  // constructor for absoluteByte and absoluteFrame
-   CDTime(const unsigned long absoluteAddr, const conversionType ct);
+   CDTime(const u32 absoluteAddr, const conversionType ct);
 
 	// math and comparison operators
    inline bool operator<(const CDTime& r) const;
@@ -186,11 +186,11 @@ public:
 	// This is really useful for GetTD.
    inline unsigned char* getMSFbuf(const TDTNFormat format = msfint) const;
 
-   inline unsigned long getAbsoluteByte() const;
-   inline CDTime& setAbsoluteByte(const unsigned long ab);
+   inline u32 getAbsoluteByte() const;
+   inline CDTime& setAbsoluteByte(const u32 ab);
 
-   inline unsigned long getAbsoluteFrame() const;
-   inline CDTime& setAbsoluteFrame(const unsigned long af);
+   inline u32 getAbsoluteFrame() const;
+   inline CDTime& setAbsoluteFrame(const u32 af);
    
    inline friend std::ostream& operator<<(std::ostream& o, const CDTime& cdt);
    inline friend std::istream& operator>>(std::istream& i, CDTime& m);
@@ -208,8 +208,8 @@ private:
 
 		// the time data
    MSFTime MSF;
-	unsigned long absoluteByte;
-	unsigned long absoluteFrame;
+	u32 absoluteByte;
+	u32 absoluteFrame;
    // used for converting time to unsigned char[3]
    unsigned char MSFbuf[3];
 };
@@ -243,7 +243,7 @@ inline std::istream& operator>>(std::istream& i, MSFTime& m)
    return i;
 }
 
-inline CDTime::CDTime(const unsigned long absoluteAddr, const conversionType ct)
+inline CDTime::CDTime(const u32 absoluteAddr, const conversionType ct)
    : conversions(0), absoluteByte(0), absoluteFrame(0)
 {
    if (ct == abByte)
@@ -362,12 +362,12 @@ inline unsigned char* CDTime::getMSFbuf(const TDTNFormat format) const
 }
 
 
-inline unsigned long CDTime::getAbsoluteByte() const
+inline u32 CDTime::getAbsoluteByte() const
 {
    return absoluteByte;
 }
 
-inline CDTime& CDTime::setAbsoluteByte(const unsigned long ab)
+inline CDTime& CDTime::setAbsoluteByte(const u32 ab)
 {
    absoluteByte = ab;
    conversions = abByte;
@@ -375,12 +375,12 @@ inline CDTime& CDTime::setAbsoluteByte(const unsigned long ab)
    return *this;
 }
 
-inline unsigned long CDTime::getAbsoluteFrame() const
+inline u32 CDTime::getAbsoluteFrame() const
 {
    return absoluteFrame;
 }
 
-inline CDTime& CDTime::setAbsoluteFrame(const unsigned long af)
+inline CDTime& CDTime::setAbsoluteFrame(const u32 af)
 {
    absoluteFrame = af;
    conversions = abFrame;

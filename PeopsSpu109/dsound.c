@@ -51,8 +51,8 @@ DSBUFFERDESC        dsbdesc;
 DSCAPS              dscaps;
 DSBCAPS             dsbcaps;
 
-unsigned long LastWrite=0xffffffff;
-unsigned long LastPlay=0;
+u32 LastWrite=0xffffffff;
+u32 LastPlay=0;
 
 ////////////////////////////////////////////////////////////////////////
 // SETUP SOUND
@@ -184,9 +184,9 @@ void RemoveSound(void)
 // GET BYTES BUFFERED
 ////////////////////////////////////////////////////////////////////////
 
-unsigned long SoundGetBytesBuffered(void)
+u32 SoundGetBytesBuffered(void)
 {
- unsigned long cplay,cwrite;
+ u32 cplay,cwrite;
 
  if(LastWrite==0xffffffff) return 0;
 
@@ -202,14 +202,14 @@ unsigned long SoundGetBytesBuffered(void)
 // FEED SOUND DATA
 ////////////////////////////////////////////////////////////////////////
 
-void SoundFeedStreamData(unsigned char* pSound,long lBytes)
+void SoundFeedStreamData(unsigned char* pSound,s32 lBytes)
 {
  LPVOID lpvPtr1, lpvPtr2;
- unsigned long dwBytes1,dwBytes2; 
- unsigned long *lpSS, *lpSD;
- unsigned long dw,cplay,cwrite;
+ u32 dwBytes1,dwBytes2; 
+ u32 *lpSS, *lpSD;
+ u32 dw,cplay,cwrite;
  HRESULT hr;
- unsigned long status;
+ u32 status;
 
  if(iDoRecord) RecordBuffer(pSound,lBytes);
 
@@ -228,7 +228,7 @@ void SoundFeedStreamData(unsigned char* pSound,long lBytes)
 // mmm... security... not needed, I think
  if(LastWrite<cplay)
   {
-   if((cplay-LastWrite)<=(unsigned long)lBytes)
+   if((cplay-LastWrite)<=(u32)lBytes)
     {
      LastWrite=0xffffffff;
      return;
@@ -251,15 +251,15 @@ void SoundFeedStreamData(unsigned char* pSound,long lBytes)
 
  if(hr!=DS_OK) {LastWrite=0xffffffff;return;}
 
- lpSD=(unsigned long *)lpvPtr1;
+ lpSD=(u32 *)lpvPtr1;
  dw=dwBytes1>>2;
 
- lpSS=(unsigned long *)pSound;
+ lpSS=(u32 *)pSound;
  while(dw) {*lpSD++=*lpSS++;dw--;}
 
  if(lpvPtr2)
   {
-   lpSD=(unsigned long *)lpvPtr2;
+   lpSD=(u32 *)lpvPtr2;
    dw=dwBytes2>>2;
    while(dw) {*lpSD++=*lpSS++;dw--;}
   }

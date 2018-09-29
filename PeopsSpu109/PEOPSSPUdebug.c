@@ -231,9 +231,9 @@ void DisplayChannelInfos(HWND hW)
  SetDlgItemInt(hW,IDC_CI7,s_chan[ch].iRVBNum,TRUE);
  SetDlgItemInt(hW,IDC_CI8,s_chan[ch].iRVBOffset,TRUE);
  SetDlgItemInt(hW,IDC_CI9,s_chan[ch].iRVBRepeat,TRUE);
- SetDlgItemInt(hW,IDC_CI10,(unsigned long)s_chan[ch].pStart-(unsigned long)spuMemC,FALSE);
- SetDlgItemInt(hW,IDC_CI11,(unsigned long)s_chan[ch].pCurr-(unsigned long)spuMemC,FALSE);
- SetDlgItemInt(hW,IDC_CI12,(unsigned long)s_chan[ch].pLoop-(unsigned long)spuMemC,FALSE);
+ SetDlgItemInt(hW,IDC_CI10,(u32)s_chan[ch].pStart-(u32)spuMemC,FALSE);
+ SetDlgItemInt(hW,IDC_CI11,(u32)s_chan[ch].pCurr-(u32)spuMemC,FALSE);
+ SetDlgItemInt(hW,IDC_CI12,(u32)s_chan[ch].pLoop-(u32)spuMemC,FALSE);
  SetDlgItemInt(hW,IDC_CI13,s_chan[ch].iRightVolume,TRUE);
  SetDlgItemInt(hW,IDC_CI14,s_chan[ch].iLeftVolume,TRUE);
  SetDlgItemInt(hW,IDC_CI15,s_chan[ch].iActFreq,TRUE);
@@ -247,7 +247,7 @@ void DisplayChannelInfos(HWND hW)
  // generic infos
  if(pSpuIrq==0) 
       SetDlgItemInt(hW,IDC_STA1,-1,TRUE);
- else SetDlgItemInt(hW,IDC_STA1,(unsigned long)pSpuIrq-(unsigned long)spuMemC,FALSE);
+ else SetDlgItemInt(hW,IDC_STA1,(u32)pSpuIrq-(u32)spuMemC,FALSE);
  wsprintf(szB,"%04x",spuCtrl);
  SetDlgItemText(hW,IDC_STA2,szB);
  wsprintf(szB,"%04x",spuStat);

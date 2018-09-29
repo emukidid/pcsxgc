@@ -42,7 +42,7 @@ private:
 	Image	*selectedFocusImage;
 	char** buttonText;
 	int buttonStyle, labelMode, labelScissor;
-	unsigned long StartTime;*/
+	u32 StartTime;*/
 	float x, y;/*, width, height;
 	GXColor	focusColor, inactiveColor, activeColor, selectedColor, labelColor;*/
 

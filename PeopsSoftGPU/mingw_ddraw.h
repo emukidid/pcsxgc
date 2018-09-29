@@ -203,7 +203,7 @@ typedef struct _DDCOLORCONTROL          FAR *LPDDCOLORCONTROL;
 #define DDCREATE_EMULATIONONLY          0x00000002l
 
 #if defined(WINNT) || !defined(WIN32)
-typedef long HRESULT;
+typedef s32 HRESULT;
 #endif
 
 //#ifndef WINNT
@@ -2647,7 +2647,7 @@ typedef struct _DDCOLORCONTROL
 #define DDSCAPS_ZBUFFER                         0x00020000l
 
 /*
- * Indicates surface will have a DC associated long term
+ * Indicates surface will have a DC associated s32 term
  */
 #define DDSCAPS_OWNDC                           0x00040000l
 
@@ -3500,7 +3500,7 @@ typedef struct _DDCOLORCONTROL
 /*
  * Index is onto a 8 bit color index.  This field is only valid with the
  * DDPCAPS_1BIT, DDPCAPS_2BIT or DDPCAPS_4BIT capability and the target
- * surface is in 8bpp. Each color entry is one byte long and is an index
+ * surface is in 8bpp. Each color entry is one byte s32 and is an index
  * into destination surface's 8bpp palette.
  */
 #define DDPCAPS_8BITENTRIES             0x00000002l

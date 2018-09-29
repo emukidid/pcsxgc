@@ -184,7 +184,7 @@ static void DisposeHWReg(s32 index)
 }
 
 // operated on cpu registers
-__inline static void FlushCPURegRange(s32 start, s32 end)
+static void FlushCPURegRange(s32 start, s32 end)
 {
 	s32 i;
 	
@@ -938,7 +938,7 @@ static void recError() {
 }
 
 //static int executedBlockCount = 0;
-__inline static void execute() {
+static void execute() {
 	void (**recFunc)();
 	char *p;
 

@@ -25,13 +25,14 @@
 
 #include "../plugins.h"
 #include "../Spu.h"
-#ifndef __GX__
+#if defined(__GX__) || defined(__SWITCH__)
+#else
 #include "NoPic.h"
 #endif //!__GX__
 
 void OnFile_Exit(){}
 
-unsigned long gpuDisp;
+u32 gpuDisp;
 
 int StatesC = 0;
 extern int UseGui;
@@ -142,11 +143,11 @@ void PADhandleKey(int key) {
 	}*/
 }
 
-long PAD1__open(void) {
+s32 PAD1__open(void) {
 	return PAD1_open(&gpuDisp);
 }
 
-long PAD2__open(void) {
+s32 PAD2__open(void) {
 	return PAD2_open(&gpuDisp);
 }
 

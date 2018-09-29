@@ -49,6 +49,11 @@
 
 #include "stdafx.h"
 
+
+#if defined(__GX__) || defined(__SWITCH__)
+#include "../Gamecube/wiiSXconfig.h"
+#endif
+
 #ifdef _WINDOWS
 
 #include <stdlib.h>
@@ -66,7 +71,7 @@
 #include "menu.h"
 #include "gpu.h"
 
-unsigned long dwCoreFlags=0;
+u32 dwCoreFlags=0;
 
 ////////////////////////////////////////////////////////////////////////
 // create lists/stuff for fonts (actually there are no more lists, but I am too lazy to change the func names ;)

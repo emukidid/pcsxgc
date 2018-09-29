@@ -36,7 +36,7 @@
 // OLD, SOMEWHAT (BUT NOT MUCH) SUPPORTED PSEMUPRO FUNCS
 ////////////////////////////////////////////////////////////////////////
 /*
-unsigned short CALLBACK SPUgetOne(unsigned long val)
+unsigned short CALLBACK SPUgetOne(u32 val)
 {
  if(spuAddr!=0xffffffff)
   {
@@ -46,7 +46,7 @@ unsigned short CALLBACK SPUgetOne(unsigned long val)
  return spuMem[val>>1];
 }
 
-void CALLBACK SPUputOne(unsigned long val,unsigned short data)
+void CALLBACK SPUputOne(u32 val,unsigned short data)
 {
  if(spuAddr!=0xffffffff)
   {
@@ -63,7 +63,7 @@ void CALLBACK SPUplaySample(unsigned char ch)
 
 void CALLBACK SPUsetAddr(unsigned char ch, unsigned short waddr)
 {
- s_chan[ch].pStart=spuMemC+((unsigned long) waddr<<3);
+ s_chan[ch].pStart=spuMemC+((u32) waddr<<3);
 }
 
 void CALLBACK SPUsetPitch(unsigned char ch, unsigned short pitch)
@@ -101,7 +101,7 @@ void CALLBACK SPUstopChannels2(unsigned short channels)
  SoundOff(16,24,channels);
 }
 
-void CALLBACK SPUplaySector(unsigned long mode, unsigned char * p)
+void CALLBACK SPUplaySector(u32 mode, unsigned char * p)
 {
  if(!iUseXA) return;                                    // no XA? bye
 }

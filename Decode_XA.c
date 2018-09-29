@@ -82,7 +82,7 @@ void ADPCM_InitDecode(ADPCM_Decode_t *decp) {
 #define IK1(fid)	(-K1[fid])
 #endif
 
-static __inline void ADPCM_DecodeBlock16( ADPCM_Decode_t *decp, u8 filter_range, const void *vblockp, short *destp, int inc ) {
+static void ADPCM_DecodeBlock16( ADPCM_Decode_t *decp, u8 filter_range, const void *vblockp, short *destp, int inc ) {
 	int i;
 	int range, filterid;
 	s32 fy0, fy1;

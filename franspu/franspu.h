@@ -16,9 +16,9 @@
 #include <string.h> 
 #include <math.h>  
 
-#define DWORD unsigned long
+#define DWORD u32
 #define LOWORD(l)           ((unsigned short)(l)) 
-#define HIWORD(l)           ((unsigned short)(((unsigned long)(l) >> 16) & 0xFFFF)) 
+#define HIWORD(l)           ((unsigned short)(((u32)(l) >> 16) & 0xFFFF)) 
 
 #define PSE_LT_SPU                  4
 #define PSE_SPU_ERR_SUCCESS         0
@@ -73,19 +73,19 @@ extern int bSPUIsOpen;
 typedef struct
 {
 	int            AttackModeExp;
-	long           AttackTime;
-	long           DecayTime;
-	long           SustainLevel;
+	s32           AttackTime;
+	s32           DecayTime;
+	s32           SustainLevel;
 	int            SustainModeExp;
-	long           SustainModeDec;
-	long           SustainTime;
+	s32           SustainModeDec;
+	s32           SustainTime;
 	int            ReleaseModeExp;
-	unsigned long  ReleaseVal;
-	long           ReleaseTime;
-	long           ReleaseStartTime; 
-	long           ReleaseVol; 
-	long           lTime;
-	long           lVolume;
+	u32  ReleaseVal;
+	s32           ReleaseTime;
+	s32           ReleaseStartTime; 
+	s32           ReleaseVol; 
+	s32           lTime;
+	s32           lVolume;
 } ADSRInfo;
 
 typedef struct
@@ -101,9 +101,9 @@ typedef struct
 	int            ReleaseModeExp;
 	int            ReleaseRate;
 	int            EnvelopeVol;
-	long           lVolume;
-	long           lDummy1;
-	long           lDummy2;
+	s32           lVolume;
+	s32           lDummy1;
+	s32           lDummy2;
 } ADSRInfoEx;
 
 ///////////////////////////////////////////////////////////
@@ -212,11 +212,11 @@ extern int        iDisStereo;
 extern SPUCHAN s_chan[];
 extern REVERBInfo rvb;
 
-extern unsigned long dwNoiseVal;
+extern u32 dwNoiseVal;
 extern unsigned short spuCtrl;
 extern unsigned short spuStat;
 extern unsigned short spuIrq;
-extern unsigned long  spuAddr;
+extern u32  spuAddr;
 extern int      bEndThread; 
 extern int      bThreadEnded;
 extern int      bSpuInit;
@@ -229,11 +229,11 @@ extern short *  pS;
 // XA.C globals
 ///////////////////////////////////////////////////////////
 extern xa_decode_t   * xapGlobal;
-extern unsigned long * XAFeed;
-extern unsigned long * XAPlay;
-extern unsigned long * XAStart;
-extern unsigned long * XAEnd;
-extern unsigned long   XARepeat;
+extern u32 * XAFeed;
+extern u32 * XAPlay;
+extern u32 * XAStart;
+extern u32 * XAEnd;
+extern u32   XARepeat;
 extern int           iLeftXAVol;
 extern int           iRightXAVol;
 
@@ -370,7 +370,7 @@ extern int           iRightXAVol;
 #define H_SPU_ADSRLevel23  0x0d78
 
 extern int MixADSR(SPUCHAN *ch);
-extern unsigned long SoundGetBytesBuffered(void);
+extern u32 SoundGetBytesBuffered(void);
 extern void FeedXA(xa_decode_t *xap);
 extern void MixXA(void);
 

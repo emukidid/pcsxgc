@@ -83,7 +83,7 @@ void closeIt(void)
    }
 }
 
-long CALLBACK Mooby2CDRclose(void)
+s32 CALLBACK Mooby2CDRclose(void)
 {
    closeIt();
    return 0;
@@ -135,7 +135,7 @@ void openIt(void)
 }
 
 // psemu open call - call open
-long CALLBACK Mooby2CDRopen(void)
+s32 CALLBACK Mooby2CDRopen(void)
 {
    mode = psemu;
    try {
@@ -157,12 +157,12 @@ int CD_Open(unsigned int* par)
    return FPSE_OK;
 }
 
-long CALLBACK Mooby2CDRshutdown(void)
+s32 CALLBACK Mooby2CDRshutdown(void)
 {
    return Mooby2CDRclose();
 }
 
-long CALLBACK Mooby2CDRplay(unsigned char * sector)
+s32 CALLBACK Mooby2CDRplay(unsigned char * sector)
 {  
    return theCD->playTrack(CDTime(sector, msfint));
 }
@@ -172,7 +172,7 @@ int CD_Play(unsigned char * sector)
    return theCD->playTrack(CDTime(sector, msfint));
 }
 
-long CALLBACK Mooby2CDRstop(void)
+s32 CALLBACK Mooby2CDRstop(void)
 {
 	return theCD->stopTrack();
 }
@@ -182,7 +182,7 @@ int CD_Stop(void)
    return theCD->stopTrack();
 }
 
-long CALLBACK Mooby2CDRgetStatus(struct CdrStat *stat) 
+s32 CALLBACK Mooby2CDRgetStatus(struct CdrStat *stat) 
 {
    if (theCD->isPlaying())
    {
@@ -207,13 +207,13 @@ char CALLBACK Mooby2CDRgetDriveLetter(void)
 }
 
 
-long CALLBACK Mooby2CDRinit(void)
+s32 CALLBACK Mooby2CDRinit(void)
 {
    theCD=NULL;
    return 0;
 }
 
-long CALLBACK Mooby2CDRgetTN(unsigned char *buffer)
+s32 CALLBACK Mooby2CDRgetTN(unsigned char *buffer)
 {
    buffer[0] = 1;
    if (tdtnformat == fsmint)
@@ -240,7 +240,7 @@ unsigned char* CD_GetSeek(void)
    return theCD->readSubchannelPointer() + 12;
 }
 
-long CALLBACK Mooby2CDRgetTD(unsigned char track, unsigned char *buffer)
+s32 CALLBACK Mooby2CDRgetTD(unsigned char track, unsigned char *buffer)
 {
    if (tdtnformat == fsmint)
       memcpy(buffer, theCD->getTrackInfo(track).trackStart.getMSFbuf(tdtnformat), 3);
@@ -258,7 +258,7 @@ int CD_GetTD(char* result, int track)
    return FPSE_OK;
 }
 
-long CALLBACK Mooby2CDRreadTrack(unsigned char *time)
+s32 CALLBACK Mooby2CDRreadTrack(unsigned char *time)
 {
    CDTime now(time, msfbcd);
    theCD->moveDataPointer(now);

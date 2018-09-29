@@ -113,7 +113,7 @@ void RecordStop()
 
 ////////////////////////////////////////////////////////////////////////
 
-void RecordBuffer(unsigned char* pSound,long lBytes)
+void RecordBuffer(unsigned char* pSound,s32 lBytes)
 {
  // write the samples
  if(hWaveFile) mmioWrite(hWaveFile,pSound,lBytes);

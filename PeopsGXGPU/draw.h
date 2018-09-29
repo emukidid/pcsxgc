@@ -49,7 +49,7 @@ BOOL offset4(void);
 BOOL offsetline(void);
 void offsetST(void);
 void offsetBlk(void);
-void offsetScreenUpload(long Position);
+void offsetScreenUpload(s32 Position);
 void assignTexture3(void);
 void assignTexture4(void);
 void assignTextureSprite(void);

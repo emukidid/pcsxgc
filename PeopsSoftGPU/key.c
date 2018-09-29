@@ -66,7 +66,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 WNDPROC                wpOrgWndProc=0;
-unsigned long          ulKeybits=0;
+u32          ulKeybits=0;
 char                   szGPUKeys[11];
 
 ////////////////////////////////////////////////////////////////////////
@@ -158,7 +158,7 @@ void SetKeyHandler(void)
  if(!wpOrgWndProc)                                     // setup keyhandler
   {
    wpOrgWndProc = (WNDPROC)GetWindowLong(hWGPU, GWL_WNDPROC );
-   SetWindowLong(hWGPU, GWL_WNDPROC, (long)KeyWndProc);
+   SetWindowLong(hWGPU, GWL_WNDPROC, (s32)KeyWndProc);
   }
 }
 
@@ -168,7 +168,7 @@ void ReleaseKeyHandler(void)
 {
  if(wpOrgWndProc)
   SetWindowLong(hWGPU,GWL_WNDPROC,              // set old proc
-                (long)wpOrgWndProc);
+                (s32)wpOrgWndProc);
  wpOrgWndProc = 0;                                      
 }
 
@@ -201,7 +201,7 @@ void ReleaseKeyHandler(void)
 
 void GPUmakeSnapshot(void);
 
-unsigned long          ulKeybits=0;
+u32          ulKeybits=0;
 
 void GPUkeypressed(int keycode)
 {
@@ -245,7 +245,8 @@ char *keystate;
 
 
 #else
-#ifndef __GX__
+#if defined(__GX__) || defined(__SWITCH__)
+#else
  switch(keycode)
   {
    case VK_F5:

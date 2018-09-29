@@ -64,12 +64,12 @@ static const std::string theUsualSuspects =
   "Common image files (*.{bz,bz.index,Z,Z.table,bin,bwi,img,iso,rar})";
 
 // CD time constants
-static const unsigned long secondsPerMinute = 60;
-static const unsigned long framesPerSecond = 75;
-static const unsigned long framesPerMinute = framesPerSecond * secondsPerMinute;
-static const unsigned long bytesPerFrame = 2352;
-static const unsigned long bytesPerSecond = bytesPerFrame * framesPerSecond;
-static const unsigned long bytesPerMinute = bytesPerSecond * secondsPerMinute;
+static const u32 secondsPerMinute = 60;
+static const u32 framesPerSecond = 75;
+static const u32 framesPerMinute = framesPerSecond * secondsPerMinute;
+static const u32 bytesPerFrame = 2352;
+static const u32 bytesPerSecond = bytesPerFrame * framesPerSecond;
+static const u32 bytesPerMinute = bytesPerSecond * secondsPerMinute;
 
 extern "C" {
   void SysPrintf(const char *fmt, ...);
@@ -148,12 +148,12 @@ inline void flipBits(T& num)
 
 // given a string and a number, returns the ' ' delimited word
 // at position num
-inline std::string word(const std::string& str, const unsigned long num)
+inline std::string word(const std::string& str, const u32 num)
 {
    if (str == std::string())
       return str;
 
-   unsigned long i;
+   u32 i;
    std::string::size_type startpos = 0;
    std::string::size_type endpos = 0;
 

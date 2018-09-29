@@ -5,7 +5,7 @@
 #include "../Decode_XA.h"
 
 
-extern void SoundFeedStreamData(unsigned char* pSound,long lBytes);
+extern void SoundFeedStreamData(unsigned char* pSound,s32 lBytes);
 extern void InitADSR(void);
 extern void SetupSound(void);
 extern void RemoveSound(void);
@@ -22,8 +22,8 @@ unsigned int iVolume = 10;
 typedef struct
 {
 	char          szSPUName[8];
-	unsigned long ulFreezeVersion;
-	unsigned long ulFreezeSize;
+	u32 ulFreezeVersion;
+	u32 ulFreezeSize;
 	unsigned char cSPUPort[0x200];
 	//unsigned char cSPURam[0x80000];
 	xa_decode_t   xaS;     
@@ -41,11 +41,11 @@ int		iSoundMuted=0;
 SPUCHAN         s_chan[MAXCHAN+1];                     // channel + 1 infos (1 is security for fmod handling)
 REVERBInfo      rvb;
 
-unsigned long   dwNoiseVal=1;                          // global noise generator
+u32   dwNoiseVal=1;                          // global noise generator
 unsigned short  spuCtrl=0;                             // some vars to store psx reg infos
 unsigned short  spuStat=0;
 unsigned short  spuIrq=0;
-unsigned long   spuAddr=0xffffffff;                    // address into spu mem
+u32   spuAddr=0xffffffff;                    // address into spu mem
 int             bEndThread=0;                          // thread handlers
 int             bSpuInit=0;
 int             bSPUIsOpen=0;
@@ -252,7 +252,7 @@ INLINE void SPU_async_any(SPUCHAN * pChannel,int *SSumL, int *SSumR, int *iFMod,
 
 int last_time = 0;
 
-void FRAN_SPU_async(unsigned long cycle)
+void FRAN_SPU_async(u32 cycle)
 {
 	
 }
@@ -274,7 +274,7 @@ void FRAN_SPU_playADPCMchannel(xa_decode_t *xap)
 }
 
 // SPUINIT: this func will be called first by the main emu
-long FRAN_SPU_init(void)
+s32 FRAN_SPU_init(void)
 {
 	spuMemC=(unsigned char *)spuMem;                      // just small setup
 	memset((void *)s_chan,0,MAXCHAN*sizeof(SPUCHAN));
@@ -304,7 +304,7 @@ s32 FRAN_SPU_open(void)
 	
 	//Setup streams
 	pSpuBuffer=(unsigned char *)malloc(32768);            // alloc mixing buffer
-	XAStart = (unsigned long *)malloc(44100*4);           // alloc xa buffer
+	XAStart = (u32 *)malloc(44100*4);           // alloc xa buffer
 	XAPlay  = XAStart;
 	XAFeed  = XAStart;
 	XAEnd   = XAStart + 44100;
@@ -331,7 +331,7 @@ s32 FRAN_SPU_open(void)
 }
 
 // SPUCLOSE: called before shutdown
-long FRAN_SPU_close(void)
+s32 FRAN_SPU_close(void)
 {
 	if(!bSPUIsOpen) return 0;                             // some security
 	bSPUIsOpen=0;                                         // no more open
@@ -348,13 +348,13 @@ long FRAN_SPU_close(void)
 }
 
 // SPUSHUTDOWN: called by main emu on final exit
-long FRAN_SPU_shutdown(void)
+s32 FRAN_SPU_shutdown(void)
 {
 	return PSE_SPU_ERR_SUCCESS;
 }
 
 // SPUFREEZE: Used for savestates. Dummy.
-long FRAN_SPU_freeze(unsigned long ulFreezeMode,SPUFreeze_t * pF)
+s32 FRAN_SPU_freeze(u32 ulFreezeMode,SPUFreeze_t * pF)
 {
 	return 1;
 }
@@ -367,7 +367,7 @@ void FRAN_SPU_About() {
 	
 }
 
-long FRAN_SPU_test() {
+s32 FRAN_SPU_test() {
 	return PSE_SPU_ERR_SUCCESS;
 }
 

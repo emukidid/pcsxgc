@@ -124,79 +124,79 @@ static __inline unsigned short interp_16_97(unsigned short p1, unsigned short p2
 #define INTERP_32_MASK_1(v) (v & 0xFF00FF)
 #define INTERP_32_MASK_2(v) (v & 0x00FF00)
 
-static __inline unsigned long  interp_32_521(unsigned long  p1, unsigned long  p2, unsigned long  p3)
+static __inline u32  interp_32_521(u32  p1, u32  p2, u32  p3)
 {
   return INTERP_32_MASK_1((INTERP_32_MASK_1(p1)*5 + INTERP_32_MASK_1(p2)*2 + INTERP_32_MASK_1(p3)*1) / 8)
     | INTERP_32_MASK_2((INTERP_32_MASK_2(p1)*5 + INTERP_32_MASK_2(p2)*2 + INTERP_32_MASK_2(p3)*1) / 8);
 }
 
-static __inline unsigned long  interp_32_332(unsigned long  p1, unsigned long  p2, unsigned long  p3)
+static __inline u32  interp_32_332(u32  p1, u32  p2, u32  p3)
 {
   return INTERP_32_MASK_1((INTERP_32_MASK_1(p1)*3 + INTERP_32_MASK_1(p2)*3 + INTERP_32_MASK_1(p3)*2) / 8)
     | INTERP_32_MASK_2((INTERP_32_MASK_2(p1)*3 + INTERP_32_MASK_2(p2)*3 + INTERP_32_MASK_2(p3)*2) / 8);
 }
 
-static __inline unsigned long  interp_32_211(unsigned long  p1, unsigned long  p2, unsigned long  p3)
+static __inline u32  interp_32_211(u32  p1, u32  p2, u32  p3)
 {
   return INTERP_32_MASK_1((INTERP_32_MASK_1(p1)*2 + INTERP_32_MASK_1(p2) + INTERP_32_MASK_1(p3)) / 4)
     | INTERP_32_MASK_2((INTERP_32_MASK_2(p1)*2 + INTERP_32_MASK_2(p2) + INTERP_32_MASK_2(p3)) / 4);
 }
 
-static __inline unsigned long  interp_32_611(unsigned long  p1, unsigned long  p2, unsigned long  p3)
+static __inline u32  interp_32_611(u32  p1, u32  p2, u32  p3)
 {
   return INTERP_32_MASK_1((INTERP_32_MASK_1(p1)*6 + INTERP_32_MASK_1(p2) + INTERP_32_MASK_1(p3)) / 8)
     | INTERP_32_MASK_2((INTERP_32_MASK_2(p1)*6 + INTERP_32_MASK_2(p2) + INTERP_32_MASK_2(p3)) / 8);
 }
 
-static __inline unsigned long  interp_32_71(unsigned long  p1, unsigned long  p2)
+static __inline u32  interp_32_71(u32  p1, u32  p2)
 {
   return INTERP_32_MASK_1((INTERP_32_MASK_1(p1)*7 + INTERP_32_MASK_1(p2)) / 8)
     | INTERP_32_MASK_2((INTERP_32_MASK_2(p1)*7 + INTERP_32_MASK_2(p2)) / 8);
 }
 
-static __inline unsigned long  interp_32_772(unsigned long  p1, unsigned long  p2, unsigned long  p3)
+static __inline u32  interp_32_772(u32  p1, u32  p2, u32  p3)
 {
   return INTERP_32_MASK_1(((INTERP_32_MASK_1(p1) + INTERP_32_MASK_1(p2))*7 + INTERP_32_MASK_1(p3)*2) / 16)
     | INTERP_32_MASK_2(((INTERP_32_MASK_2(p1) + INTERP_32_MASK_2(p2))*7 + INTERP_32_MASK_2(p3)*2) / 16);
 }
 
-static __inline unsigned long  interp_32_11(unsigned long  p1, unsigned long  p2)
+static __inline u32  interp_32_11(u32  p1, u32  p2)
 {
   return INTERP_32_MASK_1((INTERP_32_MASK_1(p1) + INTERP_32_MASK_1(p2)) / 2)
     | INTERP_32_MASK_2((INTERP_32_MASK_2(p1) + INTERP_32_MASK_2(p2)) / 2);
 }
 
-static __inline unsigned long  interp_32_31(unsigned long  p1, unsigned long  p2)
+static __inline u32  interp_32_31(u32  p1, u32  p2)
 {
   return INTERP_32_MASK_1((INTERP_32_MASK_1(p1)*3 + INTERP_32_MASK_1(p2)) / 4)
     | INTERP_32_MASK_2((INTERP_32_MASK_2(p1)*3 + INTERP_32_MASK_2(p2)) / 4);
 }
 
-static __inline unsigned long  interp_32_1411(unsigned long  p1, unsigned long  p2, unsigned long  p3)
+static __inline u32  interp_32_1411(u32  p1, u32  p2, u32  p3)
 {
   return INTERP_32_MASK_1((INTERP_32_MASK_1(p1)*14 + INTERP_32_MASK_1(p2) + INTERP_32_MASK_1(p3)) / 16)
     | INTERP_32_MASK_2((INTERP_32_MASK_2(p1)*14 + INTERP_32_MASK_2(p2) + INTERP_32_MASK_2(p3)) / 16);
 }
 
-static __inline unsigned long  interp_32_431(unsigned long  p1, unsigned long  p2, unsigned long  p3)
+static __inline u32  interp_32_431(u32  p1, u32  p2, u32  p3)
 {
   return INTERP_32_MASK_1((INTERP_32_MASK_1(p1)*4 + INTERP_32_MASK_1(p2)*3 + INTERP_32_MASK_1(p3)) / 8)
     | INTERP_32_MASK_2((INTERP_32_MASK_2(p1)*4 + INTERP_32_MASK_2(p2)*3 + INTERP_32_MASK_2(p3)) / 8);
 }
 
-static __inline unsigned long  interp_32_53(unsigned long  p1, unsigned long  p2)
+static __inline u32  interp_32_53(u32  p1, u32  p2)
 {
   return INTERP_32_MASK_1((INTERP_32_MASK_1(p1)*5 + INTERP_32_MASK_1(p2)*3) / 8)
     | INTERP_32_MASK_2((INTERP_32_MASK_2(p1)*5 + INTERP_32_MASK_2(p2)*3) / 8);
 }
 
-static __inline unsigned long  interp_32_151(unsigned long  p1, unsigned long  p2)
+static __inline u32  interp_32_151(u32  p1, u32  p2)
 {
   return INTERP_32_MASK_1((INTERP_32_MASK_1(p1)*15 + INTERP_32_MASK_1(p2)) / 16)
     | INTERP_32_MASK_2((INTERP_32_MASK_2(p1)*15 + INTERP_32_MASK_2(p2)) / 16);
 }
 
-static __inline unsigned long  interp_32_97(unsigned long  p1, unsigned long  p2)
+static __inline u32  interp_32_97(u32  p1, u32  p2)
 {
   return INTERP_32_MASK_1((INTERP_32_MASK_1(p1)*9 + INTERP_32_MASK_1(p2)*7) / 16)
     | INTERP_32_MASK_2((INTERP_32_MASK_2(p1)*9 + INTERP_32_MASK_2(p2)*7) / 16);
@@ -243,7 +243,7 @@ static int interp_16_diff(unsigned short p1, unsigned short p2)
   return 0;
 }
 
-static int interp_32_diff(unsigned long  p1, unsigned long  p2)
+static int interp_32_diff(u32  p1, u32  p2)
 {
   int r, g, b;
   int y, u, v;

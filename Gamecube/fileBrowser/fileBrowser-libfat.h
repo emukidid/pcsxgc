@@ -26,6 +26,11 @@
 #ifndef FILE_BROWSER_LIBFAT_H
 #define FILE_BROWSER_LIBFAT_H
 
+#ifdef __SWITCH__
+extern fileBrowser_file topLevel_SWITCH_Default;
+extern fileBrowser_file saveDir_SWITCH_Default; 
+extern fileBrowser_file biosDir_SWITCH_Default; 
+#else
 extern fileBrowser_file topLevel_libfat_Default;//GC SD Slots & Wii Front SD Slot
 extern fileBrowser_file topLevel_libfat_USB;    //Wii only, USB
 extern fileBrowser_file topLevel_DVD;    		//GC & Wii DVD
@@ -34,6 +39,7 @@ extern fileBrowser_file saveDir_libfat_USB;     //Wii only, USB
 extern fileBrowser_file biosDir_libfat_Default; //GC SD Slots & Wii Front SD Slot
 extern fileBrowser_file biosDir_libfat_USB;     //Wii only, USB
 extern fileBrowser_file biosDir_DVD;       		//GC & Wii DVD
+#endif
 
 int fileBrowser_libfat_readDir(fileBrowser_file*, fileBrowser_file**);
 int fileBrowser_libfat_open(fileBrowser_file* f);

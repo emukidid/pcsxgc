@@ -24,7 +24,12 @@
  *
 **/
 
+#ifdef __SWITCH__
+#include <switch.h>
+#else
 #include <gccore.h>
+#include <ogc/pad.h>
+#endif
 #include <stdint.h>
 #include <malloc.h>
 #include <stdio.h>
@@ -34,7 +39,6 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/types.h>
-#include <ogc/pad.h>
 #include "../plugins.h"
 #include "../PsxCommon.h"
 #include "../PSEmu_Plugin_Defs.h"
@@ -45,16 +49,20 @@
 PadDataS lastport1;
 PadDataS lastport2;
 
-extern void SysPrintf(char *fmt, ...);
+extern void SysPrintf(const char *fmt, ...);
 extern int stop;
 
 /* Controller type, later do this by a Variable in the GUI */
 //extern char controllerType = 0; // 0 = standard, 1 = analog (analog fails on old games)
-long  PadFlags = 0;
+s32  PadFlags = 0;
 
 virtualControllers_t virtualControllers[2];
 
 controller_t* controller_ts[num_controller_t] =
+#if defined(__SWITCH__)
+	{ &controller_SWITCH,
+	 };
+#else
 #if defined(WII) && !defined(NO_BT)
 	{ &controller_GC, &controller_Classic,
 	  &controller_WiimoteNunchuk,
@@ -63,6 +71,7 @@ controller_t* controller_ts[num_controller_t] =
 #else
 	{ &controller_GC,
 	 };
+#endif
 #endif
 
 // Use to invoke func on the mapped controller with args
@@ -143,7 +152,11 @@ void auto_assign_controllers(void)
 			if(w == 4) continue;
 
 			assign_controller(i, type, w);
+#ifdef __SWITCH__
+			padType[i] = PADTYPE_SWITCH;
+#else
 			padType[i] = type == &controller_GC ? PADTYPE_GAMECUBE : PADTYPE_WII;
+#endif
 			padAssign[i] = w;
 
 			// Don't assign the next type over this one or the same controller
@@ -256,26 +269,26 @@ void save_configurations(FILE* f, controller_t* controller){
 	}
 }
 
-long PAD__init(long flags) {
+s32 PAD__init(s32 flags) {
 	PadFlags |= flags;
 
 	return PSE_PAD_ERR_SUCCESS;
 }
 
-long PAD__shutdown(void) {
+s32 PAD__shutdown(void) {
 	return PSE_PAD_ERR_SUCCESS;
 }
 
-long PAD__open(void)
+s32 PAD__open(void)
 {
 	return PSE_PAD_ERR_SUCCESS;
 }
 
-long PAD__close(void) {
+s32 PAD__close(void) {
 	return PSE_PAD_ERR_SUCCESS;
 }
 /*
-long PAD__readPort1(PadDataS* pad) {
+s32 PAD__readPort1(PadDataS* pad) {
 	//TODO: Multitap support; Light Gun support
 
 	if( virtualControllers[0].inUse && DO_CONTROL(0, GetKeys, (BUTTONS*)&PAD_1) ) {
@@ -301,7 +314,7 @@ long PAD__readPort1(PadDataS* pad) {
 	return PSE_PAD_ERR_SUCCESS;
 }
 
-long PAD__readPort2(PadDataS* pad) {
+s32 PAD__readPort2(PadDataS* pad) {
 	//TODO: Multitap support; Light Gun support
 
 	if( virtualControllers[1].inUse && DO_CONTROL(1, GetKeys, (BUTTONS*)&PAD_2) ) {

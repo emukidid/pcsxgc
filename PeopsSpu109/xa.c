@@ -40,12 +40,12 @@
 
 xa_decode_t   * xapGlobal=0;
 
-unsigned long * XAFeed  = NULL;
-unsigned long * XAPlay  = NULL;
-unsigned long   XAStart[44100] __attribute__((aligned(32)));
-unsigned long * XAEnd   = NULL;
-unsigned long   XARepeat  = 0;
-unsigned long   XALastVal = 0;
+u32 * XAFeed  = NULL;
+u32 * XAPlay  = NULL;
+u32   XAStart[44100] __attribute__((aligned(32)));
+u32 * XAEnd   = NULL;
+u32   XARepeat  = 0;
+u32   XALastVal = 0;
 
 int             iLeftXAVol  = 32767;
 int             iRightXAVol = 32767;
@@ -150,12 +150,12 @@ INLINE void FeedXA(xa_decode_t *xap)
 
  if(xap->stereo)
   {
-   unsigned long * pS=(unsigned long *)xap->pcm;
-   unsigned long l=0;
+   u32 * pS=(u32 *)xap->pcm;
+   u32 l=0;
 
    if(iXAPitch)
     {
-     long l1,l2;short s;
+     s32 l1,l2;short s;
      for(i=0;i<iSize;i++)
       {
        if(iUseInterpolation==2) 
@@ -264,11 +264,11 @@ INLINE void FeedXA(xa_decode_t *xap)
  else
   {
    unsigned short * pS=(unsigned short *)xap->pcm;
-   unsigned long l;short s=0;
+   u32 l;short s=0;
 
    if(iXAPitch)
     {
-     long l1;
+     s32 l1;
      for(i=0;i<iSize;i++)
       {
        if(iUseInterpolation==2) 

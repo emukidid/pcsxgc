@@ -35,7 +35,7 @@ public:
       return o;
    }
 
-   unsigned long trackNumber;
+   u32 trackNumber;
    CDTime trackStart;
    CDTime trackEnd;
    CDTime trackLength;

@@ -10,7 +10,7 @@
   PSECALLBACK void psepIdentify(HWND parent, LPPLUGININFO info);
 
   // this routine should not allocate memory or do sth stupid... just fill the fields in PHI
-  PSECALLBACK long psepInitialize(LPPHI phi);
+  PSECALLBACK s32 psepInitialize(LPPHI phi);
 
 */  
 
@@ -40,16 +40,16 @@ typedef struct
 typedef struct
 {
 	// this field is set by psemu, to force plugin to use specified display mode
-	unsigned long display_type;
+	u32 display_type;
 
 	// client are to draw
 	unsigned short window_x, window_y, window_w, window_h;
 
 	// psemu will call this routine whenever window size or windowed/fullscreen mode change
-	long (PSECALLBACK *display_type_changed)(void);
+	s32 (PSECALLBACK *display_type_changed)(void);
 
 	// this field is modified by plugin (then plugin calls display_mode_changed)
-	volatile unsigned long display_mode;
+	volatile u32 display_mode;
 	// this field is set by psemu, if you want to display, dont count fps
 	volatile float fps;
 
@@ -64,13 +64,13 @@ typedef struct
 	// those following routines pointers must be set by plugin
 
 	// initialize is to be called only once when psemu starts
-	long (PSECALLBACK *initialize)(void);
+	s32 (PSECALLBACK *initialize)(void);
 	// shutdown is called when psemu crashes or exits
 	// please keep in mind to close window and free resources, in case of crash, close() is not called
 	void (PSECALLBACK *shutdown)(void);
 
 	// used to open/close window... pliz, dont invalidate frame buffer or so
-	long (PSECALLBACK *open)(void);
+	s32 (PSECALLBACK *open)(void);
 	void (PSECALLBACK *close)(void);
 
 	// as a PSX reset :) 
@@ -80,18 +80,18 @@ typedef struct
 	
 	
 	// note that in dma_xxxx functions, addr is a relative to PSX memory pointer (PHI.lpvPSMem)
-	unsigned long (PSECALLBACK *dma_slice_in)(unsigned long addr, unsigned long size);
-	unsigned long (PSECALLBACK *dma_slice_out)(unsigned long addr, unsigned long size);
-	unsigned long (PSECALLBACK *dma_chain_in)(unsigned long addr);
+	u32 (PSECALLBACK *dma_slice_in)(u32 addr, u32 size);
+	u32 (PSECALLBACK *dma_slice_out)(u32 addr, u32 size);
+	u32 (PSECALLBACK *dma_chain_in)(u32 addr);
 	
-	void (PSECALLBACK *data_in)(unsigned long data);
-	unsigned long (PSECALLBACK *data_out)(void);
-	void (PSECALLBACK *status_in)(unsigned long status);
-	unsigned long (PSECALLBACK *status_out)(void);
+	void (PSECALLBACK *data_in)(u32 data);
+	u32 (PSECALLBACK *data_out)(void);
+	void (PSECALLBACK *status_in)(u32 status);
+	u32 (PSECALLBACK *status_out)(void);
 	// vsync will be called on every vsync
 	// if type is 0 ... just update screen if needed etc
 	// if type is 1 .... wait for VSync of VGA card or whatever... 
-	void (PSECALLBACK *vsync)(unsigned long type);
+	void (PSECALLBACK *vsync)(u32 type);
 
 
 	
@@ -119,8 +119,8 @@ typedef struct
 	unsigned char	version;
 	unsigned char	revision;
 	unsigned char	psemu_version;
-	unsigned long (PSECALLBACK *about)(void);
-	unsigned long (PSECALLBACK *configure)(LPPLUGINCONFIG config);
+	u32 (PSECALLBACK *about)(void);
+	u32 (PSECALLBACK *configure)(LPPLUGINCONFIG config);
 } PLUGININFO;
 
 
@@ -169,12 +169,12 @@ typedef struct
 	// pointer to PSX RAM
 	void			*lpvPSMem;
 	// mem size in bytes
-	unsigned long	memsize;
+	u32	memsize;
 		
 	HWND psemu_hwnd;
 	
 	// use this to report errors, instead of calling AfxMessageBox()
-	long (PSECALLBACK *pseMessageBox)(unsigned long type, char *fmt, ...);
+	s32 (PSECALLBACK *pseMessageBox)(u32 type, char *fmt, ...);
 	
 	PHIGPU 	gpu;
 	PHISPU 	spu;

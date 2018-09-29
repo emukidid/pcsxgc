@@ -28,6 +28,10 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
+#ifdef __SWITCH__
+#include <switch.h>
+#else
+#endif
 #include <stdio.h>
 
 extern char padNeedScan, wpadNeedScan;
@@ -39,22 +43,22 @@ void auto_assign_controllers(void);
 typedef union {
 	u16 All;
 	struct {
-		unsigned SQUARE_BUTTON    : 1;
-		unsigned CROSS_BUTTON     : 1;
-		unsigned CIRCLE_BUTTON    : 1;
-		unsigned TRIANGLE_BUTTON  : 1;
-		unsigned R1_BUTTON        : 1;
-		unsigned L1_BUTTON        : 1;
-		unsigned R2_BUTTON        : 1;
 		unsigned L2_BUTTON        : 1;
-		unsigned L_DPAD           : 1;
-		unsigned D_DPAD           : 1;
-		unsigned R_DPAD           : 1;
-		unsigned U_DPAD           : 1;
-		unsigned START_BUTTON     : 1;
-		unsigned L3_BUTTON        : 1;
-		unsigned R3_BUTTON        : 1;
+		unsigned R2_BUTTON        : 1;
+		unsigned L1_BUTTON        : 1;
+		unsigned R1_BUTTON        : 1;
+		unsigned TRIANGLE_BUTTON  : 1;
+		unsigned CIRCLE_BUTTON    : 1;
+		unsigned CROSS_BUTTON     : 1;
+		unsigned SQUARE_BUTTON    : 1;
 		unsigned SELECT_BUTTON    : 1;	
+		unsigned R3_BUTTON        : 1;
+		unsigned L3_BUTTON        : 1;
+		unsigned START_BUTTON     : 1;
+		unsigned U_DPAD           : 1;
+		unsigned R_DPAD           : 1;
+		unsigned D_DPAD           : 1;
+		unsigned L_DPAD           : 1;
 	};
 } _BUTTONS;
 
@@ -69,7 +73,7 @@ typedef struct {
 
 typedef struct {
 	int index;
-	unsigned int mask;
+	u64 mask;
 	char* name;
 } button_t;
 
@@ -128,7 +132,7 @@ typedef struct {
 } controller_t;
 
 typedef struct _virtualControllers_t {
-	BOOL          inUse;   // This virtual controller is being controlled
+	bool          inUse;   // This virtual controller is being controlled
 	controller_t* control; // The type of controller being used
 	int           number;  // The physical controller number
 	controller_config_t* config; // This is no longer needed...
@@ -137,6 +141,11 @@ typedef struct _virtualControllers_t {
 extern virtualControllers_t virtualControllers[2];
 
 // List of all the defined controller_t's
+#if defined(__SWITCH__)
+#define num_controller_t 1
+extern controller_t controller_SWITCH;
+extern controller_t* controller_ts[num_controller_t];
+#else
 #if defined(WII) && !defined(NO_BT)
 
 #define num_controller_t 4
@@ -153,6 +162,7 @@ extern controller_t controller_GC;
 extern controller_t* controller_ts[num_controller_t];
 
 #endif // WII && !NO_BT
+#endif
 
 void init_controller_ts(void);
 void assign_controller(int whichVirtual, controller_t*, int whichPhysical);

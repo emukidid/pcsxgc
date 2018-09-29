@@ -19,6 +19,7 @@
 #include "psxhw.h"
 #include "PsxGpu.h"
 #include "psxdma.h"
+#include "CoreDebug.h"
 
 extern unsigned int hSyncCount;
 

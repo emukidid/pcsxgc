@@ -47,9 +47,14 @@
 #include "fps.h"
 #include "gpu.h"
 
-#ifdef __GX__
+#if defined(__GX__)
 #include "../Gamecube/DEBUG.h"
 #endif //__GX__
+
+#if defined(__SWITCH__)
+#include <switch.h>
+#include <time.h>
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 // FPS stuff
@@ -367,7 +372,7 @@ void FrameSkip(void)
    dwLastLace=dwLaceCnt;                               // store curr count (frame limitation helper)
    dwWaitTime=dwLaceCnt*dwFrameRateTicks;              // calc the 'real psx lace time'
 
-   if(_ticks_since_last_update>dwWaitTime)             // hey, we needed way too long for that frame...
+   if(_ticks_since_last_update>dwWaitTime)             // hey, we needed way too s32 for that frame...
     {
      if(UseFrameLimit)                                 // if limitation, we skip just next frame,
       {                                                // and decide after, if we need to do more
@@ -415,11 +420,11 @@ void FrameSkip(void)
 void calcfps(void)                                     // fps calculations
 {
  static DWORD curticks,_ticks_since_last_update,lastticks;
- static long   fps_cnt = 0;
+ static s32   fps_cnt = 0;
  static DWORD  fps_tck = 1;
  static LARGE_INTEGER  CurrentTime;
  static LARGE_INTEGER  LastTime;
- static long   fpsskip_cnt = 0;
+ static s32   fpsskip_cnt = 0;
  static DWORD  fpsskip_tck = 1;
 
  if(IsPerformanceCounter)
@@ -522,7 +527,7 @@ void PCFrameCap (void)
        lastticks=curticks;
        LastTime.HighPart = CurrentTime.HighPart;
        LastTime.LowPart = CurrentTime.LowPart;
-       TicksToWait = (unsigned long)(CPUFrequency.LowPart / fFrameRateHz);
+       TicksToWait = (u32)(CPUFrequency.LowPart / fFrameRateHz);
       }
     }
    else
@@ -545,7 +550,7 @@ void PCFrameCap (void)
 void PCcalcfps(void)
 {
  static DWORD curticks,_ticks_since_last_update,lastticks;
- static long  fps_cnt = 0;
+ static s32  fps_cnt = 0;
  static float fps_acc = 0;
  static LARGE_INTEGER  CurrentTime;
  static LARGE_INTEGER  LastTime;
@@ -669,28 +674,30 @@ void InitFPS(void)
 
 #define TIMEBASE 100000
 
-#ifdef __GX__
+#if defined(__GX__)
 // prototypes
- long long gettime(void);
- unsigned int diff_usec(long long start,long long end);
+ s32 s32 gettime(void);
+ unsigned int diff_usec(s32 s32 start,s32 s32 end);
 #endif //__GX__
 
-unsigned long timeGetTime()
+u32 timeGetTime()
 {
-#ifndef __GX__
+#if defined(__GX__)
+ s32 s32 nowTick = gettime();
+ return diff_usec(0,nowTick)/10;
+#elif defined (__SWITCH__)
+ return (u32)(svcGetSystemTick());
+#else //!__GX__
  struct timeval tv;
  gettimeofday(&tv, 0);                                 // well, maybe there are better ways
  return tv.tv_sec * 100000 + tv.tv_usec/10;            // to do that, but at least it works
-#else //!__GX__
- long long nowTick = gettime();
- return diff_usec(0,nowTick)/10;
 #endif //__GX__
 }
 
 void FrameCap (void)
 {
- static unsigned long curticks, lastticks, _ticks_since_last_update;
- static unsigned long TicksToWait = 0;
+ static u32 curticks, lastticks, _ticks_since_last_update;
+ static u32 TicksToWait = 0;
  BOOL Waiting = TRUE;
 
   {
@@ -756,7 +763,7 @@ void FrameCapSSSPSX(void)                              // frame limit func SSSPS
 
  curticks = timeGetTime();
  if ((signed int)(reqticks - curticks) > 60)
-     usleep((reqticks - curticks) * 500L);             // pete: a simple Sleep doesn't burn 100% cpu cycles, but it isn't as exact as a brute force loop
+     svcSleepThread((reqticks - curticks) * 500L);             // pete: a simple Sleep doesn't burn 100% cpu cycles, but it isn't as exact as a brute force loop
 
  if ((signed int)(curticks - reqticks) > 60)
      reqticks += (curticks - reqticks) / 2;
@@ -848,7 +855,7 @@ void FrameSkip(void)
    dwLastLace=dwLaceCnt;                               // store curr count (frame limitation helper)
    dwWaitTime=dwLaceCnt*dwFrameRateTicks;              // calc the 'real psx lace time'
 
-   if(_ticks_since_last_update>dwWaitTime)             // hey, we needed way too long for that frame...
+   if(_ticks_since_last_update>dwWaitTime)             // hey, we needed way too s32 for that frame...
     {
      if(UseFrameLimit)                                 // if limitation, we skip just next frame,
       {                                                // and decide after, if we need to do more
@@ -888,11 +895,11 @@ void FrameSkip(void)
 
 void calcfps(void)
 {
- static unsigned long curticks,_ticks_since_last_update,lastticks;
- static long   fps_cnt = 0;
- static unsigned long  fps_tck = 1;
- static long          fpsskip_cnt = 0;
- static unsigned long fpsskip_tck = 1;
+ static u32 curticks,_ticks_since_last_update,lastticks;
+ static s32   fps_cnt = 0;
+ static u32  fps_tck = 1;
+ static s32          fpsskip_cnt = 0;
+ static u32 fpsskip_tck = 1;
 
   {
    curticks = timeGetTime();
@@ -934,8 +941,8 @@ void calcfps(void)
 
 void PCFrameCap (void)
 {
- static unsigned long curticks, lastticks, _ticks_since_last_update;
- static unsigned long TicksToWait = 0;
+ static u32 curticks, lastticks, _ticks_since_last_update;
+ static u32 TicksToWait = 0;
  BOOL Waiting = TRUE;
 
  while (Waiting)
@@ -947,7 +954,7 @@ void PCFrameCap (void)
     {
      Waiting = FALSE;
      lastticks = curticks;
-     TicksToWait = (TIMEBASE/ (unsigned long)fFrameRateHz);
+     TicksToWait = (TIMEBASE/ (u32)fFrameRateHz);
     }
   }
 }
@@ -956,8 +963,8 @@ void PCFrameCap (void)
 
 void PCcalcfps(void)
 {
- static unsigned long curticks,_ticks_since_last_update,lastticks;
- static long  fps_cnt = 0;
+ static u32 curticks,_ticks_since_last_update,lastticks;
+ static s32  fps_cnt = 0;
  static float fps_acc = 0;
  float CurrentFPS=0;
 
@@ -987,7 +994,7 @@ void SetAutoFrameCap(void)
  if(iFrameLimit==1)
   {
    fFrameRateHz = fFrameRate;
-   dwFrameRateTicks=(TIMEBASE / (unsigned long)fFrameRateHz);
+   dwFrameRateTicks=(TIMEBASE / (u32)fFrameRateHz);
    return;
   }
 
@@ -1012,8 +1019,8 @@ void SetAutoFrameCap(void)
            fFrameRateHz=33868800.0f/565031.25f;        // 59.94146
       else fFrameRateHz=33868800.0f/566107.50f;        // 59.82750
     }
-//   dwFrameRateTicks=(TIMEBASE / (unsigned long)fFrameRateHz);
-   dwFrameRateTicks=(unsigned long) (TIMEBASE / fFrameRateHz);
+//   dwFrameRateTicks=(TIMEBASE / (u32)fFrameRateHz);
+   dwFrameRateTicks=(u32) (TIMEBASE / fFrameRateHz);
   }
 }
 
@@ -1035,7 +1042,7 @@ void InitFPS(void)
    else               fFrameRateHz=fFrameRate;       // else set user framerate
   }
 
- dwFrameRateTicks=(TIMEBASE / (unsigned long)fFrameRateHz);
+ dwFrameRateTicks=(TIMEBASE / (u32)fFrameRateHz);
 }
 
 #endif

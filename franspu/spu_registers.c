@@ -127,9 +127,9 @@ void SetPitch(int ch,unsigned short val)               // SET PITCH
 }
 
 // WRITE REGISTERS: called by main emu
-void FRAN_SPU_writeRegister(unsigned long reg, unsigned short val)
+void FRAN_SPU_writeRegister(u32 reg, unsigned short val)
 {
- 	const unsigned long r=reg&0xfff;
+ 	const u32 r=reg&0xfff;
 
  	regArea[(r-0xc00)>>1] = val;
 
@@ -148,11 +148,11 @@ void FRAN_SPU_writeRegister(unsigned long reg, unsigned short val)
        				SetPitch(ch,val);					// pitch
        				break;
      			case 6:      
-       				s_chan[ch].pStart=spuMemC+((unsigned long) val<<3);	// start
+       				s_chan[ch].pStart=spuMemC+((u32) val<<3);	// start
        				break;
      			case 8:								// level with pre-calcs
        			{
-        			const unsigned long lval=val;
+        			const u32 lval=val;
         			s_chan[ch].ADSRX.AttackModeExp=(lval&0x8000)?1:0; 
         			s_chan[ch].ADSRX.AttackRate = ((lval>>8) & 0x007f)^0x7f;
         			s_chan[ch].ADSRX.DecayRate = 4*(((lval>>4) & 0x000f)^0x1f);
@@ -161,7 +161,7 @@ void FRAN_SPU_writeRegister(unsigned long reg, unsigned short val)
        			}
      			case 10:							// adsr times with pre-calcs
       			{
-       				const unsigned long lval=val;
+       				const u32 lval=val;
        				s_chan[ch].ADSRX.SustainModeExp = (lval&0x8000)?1:0;
        				s_chan[ch].ADSRX.SustainIncrease= (lval&0x4000)?0:1;
        				s_chan[ch].ADSRX.SustainRate = ((lval>>6) & 0x007f)^0x7f;
@@ -172,7 +172,7 @@ void FRAN_SPU_writeRegister(unsigned long reg, unsigned short val)
      			case 12: // adsr volume... mmm have to investigate this
        				break; 
      			case 14: // loop?
-       				s_chan[ch].pLoop=spuMemC+((unsigned long) val<<3);
+       				s_chan[ch].pLoop=spuMemC+((u32) val<<3);
        				s_chan[ch].bIgnoreLoop=1;
        				break;
     		}
@@ -181,7 +181,7 @@ void FRAN_SPU_writeRegister(unsigned long reg, unsigned short val)
 
  	switch(r)
    	{
-    		case H_SPUaddr    : spuAddr = (unsigned long) val<<3; break;
+    		case H_SPUaddr    : spuAddr = (u32) val<<3; break;
     		case H_SPUdata:
       			spuMem[spuAddr>>1] = HOST2LE16(val);
       			spuAddr+=2;
@@ -193,15 +193,15 @@ void FRAN_SPU_writeRegister(unsigned long reg, unsigned short val)
       			if(val==0xFFFF || val<=0x200) {
       				rvb.StartAddr=rvb.CurrAddr=0;
       			} else {
-        			const long iv=(unsigned long)val<<2;
+        			const s32 iv=(u32)val<<2;
         			if(rvb.StartAddr!=iv)
          			{
-          				rvb.StartAddr=(unsigned long)val<<2;
+          				rvb.StartAddr=(u32)val<<2;
           				rvb.CurrAddr=rvb.StartAddr;
          			}
        			}
       			break;
-    		case H_SPUirqAddr : spuIrq = val;	pSpuIrq=spuMemC+((unsigned long) val<<3);	break;
+    		case H_SPUirqAddr : spuIrq = val;	pSpuIrq=spuMemC+((u32) val<<3);	break;
     		case H_SPUrvolL   : rvb.VolLeft=val; 		break;
     		case H_SPUrvolR   : rvb.VolRight=val; 		break;
     		case H_SPUon1     : SoundOn(0,16,val); 		break;
@@ -252,9 +252,9 @@ void FRAN_SPU_writeRegister(unsigned long reg, unsigned short val)
 }
 
 // READ REGISTER: called by main emu
-unsigned short FRAN_SPU_readRegister(unsigned long reg)
+unsigned short FRAN_SPU_readRegister(u32 reg)
 {
- 	const unsigned long r=reg&0xfff;
+ 	const u32 r=reg&0xfff;
 
  	if(r>=0x0c00 && r<0x0d80)
   	{

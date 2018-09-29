@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2008, Wei Mingzhi. All rights reserved.
 //
-// Use, redistribution and modification of this code is unrestricted as long as this
+// Use, redistribution and modification of this code is unrestricted as s32 as this
 // notice is preserved.
 //
 

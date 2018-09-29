@@ -116,7 +116,7 @@ void ConfigWindow::makeWindow()
 
 /** configure plugin external functions **/
 
-long CALLBACK CDRconfigure(void)
+s32 CALLBACK CDRconfigure(void)
 {
    RunConfig();
    return 0;

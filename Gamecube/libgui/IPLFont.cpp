@@ -90,8 +90,8 @@ void IplFont::initFont()
 void IplFont::setIplConfig(unsigned char c)
 {
 	//lowlevel Qoob Modchip disable
-	volatile unsigned long* exi = (volatile unsigned long*)0xCC006800;
-	unsigned long val,addr;
+	volatile u32* exi = (volatile u32*)0xCC006800;
+	u32 val,addr;
 	addr=0xc0000000;
 	val = c << 24;
 	exi[0] = ((((exi[0]) & 0x405) | 256) | 48);	//select IPL

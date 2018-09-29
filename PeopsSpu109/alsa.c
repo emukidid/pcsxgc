@@ -43,7 +43,7 @@
 // small linux time helper... only used for watchdog
 ////////////////////////////////////////////////////////////////////////
 
-unsigned long timeGetTime()
+u32 timeGetTime()
 {
  struct timeval tv;
  gettimeofday(&tv, 0);                                 // well, maybe there are better ways
@@ -174,9 +174,9 @@ void RemoveSound(void)
 // GET BYTES BUFFERED
 ////////////////////////////////////////////////////////////////////////
 
-unsigned long SoundGetBytesBuffered(void)
+u32 SoundGetBytesBuffered(void)
 {
- unsigned long l;
+ u32 l;
 
  if(handle == NULL)                                 // failed to open?
   return SOUNDSIZE;
@@ -193,7 +193,7 @@ unsigned long SoundGetBytesBuffered(void)
 // FEED SOUND DATA
 ////////////////////////////////////////////////////////////////////////
 
-void SoundFeedStreamData(unsigned char* pSound,long lBytes)
+void SoundFeedStreamData(unsigned char* pSound,s32 lBytes)
 {
  if(handle == NULL) return;
 

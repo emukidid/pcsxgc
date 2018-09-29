@@ -42,7 +42,7 @@
 #define KEY_BADTEXTURES   128
 #define KEY_CHECKTHISOUT  256
 
-#ifndef _BIG_ENDIAN
+#ifndef __BIG_ENDIAN__
 #ifndef _FPSE
 #define RED(x) (x & 0xff)
 #define BLUE(x) ((x>>16) & 0xff)

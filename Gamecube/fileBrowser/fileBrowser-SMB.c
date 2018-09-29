@@ -19,7 +19,7 @@
  * See the GNU General Public Licence for more details.
  *
 **/
-
+#ifndef __SWITCH__
 #ifdef HW_RVL
 
 #include <string.h>
@@ -95,7 +95,7 @@ static void* init_network(void *args) {
 
     if(!net_initialized) {
       netInitPending = 1;
-      res = if_config(ip, NULL, NULL, true, 5);
+      res = if_config(ip, NULL, NULL, true);
       if(res >= 0) {
         net_initialized = 1;
       }
@@ -185,4 +185,5 @@ int fileBrowser_SMB_deinit(fileBrowser_file* file) {
 	return fileBrowser_libfatROM_deinit(file);
 }
 
+#endif
 #endif

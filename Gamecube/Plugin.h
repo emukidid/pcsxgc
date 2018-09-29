@@ -21,6 +21,6 @@
 #ifndef __PLUGIN_H__
 #define __PLUGIN_H__
 
-typedef long (* NETopen)(unsigned long *);
+typedef s32 (* NETopen)(u32 *);
 
 #endif /* __PLUGIN_H__ */

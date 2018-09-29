@@ -16,8 +16,14 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
+#ifdef __SWITCH__
+#include <switch.h>
+#else
 #include <gccore.h>
+#include <fat.h>
+#include <aesndlib.h>
+#endif
 #include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,14 +32,22 @@
 #include <errno.h>
 #include <string.h>
 #include <time.h>
-#include <fat.h>
-#include <aesndlib.h>
 
 #ifdef DEBUGON
 # include <debug.h>
 #endif
 #include "../PsxCommon.h"
 #include "wiiSXconfig.h"
+
+#ifdef __SWITCH__
+extern "C" {
+#include "DEBUG.h"
+#include "fileBrowser/fileBrowser.h"
+#include "fileBrowser/fileBrowser-libfat.h"
+#include "gc_input/controller.h"
+void go(void);
+}
+#else
 #include "menu/MenuContext.h"
 extern "C" {
 #include "DEBUG.h"
@@ -42,11 +56,8 @@ extern "C" {
 #include "fileBrowser/fileBrowser-CARD.h"
 #include "fileBrowser/fileBrowser-SMB.h"
 #include "gc_input/controller.h"
-#ifdef HW_DOL
-#include "ARAM.h"
-#include "vm/vm.h"
-#endif
 }
+#endif
 
 #ifdef WII
 unsigned int MALLOC_MEM2 = 0;
@@ -56,30 +67,83 @@ extern u32 __di_check_ahbprot(void);
 }
 #endif //WII
 
+//-----------------------------------------------------------------------------
+// nxlink support
+//-----------------------------------------------------------------------------
+
+#ifndef ENABLE_NXLINK
+#define TRACE(fmt,...) ((void)0)
+#else
+#include <unistd.h>
+#define TRACE(fmt,...) printf("%s: " fmt "\n", __PRETTY_FUNCTION__, ## __VA_ARGS__)
+
+static int s_nxlinkSock = -1;
+
+static void initNxLink()
+{
+    if (R_FAILED(socketInitializeDefault()))
+        return;
+
+    s_nxlinkSock = nxlinkStdio();
+    if (s_nxlinkSock >= 0)
+        TRACE("printf output now goes to nxlink server");
+    else
+        socketExit();
+}
+
+static void deinitNxLink()
+{
+    if (s_nxlinkSock >= 0)
+    {
+        close(s_nxlinkSock);
+        socketExit();
+        s_nxlinkSock = -1;
+    }
+}
+
+extern "C" void userAppInit()
+{
+    initNxLink();
+}
+
+extern "C" void userAppExit()
+{
+    deinitNxLink();
+}
+
+#endif
+
 /* function prototypes */
 extern "C" {
 int SysInit();
 void SysReset();
 void SysClose();
 void SysPrintf(const char *fmt, ...);
-void *SysLoadLibrary(char *lib);
-void *SysLoadSym(void *lib, char *sym);
-char *SysLibError();
+void *SysLoadLibrary(const char *lib);
+void *SysLoadSym(void *lib, const char *sym);
+const char *SysLibError();
 void SysCloseLibrary(void *lib);
 void SysUpdate();
 void SysRunGui();
-void SysMessage(char *fmt, ...);
+void SysMessage(const char *fmt, ...);
 }
 
-u32* xfb[2] = { NULL, NULL };	/*** Framebuffers ***/
-int whichfb = 0;        /*** Frame buffer toggle ***/
-GXRModeObj *vmode;				/*** Graphics Mode Object ***/
-#define DEFAULT_FIFO_SIZE ( 256 * 1024 )
-BOOL hasLoadedISO = FALSE;
+#ifdef __SWITCH__
 fileBrowser_file isoFile;  //the ISO file
 fileBrowser_file cddaFile; //the CDDA file
 fileBrowser_file subFile;  //the SUB file
 fileBrowser_file *biosFile = NULL;  //BIOS file
+#else
+u32* xfb[2] = { NULL, NULL };	/*** Framebuffers ***/
+int whichfb = 0;        /*** Frame buffer toggle ***/
+GXRModeObj *vmode;				/*** Graphics Mode Object ***/
+#define DEFAULT_FIFO_SIZE ( 256 * 1024 )
+fileBrowser_file isoFile;  //the ISO file
+fileBrowser_file cddaFile; //the CDDA file
+fileBrowser_file subFile;  //the SUB file
+fileBrowser_file *biosFile = NULL;  //BIOS file
+#endif
+bool hasLoadedISO = FALSE;
 
 #if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
 	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
@@ -101,7 +165,9 @@ char saveEnabled;
 char creditsScrolling;
 char padNeedScan=1;
 char wpadNeedScan=1;
+#ifdef HW_RVL
 char shutdown = 0;
+#endif
 char nativeSaveDevice;
 char saveStateDevice;
 char autoSave;
@@ -141,11 +207,18 @@ static struct {
   { "ScreenMode", &screenMode, SCREENMODE_4x3, SCREENMODE_16x9_PILLARBOX },
   { "VideoMode", &videoMode, VIDEOMODE_AUTO, VIDEOMODE_PROGRESSIVE },
   { "FileSortMode", &fileSortMode, FILESORT_DIRS_MIXED, FILESORT_DIRS_FIRST },
+#ifdef __SWITCH__
+  { "Core", &dynacore, DYNACORE_INTERPRETER, DYNACORE_INTERPRETER },
+  { "NativeDevice", &nativeSaveDevice, NATIVESAVEDEVICE_SWITCH, NATIVESAVEDEVICE_SWITCH },
+  { "StatesDevice", &saveStateDevice, SAVESTATEDEVICE_SWITCH, SAVESTATEDEVICE_SWITCH },
+  { "BiosDevice", &biosDevice, BIOSDEVICE_HLE, BIOSDEVICE_SWITCH },
+#else
   { "Core", &dynacore, DYNACORE_DYNAREC, DYNACORE_INTERPRETER },
   { "NativeDevice", &nativeSaveDevice, NATIVESAVEDEVICE_SD, NATIVESAVEDEVICE_CARDB },
   { "StatesDevice", &saveStateDevice, SAVESTATEDEVICE_SD, SAVESTATEDEVICE_USB },
-  { "AutoSave", &autoSave, AUTOSAVE_DISABLE, AUTOSAVE_ENABLE },
   { "BiosDevice", &biosDevice, BIOSDEVICE_HLE, BIOSDEVICE_USB },
+#endif
+  { "AutoSave", &autoSave, AUTOSAVE_DISABLE, AUTOSAVE_ENABLE },
   { "BootThruBios", &LoadCdBios, BOOTTHRUBIOS_NO, BOOTTHRUBIOS_YES },
   { "LimitFrames", &frameLimit, FRAMELIMIT_NONE, FRAMELIMIT_AUTO },
   { "SkipFrames", &frameSkip, FRAMESKIP_DISABLE, FRAMESKIP_ENABLE },
@@ -166,7 +239,25 @@ static struct {
 void handleConfigPair(char* kv);
 void readConfig(FILE* f);
 void writeConfig(FILE* f);
+#ifndef __SWITCH__
 int checkBiosExists(int testDevice);
+#else
+int checkBiosExists(int testDevice) 
+{
+	fileBrowser_file testFile;
+	memset(&testFile, 0, sizeof(fileBrowser_file));
+	
+	biosFile_dir = &biosDir_SWITCH_Default;
+	sprintf(&testFile.name[0], "%s/SCPH1001.BIN", &biosFile_dir->name[0]);
+	biosFile_readFile  = fileBrowser_libfat_readFile;
+	biosFile_open      = fileBrowser_libfat_open;
+	biosFile_init      = fileBrowser_libfat_init;
+	biosFile_deinit    = fileBrowser_libfat_deinit;
+	biosFile_init(&testFile);  //initialize the bios device (it might not be the same as ISO device)
+	return biosFile_open(&testFile);
+}
+#endif
+
 
 void loadSettings(int argc, char *argv[])
 {
@@ -174,7 +265,7 @@ void loadSettings(int argc, char *argv[])
 	audioEnabled     = 1; // Audio
 	volume           = VOLUME_MEDIUM;
 #ifdef RELEASE
-	showFPSonScreen  = 0; // Don't show FPS on Screen
+	showFPSonScreen  = 1; // Don't show FPS on Screen
 #else
 	showFPSonScreen  = 1; // Show FPS on Screen
 #endif
@@ -188,7 +279,7 @@ void loadSettings(int argc, char *argv[])
 	saveStateDevice	 = 0; // SD
 	autoSave         = 1; // Auto Save Game
 	creditsScrolling = 0; // Normal menu for now
-	dynacore         = 0; // Dynarec
+	dynacore         = 1; // Interpreter
 	screenMode		 = 0; // Stretch FB horizontally
 	videoMode		 = VIDEOMODE_AUTO;
 	fileSortMode	 = FILESORT_DIRS_FIRST;
@@ -201,11 +292,15 @@ void loadSettings(int argc, char *argv[])
 	loadButtonSlot	 = LOADBUTTON_DEFAULT;
 	controllerType	 = CONTROLLERTYPE_STANDARD;
 	numMultitaps	 = MULTITAPS_NONE;
-	menuActive = 1;
+	//menuActive = 1;
 
 	//PCSX-specific defaults
 	memset(&Config, 0, sizeof(PcsxConfig));
+#ifdef __SWITCH__
+	Config.Cpu=CPU_INTERPRETER;
+#else
 	Config.Cpu=dynacore;		//Dynarec core
+#endif
 	strcpy(Config.Net,"Disabled");
 	Config.PsxOut = 1;
 	Config.HLE = 1;
@@ -215,6 +310,9 @@ void loadSettings(int argc, char *argv[])
 	Config.PsxAuto = 1; //Autodetect
 	LoadCdBios = BOOTTHRUBIOS_NO;
 
+#ifdef __SWITCH__
+#include <switch.h>
+#else
 	//config stuff
 	fileBrowser_file* configFile_file;
 	int (*configFile_init)(fileBrowser_file*) = fileBrowser_libfat_init;
@@ -292,17 +390,25 @@ void loadSettings(int argc, char *argv[])
 		handleConfigPair(argv[i]);
 	}
 #endif
+#endif
 
 	//Test for Bios file
-	if(biosDevice != BIOSDEVICE_HLE)
-		if(checkBiosExists((int)biosDevice) == FILE_BROWSER_ERROR_NO_FILE)
-			biosDevice = BIOSDEVICE_HLE;
-
+	if(checkBiosExists((int)biosDevice) == FILE_BROWSER_ERROR_NO_FILE)
+		biosDevice = BIOSDEVICE_HLE;
+	else
+		biosDevice = BIOSDEVICE_SWITCH;
 	//Synch settings with Config
+#ifdef __SWITCH__
+	Config.Cpu=CPU_INTERPRETER;
+#else
 	Config.Cpu=dynacore;
+#endif
 	iVolume = volume;
 }
 
+#ifdef __SWITCH__
+#include <switch.h>
+#else
 void ScanPADSandReset(u32 dummy) 
 {
 //	PAD_ScanPads();
@@ -319,12 +425,13 @@ void ShutdownWii()
 }
 #endif
 
-void video_mode_init(GXRModeObj *videomode, u32 *fb1, u32 *fb2)
+void video_mode_init(GXRModeObj *videomode,unsigned int *fb1, unsigned int *fb2)
 {
 	vmode = videomode;
 	xfb[0] = fb1;
 	xfb[1] = fb2;
 }
+#endif
 
 // Plugin structure
 extern "C" {
@@ -340,58 +447,6 @@ PluginTable plugins[] =
 	  PLUGIN_SLOT_7 };
 }
 
-int main(int argc, char *argv[]) 
-{
-	/* INITIALIZE */
-#ifdef HW_RVL
-	DI_UseCache(false);
-	if (!__di_check_ahbprot()) {
-		s32 preferred = IOS_GetPreferredVersion();
-		if (preferred == 58 || preferred == 61)
-			IOS_ReloadIOS(preferred);
-		else DI_LoadDVDX(true);
-	}
-	
-	DI_Init();    // first
-#else
-	VM_Init(ARAM_SIZE, MRAM_BACKING);		// Setup Virtual Memory with the entire ARAM
-#endif
-	
-	loadSettings(argc, argv);
-	MenuContext *menu = new MenuContext(vmode);
-	VIDEO_SetPostRetraceCallback (ScanPADSandReset);
-
-#ifndef WII
-	DVD_Init();
-#endif
-
-#ifdef DEBUGON
-	//DEBUG_Init(GDBSTUB_DEVICE_TCP,GDBSTUB_DEF_TCPPORT); //Default port is 2828
-	DEBUG_Init(GDBSTUB_DEVICE_USB, 1);
-	_break();
-#endif
-
-	control_info_init(); //Perform controller auto assignment at least once at startup.
-
-	// Start up AESND (inited here because its used in SPU and CD)
-	AESND_Init();
-
-#ifdef HW_RVL
-	// Initialize the network if the user has specified something in their SMB settings
-	if(strlen(&smbShareName[0]) && strlen(&smbIpAddr[0])) {
-	  init_network_thread();
-  }
-#endif
-	
-	while (menu->isRunning()) {}
-	
-	// Shut down AESND
-	AESND_Reset();
-
-	delete menu;
-
-	return 0;
-}
 
 // loadISO loads an ISO file as current media to read from.
 int loadISOSwap(fileBrowser_file* file) {
@@ -423,7 +478,6 @@ int loadISO(fileBrowser_file* file)
 	memset(&subFile, 0, sizeof(fileBrowser_file));
 	
 	memcpy(&isoFile, file, sizeof(fileBrowser_file) );
-	
 	if(hasLoadedISO) {
 		SysClose();	
 		hasLoadedISO = FALSE;
@@ -443,10 +497,23 @@ int loadISO(fileBrowser_file* file)
 		CheckCdrom();
 		LoadCdrom();
 	}
-	
+
+#ifdef __SWITCH__
+	nativeSaveDevice = NATIVESAVEDEVICE_SWITCH;
+#endif
 	if(autoSave==AUTOSAVE_ENABLE) {
 		switch (nativeSaveDevice)
 		{
+#ifdef __SWITCH__
+		case NATIVESAVEDEVICE_SWITCH:
+			// Adjust saveFile pointers
+			saveFile_dir = &saveDir_SWITCH_Default;
+			saveFile_readFile  = fileBrowser_libfat_readFile;
+			saveFile_writeFile = fileBrowser_libfat_writeFile;
+			saveFile_init      = fileBrowser_libfat_init;
+			saveFile_deinit    = fileBrowser_libfat_deinit;
+			break;
+#else
 		case NATIVESAVEDEVICE_SD:
 		case NATIVESAVEDEVICE_USB:
 			// Adjust saveFile pointers
@@ -465,6 +532,7 @@ int loadISO(fileBrowser_file* file)
 			saveFile_init      = fileBrowser_CARD_init;
 			saveFile_deinit    = fileBrowser_CARD_deinit;
 			break;
+#endif
 		}
 		// Try loading everything
 		int result = 0;
@@ -475,6 +543,9 @@ int loadISO(fileBrowser_file* file)
 		
 		switch (nativeSaveDevice)
 		{
+#ifdef __SWITCH__
+		case NATIVESAVEDEVICE_SWITCH:
+#endif
 		case NATIVESAVEDEVICE_SD:
 			if (result) autoSaveLoaded = NATIVESAVEDEVICE_SD;
 			break;
@@ -489,7 +560,404 @@ int loadISO(fileBrowser_file* file)
 			break;
 		}
 	}	
+	return 0;
+}
+
+static char* filenameFromAbsPath(char* absPath)
+{
+	char* filename = absPath;
+	while( *filename ) ++filename;
+	while( filename != absPath && (*(filename-1) != '\\' && *(filename-1) != '/'))
+		--filename;
+	return filename;
+}
+
+#ifdef __SWITCH__
+#include <EGL/egl.h>    // EGL library
+#include <EGL/eglext.h> // EGL extensions
+#include <glad/glad.h>  // glad library (OpenGL loader)
+
+// GLM headers
+#define GLM_FORCE_PURE
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+//-----------------------------------------------------------------------------
+// EGL initialization
+//-----------------------------------------------------------------------------
+
+EGLDisplay s_display;
+EGLContext s_context;
+EGLSurface s_surface;
+
+static GLuint s_program;
+static GLuint s_vao, s_vbo;
+GLuint s_tex;
+
+static const char* const vertexShaderSource = R"text(
+    #version 150
+
+	in vec4 position;
+	in vec2 texture_coord;
+	out vec2 texture_coord_from_vshader;
+
+	void main() {
+		gl_Position = position;
+		texture_coord_from_vshader = texture_coord;
+	}
+)text";
+
+static const char* const fragmentShaderSource = R"text(
+    #version 150
+
+	in vec2 texture_coord_from_vshader;
+	out vec4 out_color;
+
+	uniform sampler2D texture_sampler;
+
+	void main() {
+		out_color = texture(texture_sampler, texture_coord_from_vshader);
+	}
+)text";
+
+static GLuint createAndCompileShader(GLenum type, const char* source)
+{
+    GLint success;
+    GLchar msg[512];
+
+    GLuint handle = glCreateShader(type);
+    if (!handle)
+    {
+        TRACE("%u: cannot create shader", type);
+        return 0;
+    }
+    glShaderSource(handle, 1, &source, nullptr);
+    glCompileShader(handle);
+    glGetShaderiv(handle, GL_COMPILE_STATUS, &success);
+
+    if (success == GL_FALSE)
+    {
+        glGetShaderInfoLog(handle, sizeof(msg), nullptr, msg);
+        TRACE("%u: %s\n", type, msg);
+        glDeleteShader(handle);
+        return 0;
+    }
+
+    return handle;
+}
+
+static u64 s_startTicks;
+
+static void sceneInit()
+{
+   // Use a Vertex Array Object
+	glGenVertexArrays(1, &s_vao);
+	glBindVertexArray(s_vao);
+
+	float xcoord = 640.0/1280.0;
+	float ycoord = 480.0/720.0;
+	GLfloat vertices_position[8] = {
+		-xcoord, -ycoord,
+		xcoord, -ycoord,
+		xcoord, ycoord,
+		-xcoord, ycoord,		
+	};
+
+	GLfloat texture_coord[8] = {
+		0.0, 1.0,
+		1.0, 1.0,
+		1.0, 0.0,
+		0.0, 0.0,
+	};
+
+	GLuint indices[6] = {
+		0, 1, 2,
+		2, 3, 0
+	};
+
+	// Create a Vector Buffer Object that will store the vertices on video memory
+	glGenBuffers(1, &s_vbo);
+
+	// Allocate space for vertex positions and texture coordinates
+	glBindBuffer(GL_ARRAY_BUFFER, s_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_position) + sizeof(texture_coord), NULL, GL_STATIC_DRAW);
+
+	// Transfer the vertex positions:
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices_position), vertices_position);
+
+	// Transfer the texture coordinates:
+	glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices_position), sizeof(texture_coord), texture_coord);
+
+	// Create an Element Array Buffer that will store the indices array:
+	GLuint eab;
+	glGenBuffers(1, &eab);
+
+	// Transfer the data from indices to eab
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eab);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+	// Create a texture
+	GLuint s_tex;
+	glGenTextures(1, &s_tex);
+
+	// Specify that we work with a 2D texture
+    glActiveTexture(GL_TEXTURE0); // activate the texture unit first before binding texture
+	glBindTexture(GL_TEXTURE_2D, s_tex);
+
+	// Load and compile the vertex and fragment shaders
+	GLuint vertexShader = createAndCompileShader(GL_VERTEX_SHADER, vertexShaderSource);
+	GLuint fragmentShader = createAndCompileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
+
+	// Attach the above shader to a program
+	GLuint shaderProgram = glCreateProgram();
+	glAttachShader(shaderProgram, vertexShader);
+	glAttachShader(shaderProgram, fragmentShader);
+
+	// Flag the shaders for deletion
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
+
+	// Link and use the program
+	glLinkProgram(shaderProgram);
+	glUseProgram(shaderProgram);
+
+	// Get the location of the attributes that enters in the vertex shader
+	GLint position_attribute = glGetAttribLocation(shaderProgram, "position");
+
+	// Specify how the data for position can be accessed
+	glVertexAttribPointer(position_attribute, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+	// Enable the attribute
+	glEnableVertexAttribArray(position_attribute);
+
+	// Texture coord attribute
+	GLint texture_coord_attribute = glGetAttribLocation(shaderProgram, "texture_coord");
+	glVertexAttribPointer(texture_coord_attribute, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid *)sizeof(vertices_position));
+	glEnableVertexAttribArray(texture_coord_attribute);
 	
+}
+
+static bool initEgl()
+{
+    // Connect to the EGL default display
+    s_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    if (!s_display)
+    {
+        TRACE("Could not connect to display! error: %d", eglGetError());
+        goto _fail0;
+    }
+
+    // Initialize the EGL display connection
+    eglInitialize(s_display, nullptr, nullptr);
+
+    // Select OpenGL (Core) as the desired graphics API
+    if (eglBindAPI(EGL_OPENGL_API) == EGL_FALSE)
+    {
+        TRACE("Could not set API! error: %d", eglGetError());
+        goto _fail1;
+    }
+
+    // Get an appropriate EGL framebuffer configuration
+    EGLConfig config;
+    EGLint numConfigs;
+    static const EGLint framebufferAttributeList[] =
+    {
+        EGL_RED_SIZE, 1,
+        EGL_GREEN_SIZE, 1,
+        EGL_BLUE_SIZE, 1,
+        EGL_NONE
+    };
+    eglChooseConfig(s_display, framebufferAttributeList, &config, 1, &numConfigs);
+    if (numConfigs == 0)
+    {
+        TRACE("No config found! error: %d", eglGetError());
+        goto _fail1;
+    }
+
+    // Create an EGL window surface
+    s_surface = eglCreateWindowSurface(s_display, config, (char*)"", nullptr);
+    if (!s_surface)
+    {
+        TRACE("Surface creation failed! error: %d", eglGetError());
+        goto _fail1;
+    }
+
+    // Create an EGL rendering context
+    static const EGLint contextAttributeList[] =
+    {
+        EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR, EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR,
+        EGL_CONTEXT_MAJOR_VERSION_KHR, 4,
+        EGL_CONTEXT_MINOR_VERSION_KHR, 3,
+        EGL_NONE
+    };
+    s_context = eglCreateContext(s_display, config, EGL_NO_CONTEXT, contextAttributeList);
+    if (!s_context)
+    {
+        TRACE("Context creation failed! error: %d", eglGetError());
+        goto _fail2;
+    }
+
+    // Connect the context to the surface
+    eglMakeCurrent(s_display, s_surface, s_surface, s_context);
+    return true;
+
+_fail2:
+    eglDestroySurface(s_display, s_surface);
+    s_surface = nullptr;
+_fail1:
+    eglTerminate(s_display);
+    s_display = nullptr;
+_fail0:
+    return false;
+}
+
+static void deinitEgl()
+{
+    if (s_display)
+    {
+        if (s_context)
+        {
+            eglDestroyContext(s_display, s_context);
+            s_context = nullptr;
+        }
+        if (s_surface)
+        {
+            eglDestroySurface(s_display, s_surface);
+            s_surface = nullptr;
+        }
+        eglTerminate(s_display);
+        s_display = nullptr;
+    }
+}
+
+extern "C" {
+void sceneRender()
+{
+    glClear(GL_COLOR_BUFFER_BIT);
+
+	glBindVertexArray(s_vao);
+	glDrawElements( GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	// Swap front and back buffers
+	eglSwapBuffers(s_display, s_surface);
+}
+};
+#endif 
+
+
+int main(int argc, char *argv[]) 
+{
+#ifdef __SWITCH__
+
+    // Initialize EGL
+    if (!initEgl())
+        return EXIT_FAILURE;
+
+    // Load OpenGL routines using glad
+    gladLoadGL();
+	sceneInit();
+	hidInitialize();
+	
+#endif
+	/* INITIALIZE */
+#ifdef HW_RVL
+	DI_UseCache(false);
+	if (!__di_check_ahbprot()) {
+		s32 preferred = IOS_GetPreferredVersion();
+		if (preferred == 58 || preferred == 61)
+			IOS_ReloadIOS(preferred);
+		else DI_LoadDVDX(true);
+	}
+	
+	DI_Init();    // first
+#endif
+
+	
+	loadSettings(argc, argv);
+#ifdef __SWITCH__
+	control_info_init(); 
+#else
+	MenuContext *menu = new MenuContext(vmode);
+	VIDEO_SetPostRetraceCallback (ScanPADSandReset);
+#ifndef WII
+	DVD_Init();
+#endif
+
+#ifdef DEBUGON
+	//DEBUG_Init(GDBSTUB_DEVICE_TCP,GDBSTUB_DEF_TCPPORT); //Default port is 2828
+	DEBUG_Init(GDBSTUB_DEVICE_USB, 1);
+	_break();
+#endif
+
+	control_info_init(); //Perform controller auto assignment at least once at startup.
+
+	// Start up AESND (inited here because its used in SPU and CD)
+	AESND_Init();
+
+#ifdef HW_RVL
+	// Initialize the network if the user has specified something in their SMB settings
+	if(strlen(&smbShareName[0]) && strlen(&smbIpAddr[0])) {
+	  init_network_thread();
+  }
+#endif
+	
+	while (menu->isRunning()) {}
+	
+	// Shut down AESND
+	AESND_Reset();
+
+	delete menu;
+#endif
+
+#ifdef __SWITCH__
+	// Change all the romFile pointers
+	isoFile_topLevel = &topLevel_SWITCH_Default;
+	isoFile_readDir  = fileBrowser_libfat_readDir;
+	isoFile_open     = fileBrowser_libfat_open;
+	isoFile_readFile = fileBrowser_libfatROM_readFile;
+	isoFile_seekFile = fileBrowser_libfat_seekFile;
+	isoFile_init     = fileBrowser_libfat_init;
+	isoFile_deinit   = fileBrowser_libfatROM_deinit;
+	// Make sure the romFile system is ready before we browse the filesystem
+	isoFile_init( isoFile_topLevel );
+	
+	fileBrowser_file hardcodedIso =
+	{ "/switch/wiisx/isos/game.bin", // file name
+	  0, // sector
+	  0, // offset
+	  747435024, // size
+	  0
+	 };
+	fileBrowser_file *dircontents = NULL;
+	isoFile_readDir(isoFile_topLevel, &dircontents);
+	
+	int ret = loadISO( &hardcodedIso );
+	
+	if(!ret){	// If the read succeeded.
+		SysPrintf("Loaded: %s\n", filenameFromAbsPath(hardcodedIso.name));
+
+		char RomInfo[512] = "";
+		char buffer [50];
+		sprintf(buffer,"\nCD-ROM Label: %s\n",CdromLabel);
+		strcat(RomInfo,buffer);
+		sprintf(buffer,"CD-ROM ID: %s\n", CdromId);
+		strcat(RomInfo,buffer);
+		sprintf(buffer,"ISO Size: %d Mb\n",isoFile.size/1024/1024);
+		strcat(RomInfo,buffer);
+		sprintf(buffer,"Country: %s\n",(!Config.PsxType) ? "NTSC":"PAL");
+		strcat(RomInfo,buffer);
+		sprintf(buffer,"BIOS: %s\n",(Config.HLE==BIOS_USER_DEFINED) ? "USER DEFINED":"HLE");
+		strcat(RomInfo,buffer);
+		
+		SysPrintf(RomInfo);
+		go();
+	}
+	else		// If not.
+		SysPrintf("Load %s Failed\n", hardcodedIso.name);
+
+#endif
 	return 0;
 }
 
@@ -558,15 +1026,24 @@ int SysInit() {
 	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
 	emuLog = fopen("/PSXISOS/emu.log", "w");
 #endif
-	Config.Cpu = dynacore;  //cpu may have changed  
+#ifdef __SWITCH__
+	Config.Cpu=CPU_INTERPRETER;
+#else
+	Config.Cpu=dynacore;
+#endif 
 	psxInit();
 	LoadPlugins();
 	if(OpenPlugins() < 0)
 		return -1;
-  
+
 	//Init biosFile pointers and stuff
 	if(biosDevice != BIOSDEVICE_HLE) {
+		SysPrintf("Loading BIOS\n");
+#ifdef __SWITCH__
+		biosFile_dir = &biosDir_SWITCH_Default;
+#else
 		biosFile_dir = (biosDevice == BIOSDEVICE_SD) ? &biosDir_libfat_Default : &biosDir_libfat_USB;
+#endif
 		biosFile_readFile  = fileBrowser_libfat_readFile;
 		biosFile_open      = fileBrowser_libfat_open;
 		biosFile_init      = fileBrowser_libfat_init;
@@ -582,7 +1059,6 @@ int SysInit() {
 	} else {
 		Config.HLE = BIOS_HLE;
 	}
-
 	return 0;
 }
 
@@ -607,21 +1083,9 @@ void SysClose()
 #endif
 }
 
-void print_gecko(const char *fmt, ...) {
-	va_list list;
-	char msg[512];
-
-	va_start(list, fmt);
-	vsprintf(msg, fmt, list);
-	va_end(list);
-
-	//if (Config.PsxOut) printf ("%s", msg);
-	DEBUG_print(msg, DBG_USBGECKO);
-}
-
 void SysPrintf(const char *fmt, ...) 
 {
-#if 0
+
 	va_list list;
 	char msg[512];
 
@@ -630,26 +1094,30 @@ void SysPrintf(const char *fmt, ...)
 	va_end(list);
 
 	//if (Config.PsxOut) printf ("%s", msg);
+#ifdef __SWITCH__
+	printf(msg);
+#else
 	DEBUG_print(msg, DBG_USBGECKO);
+#endif
 #if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
 	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
 	fprintf(emuLog, "%s", msg);
 #endif
-#endif
+
 }
 
-void *SysLoadLibrary(char *lib) 
+void *SysLoadLibrary(const char *lib) 
 {
-	int i;
+	s32 i;
 	for(i=0; i<NUM_PLUGINS; i++)
 		if((plugins[i].lib != NULL) && (!strcmp(lib, plugins[i].lib)))
 			return (void*)i;
 	return NULL;
 }
 
-void *SysLoadSym(void *lib, char *sym) 
+void *SysLoadSym(void *lib, const char *sym) 
 {
-	PluginTable* plugin = plugins + (int)lib;
+	PluginTable* plugin = plugins + (long)lib;
 	int i;
 	for(i=0; i<plugin->numSyms; i++)
 		if(plugin->syms[i].sym && !strcmp(sym, plugin->syms[i].sym))
@@ -661,11 +1129,14 @@ int framesdone = 0;
 void SysUpdate() 
 {
 	framesdone++;
+#ifdef PROFILE
+	refresh_stat();
+#endif
 }
 
 void SysRunGui() {}
-void SysMessage(char *fmt, ...) {}
+void SysMessage(const char *fmt, ...) {}
 void SysCloseLibrary(void *lib) {}
-char *SysLibError() {	return NULL; }
+const char *SysLibError() {	return NULL; }
 
 } //extern "C"

@@ -66,12 +66,12 @@ char * CALLBACK PSEgetLibName(void)
  return libraryName;
 }
 
-unsigned long CALLBACK PSEgetLibType(void)
+u32 CALLBACK PSEgetLibType(void)
 {
  return	PSE_LT_CDR;
 }
 
-unsigned long CALLBACK PSEgetLibVersion(void)
+u32 CALLBACK PSEgetLibVersion(void)
 {
  return version<<16|REVISION<<8|BUILD;
 }
@@ -86,7 +86,7 @@ void CALLBACK CDRabout(void)
 #endif
 }
 
-long CALLBACK CDRtest(void)
+s32 CALLBACK CDRtest(void)
 {
 #ifdef WINDOWS
    moobyMessage("Of course it'll work.");

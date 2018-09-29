@@ -26,13 +26,12 @@
 #include "gte.h"
 #include "psxhle.h"
 
-static int branch = 0;
-static int branch2 = 0;
-static u32 branchPC;
+int branch = 0;
+int branch2 = 0;
+u32 branchPC;
 
 extern int stop;
 // These macros are used to assemble the repassembler functions
-
 #ifdef PSXCPU_LOG
 #define debugI() PSXCPU_LOG("%s\n", disR3000AF(psxRegs.code, psxRegs.pc)); 
 #else
@@ -267,9 +266,9 @@ void psxDelayTest(int reg, u32 bpc) {
 	u32 tmp;
 
 	// Don't execute yet - just peek
-	code = Read_ICache(bpc, TRUE);
+	code = (u32 *)PSXM(bpc);
 
-	tmp = ((code == NULL) ? 0 : SWAP32(*code));
+	tmp = code == NULL ? 0 : *code;
 	branch = 1;
 
 	switch (psxTestLoadDelay(reg, tmp)) {
@@ -292,8 +291,8 @@ static u32 psxBranchNoDelay(void) {
 	u32 *code;
 	u32 temp;
 
-	code = Read_ICache(psxRegs.pc, TRUE);
-	psxRegs.code = ((code == NULL) ? 0 : SWAP32(*code));
+	code = (u32 *)PSXM(psxRegs.pc);
+	psxRegs.code = code == NULL ? 0 : *code;
 	switch (_Op_) {
 		case 0x00: // SPECIAL
 			switch (_Funct_) {
@@ -365,7 +364,7 @@ static int psxDelayBranchExec(u32 tar) {
 	return 1;
 }
 
-static int psxDelayBranchTest(u32 tar1) {
+int psxDelayBranchTest(u32 tar1) {
 	u32 tar2, tmp1, tmp2;
 
 	tar2 = psxBranchNoDelay();
@@ -410,8 +409,7 @@ static int psxDelayBranchTest(u32 tar1) {
 	return psxDelayBranchExec(tmp2);
 }
 
-static __inline void doBranch(u32 tar) {
-	u32 *code;
+void doBranch(u32 tar) {
 	u32 tmp;
 
 	branch2 = branch = 1;
@@ -422,10 +420,8 @@ static __inline void doBranch(u32 tar) {
 		return;
 
 	// branch delay slot
-	code = Read_ICache(psxRegs.pc, TRUE);
-
-	psxRegs.code = ((code == NULL) ? 0 : SWAP32(*code));
-
+	u32 *code = (u32 *)PSXM(psxRegs.pc);
+	psxRegs.code = code == NULL ? 0 : *code;
 	debugI();
 
 	psxRegs.pc += 4;
@@ -911,7 +907,7 @@ void psxTestSWInts() {
 	}
 }
 
-__inline void MTC0(int reg, u32 val) {
+void MTC0(int reg, u32 val) {
 //	SysPrintf("MTC0 %d: %x\n", reg, val);
 	switch (reg) {
 		case 12: // Status
@@ -1089,9 +1085,8 @@ static void intShutdown() {
 
 // interpreter execution
 void execI() { 
-	u32 *code = Read_ICache(psxRegs.pc, FALSE);
-	psxRegs.code = ((code == NULL) ? 0 : SWAP32(*code));
-
+	u32 *code = (u32 *)PSXM(psxRegs.pc);
+	psxRegs.code = code == NULL ? 0 : *code;
 	debugI();
 
 	//if (Config.Debug) ProcessDebug();
@@ -1100,6 +1095,7 @@ void execI() {
 	psxRegs.cycle += BIAS;
 
 	psxBSC[psxRegs.code >> 26]();
+	//printf("Executed op @ PC %08X\n",psxRegs.pc);
 }
 
 R3000Acpu psxInt = {

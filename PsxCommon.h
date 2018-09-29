@@ -29,6 +29,11 @@
 extern "C" {
 #endif
 
+#ifdef __SWITCH__
+#include <switch.h>
+#else
+#endif
+
 #include "config.h"
 
 // System includes
@@ -60,7 +65,7 @@ typedef uintptr_t uptr;
 #include "system.h"
 #include "debug.h"
 
-#if defined (__LINUX__) || defined (__MACOSX__) || defined(HW_RVL) || defined(HW_DOL)
+#if defined (__LINUX__) || defined (__MACOSX__) || defined(HW_RVL) || defined(HW_DOL) || defined(__SWITCH__)
 #define strnicmp strncasecmp
 #endif
 #define __inline inline

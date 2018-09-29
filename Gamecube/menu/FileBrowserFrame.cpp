@@ -34,7 +34,7 @@ extern "C" {
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
 #include "../fileBrowser/fileBrowser-SMB.h"
-extern long CDR_getTN(unsigned char *buffer);
+extern s32 CDR_getTN(unsigned char *buffer);
 }
 
 void Func_PrevPage();

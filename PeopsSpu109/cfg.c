@@ -81,7 +81,7 @@ BOOL CALLBACK AboutDlgProc(HWND hW, UINT uMsg, WPARAM wParam, LPARAM lParam)
 // Attention: that mode is not much tested, maybe the dsound buffers 
 // need to get adjusted to use that mode safely. Also please note:
 // sync sound updates will _always_ cause glitches, if the system is
-// busy by, for example, long lasting cdrom accesses. OK, you have
+// busy by, for example, s32 lasting cdrom accesses. OK, you have
 // be warned :)
 
 #define MAXMODE 2

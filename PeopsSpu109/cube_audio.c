@@ -105,7 +105,7 @@ void RemoveSound(void)
 // GET BYTES BUFFERED
 ////////////////////////////////////////////////////////////////////////
 
-unsigned long SoundGetBytesBuffered(void)
+u32 SoundGetBytesBuffered(void)
 {
 	// FIXME: I don't think this is accurate at all
 	unsigned int buffered = ((which_buffer - thread_buffer + NUM_BUFFERS) % NUM_BUFFERS) * BUFFER_SIZE;
@@ -157,7 +157,7 @@ static void play_buffer(void){
 ////////////////////////////////////////////////////////////////////////
 // FEED SOUND DATA
 ////////////////////////////////////////////////////////////////////////
-void SoundFeedStreamData(unsigned char* pSound,long lBytes)
+void SoundFeedStreamData(unsigned char* pSound,s32 lBytes)
 {
 	if(!audioEnabled) return;
 	sprintf(txtbuffer, "SoundFeedStreamData %ld",lBytes);

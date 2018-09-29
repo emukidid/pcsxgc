@@ -308,7 +308,7 @@ void InputStatusBar::drawComponent(Graphics& gfx)
 	if (buttonText)
 	{
 		int strWidth, strHeight;
-		unsigned long CurrentTime;
+		u32 CurrentTime;
 		float scrollWidth, time_sec, scrollOffset;
 		gfx.enableScissor(x + labelScissor, y, width - 2*labelScissor, height);
 		if(active)	IplFont::getInstance().drawInit(labelColor);

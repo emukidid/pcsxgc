@@ -70,11 +70,11 @@ public:
 
 		// returns the number of tracks - 1 because trackList[0] is 
 		// the full CD length
-	inline unsigned long getNumTracks() const
+	inline u32 getNumTracks() const
       {return trackList.size() - 1;}
 
 		// returns the TrackInfo for trackNum
-	inline TrackInfo getTrackInfo(const unsigned long trackNum) const
+	inline TrackInfo getTrackInfo(const u32 trackNum) const
       throw(Exception);
 
 		// seeks the data pointer to time
@@ -158,7 +158,7 @@ inline void CDInterface::open(const std::string& str)
 }
 
 // returns the TrackInfo for trackNum if it exists
-inline TrackInfo CDInterface::getTrackInfo(const unsigned long trackNum) const
+inline TrackInfo CDInterface::getTrackInfo(const u32 trackNum) const
    throw(Exception)
 {
    if (trackNum >= trackList.size())

@@ -80,7 +80,7 @@ void RemoveSound(void)
 }
 
 /* Feed Sound Data */
-void SoundFeedStreamData(unsigned char* pSound,long lBytes)
+void SoundFeedStreamData(unsigned char* pSound,s32 lBytes)
 {
 #ifndef NOSOUND
     int new_tail = tail + lBytes;

@@ -19,7 +19,7 @@
  * See the GNU General Public Licence for more details.
  *
 **/
-
+#ifndef __SWITCH__
 
 #include <stdio.h>
 #include <string.h>
@@ -79,7 +79,7 @@ int fileBrowser_CARD_readFile(fileBrowser_file* file, void* buffer, unsigned int
 	char *tbuffer;
 	card_file CardFile;
 	int slot = file->discoffset;
-	u32 SectorSize = 0;
+	unsigned int SectorSize = 0;
   CARD_GetSectorSize (slot, &SectorSize);
     
 	if(CARD_Open(slot, (const char*)file->name, &CardFile) != CARD_ERROR_NOFILE){
@@ -110,7 +110,7 @@ int fileBrowser_CARD_writeFile(fileBrowser_file* file, void* buffer, unsigned in
 	card_stat CardStat;
 	int slot = file->discoffset;
 	char *tmpBuffer = NULL;
-	u32 status,SectorSize,newLength;
+	unsigned int status,SectorSize,newLength;
 	
 	newLength = length + sizeof(CARDIcon) + 0x40;
 	
@@ -139,7 +139,7 @@ int fileBrowser_CARD_writeFile(fileBrowser_file* file, void* buffer, unsigned in
 	  CardStat.banner_fmt = 0;
 	  CardStat.icon_addr = 0x40;
 	  tmpBuffer = memalign(32,newLength);
-	  memset(tmpBuffer,0,newLength);
+	  memset(tmpBuffer,0,sizeof(tmpBuffer));
 	  strcpy(tmpBuffer,ctime (&gc_time));
 	  strcpy(tmpBuffer+0x20,file->name);
 	  memcpy(tmpBuffer+0x40,CARDIcon,sizeof(CARDIcon));       // copy icon
@@ -177,3 +177,4 @@ int fileBrowser_CARD_deinit(fileBrowser_file* file) {
 	return 0;
 }
 
+#endif

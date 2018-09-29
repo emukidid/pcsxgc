@@ -130,7 +130,7 @@ void RemoveSound(void)
 }
 
 /* Feed Sound Data */
-void SoundFeedStreamData(unsigned char* pSound,long lBytes)
+void SoundFeedStreamData(unsigned char* pSound,s32 lBytes)
 {
 #ifndef NOSOUND
  	if(oss_audio_fd == -1) return;

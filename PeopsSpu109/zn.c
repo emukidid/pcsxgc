@@ -35,7 +35,7 @@ int iZincEmu=0;
 //-------------------------------------------------------------------------// 
 // not used by ZINC
 
-void CALLBACK PEOPS_SPUasync(unsigned long cycle);
+void CALLBACK PEOPS_SPUasync(u32 cycle);
 
 void CALLBACK ZN_SPUupdate(void) 
 {
@@ -44,18 +44,18 @@ void CALLBACK ZN_SPUupdate(void)
 
 //-------------------------------------------------------------------------// 
 
-void CALLBACK PEOPS_SPUwriteRegister(unsigned long reg, unsigned short val);
+void CALLBACK PEOPS_SPUwriteRegister(u32 reg, unsigned short val);
 
-void CALLBACK ZN_SPUwriteRegister(unsigned long reg, unsigned short val)
+void CALLBACK ZN_SPUwriteRegister(u32 reg, unsigned short val)
 { 
  PEOPS_SPUwriteRegister(reg,val);
 }
 
 //-------------------------------------------------------------------------// 
 
-unsigned short CALLBACK PEOPS_SPUreadRegister(unsigned long reg);
+unsigned short CALLBACK PEOPS_SPUreadRegister(u32 reg);
 
-unsigned short CALLBACK ZN_SPUreadRegister(unsigned long reg)
+unsigned short CALLBACK ZN_SPUreadRegister(u32 reg)
 {
  return PEOPS_SPUreadRegister(reg);
 }
@@ -113,13 +113,13 @@ void CALLBACK ZN_SPUplayADPCMchannel(xa_decode_t *xap)
 //-------------------------------------------------------------------------// 
 // attention: no separate SPUInit/Shutdown funcs in ZN interface
 
-long CALLBACK PEOPS_SPUinit(void);
+s32 CALLBACK PEOPS_SPUinit(void);
 
 #ifdef _WINDOWS
 
-long CALLBACK SPUopen(HWND hW);
+s32 CALLBACK SPUopen(HWND hW);
 
-long CALLBACK ZN_SPUopen(HWND hW)                          
+s32 CALLBACK ZN_SPUopen(HWND hW)                          
 {
  iZincEmu=1;
  SPUinit();
@@ -128,9 +128,9 @@ long CALLBACK ZN_SPUopen(HWND hW)
 
 #else
 
-long PEOPS_SPUopen(void);
+s32 PEOPS_SPUopen(void);
 
-long ZN_SPUopen(void)
+s32 ZN_SPUopen(void)
 {
  iZincEmu=1;
  PEOPS_SPUinit();
@@ -141,12 +141,12 @@ long ZN_SPUopen(void)
 
 //-------------------------------------------------------------------------// 
 
-long CALLBACK PEOPS_SPUshutdown(void);
-long CALLBACK PEOPS_SPUclose(void);
+s32 CALLBACK PEOPS_SPUshutdown(void);
+s32 CALLBACK PEOPS_SPUclose(void);
 
-long CALLBACK ZN_SPUclose(void)
+s32 CALLBACK ZN_SPUclose(void)
 {
- long lret=PEOPS_SPUclose();
+ s32 lret=PEOPS_SPUclose();
  PEOPS_SPUshutdown();
  return lret;
 }
@@ -164,18 +164,18 @@ void CALLBACK ZN_SPUregisterCallback(void (CALLBACK *callback)(void))
 //-------------------------------------------------------------------------// 
 // not used by ZINC
 
-long CALLBACK PEOPS_SPUfreeze(unsigned long ulFreezeMode,void * pF);
+s32 CALLBACK PEOPS_SPUfreeze(u32 ulFreezeMode,void * pF);
 
-long CALLBACK ZN_SPUfreeze(unsigned long ulFreezeMode,void * pF)
+s32 CALLBACK ZN_SPUfreeze(u32 ulFreezeMode,void * pF)
 {
  return PEOPS_SPUfreeze(ulFreezeMode,pF);
 }
 
 //-------------------------------------------------------------------------// 
 
-extern void (CALLBACK *irqQSound)(unsigned char *,long *,long);      
+extern void (CALLBACK *irqQSound)(unsigned char *,s32 *,s32);      
 
-void CALLBACK ZN_SPUqsound(void (CALLBACK *callback)(unsigned char *,long *,long))
+void CALLBACK ZN_SPUqsound(void (CALLBACK *callback)(unsigned char *,s32 *,s32))
 {
  irqQSound = callback;
 }

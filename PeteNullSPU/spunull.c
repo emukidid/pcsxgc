@@ -50,7 +50,7 @@ unsigned char * spuMemC;
 unsigned char * pSpuIrq=0;
 
 unsigned short spuCtrl, spuStat, spuIrq=0;             // some vars to store psx reg infos
-unsigned long  spuAddr=0xffffffff;                     // address into spu mem
+u32  spuAddr=0xffffffff;                     // address into spu mem
 //char *         pConfigFile=0;
 
 ////////////////////////////////////////////////////////////////////////
@@ -64,9 +64,9 @@ void (CALLBACK *cddavCallback)(unsigned short,unsigned short)=0;
 // CODE AREA
 ////////////////////////////////////////////////////////////////////////
 
-void CALLBACK NULL_SPUwriteRegister(unsigned long reg, unsigned short val)
+void CALLBACK NULL_SPUwriteRegister(u32 reg, unsigned short val)
 {
- unsigned long r=reg&0xfff;
+ u32 r=reg&0xfff;
  regArea[(r-0xc00)>>1] = val;
 
  if(r>=0x0c00 && r<0x0d80)
@@ -88,7 +88,7 @@ void CALLBACK NULL_SPUwriteRegister(unsigned long reg, unsigned short val)
        return;
      //------------------------------------------------// start
      case 6:
-       //s_chan[ch].pStart=spuMemC+((unsigned long) val<<3);
+       //s_chan[ch].pStart=spuMemC+((u32) val<<3);
        return;
      //------------------------------------------------// adsr level 
      case 8:
@@ -111,7 +111,7 @@ void CALLBACK NULL_SPUwriteRegister(unsigned long reg, unsigned short val)
    {
     //-------------------------------------------------//
     case H_SPUaddr:
-        spuAddr = (unsigned long) val<<3;
+        spuAddr = (u32) val<<3;
         return;
     //-------------------------------------------------//
     case H_SPUdata:
@@ -130,7 +130,7 @@ void CALLBACK NULL_SPUwriteRegister(unsigned long reg, unsigned short val)
     //-------------------------------------------------//
     case H_SPUirqAddr:
         spuIrq = val;
-        pSpuIrq=spuMemC+((unsigned long) val<<3);
+        pSpuIrq=spuMemC+((u32) val<<3);
         return;
     //-------------------------------------------------//
     case H_SPUon1:
@@ -187,9 +187,9 @@ void CALLBACK NULL_SPUwriteRegister(unsigned long reg, unsigned short val)
 
 ////////////////////////////////////////////////////////////////////////
 
-unsigned short CALLBACK NULL_SPUreadRegister(unsigned long reg)
+unsigned short CALLBACK NULL_SPUreadRegister(u32 reg)
 {
- unsigned long r=reg&0xfff;
+ u32 r=reg&0xfff;
 
  if(r>=0x0c00 && r<0x0d80)
   {
@@ -296,7 +296,7 @@ void CALLBACK NULL_SPUplayADPCMchannel(xa_decode_t *xap)
 // INIT/EXIT STUFF
 ////////////////////////////////////////////////////////////////////////
 
-long CALLBACK NULL_SPUinit(void)
+s32 CALLBACK NULL_SPUinit(void)
 {
  spuMemC=(unsigned char *)spuMem;                      // just small setup
  return 0;
@@ -306,7 +306,7 @@ long CALLBACK NULL_SPUinit(void)
 
 int bSPUIsOpen=0;
 
-long CALLBACK NULL_SPUopen(void)
+s32 CALLBACK NULL_SPUopen(void)
 {
  if(bSPUIsOpen) return 0;
 
@@ -326,7 +326,7 @@ void NULL_SPUsetConfigFile(char * pCfg)
 
 ////////////////////////////////////////////////////////////////////////
 
-long CALLBACK NULL_SPUclose(void)
+s32 CALLBACK NULL_SPUclose(void)
 {
  if(!bSPUIsOpen) return 0;
  bSPUIsOpen=0;
@@ -335,7 +335,7 @@ long CALLBACK NULL_SPUclose(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-long CALLBACK NULL_SPUshutdown(void)
+s32 CALLBACK NULL_SPUshutdown(void)
 {
  return 0;
 }
@@ -344,7 +344,7 @@ long CALLBACK NULL_SPUshutdown(void)
 // MISC STUFF
 ////////////////////////////////////////////////////////////////////////
 
-long CALLBACK NULL_SPUtest(void)
+s32 CALLBACK NULL_SPUtest(void)
 {
  return 0;
 }
@@ -372,14 +372,14 @@ char * CALLBACK PSEgetLibName(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-unsigned long CALLBACK PSEgetLibType(void)
+u32 CALLBACK PSEgetLibType(void)
 {
  return  PSE_LT_SPU;
 }
 
 ////////////////////////////////////////////////////////////////////////
 
-unsigned long CALLBACK PSEgetLibVersion(void)
+u32 CALLBACK PSEgetLibVersion(void)
 {
  return version<<16|revision<<8|build;
 }
@@ -395,8 +395,8 @@ char * NULL_SPUgetLibInfos(void)
 typedef struct
 {
  char          szSPUName[8];
- unsigned long ulFreezeVersion;
- unsigned long ulFreezeSize;
+ u32 ulFreezeVersion;
+ u32 ulFreezeSize;
  unsigned char cSPUPort[0x200];
  unsigned char cSPURam[0x80000];
  xa_decode_t   xaS;     
@@ -404,13 +404,13 @@ typedef struct
 
 typedef struct
 {
- unsigned long Future[256];
+ u32 Future[256];
 
 } SPUNULLFreeze_t;
 
 ////////////////////////////////////////////////////////////////////////
 
-long CALLBACK NULL_SPUfreeze(unsigned long ulFreezeMode,SPUFreeze_t * pF)
+s32 CALLBACK NULL_SPUfreeze(u32 ulFreezeMode,SPUFreeze_t * pF)
 {
  int i;
 
@@ -456,7 +456,7 @@ long CALLBACK NULL_SPUfreeze(unsigned long ulFreezeMode,SPUFreeze_t * pF)
 //////////////////////////////////////////////////////////////////////// 
 // UNUSED WINDOWS FUNCS... YOU SHOULDN'T USE THEM IN LINUX
 
-long CALLBACK NULL_SPUconfigure(void)
+s32 CALLBACK NULL_SPUconfigure(void)
 {
  return 0;
 }
@@ -470,7 +470,7 @@ void CALLBACK NULL_SPUabout(void)
 //////////////////////////////////////////////////////////////////////// 
 // OLD PSEMU 1 FUNCS... YOU SHOULDN'T USE THEM
 
-unsigned short CALLBACK NULL_SPUgetOne(unsigned long val) 
+unsigned short CALLBACK NULL_SPUgetOne(u32 val) 
 { 
  if(spuAddr!=0xffffffff) 
   { 
@@ -480,7 +480,7 @@ unsigned short CALLBACK NULL_SPUgetOne(unsigned long val)
  return spuMem[val>>1]; 
 } 
  
-void CALLBACK NULL_SPUputOne(unsigned long val,unsigned short data) 
+void CALLBACK NULL_SPUputOne(u32 val,unsigned short data) 
 { 
  if(spuAddr!=0xffffffff) 
   { 
@@ -497,7 +497,7 @@ void CALLBACK NULL_SPUplaySample(unsigned char ch)
  
 void CALLBACK NULL_SPUsetAddr(unsigned char ch, unsigned short waddr) 
 { 
- //s_chan[ch].pStart=spuMemC+((unsigned long) waddr<<3); 
+ //s_chan[ch].pStart=spuMemC+((u32) waddr<<3); 
 } 
  
 void CALLBACK NULL_SPUsetPitch(unsigned char ch, unsigned short pitch) 

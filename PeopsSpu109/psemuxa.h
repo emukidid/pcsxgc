@@ -8,7 +8,7 @@
 
 typedef struct
 {
-	long	y0, y1;
+	s32	y0, y1;
 } ADPCM_Decode_t;
 
 typedef struct
@@ -21,7 +21,7 @@ typedef struct
 	short			pcm[16384];
 } xa_decode_t;
 
-long xa_decode_sector( xa_decode_t *xdp,
+s32 xa_decode_sector( xa_decode_t *xdp,
 					   unsigned char *sectorp,
 					   int is_first_sector );
 

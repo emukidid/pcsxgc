@@ -22,7 +22,7 @@
 */
 
 #include "psxdma.h"
-
+#include "CoreDebug.h"
 // Dma0/1 in Mdec.c
 // Dma3   in CdRom.c
 

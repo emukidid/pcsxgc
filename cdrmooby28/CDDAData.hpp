@@ -102,7 +102,7 @@ public:
    CDTime CDDAStart;
    CDTime InitialTime;
 		// the offset into the frame that it's currently playing from
-   unsigned long frameOffset;
+   u32 frameOffset;
 		// a FileInterface for getting the data from
    FileInterface* theCD;
 		// the track list of the CD for calculating times n such

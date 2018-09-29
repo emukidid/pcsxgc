@@ -530,7 +530,7 @@ XXH_PUBLIC_API XXH32_hash_t XXH32_hashFromCanonical(const XXH32_canonical_t* src
 #   include <stdint.h>
     typedef uint64_t U64;
 # else
-    typedef unsigned long long U64;   /* if your compiler doesn't support unsigned long long, replace by another 64-bit type here. Note that xxhash.h will also need to be updated. */
+    typedef u64 U64;   /* if your compiler doesn't support u64, replace by another 64-bit type here. Note that xxhash.h will also need to be updated. */
 # endif
 #endif
 
@@ -692,7 +692,7 @@ FORCE_INLINE U64 XXH64_endian_align(const void* input, size_t len, U64 seed, XXH
 }
 
 
-XXH_PUBLIC_API unsigned long long XXH64 (const void* input, size_t len, unsigned long long seed)
+XXH_PUBLIC_API u64 XXH64 (const void* input, size_t len, u64 seed)
 {
 #if 0
     /* Simple version, good for code maintenance, but unfortunately slow for small inputs */
@@ -735,7 +735,7 @@ XXH_PUBLIC_API void XXH64_copyState(XXH64_state_t* dstState, const XXH64_state_t
     memcpy(dstState, srcState, sizeof(*dstState));
 }
 
-XXH_PUBLIC_API XXH_errorcode XXH64_reset(XXH64_state_t* statePtr, unsigned long long seed)
+XXH_PUBLIC_API XXH_errorcode XXH64_reset(XXH64_state_t* statePtr, u64 seed)
 {
     XXH64_state_t state;   /* using a local state to memcpy() in order to avoid strict-aliasing warnings */
     memset(&state, 0, sizeof(state)-8);   /* do not write into reserved, for future removal */
@@ -866,7 +866,7 @@ FORCE_INLINE U64 XXH64_digest_endian (const XXH64_state_t* state, XXH_endianess 
     return h64;
 }
 
-XXH_PUBLIC_API unsigned long long XXH64_digest (const XXH64_state_t* state_in)
+XXH_PUBLIC_API u64 XXH64_digest (const XXH64_state_t* state_in)
 {
     XXH_endianess endian_detected = (XXH_endianess)XXH_CPU_LITTLE_ENDIAN;
 

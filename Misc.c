@@ -56,7 +56,7 @@ struct iso_directory_record {
 void mmssdd( char *b, char *p )
 {
 	int m, s, d;
-#if defined(HW_RVL) || defined(HW_DOL) || defined(BIG_ENDIAN)
+#if defined(HW_RVL) || defined(HW_DOL) || defined(__BIG_ENDIAN__)
 	int block = (b[0] & 0xff) | ((b[1] & 0xff) << 8) | ((b[2] & 0xff) << 16) | (b[3] << 24);
 #else
 	int block = *((int*)b);
@@ -358,7 +358,7 @@ int CheckCdrom() {
 }
 
 static int PSXGetFileType(fileBrowser_file *f) {
-	unsigned long current;
+	u32 current;
 	u8 mybuf[2048];
 	EXE_HEADER *exe_hdr;
 	FILHDR *coff_hdr;
@@ -456,6 +456,10 @@ int Load(fileBrowser_file *exe) {
 
 // STATES
 void LoadingBar_showBar(float percent, const char* string);
+#ifdef __SWITCH__
+void LoadingBar_showBar(float percent, const char* string) {}
+#endif
+
 char* statespath = "/wiisx/saves/";
 static unsigned int savestates_slot = 0;
 extern unsigned char  *psxVub;
@@ -497,8 +501,10 @@ int SaveState() {
 
 	f = gzopen(filename, "wb");
 	if (f == NULL) return -1;
- LoadingBar_showBar(0.0f, SAVE_STATE_MSG);
-  pauseRemovalThread(); 
+	LoadingBar_showBar(0.0f, SAVE_STATE_MSG);
+#ifndef __SWITCH__
+	pauseRemovalThread(); 
+#endif
 
 	gzwrite(f, (void *)PcsxHeader, 32);
 	gzwrite(f, (void *)&SaveVersion, sizeof(u32));
@@ -550,8 +556,10 @@ int SaveState() {
 	mdecFreeze(f, 1);
 	LoadingBar_showBar(0.99f, SAVE_STATE_MSG);
 	gzclose(f);
-	
-continueRemovalThread();
+
+#ifndef __SWITCH__
+	continueRemovalThread();
+#endif
 	LoadingBar_showBar(1.0f, SAVE_STATE_MSG);
 	return 1;
 }
@@ -589,8 +597,9 @@ int LoadState() {
 		gzclose(f);
 		return -1;
 	}
-
+#ifndef __SWITCH__
 	pauseRemovalThread();
+#endif
 	LoadingBar_showBar(0.0f, LOAD_STATE_MSG);
 	//SysReset();
 	
@@ -638,9 +647,11 @@ int LoadState() {
 	mdecFreeze(f, 0);
 
 	gzclose(f);
-  continueRemovalThread();
-  LoadingBar_showBar(1.0f, LOAD_STATE_MSG);
-  
+#ifndef __SWITCH__
+	continueRemovalThread();
+#endif
+	LoadingBar_showBar(1.0f, LOAD_STATE_MSG);
+
 	return 1;
 }
 

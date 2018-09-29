@@ -32,7 +32,7 @@
 // "texture window" cache entry
 typedef struct textureWndCacheEntryTag
 {
- unsigned long  ClutID;
+ u32  ClutID;
  short          pageid;
  short          textureMode;
  short          Opaque;
@@ -49,7 +49,7 @@ typedef struct textureWndCacheEntryTag
 
 typedef struct textureSubCacheEntryTagS 
 {
- unsigned long   ClutID;
+ u32   ClutID;
  EXLong          pos;
  unsigned char   posTX;
  unsigned char   posTY;
@@ -59,13 +59,13 @@ typedef struct textureSubCacheEntryTagS
 
 void           InitializeTextureStore();
 void           CleanupTextureStore();
-textureWndCacheEntry*         LoadTextureWnd(long pageid,long TextureMode,unsigned long GivenClutId);
+textureWndCacheEntry*         LoadTextureWnd(s32 pageid,s32 TextureMode,u32 GivenClutId);
 textureWndCacheEntry*         LoadTextureMovie(void);
-void           InvalidateTextureArea(long imageX0,long imageY0,long imageX1,long imageY1);
+void           InvalidateTextureArea(s32 imageX0,s32 imageY0,s32 imageX1,s32 imageY1);
 void           InvalidateTextureAreaEx(void);
 void           LoadTexturePage(int pageid, int mode, short cx, short cy);
 void           ResetTextureArea(BOOL bDelTex);
-textureWndCacheEntry*         SelectSubTextureS(long TextureMode, unsigned long GivenClutId);
+textureWndCacheEntry*         SelectSubTextureS(s32 TextureMode, u32 GivenClutId);
 void           CheckTextureMemory(void);
 
 
@@ -73,24 +73,24 @@ void           LoadSubTexturePage(int pageid, int mode, short cx, short cy);
 void           LoadSubTexturePageSort(int pageid, int mode, short cx, short cy);
 void           LoadPackedSubTexturePage(int pageid, int mode, short cx, short cy);
 void           LoadPackedSubTexturePageSort(int pageid, int mode, short cx, short cy);
-unsigned long  XP8RGBA(unsigned long BGR);
-unsigned long  XP8RGBAEx(unsigned long BGR);
-unsigned long  XP8RGBA_0(unsigned long BGR);
-unsigned long  XP8RGBAEx_0(unsigned long BGR);
-unsigned long  XP8BGRA_0(unsigned long BGR);
-unsigned long  XP8BGRAEx_0(unsigned long BGR);
-unsigned long  XP8RGBA_1(unsigned long BGR);
-unsigned long  XP8RGBAEx_1(unsigned long BGR);
-unsigned long  XP8BGRA_1(unsigned long BGR);
-unsigned long  XP8BGRAEx_1(unsigned long BGR);
-unsigned long  P8RGBA(unsigned long BGR);
-unsigned long  P8BGRA(unsigned long BGR);
-unsigned long  CP8RGBA_0(unsigned long BGR);
-unsigned long  CP8RGBAEx_0(unsigned long BGR);
-unsigned long  CP8BGRA_0(unsigned long BGR);
-unsigned long  CP8BGRAEx_0(unsigned long BGR);
-unsigned long  CP8RGBA(unsigned long BGR);
-unsigned long  CP8RGBAEx(unsigned long BGR);
+u32  XP8RGBA(u32 BGR);
+u32  XP8RGBAEx(u32 BGR);
+u32  XP8RGBA_0(u32 BGR);
+u32  XP8RGBAEx_0(u32 BGR);
+u32  XP8BGRA_0(u32 BGR);
+u32  XP8BGRAEx_0(u32 BGR);
+u32  XP8RGBA_1(u32 BGR);
+u32  XP8RGBAEx_1(u32 BGR);
+u32  XP8BGRA_1(u32 BGR);
+u32  XP8BGRAEx_1(u32 BGR);
+u32  P8RGBA(u32 BGR);
+u32  P8BGRA(u32 BGR);
+u32  CP8RGBA_0(u32 BGR);
+u32  CP8RGBAEx_0(u32 BGR);
+u32  CP8BGRA_0(u32 BGR);
+u32  CP8BGRAEx_0(u32 BGR);
+u32  CP8RGBA(u32 BGR);
+u32  CP8RGBAEx(u32 BGR);
 unsigned short XP5RGBA (unsigned short BGR);
 unsigned short XP5RGBA_0 (unsigned short BGR);
 unsigned short XP5RGBA_1 (unsigned short BGR);

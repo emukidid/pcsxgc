@@ -888,7 +888,7 @@ void Func_ShowFpsOff()
 	showFPSonScreen = FPS_HIDE;
 }
 
-extern "C" void GPUsetframelimit(unsigned long option);
+extern "C" void GPUsetframelimit(u32 option);
 
 void Func_FpsLimitAuto()
 {

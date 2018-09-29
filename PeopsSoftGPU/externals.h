@@ -43,6 +43,9 @@
 //*************************************************************************// 
 
 /////////////////////////////////////////////////////////////////////////////
+#if defined(__GX__) || defined(__SWITCH__)
+#include "../Gamecube/wiiSXconfig.h"
+#endif
 
 #define INFO_TW        0
 #define INFO_DRAWSTART 1
@@ -98,8 +101,8 @@ typedef struct VRAMLOADTTAG
 
 typedef struct PSXPOINTTAG
 {
- long x;
- long y;
+ s32 x;
+ s32 y;
 } PSXPoint_t;
 
 typedef struct PSXSPOINTTAG
@@ -136,11 +139,11 @@ typedef struct SDXTAG
 #define TRUE 1
 #define BOOL unsigned short
 #define LOWORD(l)           ((unsigned short)(l))
-#define HIWORD(l)           ((unsigned short)(((unsigned long)(l) >> 16) & 0xFFFF))
+#define HIWORD(l)           ((unsigned short)(((u32)(l) >> 16) & 0xFFFF))
 #define max(a,b)            (((a) > (b)) ? (a) : (b))
 #define min(a,b)            (((a) < (b)) ? (a) : (b))
-#define DWORD unsigned long
-#define __int64 long long int 
+#define DWORD u32
+#define __int64 s64
 
 typedef struct RECTTAG
 {
@@ -168,15 +171,15 @@ typedef struct PSXDISPLAYTAG
  PSXPoint_t  DisplayPosition;
  PSXPoint_t  DisplayEnd;
  
- long        Double;
- long        Height;
- long        PAL;
- long        InterlacedNew;
- long        Interlaced;
- long        RGB24New;
- long        RGB24;
+ s32        Double;
+ s32        Height;
+ s32        PAL;
+ s32        InterlacedNew;
+ s32        Interlaced;
+ s32        RGB24New;
+ s32        RGB24;
  PSXSPoint_t DrawOffset;
- long        Disabled;
+ s32        Disabled;
  PSXRect_t   Range;
 
 } PSXDisplay_t;
@@ -206,15 +209,15 @@ extern char *         pCaptionText;
 
 extern int            iResX;
 extern int            iResY;
-extern long           GlobalTextAddrX,GlobalTextAddrY,GlobalTextTP;
-extern long           GlobalTextREST,GlobalTextABR,GlobalTextPAGE;
+extern s32           GlobalTextAddrX,GlobalTextAddrY,GlobalTextTP;
+extern s32           GlobalTextREST,GlobalTextABR,GlobalTextPAGE;
 extern short          ly0,lx0,ly1,lx1,ly2,lx2,ly3,lx3;
-extern long           lLowerpart;
+extern s32           lLowerpart;
 extern BOOL           bIsFirstFrame;
 extern int            iWinSize;
 extern BOOL           bCheckMask;
 extern unsigned short sSetMask;
-extern unsigned long  lSetMask;
+extern u32  lSetMask;
 extern BOOL           bDeviceOK;
 extern short          g_m1;
 extern short          g_m2;
@@ -244,21 +247,21 @@ extern int            iFPSEInterface;
 
 extern BOOL           bUsingTWin;
 extern TWin_t         TWin;
-extern unsigned long  clutid;
+extern u32  clutid;
 extern void (*primTableJ[256])(unsigned char *);
 extern void (*primTableSkip[256])(unsigned char *);
 extern unsigned short  usMirror;
 extern int            iDither;
-extern unsigned long  dwCfgFixes;
-extern unsigned long  dwActFixes;
-extern unsigned long  dwEmuFixes;
+extern u32  dwCfgFixes;
+extern u32  dwActFixes;
+extern u32  dwEmuFixes;
 extern int            iUseFixes;
 extern int            iUseDither;
 extern BOOL           bDoVSyncUpdate;
-extern long           drawX;
-extern long           drawY;
-extern long           drawW;
-extern long           drawH;
+extern s32           drawX;
+extern s32           drawY;
+extern s32           drawW;
+extern s32           drawH;
 
 #endif
 
@@ -278,25 +281,25 @@ extern char           szDebugText[];
 extern short          sDispWidths[];
 extern BOOL           bDebugText;
 //extern unsigned int   iMaxDMACommandCounter;
-//extern unsigned long  dwDMAChainStop;
+//extern u32  dwDMAChainStop;
 extern PSXDisplay_t   PSXDisplay;
 extern PSXDisplay_t   PreviousPSXDisplay;
 extern BOOL           bSkipNextFrame;
-extern long           lGPUstatusRet;
-extern long           drawingLines;
+extern s32           lGPUstatusRet;
+extern s32           drawingLines;
 extern unsigned char  * psxVSecure;
 extern unsigned char  * psxVub;
 extern signed char    * psxVsb;
 extern unsigned short * psxVuw;
 extern signed short   * psxVsw;
-extern unsigned long  * psxVul;
-extern signed long    * psxVsl;
+extern u32  * psxVul;
+extern s32  * psxVsl;
 extern unsigned short * psxVuw_eom;
 extern BOOL           bChangeWinMode;
-extern long           lSelectedSlot;
+extern s32           lSelectedSlot;
 extern DWORD          dwLaceCnt;
-extern unsigned long  lGPUInfoVals[];
-extern unsigned long  ulStatusControl[];
+extern u32  lGPUInfoVals[];
+extern u32  ulStatusControl[];
 extern int            iRumbleVal;
 extern int            iRumbleTime;
 
@@ -306,7 +309,7 @@ extern int            iRumbleTime;
 
 #ifndef _IN_MENU
 
-extern unsigned long dwCoreFlags;
+extern u32 dwCoreFlags;
 
 #ifdef _WINDOWS
 extern HFONT hGFont;
@@ -320,7 +323,7 @@ extern BOOL  bTransparent;
 
 #ifndef _IN_KEY
 
-extern unsigned long  ulKeybits;
+extern u32  ulKeybits;
 
 #ifdef _WINDOWS
 extern char           szGPUKeys[];
@@ -366,18 +369,18 @@ extern char * pConfigFile;
 
 #ifndef _IN_ZN
 
-#ifndef __GX__
-extern unsigned long dwGPUVersion;
-extern int           iGPUHeight;
-extern int           iGPUHeightMask;
-extern int           GlobalTextIL;
-extern int           iTileCheat;
-#else //!__GX__
+#if defined(__GX__) || defined(__SWITCH__)
 #define dwGPUVersion 0
 #define iGPUHeight 512
 #define iGPUHeightMask 511
 #define GlobalTextIL 0
 #define iTileCheat 0
+#else //!__GX__
+extern u32 dwGPUVersion;
+extern int           iGPUHeight;
+extern int           iGPUHeightMask;
+extern int           GlobalTextIL;
+extern int           iTileCheat;
 #endif //__GX__
 
 #endif
