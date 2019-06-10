@@ -14,10 +14,6 @@
 #define NUM_HW_REGISTERS 28
 
 /* general defines */
-#define write8(val)  *(u8 *)ppcPtr = val; ppcPtr++;
-#define write16(val) *(u16*)ppcPtr = val; ppcPtr+=2;
-#define write32(val) *(u32*)ppcPtr = val; ppcPtr+=4;
-#define write64(val) *(u64*)ppcPtr = val; ppcPtr+=8;
 
 #define CALLFunc(FUNC) \
 { \
@@ -35,8 +31,6 @@
 extern int cpuHWRegisters[NUM_HW_REGISTERS];
 
 extern u32 *ppcPtr;
-extern u8  *j8Ptr[32];
-extern u32 *j32Ptr[32];
 
 void ppcInit();
 void ppcSetPtr(u32 *ptr);

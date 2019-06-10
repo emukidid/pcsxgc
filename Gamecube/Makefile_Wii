@@ -26,17 +26,18 @@ INCLUDES	:=
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
+LTO			 = #-flto # Uncomment to use link-time optimization
 
-CFLAGS	= -g -O3 -Wall $(MACHDEP) $(INCLUDE) -Wno-strict-aliasing -Wno-misleading-indentation \
+CFLAGS	= -g -O3 $(LTO) -Wall $(MACHDEP) $(INCLUDE) -Wno-strict-aliasing -Wno-misleading-indentation \
 		  -D__GAMECUBE__ -DWII -DHW_RVL -D__ppc__ \
 		  -D__GX__ -D_SDL -DEMBEDDED_FONTS \
-		  -DTHREADED_AUDIO -DRELEASE -DSHOW_DEBUG -DPROFILE #-DDEBUGON #-DPROFILE
+		  -DTHREADED_AUDIO -DRELEASE -DSHOW_DEBUG #-DPROFILE #-DDEBUGON #-DPROFILE
 		  
 CXXFLAGS	=	$(CFLAGS)
 
 ASFLAGS := -DHW_RVL
 
-LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
+LDFLAGS	=	-g $(MACHDEP) $(LTO) -Wl,-Map,$(notdir $@).map
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
@@ -109,7 +110,7 @@ $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile_Wii
 	@echo creating ... $(notdir $(OUTPUT)).dol
-	@$(DEVKITPPC)/bin/elf2dol $(OUTPUT).elf $(OUTPUT).dol
+	@$(DEVKITPRO)/tools/bin/elf2dol $(OUTPUT).elf $(OUTPUT).dol
 
 #---------------------------------------------------------------------------------
 clean:

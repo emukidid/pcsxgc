@@ -6221,7 +6221,7 @@ __inline BOOL IsNoRect(void)
 */
 
 // real rect test
-__inline BOOL IsNoRect(void)
+BOOL IsNoRect(void)
 {
  if(!(dwActFixes&0x200)) return FALSE;
 

@@ -44,7 +44,20 @@ static u32 pcold;		/* recompiler oldpc */
 static s32 count;		/* recompiler intruction count */
 static s32 branch;		/* set for branch */
 static u32 target;		/* branch target */
+static u32 cop2readypc = 0;
+static u32 idlecyclecount = 0;
 static iRegisters iRegs[34];
+
+int psxCP2time[64] = {
+        2 , 16, 1 , 1 , 1 , 1 , 8 , 1 , // 00
+        1 , 1 , 1 , 1 , 6 , 1 , 1 , 1 , // 08
+        8 , 8 , 8 , 19, 13, 1 , 44, 1 , // 10
+        1 , 1 , 1 , 17, 11, 1 , 14, 1 , // 18
+        30, 1 , 1 , 1 , 1 , 1 , 1 , 1 , // 20
+        5 , 8 , 17, 1 , 1 , 5 , 6 , 1 , // 28
+        23, 1 , 1 , 1 , 1 , 1 , 1 , 1 , // 30
+        1 , 1 , 1 , 1 , 1 , 6 , 5 , 39  // 38
+};
 
 static void (*recBSC[64])();
 static void (*recSPC[64])();
@@ -588,16 +601,21 @@ static void Return()
 {
 	iFlushRegs(0);
 	FlushAllHWReg();
-	LIW(0, (u32)returnPC);
-	MTLR(0);
-	BLR();
+	if (((u32)returnPC & 0x1fffffc) == (u32)returnPC) {
+		BA((u32)returnPC);
+	}
+	else {
+		LIW(0, (u32)returnPC);
+		MTLR(0);
+		BLR();
+	}
 
 }
 
 static void iStoreCycle(s32 ahead) {
 	/* store cycle */
-    count = (((pc+ahead) - pcold)/4)<<1;
-    ADDI(PutHWRegSpecial(CYCLECOUNT), GetHWRegSpecial(CYCLECOUNT), count);
+    count = (((pc+ahead) - pcold)/4) <<1;
+    ADDI(PutHWRegSpecial(CYCLECOUNT), GetHWRegSpecial(CYCLECOUNT), count + idlecyclecount);
 }
 
 static void iRet() {
@@ -676,7 +694,8 @@ static void SetBranch() {
 	iStoreCycle(0);
 	FlushAllHWReg();
 	CALLFunc((u32)psxBranchTest);
-	CALLFunc((u32)psxJumpTest);
+	if(!Config.HLE && Config.PsxOut)
+		CALLFunc((u32)psxJumpTest);
 	
 	// TODO: don't return if target is compiled
 	Return();
@@ -714,7 +733,8 @@ static void iJump(u32 branchPC) {
 	iStoreCycle(0);
 	FlushAllHWReg();
 	CALLFunc((u32)psxBranchTest);
-	CALLFunc((u32)psxJumpTest);
+	if(!Config.HLE && Config.PsxOut)
+		CALLFunc((u32)psxJumpTest);
 
 	// always return for now...
 	Return();
@@ -782,7 +802,8 @@ static void iBranch(u32 branchPC, s32 savectx) {
 	iStoreCycle(0);
 	FlushAllHWReg();
 	CALLFunc((u32)psxBranchTest);
-	CALLFunc((u32)psxJumpTest);
+	if(!Config.HLE && Config.PsxOut)
+		CALLFunc((u32)psxJumpTest);
 	
 	// always return for now...
 	//Return();
@@ -802,20 +823,6 @@ static void iBranch(u32 branchPC, s32 savectx) {
 	B_DST(b2);
 	MTCTR(3);
 	BCTR();
-
-	// maybe just happened an interruption, check so
-/*	CMP32ItoM((u32)&psxRegs.pc, branchPC);
-	j8Ptr[1] = JE8(0);
-	RET();
-
-	x86SetJ8(j8Ptr[1]);
-	MOV32MtoR(EAX, PC_REC(branchPC));
-	TEST32RtoR(EAX, EAX);
-	j8Ptr[2] = JNE8(0);
-	RET();
-
-	x86SetJ8(j8Ptr[2]);
-	JMP32R(EAX);*/
 
 	pc-= 4;
 	if (savectx) {
@@ -882,19 +889,22 @@ static void rec##f() { \
 #define CP2_FUNC(f) \
 void gte##f(); \
 static void rec##f() { \
+	if (pc < cop2readypc) idlecyclecount += ((cop2readypc - pc)>>2); \
 	iFlushRegs(0); \
 	LIW(0, (u32)psxRegs.code); \
 	STW(0, OFFSET(&psxRegs, &psxRegs.code), GetHWRegSpecial(PSXREGS)); \
 	FlushAllHWReg(); \
 	CALLFunc ((u32)gte##f); \
+	cop2readypc = pc + (psxCP2time[_fFunct_(psxRegs.code)] << 2); \
 }
 
 #define CP2_FUNCNC(f) \
 void gte##f(); \
 static void rec##f() { \
+	if (pc < cop2readypc) idlecyclecount += ((cop2readypc - pc)>>2); \
 	iFlushRegs(0); \
 	CALLFunc ((u32)gte##f); \
-/*	branch = 2; */\
+	cop2readypc = pc + (psxCP2time[_fFunct_(psxRegs.code)] << 2); \
 }
 
 static s32 allocMem() {
@@ -1003,7 +1013,16 @@ static void recCOP0() {
 
 //REC_SYS(COP2);
 static void recCOP2() {
+	s32 tmp1 = PutHWRegSpecial(TMP1); // test for ((psxRegs.CP0.n.Status & 0x40000000) == 0 )
+	u32 *skipGteFunc;
+	LWZ(tmp1, OFFSET(&psxRegs, &psxRegs.CP0.n.Status), GetHWRegSpecial(PSXREGS)); // tmp1 = psxRegs.CP0.n.Status
+	RLWINM(tmp1,tmp1,0,1,1); // tmp2 = tmp1 & 0x40000000
+	CMPWI(tmp1, 0);
+	BEQ_L(skipGteFunc);
+	
 	recCP2[_Funct_]();
+
+	B_DST(skipGteFunc);	
 }
 
 static void recBASIC() {
@@ -2463,8 +2482,8 @@ static void recHLE() {
 		CALLFunc((u32)psxHLEt[0]); // call dummy function
 	}
 	
-	count = ((pc - pcold)/4 + 20)<<1;
-	ADDI(PutHWRegSpecial(CYCLECOUNT), GetHWRegSpecial(CYCLECOUNT), count);
+	count = ((((pc - pcold)/4) + 20)) <<1;
+	ADDI(PutHWRegSpecial(CYCLECOUNT), GetHWRegSpecial(CYCLECOUNT), count + idlecyclecount);
 	FlushAllHWReg();
 	CALLFunc((u32)psxBranchTest);
 	Return();
@@ -2531,6 +2550,7 @@ static void recRecompile() {
 	u32 *ptr;
 	s32 i;
 	
+	idlecyclecount = 0;
 
 	// initialize state variables
 	UniqueRegAlloc = 1;

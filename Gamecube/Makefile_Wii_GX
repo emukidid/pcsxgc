@@ -109,7 +109,7 @@ $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile_Wii_GX
 	@echo creating ... $(notdir $(OUTPUT)).dol
-	@$(DEVKITPPC)/bin/elf2dol $(OUTPUT).elf $(OUTPUT).dol
+	@$(DEVKITPRO)/tools/bin/elf2dol $(OUTPUT).elf $(OUTPUT).dol
 
 #---------------------------------------------------------------------------------
 clean:
