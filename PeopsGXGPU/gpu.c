@@ -1103,7 +1103,6 @@ long PEOPS_GPUshutdown()
 void PaintBlackBorders(void)
 {
  short s;
-#ifndef __GX__
  glDisable(GL_SCISSOR_TEST);
  if(bTexEnabled) {glDisable(GL_TEXTURE_2D);bTexEnabled=FALSE;}
  if(bOldSmoothShaded) {glShadeModel(GL_FLAT);bOldSmoothShaded=FALSE;}
@@ -1144,14 +1143,6 @@ void PaintBlackBorders(void)
 
  glEnable(GL_ALPHA_TEST);
  glEnable(GL_SCISSOR_TEST);
-#else
-	gxDisable(GX_SCISSOR_TEST);
-	gxDisable(GX_ALPHA_TEST);
-	if(bBlendEnable)     {gxDisable(GX_BLEND);bBlendEnable=FALSE;}
-	// TODO
-	gxEnable(GX_SCISSOR_TEST);
-	gxEnable(GX_ALPHA_TEST);
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1161,7 +1152,6 @@ void PaintBlackBorders(void)
 __inline void XPRIMdrawTexturedQuad(OGLVertex* vertex1, OGLVertex* vertex2, 
                                     OGLVertex* vertex3, OGLVertex* vertex4) 
 {
-#ifndef __GX__
  glBegin(GL_QUAD_STRIP);
   glTexCoord2fv(&vertex1->sow);
   glVertex3fv(&vertex1->x);
@@ -1175,33 +1165,7 @@ __inline void XPRIMdrawTexturedQuad(OGLVertex* vertex1, OGLVertex* vertex2,
   glTexCoord2fv(&vertex3->sow);
   glVertex3fv(&vertex3->x);
  glEnd();
-#else
- SysPrintf("XPRIMdrawTexturedQuad\r\n");
- GX_InvVtxCache();
- GX_ClearVtxDesc();
-		
- //set vertex description here
- GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
- GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
- 
- Mtx GXmodelView2D;
- guMtxIdentity(GXmodelView2D);
- GX_LoadPosMtxImm(GXmodelView2D,GX_PNMTX0);
- 
- //set vertex attribute formats here
- GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
- GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
- GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-  GX_Position3f32( (f32) vertex4->x, (f32) vertex4->y, (f32) vertex4->z );	// bottom left
-  GX_TexCoord2f32( (f32) vertex4->sow, (f32) vertex4->tow );
-  GX_Position3f32( (f32) vertex3->x, (f32) vertex3->y, (f32) vertex3->z );	// bottom right
-  GX_TexCoord2f32( (f32) vertex3->sow, (f32) vertex3->tow );
-  GX_Position3f32( (f32) vertex1->x, (f32) vertex1->y, (f32) vertex1->z );	// top left
-  GX_TexCoord2f32( (f32) vertex1->sow, (f32) vertex1->tow );
-  GX_Position3f32( (f32) vertex2->x, (f32) vertex2->y, (f32) vertex2->z );	// top right
-  GX_TexCoord2f32( (f32) vertex2->sow, (f32) vertex2->tow );
- GX_End();
-#endif
+ print_gecko("XPRIMdrawTexturedQuad\r\n");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1210,7 +1174,6 @@ __inline void XPRIMdrawTexturedQuad(OGLVertex* vertex1, OGLVertex* vertex2,
 
 void SetScanLines(void)
 {
-#ifndef __GX__
  glLoadIdentity();
  glOrtho(0,iResX,iResY, 0, -1, 1);
 
@@ -1260,7 +1223,7 @@ void SetScanLines(void)
 
    XPRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
 
-   if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);    
+//   if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);    
   }
  else                                                  // typical line mode
   {
@@ -1295,13 +1258,6 @@ void SetScanLines(void)
 
  glEnable(GL_ALPHA_TEST);
  glEnable(GL_SCISSOR_TEST);   
-#else
- gxDisable(GX_SCISSOR_TEST);
- gxDisable(GX_ALPHA_TEST);
- //TODO
- gxEnable(GX_SCISSOR_TEST);
- gxEnable(GX_ALPHA_TEST);
-#endif 
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1311,8 +1267,7 @@ void SetScanLines(void)
 void BlurBackBuffer(void)
 {
  if(gTexBlurName == NULL) return;
- SysPrintf("BlurBackBuffer\r\n");
-#ifndef __GX__
+ print_gecko("BlurBackBuffer\r\n");
  if(bKeepRatio) glViewport(0,0,iResX,iResY);
 
  glDisable(GL_SCISSOR_TEST);
@@ -1366,74 +1321,14 @@ void BlurBackBuffer(void)
  glEnable(GL_SCISSOR_TEST);
  if(iZBufferDepth)  glEnable(GL_DEPTH_TEST);    
  if(bDrawDither)    glEnable(GL_DITHER);    
- if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);    
+// if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);    
 
  if(bKeepRatio)
   glViewport(rRatioRect.left,                            // re-init viewport
              iResY-(rRatioRect.top+rRatioRect.bottom),
              rRatioRect.right, 
              rRatioRect.bottom);  
-#else
-	
- if(bKeepRatio) gxViewport(0,0,iResX, iResY, 0.0f, 1.0f);
- gxDisable(GX_SCISSOR_TEST);
- gxDisable(GX_ALPHA_TEST);
- //if(bOldSmoothShaded) {glShadeModel(GL_FLAT);bOldSmoothShaded=FALSE;}
- if(bBlendEnable)     {gxDisable(GX_BLEND);bBlendEnable=FALSE;}
- if(!bTexEnabled)     {bTexEnabled=TRUE;}
- //if(iZBufferDepth)    glDisable(GL_DEPTH_TEST);    
- //if(bDrawDither)      glDisable(GL_DITHER); 
 
- // get back buffer in texture
- gTexName=gTexBlurName;
- GX_SetTexCopySrc(0, 0,iResX,iResY);
- GX_SetTexCopyDst(iResX,iResY, gTexName->GXtexfmt, GX_FALSE);
- GX_SetCopyFilter(GX_FALSE, NULL, GX_FALSE, NULL);
- if (gTexName->GXtexture) GX_CopyTex(gTexName->GXtexture, GX_FALSE);
- GX_PixModeSync();
- GX_SetCopyFilter(vmode->aa, vmode->sample_pattern, GX_TRUE, vmode->vfilter);
-
- vertex[0].x=0;
- vertex[0].y=PSXDisplay.DisplayMode.y;
- vertex[1].x=PSXDisplay.DisplayMode.x;
- vertex[1].y=PSXDisplay.DisplayMode.y;
- vertex[2].x=PSXDisplay.DisplayMode.x;
- vertex[2].y=0;
- vertex[3].x=0;
- vertex[3].y=0;
- vertex[0].sow=0;
- vertex[0].tow=0;
-
-#ifdef OWNSCALE
- vertex[1].sow=((GLfloat)iFTexA)/256.0f;
- vertex[2].tow=((GLfloat)iFTexB)/256.0f;
-#else
- vertex[1].sow=iFTexA;
- vertex[2].tow=iFTexB;
-#endif
- vertex[1].tow=0;
- vertex[2].sow=vertex[1].sow;
- vertex[3].sow=0;
- vertex[3].tow=vertex[2].tow;
- 
- //if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);    
- vertex[0].c.lcol=0x7fffffff;
- SETCOL(vertex[0]); 
- GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
- DrawMultiBlur();                                      // draw the backbuffer texture to create blur effect
-
- gxEnable(GX_ALPHA_TEST);
- gxEnable(GX_SCISSOR_TEST);
- //if(iZBufferDepth)  glEnable(GL_DEPTH_TEST);    
- //if(bDrawDither)    glEnable(GL_DITHER);    
- //if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);    
-
- if(bKeepRatio)
-  gxViewport(rRatioRect.left,                            // re-init viewport
-             iResY-(rRatioRect.top+rRatioRect.bottom),
-             rRatioRect.right, 
-             rRatioRect.bottom, 0.0f, 1.0f);
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1441,8 +1336,8 @@ void BlurBackBuffer(void)
 
 void UnBlurBackBuffer(void)
 {
+	print_gecko("UnBlurBackBuffer\r\n");
  if(gTexBlurName==NULL) return;
-#ifndef __GX__
  if(bKeepRatio) glViewport(0,0,iResX,iResY);
 
  glDisable(GL_SCISSOR_TEST);
@@ -1487,66 +1382,13 @@ void UnBlurBackBuffer(void)
  glEnable(GL_SCISSOR_TEST);
  if(iZBufferDepth)  glEnable(GL_DEPTH_TEST);    
  if(bDrawDither)    glEnable(GL_DITHER);                  // dither mode
- if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);    
+ //if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);    
 
  if(bKeepRatio)
   glViewport(rRatioRect.left,
              iResY-(rRatioRect.top+rRatioRect.bottom),
              rRatioRect.right, 
              rRatioRect.bottom);                         // init viewport
-#else
- if(bKeepRatio) gxViewport(0,0,iResX,iResY, 0.0f, 1.0f);
-
- gxDisable(GX_SCISSOR_TEST);
- gxDisable(GX_ALPHA_TEST);
- if(bBlendEnable)    {gxDisable(GX_BLEND); bBlendEnable=FALSE;}
- if(!bTexEnabled)    {/*glEnable(GL_TEXTURE_2D);*/bTexEnabled=TRUE;}
- //if(iZBufferDepth)    glDisable(GL_DEPTH_TEST);    
- //if(bDrawDither)      glDisable(GL_DITHER); 
-
- gTexName=gTexBlurName;
- GX_LoadTexObj(&gTexName->GXtexObj, GX_TEXMAP0);
-
- vertex[0].x=0;
- vertex[0].y=PSXDisplay.DisplayMode.y;
- vertex[1].x=PSXDisplay.DisplayMode.x;
- vertex[1].y=PSXDisplay.DisplayMode.y;
- vertex[2].x=PSXDisplay.DisplayMode.x;
- vertex[2].y=0;
- vertex[3].x=0;
- vertex[3].y=0;
- vertex[0].sow=0;
- vertex[0].tow=0;
-#ifdef OWNSCALE
- vertex[1].sow=((GLfloat)iFTexA)/256.0f;
- vertex[2].tow=((GLfloat)iFTexB)/256.0f;
-#else
- vertex[1].sow=iFTexA;
- vertex[2].tow=iFTexB;
-#endif
- vertex[1].tow=0;
- vertex[2].sow=vertex[1].sow;
- vertex[3].sow=0;
- vertex[3].tow=vertex[2].tow;
- //if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);    
- vertex[0].c.lcol=0xffffffff;
- SETCOL(vertex[0]); 
-
- // simply draw the backbuffer texture (without blur)
- XPRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
-
- gxEnable(GX_ALPHA_TEST);
- gxEnable(GX_SCISSOR_TEST);
- //if(iZBufferDepth)  glEnable(GL_DEPTH_TEST);    
- //if(bDrawDither)    glEnable(GL_DITHER);                  // dither mode
- //if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);   
- 
- if(bKeepRatio)
-  gxViewport(rRatioRect.left,
-             iResY-(rRatioRect.top+rRatioRect.bottom),
-             rRatioRect.right, 
-             rRatioRect.bottom, 0.0f, 1.0f);
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1607,18 +1449,11 @@ void updateDisplay(void)                               // UPDATE DISPLAY
 
  if(PSXDisplay.Disabled)                               // display disabled?
   {
-#ifndef __GX__
    // moved here
    glDisable(GL_SCISSOR_TEST);                       
    glClearColor(0,0,0,128);                            // -> clear whole backbuffer
    glClear(uiBufferBits);
    glEnable(GL_SCISSOR_TEST);                       
-#else
-   gxDisable(GX_SCISSOR_TEST);
-   gxClearColor(0,0,0,128);                            // -> clear whole backbuffer
-   gxClear(uiBufferBits);
-   gxEnable(GX_SCISSOR_TEST);
-#endif
    gl_z=0.0f;
    bDisplayNotSet = TRUE;
   }
@@ -1645,10 +1480,11 @@ void updateDisplay(void)                               // UPDATE DISPLAY
  //GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
  GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);*/
  
- Mtx44 GXprojection;
- guMtxIdentity(GXprojection);
- guOrtho(GXprojection, 0, PSXDisplay.DisplayMode.y, 0, PSXDisplay.DisplayMode.x, -1.0f, 1.0f);
- GX_LoadProjectionMtx(GXprojection, GX_ORTHOGRAPHIC); 
+ //print_gecko("UpdateDisplay\r\n");
+ //Mtx44 GXprojection;
+ //guMtxIdentity(GXprojection);
+ //guOrtho(GXprojection, 0, PSXDisplay.DisplayMode.y, 0, PSXDisplay.DisplayMode.x, -1.0f, 1.0f);
+ //GX_LoadProjectionMtx(GXprojection, GX_ORTHOGRAPHIC); 
 #endif
 
  if(iBlurBuffer && !bSkipNextFrame)                    // "blur display" activated?
@@ -1682,7 +1518,7 @@ void updateDisplay(void)                               // UPDATE DISPLAY
   {
    if(!bSkipNextFrame) 
     {
-     if(iDrawnSomething)
+    if(iDrawnSomething)
 #ifdef _WINDOWS
       SwapBuffers(wglGetCurrentDC());                  // -> to skip or not to skip
 #else
@@ -1727,7 +1563,6 @@ void updateDisplay(void)                               // UPDATE DISPLAY
     SetOGLDisplaySettings(1);
 
    
-#ifndef __GX__
    g=((GLclampf)GREEN(lClearOnSwapColor))/255.0f;      // -> get col
    b=((GLclampf)BLUE(lClearOnSwapColor))/255.0f;
    r=((GLclampf)RED(lClearOnSwapColor))/255.0f;
@@ -1735,18 +1570,6 @@ void updateDisplay(void)                               // UPDATE DISPLAY
    glClearColor(r,g,b,128);                            // -> clear 
    glClear(uiBufferBits);
    glEnable(GL_SCISSOR_TEST);                       
-#else
- //SysPrintf("UpdateDisplay ClearOnSwap\r\n");
- g=((GLclampf)GREEN(lClearOnSwapColor))/255.0f;      // -> get col
- b=((GLclampf)BLUE(lClearOnSwapColor))/255.0f;
- r=((GLclampf)RED(lClearOnSwapColor))/255.0f;
- gxDisable(GX_SCISSOR_TEST);
- gxClearColor(r,g,b,128);                            // -> clear 
- gxClear(uiBufferBits);
- //GXColor color = {lClearOnSwapColor&0xFF,(lClearOnSwapColor>>8) & 0xFF,(lClearOnSwapColor>>16) & 0xFF,128};
- //GX_SetCopyClear(color, 0xFFFFFF);                     // first buffer clear
- gxEnable(GX_SCISSOR_TEST);
-#endif
    lClearOnSwap=0;                                     // -> done
   }
  else 
@@ -1755,15 +1578,9 @@ void updateDisplay(void)                               // UPDATE DISPLAY
 
    if(iZBufferDepth)                                   // clear zbuffer as well (if activated)
     {
-#ifndef __GX__
      glDisable(GL_SCISSOR_TEST);                       
      glClear(GL_DEPTH_BUFFER_BIT);
      glEnable(GL_SCISSOR_TEST);                       
-#else
-	 gxDisable(GX_SCISSOR_TEST);
-	 gxClear(GL_DEPTH_BUFFER_BIT);
-	 gxEnable(GX_SCISSOR_TEST);
-#endif
     }
   }
  gl_z=0.0f;
@@ -1808,17 +1625,10 @@ void updateDisplay(void)                               // UPDATE DISPLAY
      i3=((rand()*iRumbleVal)/RAND_MAX)-(iRumbleVal/2); 
      i4=((rand()*iRumbleVal)/RAND_MAX)-(iRumbleVal/2); 
     }
-#ifndef __GX__
    glViewport(rRatioRect.left+i1,                      
               iResY-(rRatioRect.top+rRatioRect.bottom)+i2,
               rRatioRect.right+i3, 
               rRatioRect.bottom+i4);            
-#else
-   gxViewport((f32) rRatioRect.left+i1
-				,(f32) iResY-(rRatioRect.top+rRatioRect.bottom)+i2
-				,(f32) rRatioRect.right+i3
-				,(f32) rRatioRect.bottom+i4, 0.0f, 1.0f);
-#endif
   }
 
  //----------------------------------------------------//
@@ -1979,32 +1789,18 @@ void SetAspectRatio(void)
     r.right <rRatioRect.right)
   {
    RECT rC;
-#ifndef __GX__
    glClearColor(0,0,0,128);                         
-#else
-   gxClearColor(0,0,0,128);  
-#endif
    if(r.right <rRatioRect.right)
     {
      rC.left=0;
      rC.top=0;
      rC.right=r.left;
      rC.bottom=iResY;
-#ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
      glClear(uiBufferBits);
-#else
-	 gxScissor(rC.left,rC.top,rC.right,rC.bottom);
-     gxClear(uiBufferBits);
-#endif
      rC.left=iResX-rC.right;
-#ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
      glClear(uiBufferBits);
-#else
-	 gxScissor(rC.left,rC.top,rC.right,rC.bottom);
-     gxClear(uiBufferBits);
-#endif
     }
 
    if(r.bottom <rRatioRect.bottom)
@@ -2013,21 +1809,11 @@ void SetAspectRatio(void)
      rC.top=0;
      rC.right=iResX;
      rC.bottom=r.top;
-#ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
      glClear(uiBufferBits);
-#else
-	 gxScissor(rC.left,rC.top,rC.right,rC.bottom);
-     gxClear(uiBufferBits);
-#endif
      rC.top=iResY-rC.bottom;
-#ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
      glClear(uiBufferBits);
-#else
-	 gxScissor(rC.left,rC.top,rC.right,rC.bottom);
-     gxClear(uiBufferBits);
-#endif
     }
    
    bSetClip=TRUE;
@@ -2036,17 +1822,10 @@ void SetAspectRatio(void)
 
  rRatioRect=r;
 
-#ifndef __GX__
  glViewport(rRatioRect.left,
             iResY-(rRatioRect.top+rRatioRect.bottom),
             rRatioRect.right,
             rRatioRect.bottom);                         // init viewport
-#else
- gxViewport((f32) rRatioRect.left
-				,(f32) iResY-(rRatioRect.top+rRatioRect.bottom)
-				,(f32) rRatioRect.right
-				,(f32) rRatioRect.bottom, 0.0f, 1.0f);
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2067,20 +1846,9 @@ void updateDisplayIfChanged(void)
   }
  else                                                  // some res change?
   {
-#ifndef __GX__
    glLoadIdentity();
    glOrtho(0,PSXDisplay.DisplayModeNew.x,              // -> new psx resolution
              PSXDisplay.DisplayModeNew.y, 0, -1, 1);
-#else
-	SysPrintf("updateDisplayIfChanged\r\n");
-   Mtx44 GXprojection;
-   guMtxIdentity(GXprojection);
-   guMtxIdentity(GXmodelViewIdent);
-   guOrtho(GXprojection, 0, PSXDisplay.DisplayModeNew.y, 0, PSXDisplay.DisplayModeNew.x, -1.0f, 1.0f);
-   GX_LoadProjectionMtx(GXprojection, GX_ORTHOGRAPHIC); 
-   GX_LoadPosMtxImm(GXmodelViewIdent,GX_PNMTX0);
-   GX_LoadTexMtxImm(GXmodelViewIdent,GX_TEXMTX0,GX_MTX2x4);
-#endif
    if(bKeepRatio) SetAspectRatio();
   }
 

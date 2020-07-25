@@ -2,7 +2,7 @@
 #define _GLGX_H_
 
 #include <gccore.h>
-#include "gl.h"
+#include "opengx/gl.h"
 
 extern u32* xfb[2];			/*** Framebuffers ***/
 extern int whichfb;        	/*** Frame buffer toggle ***/

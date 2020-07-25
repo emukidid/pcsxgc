@@ -1,3 +1,4 @@
+
 #include "glgx.h"
 
 Mtx GXmodelViewIdent;
@@ -14,8 +15,8 @@ void gxScissor(u32 x,u32 y,u32 width,u32 height) {
 	gxCurScissor.y = y;
 	gxCurScissor.width = width;
 	gxCurScissor.height = height;
-	//print_gecko("gxScissor set to x %d, y %d, width %d, height %d\r\n",
-	//	gxCurScissor.x, gxCurScissor.y, gxCurScissor.width, gxCurScissor.height);
+	print_gecko("gxScissor set to x %d, y %d, width %d, height %d\r\n",
+		gxCurScissor.x, gxCurScissor.y, gxCurScissor.width, gxCurScissor.height);
 }
 
 void gxViewport(f32 xOrig,f32 yOrig,f32 wd,f32 ht,f32 nearZ,f32 farZ) {
@@ -23,16 +24,19 @@ void gxViewport(f32 xOrig,f32 yOrig,f32 wd,f32 ht,f32 nearZ,f32 farZ) {
 	gxCurViewPort.y = (u32)yOrig;
 	gxCurViewPort.width = (u32)wd;
 	gxCurViewPort.height = (u32)ht;
+	print_gecko("GX_SetViewport\r\n");
 	GX_SetViewport(xOrig, yOrig, wd, ht, nearZ, farZ);
-	//print_gecko("Viewport set to xOrig %.2f, yOrig %.2f, wd %.2f, ht %.2f, nearZ %.2f, farZ %.2f\r\n",
-	//	xOrig, yOrig, wd, ht, nearZ, farZ);
+	print_gecko("gxViewport set to xOrig %.2f, yOrig %.2f, wd %.2f, ht %.2f, nearZ %.2f, farZ %.2f\r\n",
+		xOrig, yOrig, wd, ht, nearZ, farZ);
 }
 
 void gxAlphaFunc(u8 func, u8 ref) {
 	gxAlphaComp.func = func;
 	gxAlphaComp.ref = ref;
+	print_gecko("gxAlphaFunc func %i ref %i gxAlphaComp.enabled %s\r\n", func, ref, gxAlphaComp.enabled ? "true":"false");
 	// Enabled, set it immediately too
 	if(gxAlphaComp.enabled) {
+		print_gecko("GX_SetAlphaCompare\r\n");
 		GX_SetAlphaCompare(gxAlphaComp.func,gxAlphaComp.ref,GX_AOP_AND,GX_ALWAYS,0);
 	}
 }
@@ -40,19 +44,24 @@ void gxAlphaFunc(u8 func, u8 ref) {
 void gxBlendFunc(u8 srcfact, u8 destfact) {
 	gxCurBlendFunc.srcfact = srcfact;
 	gxCurBlendFunc.destfact = destfact;
+	print_gecko("gxBlendFunc srcfact %i destfact %i gxCurBlendFunc.enabled %s\r\n", srcfact, destfact, gxCurBlendFunc.enabled ? "true":"false");
+	print_gecko("GX_SetBlendMode\r\n");
 	GX_SetBlendMode(gxCurBlendFunc.enabled ? GX_BM_BLEND:GX_BM_NONE, gxCurBlendFunc.srcfact, gxCurBlendFunc.destfact, GX_LO_CLEAR);
 }
 
 void gxEnable(u32 type) {
 	switch (type) {
 		case GX_SCISSOR_TEST:
+			print_gecko("gxEnable scissor test x %i y %i w %i h %i\r\n", gxCurScissor.x, gxCurScissor.y, gxCurScissor.width, gxCurScissor.height);
 			GX_SetScissor(gxCurScissor.x, gxCurScissor.y, gxCurScissor.width, gxCurScissor.height);
 			break;
 		case GX_ALPHA_TEST:
+			print_gecko("gxEnable alpha test func %i ref %i\r\n", gxAlphaComp.func, gxAlphaComp.ref);
 			GX_SetAlphaCompare(gxAlphaComp.func,gxAlphaComp.ref,GX_AOP_AND,GX_ALWAYS,0);
 			gxAlphaComp.enabled = 1;
 			break;
 		case GX_BLEND:
+			print_gecko("gxEnable blend mode func %i ref %i\r\n", gxCurBlendFunc.srcfact, gxCurBlendFunc.destfact);
 			GX_SetBlendMode(GX_BM_BLEND, gxCurBlendFunc.srcfact, gxCurBlendFunc.destfact, GX_LO_CLEAR);
 			gxCurBlendFunc.enabled = 1;
 			break;
@@ -62,13 +71,16 @@ void gxEnable(u32 type) {
 void gxDisable(u32 type) {
 	switch (type) {
 		case GX_SCISSOR_TEST:
+		print_gecko("gxDisable scissor test x %i y %i w %i h %i\r\n", gxCurViewPort.x, gxCurViewPort.y, gxCurViewPort.width, gxCurViewPort.height);
 			GX_SetScissor(gxCurViewPort.x, gxCurViewPort.y, gxCurViewPort.width, gxCurViewPort.height);
 			break;
 		case GX_ALPHA_TEST:
+			print_gecko("gxDisable alpha test\r\n");
 			GX_SetAlphaCompare(GX_ALWAYS,0,GX_AOP_AND,GX_ALWAYS,0);
 			gxAlphaComp.enabled = 0;
 			break;
 		case GX_BLEND:
+			print_gecko("gxDisable blend test\r\n");
 			GX_SetBlendMode(GX_BM_NONE, gxCurBlendFunc.srcfact, gxCurBlendFunc.destfact, GX_LO_CLEAR);
 			gxCurBlendFunc.enabled = 0;
 			break;
@@ -76,6 +88,7 @@ void gxDisable(u32 type) {
 }
 
 void gxSwapBuffers() {
+	//print_gecko("gxSwapBuffers\r\n");
 	GX_CopyDisp (xfb[whichfb], GX_TRUE);
 	GX_DrawDone();
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
@@ -84,7 +97,9 @@ void gxSwapBuffers() {
 
 void gxFlush()
 {
-	VIDEO_Flush();
+	print_gecko("gxFlush\r\n");
+	//VIDEO_Flush();
+	GX_DrawDone();
 }
 
 void gxClearColor(	GLclampf red,
@@ -100,6 +115,7 @@ void gxClearColor(	GLclampf red,
 
 static void draw_axis_align_blanker_quad()
 {
+	print_gecko("draw_axis_align_blanker_quad\r\n");
 	float x1 = gxCurViewPort.x;
 	float y1 = gxCurViewPort.y;
 	float x2 = gxCurViewPort.width;
@@ -161,6 +177,7 @@ void gxClear (GLbitfield mask) {
 	
 	if(clear_color && clear_depth)
 	{		
+		print_gecko("gxClear (clear_color && clear_depth)\r\n");
 		// Clear both color and depth
 		GX_SetCopyClear(_clearcolor, _cleardepth * GX_MAX_Z24);
 		GX_CopyDisp(xfb[whichfb^1], GX_TRUE);
@@ -169,6 +186,7 @@ void gxClear (GLbitfield mask) {
 	}
 	else if(clear_color)
 	{
+		print_gecko("gxClear (clear_color)\r\n");
 		// Disable Z-write and enable color and alpha update
 		GX_SetZMode(GX_DISABLE, GX_NEVER, GX_FALSE);
 		GX_SetColorUpdate(GX_ENABLE);
@@ -177,6 +195,7 @@ void gxClear (GLbitfield mask) {
 	}
 	else if(clear_depth)
 	{
+		print_gecko("gxClear (clear_depth)\r\n");
 		//to clear only one of buffers then something more clever has to be done (thanks to samson)
 		//Disable colour-write, enable zwrite, disable z-test, write a screen-aligned quad at whatever depth you want.
 		

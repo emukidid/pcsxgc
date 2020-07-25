@@ -48,8 +48,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include "opengx/gl.h"
 #ifndef __GX__
-#include <GL/gl.h>
 #include <GL/glx.h>
 #include <X11/cursorfont.h> 
 #endif
@@ -62,14 +62,12 @@
 
 #define SHADETEXBIT(x) ((x>>24) & 0x1)
 #define SEMITRANSBIT(x) ((x>>25) & 0x1)
-#ifndef __GX__
-#include "gl_ext.h"
 
+#include "opengx/glext.h"
 
 #ifndef _WINDOWS
 #ifndef GL_BGRA_EXT
 #define GL_BGRA_EXT GL_BGRA
 #endif
 #define GL_COLOR_INDEX8_EXT 0x80E5
-#endif
 #endif

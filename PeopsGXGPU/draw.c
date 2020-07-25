@@ -149,7 +149,6 @@ BOOL               bGLBlend;
 PFNGLBLENDEQU      glBlendEquationEXTEx=NULL;
 PFNGLCOLORTABLEEXT glColorTableEXTEx=NULL;
 #else
-#include "glgx.h"
 #define PFNGLBLENDEQU void*
 #define PFNGLCOLORTABLEEXT void*
 void*    glBlendEquationEXTEx=NULL;
@@ -249,7 +248,7 @@ void GetExtInfos(void)
       iClampType=GL_TO_EDGE_CLAMP;
  else 
 #endif
-  iClampType=GX_CLAMP;
+  iClampType=GL_CLAMP;
 
  glColorTableEXTEx=(PFNGLCOLORTABLEEXT)NULL;           // init ogl palette func pointer
 #ifndef __GX__
@@ -298,7 +297,6 @@ void SetExtGLFuncs(void)
 
  //----------------------------------------------------//
 
-#ifndef __GX__
  if(iUseExts && !(dwActFixes&1024) &&                  // extensions wanted? and not turned off by game fix?
     strstr((char *)glGetString(GL_EXTENSIONS),         // and blend_subtract available?
     "GL_EXT_blend_subtract"))
@@ -306,13 +304,13 @@ void SetExtGLFuncs(void)
 #ifdef _WINDOWS
       glBlendEquationEXTEx=(PFNGLBLENDEQU)wglGetProcAddress("glBlendEquationEXT");
 #else
-      glBlendEquationEXTEx=(PFNGLBLENDEQU)glBlendEquationEXT; 
+      //glBlendEquationEXTEx=(PFNGLBLENDEQU)glBlendEquationEXT; 
 #endif
      }
  else                                                  // no subtract blending?
   {
-   if(glBlendEquationEXTEx)                            // -> change to additive blending (if subract was active)
-    glBlendEquationEXTEx(FUNC_ADD_EXT);
+   //if(glBlendEquationEXTEx)                            // -> change to additive blending (if subract was active)
+    //glBlendEquationEXTEx(FUNC_ADD_EXT);
    glBlendEquationEXTEx=(PFNGLBLENDEQU)NULL;           // -> no more blend function pointer
   }
 
@@ -324,10 +322,10 @@ void SetExtGLFuncs(void)
   {
    bUseMultiPass=FALSE;bGLBlend=TRUE;                  // -> no need for 2 passes, perfect
 
-   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);    
+/*   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);    
    glTexEnvf(GL_TEXTURE_ENV, COMBINE_RGB_EXT, GL_MODULATE);     
    glTexEnvf(GL_TEXTURE_ENV, COMBINE_ALPHA_EXT, GL_MODULATE);     
-   glTexEnvf(GL_TEXTURE_ENV, RGB_SCALE_EXT, 2.0f);    
+   glTexEnvf(GL_TEXTURE_ENV, RGB_SCALE_EXT, 2.0f);    */
   }
  else                                                  // no advanced blending wanted/available:
   {
@@ -337,34 +335,7 @@ void SetExtGLFuncs(void)
 
    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);    
   }
-#else
- GX_SetNumChans (1);
- GX_SetNumTexGens (1);
- GX_SetNumTevStages (1);
- //GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
- if(bAdvancedBlend)
-  {
-   bUseMultiPass=FALSE;bGLBlend=TRUE;                  // -> no need for 2 passes, perfect
 
-   //glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);
-   //glTexEnvf(GL_TEXTURE_ENV, COMBINE_RGB_EXT, GL_MODULATE);     
-   //glTexEnvf(GL_TEXTURE_ENV, COMBINE_ALPHA_EXT, GL_MODULATE);     
-   //glTexEnvf(GL_TEXTURE_ENV, RGB_SCALE_EXT, 2.0f);    
-   GX_SetTevOrder (GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-   GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
-   GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-   GX_SetTevOp(GX_TEVSTAGE0,GX_MODULATE);
-  }
- else                                                  // no advanced blending wanted/available:
-  {
-   if(bAdvancedBlend) bUseMultiPass=TRUE;              // -> pseudo-advanced with 2 passes
-   else               bUseMultiPass=FALSE;             // -> or simple 'bright color' mode
-   bGLBlend=FALSE;                                     // -> no ext blending!
-
-   //glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);    
-   GX_SetTevOp(GX_TEVSTAGE0,GX_PASSCLR);
-  }
-#endif
  //----------------------------------------------------//
  // init standard tex quality 0-2, and big alpha mode 3
 
@@ -386,21 +357,13 @@ void SetExtGLFuncs(void)
     }
 
    TCF[1]=XP8RGBA_1;
-#ifndef __GX__
    glAlphaFunc(GL_GREATER,0.49f);
-#else
-   gxAlphaFunc(GX_GREATER, 125);
-#endif
   }
  else                                                  // no opaque mode?
   {
    TCF[0]=TCF[1]=P8RGBA;
    PalTexturedColourFn=P8RGBA;                         // -> init col func
-#ifndef __GX__
    glAlphaFunc(GL_NOTEQUAL,0);                         // --> set alpha func
-#else
-   gxAlphaFunc(GX_NEQUAL, 0);
-#endif
   }
 
  //----------------------------------------------------//
@@ -418,7 +381,6 @@ void SetExtGLFuncs(void)
     break;
    //--------------------------------------------------// 
    case 1:                                             // -> R4G4B4A4
-#ifndef __GX__
     if(bGLExt)
      {
       giWantedRGBA=GL_RGBA4;
@@ -436,7 +398,6 @@ void SetExtGLFuncs(void)
        }
      }
     else
-#endif
      {
       giWantedRGBA=GL_RGBA4;
       giWantedTYPE=GL_UNSIGNED_BYTE;
@@ -444,7 +405,6 @@ void SetExtGLFuncs(void)
     break;
    //--------------------------------------------------// 
    case 2:                                             // -> R5B5G5A1
-#ifndef __GX__
     if(bGLExt)
      {
       giWantedRGBA=GL_RGB5_A1;
@@ -462,14 +422,13 @@ void SetExtGLFuncs(void)
        }
      }
     else
-#endif
      {
       giWantedRGBA=GL_RGB5_A1;giWantedTYPE=GL_UNSIGNED_BYTE;
      }
     break;
    //--------------------------------------------------// 
    case 3:                                             // -> R8G8B8A8
-    giWantedRGBA=GL_RGBA8;
+    giWantedRGBA=GL_BGRA;
     giWantedTYPE=GL_UNSIGNED_BYTE;
 
     if(bSmallAlpha)
@@ -485,9 +444,8 @@ void SetExtGLFuncs(void)
     break;
    //--------------------------------------------------// 
    case 4:                                             // -> R8G8B8A8
-    giWantedRGBA = GL_RGBA8;
+    giWantedRGBA = GL_BGRA;
     giWantedTYPE = GL_UNSIGNED_BYTE;
-#ifndef __GX__
     if(strstr((char *)glGetString(GL_EXTENSIONS),      // and extension avail?
               "GL_EXT_bgra"))
      {
@@ -514,7 +472,6 @@ void SetExtGLFuncs(void)
        }
      }
     else
-#endif
      {
       iTexQuality=3;
       if(bSmallAlpha)
@@ -533,22 +490,14 @@ void SetExtGLFuncs(void)
   }
 
  bBlendEnable=FALSE;                                   // init blending: off
-#ifndef __GX__
  glDisable(GL_BLEND);
-#else
- gxDisable(GX_BLEND);
- //GX_SetColorUpdate(GX_ENABLE);
- //GX_SetAlphaUpdate(GX_ENABLE);
- //GX_SetDstAlpha(GX_DISABLE, 0xFF);
-#endif
-
  SetScanTrans();                                       // init scan lines (if wanted)
 }
 
 ////////////////////////////////////////////////////////////////////////
 // setup scan lines
 ////////////////////////////////////////////////////////////////////////
-#ifndef __GX__
+
 #define R_TSP 0x00,0x45,0x00,0xff
 #define G_TSP 0x00,0x00,0x45,0xff
 #define B_TSP 0x45,0x00,0x00,0xff
@@ -564,7 +513,6 @@ GLubyte texscan[4][16]=
 {B_TSP, N_TSP, R_TSP, G_TSP},
 {O_TSP, N_TSP, O_TSP, N_TSP}
 };
-#endif
 
 void CreateScanLines(void)
 {
@@ -614,6 +562,7 @@ HGLRC GLCONTEXT=NULL;
 
 int GLinitialize() 
 {
+	InitializeGLdata();
  //----------------------------------------------------// 
 #ifdef _WINDOWS
  HGLRC objectRC;
@@ -627,7 +576,6 @@ int GLinitialize()
 #endif
  //----------------------------------------------------// 
 
-#ifndef __GX__
  glViewport(rRatioRect.left,                           // init viewport by ratio rect
             iResY-(rRatioRect.top+rRatioRect.bottom),
             rRatioRect.right, 
@@ -696,45 +644,6 @@ int GLinitialize()
    glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
    glHint(GL_POLYGON_SMOOTH_HINT,GL_NICEST);
   }
-#else
- //GX
- gxViewport((f32) rRatioRect.left
-				,(f32) iResY-(rRatioRect.top+rRatioRect.bottom)
-				,(f32) rRatioRect.right
-				,(f32) rRatioRect.bottom, 0.0f, 1.0f);	// init viewport by ratio rect
- gxScissor(0, 0, iResX, iResY);
- gxEnable(GX_SCISSOR_TEST);
-
- Mtx44 GXprojection;
- guMtxIdentity(GXprojection);
- guMtxIdentity(GXmodelViewIdent);
- guOrtho(GXprojection, 0, PSXDisplay.DisplayMode.y, 0, PSXDisplay.DisplayMode.x, -1.0f, 1.0f);
- GX_LoadProjectionMtx(GXprojection, GX_ORTHOGRAPHIC); 
- GX_LoadPosMtxImm(GXmodelViewIdent,GX_PNMTX0);
- GX_LoadTexMtxImm(GXmodelViewIdent,GX_TEXMTX0,GX_MTX2x4);
-
- if(iZBufferDepth)                                     // zbuffer?
-  {
-   GX_SetZMode(GX_ENABLE,GX_ALWAYS,GX_TRUE);
-   iDepthFunc=1;
-  }
- else                                                  // no zbuffer?
-  {
-   GX_SetZMode(GX_DISABLE,GX_ALWAYS,GX_FALSE);
-  }
- GX_SetBlendMode(GX_BM_BLEND, GX_BL_ZERO, GX_BL_ONE, GX_LO_CLEAR); 
- GX_SetAlphaCompare(GX_ALWAYS,127,GX_AOP_AND,GX_ALWAYS,0);
- GX_SetAlphaCompare(GX_ALWAYS,0,GX_AOP_AND,GX_ALWAYS,0);
- GX_SetZCompLoc(GX_FALSE); //Zcomp after texturing
- GX_SetColorUpdate(GX_ENABLE);
- GX_SetAlphaUpdate(GX_ENABLE);
- GX_SetDstAlpha(GX_DISABLE, 0xFF);
- 
- gxClearColor(0.0f, 0.0f, 0.0f, 0.0f);                 // first buffer clear
- gxClear(uiBufferBits);                     			// first buffer clear
- SetExtGLFuncs();                                      // init all kind of stuff (tex function pointers)
- gxEnable(GX_ALPHA_TEST);
-#endif
 
  ubGloAlpha=127;                                       // init some drawing vars
  ubGloColAlpha=127;
@@ -744,7 +653,6 @@ int GLinitialize()
  bTexEnabled=FALSE;
  bUsingTWin=FALSE;
       
-#ifndef __GX__
  if(bDrawDither)  glEnable(GL_DITHER);                 // dither mode
  else             glDisable(GL_DITHER); 
 
@@ -783,9 +691,6 @@ int GLinitialize()
 
  glFlush();                                            // we are done...
  glFinish();                           
-#else
- gxFlush();
-#endif
 
  CreateScanLines();                                    // setup scanline stuff (if wanted)
 
@@ -811,7 +716,6 @@ int GLinitialize()
 
 void GLcleanup() 
 {
-#ifndef __GX__
  KillDisplayLists();                                   // bye display lists
 
  if(iUseScanLines)                                     // scanlines used?
@@ -824,7 +728,6 @@ void GLcleanup()
     }
    else glDeleteLists(uiScanLine,1);                   // otherwise del scanline display list
   }
-#endif
  CleanupTextureStore();                                // bye textures
 
 #ifdef _WINDOWS 
@@ -1396,12 +1299,8 @@ void assignTextureSprite(void)
     {
      if(gLastTex!=gTexName || gLastFMode!=0)
       {
-#ifndef __GX__
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-#else
-       GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_NEAR,GX_NEAR);
-#endif
        gLastTex=gTexName;gLastFMode=0;
       }
     }
@@ -1460,12 +1359,9 @@ void assignTexture3(void)
     {
      if(gLastTex!=gTexName || gLastFMode!=1)
       {
-#ifndef __GX__
+
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-#else
-       GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_LINEAR,GX_LINEAR);
-#endif
        gLastTex=gTexName;gLastFMode=1;
       }
     }
@@ -1534,12 +1430,8 @@ void assignTexture4(void)
     {
      if(gLastTex!=gTexName || gLastFMode!=1)
       {
-#ifndef __GX__
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-#else
-       GX_InitTexObjFilterMode(&gTexName->GXtexObj,GX_LINEAR,GX_LINEAR);
-#endif
        gLastTex=gTexName;gLastFMode=1;
       }
     }
@@ -1612,11 +1504,7 @@ void SetOGLDisplaySettings(BOOL DisplaySet)
    if(bSetClip || !EqualRect(&rC,&rX))
     {
      rC=rX;
-#ifndef __GX__
      glScissor(rC.left,rC.top,rC.right,rC.bottom);
-#else
-	gxScissor((u32)rC.left,(u32)rC.top,(u32)rC.right,(u32)rC.bottom);
-#endif
      bSetClip=FALSE; 
     }
    return;
@@ -1707,11 +1595,7 @@ void SetOGLDisplaySettings(BOOL DisplaySet)
 
  if(bSetClip || !EqualRect(&r,&rC))
   {
-#ifndef __GX__
    glScissor(r.left,r.top,r.right,r.bottom);
-#else
-   gxScissor((u32)r.left,(u32)r.top,(u32)r.right,(u32)r.bottom);
-#endif
    rC=r;
    bSetClip=FALSE;
   }

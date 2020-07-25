@@ -23,7 +23,7 @@
 // - generic cleanup for the Peops release
 //
 //*************************************************************************// 
-#include "gl.h"
+#include "opengx/gl.h"
 /////////////////////////////////////////////////////////////////////////////
 
 #define MIRROR_TEST 1
@@ -263,8 +263,8 @@ extern BOOL           bGLBlend;
 extern PFNGLBLENDEQU      glBlendEquationEXTEx;
 extern PFNGLCOLORTABLEEXT glColorTableEXTEx;
 #else
-extern bool     glBlendEquationEXTEx;
-extern bool 	glColorTableEXTEx;
+extern void*     glBlendEquationEXTEx;
+extern void* 	glColorTableEXTEx;
 #endif
 
 extern unsigned char  gl_ux[8];

@@ -17,7 +17,7 @@ include $(DEVKITPPC)/wii_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	WiiSX
 BUILD		:=	build
-SOURCES		:=	. ./gc_input/ ./libgui/ ./menu/ ./fileBrowser/ .. ../PeopsGXGPU/ ../franspu/ ../ppc/
+SOURCES		:=	. ./gc_input/ ./libgui/ ./menu/ ./fileBrowser/ .. ../PeopsGXGPU/opengx/ ../PeopsGXGPU/ ../franspu/ ../ppc/
 
 DATA		:=	data  
 
