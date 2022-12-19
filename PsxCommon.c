@@ -24,7 +24,7 @@
 #include "cheat.h"
 #include "ppf.h"
 
-PcsxConfig Config;
+extern PcsxConfig Config;
 boolean NetOpened = FALSE;
 
 int Log = 0;

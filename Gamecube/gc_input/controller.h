@@ -128,7 +128,7 @@ typedef struct {
 } controller_t;
 
 typedef struct _virtualControllers_t {
-	BOOL          inUse;   // This virtual controller is being controlled
+	bool          inUse;   // This virtual controller is being controlled
 	controller_t* control; // The type of controller being used
 	int           number;  // The physical controller number
 	controller_config_t* config; // This is no longer needed...

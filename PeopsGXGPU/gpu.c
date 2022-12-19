@@ -31,7 +31,6 @@
 #include "../Gamecube/libgui/IPLFontC.h"
 #include "../Gamecube/DEBUG.h"
 #include "../Gamecube/wiiSXconfig.h"
-#include "glgx.h"
 extern char text[DEBUG_TEXT_HEIGHT][DEBUG_TEXT_WIDTH]; /*** DEBUG textbuffer ***/
 #endif //__GX__
 
@@ -302,7 +301,7 @@ char * GetConfigInfos(int hW)
  sprintf(szTxt,"- Framebuffer texture: %d",iFrameTexType);
  if(!hW && iFrameTexType==2)
   {
-   if(gTexFrameName!=NULL) strcat(szTxt," - texture created\r\n");
+   if(gTexFrameName) strcat(szTxt," - texture created\r\n");
    else              strcat(szTxt," - not used yet\r\n");
   }
  else strcat(szTxt,"\r\n");
@@ -360,7 +359,7 @@ char * GetConfigInfos(int hW)
  strcat(pB,szTxt);
  if(!hW && iBlurBuffer) 
   {
-   if(gTexBlurName!=NULL) strcat(pB," - supported\r\n");
+   if(gTexBlurName) strcat(pB," - supported\r\n");
    else             strcat(pB," - not supported\r\n");
   }
  else strcat(pB,"\r\n");
@@ -572,6 +571,22 @@ long PEOPS_GPUinit()                                // GPU INIT
  return 0;
 }                             
 
+#ifdef __GX__
+extern u32* xfb[2];			/*** Framebuffers ***/
+extern int whichfb;        	/*** Frame buffer toggle ***/
+void VI_GX_PreRetraceCallback(u32 retraceCnt)
+{
+	whichfb ^= 1;
+	VIDEO_SetPreRetraceCallback(NULL);
+}
+
+void VI_GX_DrawSyncCallback(u16 token)
+{
+	VIDEO_SetNextFramebuffer(xfb[token & 1]);
+	VIDEO_Flush();
+	VIDEO_SetPreRetraceCallback(VI_GX_PreRetraceCallback);
+}
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 // GPU OPEN: funcs to open up the gpu display (Windows)
@@ -1030,6 +1045,7 @@ long PEOPS_GPUopen(unsigned long * disp,char * CapText,char * CfgFile)
  if(display) return 0;
  return -1;
 #else
+ GX_SetDrawSyncCallback(VI_GX_DrawSyncCallback);
  return 0;
 #endif
 }
@@ -1075,6 +1091,8 @@ long PEOPS_GPUclose()
  pGfxCardScreen=0;
 
  osd_close_display();                                  // destroy display
+#else
+ GX_SetDrawSyncCallback(NULL);
 #endif
  return 0;
 }
@@ -1111,7 +1129,7 @@ void PaintBlackBorders(void)
 
  glBegin(GL_QUADS);
 
- vertex[0].c.lcol=0xff000000;
+ vertex[0].c.lcol=0x000000ff;
  SETCOL(vertex[0]); 
 
  if(PreviousPSXDisplay.Range.x0)
@@ -1165,7 +1183,6 @@ __inline void XPRIMdrawTexturedQuad(OGLVertex* vertex1, OGLVertex* vertex2,
   glTexCoord2fv(&vertex3->sow);
   glVertex3fv(&vertex3->x);
  glEnd();
- print_gecko("XPRIMdrawTexturedQuad\r\n");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1188,7 +1205,7 @@ void SetScanLines(void)
   {
    if(!bTexEnabled)    {glEnable(GL_TEXTURE_2D);bTexEnabled=TRUE;}
    gTexName=gTexScanName;
-   glBindTexture(GL_TEXTURE_2D, gTexName->texname);
+   glBindTexture(GL_TEXTURE_2D, gTexName);
    if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);    
    if(!bBlendEnable)   {glEnable(GL_BLEND);bBlendEnable=TRUE;}
    SetScanTexTrans();
@@ -1223,7 +1240,7 @@ void SetScanLines(void)
 
    XPRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
 
-//   if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);    
+   if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);    
   }
  else                                                  // typical line mode
   {
@@ -1232,7 +1249,7 @@ void SetScanLines(void)
    if(iScanBlend==0)
     {
      if(bBlendEnable)    {glDisable(GL_BLEND);bBlendEnable=FALSE;}
-     vertex[0].c.lcol=0xff000000;
+     vertex[0].c.lcol=0x000000ff;
     }
    else
     {
@@ -1266,7 +1283,7 @@ void SetScanLines(void)
 
 void BlurBackBuffer(void)
 {
- if(gTexBlurName == NULL) return;
+ if(!gTexBlurName) return;
  print_gecko("BlurBackBuffer\r\n");
  if(bKeepRatio) glViewport(0,0,iResX,iResY);
 
@@ -1279,7 +1296,7 @@ void BlurBackBuffer(void)
  if(bDrawDither)      glDisable(GL_DITHER); 
 
  gTexName=gTexBlurName;
- glBindTexture(GL_TEXTURE_2D, gTexName->texname);
+ glBindTexture(GL_TEXTURE_2D, gTexName);
 
  glCopyTexSubImage2D( GL_TEXTURE_2D, 0,                // get back buffer in texture
                       0,
@@ -1311,8 +1328,8 @@ void BlurBackBuffer(void)
  vertex[3].sow=0;
  vertex[3].tow=vertex[2].tow;
  
- //if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);    
- vertex[0].c.lcol=0x7fffffff;
+ if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);    
+ vertex[0].c.lcol=0xffffff7f;
  SETCOL(vertex[0]); 
 
  DrawMultiBlur();                                      // draw the backbuffer texture to create blur effect
@@ -1321,14 +1338,13 @@ void BlurBackBuffer(void)
  glEnable(GL_SCISSOR_TEST);
  if(iZBufferDepth)  glEnable(GL_DEPTH_TEST);    
  if(bDrawDither)    glEnable(GL_DITHER);    
-// if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);    
+ if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);    
 
  if(bKeepRatio)
   glViewport(rRatioRect.left,                            // re-init viewport
              iResY-(rRatioRect.top+rRatioRect.bottom),
              rRatioRect.right, 
              rRatioRect.bottom);  
-
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1337,7 +1353,8 @@ void BlurBackBuffer(void)
 void UnBlurBackBuffer(void)
 {
 	print_gecko("UnBlurBackBuffer\r\n");
- if(gTexBlurName==NULL) return;
+ if(!gTexBlurName) return;
+
  if(bKeepRatio) glViewport(0,0,iResX,iResY);
 
  glDisable(GL_SCISSOR_TEST);
@@ -1348,7 +1365,7 @@ void UnBlurBackBuffer(void)
  if(bDrawDither)      glDisable(GL_DITHER); 
 
  gTexName=gTexBlurName;
- glBindTexture(GL_TEXTURE_2D, gTexName->texname);
+ glBindTexture(GL_TEXTURE_2D, gTexName);
 
  vertex[0].x=0;
  vertex[0].y=PSXDisplay.DisplayMode.y;
@@ -1382,7 +1399,7 @@ void UnBlurBackBuffer(void)
  glEnable(GL_SCISSOR_TEST);
  if(iZBufferDepth)  glEnable(GL_DEPTH_TEST);    
  if(bDrawDither)    glEnable(GL_DITHER);                  // dither mode
- //if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);    
+ if(bGLBlend) glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);    
 
  if(bKeepRatio)
   glViewport(rRatioRect.left,
@@ -1525,7 +1542,8 @@ void updateDisplay(void)                               // UPDATE DISPLAY
 #ifndef __GX__
       glXSwapBuffers(display,window);
 #else
-	  gxSwapBuffers();
+	  GX_CopyDisp (xfb[whichfb], GX_TRUE);
+	  GX_SetDrawSync(whichfb);
 #endif
 #endif
     }
@@ -1546,7 +1564,8 @@ void updateDisplay(void)                               // UPDATE DISPLAY
 #ifndef __GX__
     glXSwapBuffers(display,window);
 #else
-	gxSwapBuffers();
+	GX_CopyDisp (xfb[whichfb], GX_TRUE);
+	GX_SetDrawSync(whichfb);
 #endif
 #endif
   }
@@ -1677,7 +1696,8 @@ void updateFrontDisplay(void)
 #ifndef __GX__
   glXSwapBuffers(display,window);
 #else
-  gxSwapBuffers();
+  GX_CopyDisp (xfb[whichfb], GX_TRUE);
+  GX_SetDrawSync(whichfb);
 #endif
 #endif
 
@@ -2954,6 +2974,7 @@ ENDVRAM:
      if(gpuDataP == gpuDataC)
       {
        gpuDataC=gpuDataP=0;
+	   //print_gecko("Calling primFunc %i\r\n", gpuCommand);
        primFunc[gpuCommand]((unsigned char *)gpuDataM);
 
        if(dwEmuFixes&0x0001 || dwActFixes&0x20000)     // hack for emulating "gpu busy" in some games
@@ -3235,7 +3256,7 @@ long PEOPS_GPUfreeze(unsigned long ulGetFreezeData,GPUFreeze_t * pF)
  GPUwriteStatus(ulStatusControl[1]);
  GPUwriteStatus(ulStatusControl[2]);
  GPUwriteStatus(ulStatusControl[3]);
- GPUwriteStatus(ulStatusControl[8]);                   // try to repair things
+ GPUwriteStatus(ulStatusControl[8]);
  GPUwriteStatus(ulStatusControl[6]);
  GPUwriteStatus(ulStatusControl[7]);
  GPUwriteStatus(ulStatusControl[5]);

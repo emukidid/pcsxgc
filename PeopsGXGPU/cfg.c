@@ -605,7 +605,7 @@ void ReadConfig(void)                                  // read all config vals
  bWindowMode=FALSE;
  bFullVRam=FALSE;
  iFilterType=0;
- bAdvancedBlend=FALSE;
+ bAdvancedBlend=TRUE;
  bDrawDither=FALSE;
  bUseLines=FALSE;
  bUseFrameLimit=FALSE;
@@ -1236,7 +1236,7 @@ void ReadConfig(void)                                  // read config (linux fil
  bFullScreen=FALSE;
  bFullVRam=FALSE;
  iFilterType=0;	// None
- bAdvancedBlend=FALSE;
+ bAdvancedBlend=TRUE;
  bDrawDither=FALSE;
  bUseLines=FALSE;
  if (frameLimit == FRAMELIMIT_AUTO)

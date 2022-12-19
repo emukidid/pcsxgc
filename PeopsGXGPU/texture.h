@@ -29,43 +29,15 @@
 
 #define TEXTUREPAGESIZE 256*256
 
-// "texture window" cache entry
-typedef struct textureWndCacheEntryTag
-{
- unsigned long  ClutID;
- short          pageid;
- short          textureMode;
- short          Opaque;
- short          used;
- EXLong         pos;
- GLuint         texname;
- GXTexObj    	GXtexObj;
- u16		    *GXtexture;
- u8				GXtexfmt;
- u32 			GXrealWidth,GXrealHeight;
-} textureWndCacheEntry;
-
-// "standard texture" cache entry (12 byte per entry, as small as possible... we need lots of them)
-
-typedef struct textureSubCacheEntryTagS 
-{
- unsigned long   ClutID;
- EXLong          pos;
- unsigned char   posTX;
- unsigned char   posTY;
- unsigned char   cTexID;
- unsigned char   Opaque;
-} textureSubCacheEntryS;
-
 void           InitializeTextureStore();
 void           CleanupTextureStore();
-textureWndCacheEntry*         LoadTextureWnd(long pageid,long TextureMode,unsigned long GivenClutId);
-textureWndCacheEntry*         LoadTextureMovie(void);
+GLuint         LoadTextureWnd(long pageid,long TextureMode,unsigned long GivenClutId);
+GLuint         LoadTextureMovie(void);
 void           InvalidateTextureArea(long imageX0,long imageY0,long imageX1,long imageY1);
 void           InvalidateTextureAreaEx(void);
 void           LoadTexturePage(int pageid, int mode, short cx, short cy);
 void           ResetTextureArea(BOOL bDelTex);
-textureWndCacheEntry*         SelectSubTextureS(long TextureMode, unsigned long GivenClutId);
+GLuint         SelectSubTextureS(long TextureMode, unsigned long GivenClutId);
 void           CheckTextureMemory(void);
 
 

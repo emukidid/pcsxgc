@@ -40,7 +40,7 @@ extern unsigned int hSyncCount;
 #define GPUSTATUS_DITHER              0x00000200
 
 // Taken from PEOPS SOFTGPU
-u32 lUsedAddr[3];
+extern u32 lUsedAddr[3];
 
 static inline boolean CheckForEndlessLoop(u32 laddr) {
 	if (laddr == lUsedAddr[1]) return TRUE;

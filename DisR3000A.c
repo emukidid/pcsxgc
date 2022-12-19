@@ -16,7 +16,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   51 Franklin Street, Fifth Floor, Boston, MA 02111-1307 USA.           *
  ***************************************************************************/
-
+#if 0
 /* 
 * R3000A disassembler.
 */
@@ -321,3 +321,4 @@ TdisR3000AF disR3000A[] = {
 	disNULL       , disNULL      , disSWC2    , disHLE  , disNULL, disNULL, disNULL , disNULL };
 
 MakeDisFg(disR3000AF,	disR3000A[code >> 26](code, pc))
+#endif

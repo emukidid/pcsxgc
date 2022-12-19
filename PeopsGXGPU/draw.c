@@ -322,10 +322,10 @@ void SetExtGLFuncs(void)
   {
    bUseMultiPass=FALSE;bGLBlend=TRUE;                  // -> no need for 2 passes, perfect
 
-/*   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, COMBINE_EXT);    
-   glTexEnvf(GL_TEXTURE_ENV, COMBINE_RGB_EXT, GL_MODULATE);     
-   glTexEnvf(GL_TEXTURE_ENV, COMBINE_ALPHA_EXT, GL_MODULATE);     
-   glTexEnvf(GL_TEXTURE_ENV, RGB_SCALE_EXT, 2.0f);    */
+   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT);    
+   glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_MODULATE);     
+   glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_ALPHA_EXT, GL_MODULATE);     
+   glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_EXT, 2.0f);
   }
  else                                                  // no advanced blending wanted/available:
   {
@@ -370,7 +370,7 @@ void SetExtGLFuncs(void)
 
  LoadSubTexFn=LoadSubTexturePageSort;                  // init load tex ptr
 
- giWantedFMT=GL_RGBA;                                  // init ogl tex format
+ giWantedFMT=GL_BGRA;                                  // init ogl tex format
 
  switch(iTexQuality)                                   // -> quality:
   {
@@ -1233,7 +1233,7 @@ void assignTextureVRAMWrite(void)
 #endif
 }
 
-textureWndCacheEntry*  gLastTex=NULL;
+GLuint  gLastTex=0;
 GLuint  gLastFMode=(GLuint)-1;
 
 ///////////////////////////////////////////////////////// 

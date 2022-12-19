@@ -87,6 +87,7 @@ typedef struct glparams_ {
 	unsigned char zwrite,ztest,zfunc;
 	unsigned char matrixmode;
 	unsigned char frontcw, cullenabled;
+	unsigned char scissortestenabled;
 	GLenum glcullmode;
 	int glcurtex;
 	GXColor clear_color;
@@ -98,6 +99,20 @@ typedef struct glparams_ {
 	char vertex_enabled, normal_enabled, texcoord_enabled, index_enabled, color_enabled;
 
 	char texture_enabled;
+
+	struct cur_viewport {
+		GLint x;
+		GLint y;
+		GLsizei width;
+		GLsizei height;
+	} cur_viewport;
+	
+	struct cur_scissor {
+		GLint x;
+		GLint y;
+		GLsizei width;
+		GLsizei height;
+	} cur_scissor;
 
 	struct imm_mode {
 		float current_color[4];
@@ -116,6 +131,7 @@ typedef struct glparams_ {
 			unsigned dirty_lighting :1;
 			unsigned dirty_material :1;
 			unsigned dirty_alpha	:1;
+			unsigned dirty_scissor  :1;
 		} bits;
 		unsigned int all;
 	} dirty;
@@ -281,6 +297,16 @@ void InitializeGLdata() {
 	glparamstate.cullenabled = 0;
 	glparamstate.frontcw = 0;       // By default front is CCW
 	glDisable(GL_CULL_FACE);
+	
+	glparamstate.scissortestenabled = 0;
+	glparamstate.cur_scissor.x = 0;
+	glparamstate.cur_scissor.y = 0;
+	glparamstate.cur_scissor.width = 0;
+	glparamstate.cur_scissor.height = 0;
+	glparamstate.cur_viewport.x = 0;
+	glparamstate.cur_viewport.y = 0;
+	glparamstate.cur_viewport.width = 0;
+	glparamstate.cur_viewport.height = 0;
 
 	glparamstate.cur_proj_mat = -1;
 	glparamstate.cur_modv_mat = -1;
@@ -407,7 +433,10 @@ void glEnable( GLenum cap ) {  // TODO
 		glparamstate.lighting.lights[cap-GL_LIGHT0].enabled = 1;
 		glparamstate.dirty.bits.dirty_lighting = 1;
 		break;
-	// TODO GL_SCISSOR_TEST
+	case GL_SCISSOR_TEST:
+		glparamstate.scissortestenabled = 1;
+		glparamstate.dirty.bits.dirty_scissor = 1;
+		break;
 	default: break;
 	}
 }
@@ -441,7 +470,10 @@ void glDisable( GLenum cap ) {  // TODO
 		glparamstate.lighting.lights[cap-GL_LIGHT0].enabled = 0;
 		glparamstate.dirty.bits.dirty_lighting = 1;
 		break;
-	// TODO GL_SCISSOR_TEST
+	case GL_SCISSOR_TEST:
+		glparamstate.scissortestenabled = 0;
+		glparamstate.dirty.bits.dirty_scissor = 1;
+		break;
 	default: break;
 	}
 }
@@ -602,10 +634,18 @@ void glEnd() {
 void glViewport( GLint x, GLint y, GLsizei width, GLsizei height ) {
 	GX_SetViewport (x, y, width, height, 0.0f, 1.0f);
 	GX_SetScissor (x,y, width, height);
+	glparamstate.cur_viewport.x = x;
+	glparamstate.cur_viewport.y = y;
+	glparamstate.cur_viewport.width = width;
+	glparamstate.cur_viewport.height = height;
 }
 
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 	GX_SetScissor (x,y, width, height);
+	glparamstate.cur_scissor.x = x;
+	glparamstate.cur_scissor.y = y;
+	glparamstate.cur_scissor.width = width;
+	glparamstate.cur_scissor.height = height;
 }
 
 void glColor4ub (GLubyte r, GLubyte g, GLubyte b, GLubyte a) {
@@ -1028,8 +1068,8 @@ static int _calc_mipmap_offset(int level, int w, int h, int b) {
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei  height, 
 					GLint  border, GLenum  format, GLenum  type, const GLvoid *  data) {
 
-	print_gecko("glTexImage2D internalFormat %i, w/h [%i, %i] border %i format %i type %i\r\n", internalFormat, width, height,
-							border, format, type);
+	//print_gecko("glTexImage2D internalFormat %i, w/h [%i, %i] border %i format %i type %i\r\n", internalFormat, width, height,
+	//						border, format, type);
 	// Initial checks
 	if (texture_list[glparamstate.glcurtex].used == 0) return;
 	if (target != GL_TEXTURE_2D) return; // FIXME Implement non 2D textures
@@ -1692,6 +1732,15 @@ void glDrawArrays( GLenum mode, GLint first, GLsizei count ) {
 	// Set up the OGL state to GX state
 	if (glparamstate.dirty.bits.dirty_z)
 		GX_SetZMode(glparamstate.ztest, glparamstate.zfunc, glparamstate.zwrite & glparamstate.ztest);
+	
+	if (glparamstate.dirty.bits.dirty_scissor) {
+		if(glparamstate.scissortestenabled) {
+			GX_SetScissor(glparamstate.cur_scissor.x, glparamstate.cur_scissor.y, glparamstate.cur_scissor.width, glparamstate.cur_scissor.height);
+		}
+		else {
+			GX_SetScissor(glparamstate.cur_viewport.x, glparamstate.cur_viewport.y, glparamstate.cur_viewport.width, glparamstate.cur_viewport.height);
+		}
+	}
 
 	if(glparamstate.dirty.bits.dirty_alpha) {
 		if (glparamstate.alphatestenabled)
@@ -1773,6 +1822,15 @@ void glDrawElements( GLenum mode, GLsizei count, GLenum type, const GLvoid *indi
 	if (glparamstate.dirty.bits.dirty_z)
 		GX_SetZMode(glparamstate.ztest, glparamstate.zfunc, glparamstate.zwrite & glparamstate.ztest);
 
+	if (glparamstate.dirty.bits.dirty_scissor) {
+		if(glparamstate.scissortestenabled) {
+			GX_SetScissor(glparamstate.cur_scissor.x, glparamstate.cur_scissor.y, glparamstate.cur_scissor.width, glparamstate.cur_scissor.height);
+		}
+		else {
+			GX_SetScissor(glparamstate.cur_viewport.x, glparamstate.cur_viewport.y, glparamstate.cur_viewport.width, glparamstate.cur_viewport.height);
+		}
+	}
+		
 	if(glparamstate.dirty.bits.dirty_alpha) {
 		if (glparamstate.alphatestenabled)
 			GX_SetAlphaCompare(glparamstate.alphafunc, glparamstate.alpharef, GX_AOP_AND, GX_ALWAYS, 0);
@@ -2144,10 +2202,43 @@ void glTexSubImage2D( GLenum target, GLint level,
 
 	if (texture_list[glparamstate.glcurtex].used == 0) return;
 	
-	print_gecko("glTexSubImage2D: tex size %i,%i update at %i,%i with %i,%i format %i type %i bpp %i\r\n"
-			, texture_list[glparamstate.glcurtex].w, texture_list[glparamstate.glcurtex].h, xoffset, yoffset, width, height, format, type
-			, texture_list[glparamstate.glcurtex].bytespp);
+	//print_gecko("glTexSubImage2D: tex size %i,%i update at %i,%i with %i,%i format %i type %i bpp %i\r\n"
+	//		, texture_list[glparamstate.glcurtex].w, texture_list[glparamstate.glcurtex].h, xoffset, yoffset, width, height, format, type
+	//		, texture_list[glparamstate.glcurtex].bytespp);
 			
+	/*unsigned char *p = pixels;
+	unsigned char *src;
+    unsigned char *dest = (unsigned char*)texture_list[glparamstate.glcurtex].data;
+	u16 clampSClamp = xoffset + width - 1;
+	u16 clampTClamp = yoffset + height - 1;
+	u32 bpl = width << 3 >> 1;
+	u32 x, y, tx, ty;
+		
+	DCInvalidateRange(dest, 256*256*4);
+	for (y = 0; y < 256; y+=4)
+	{
+		for (x = 0; x < 256; x+=4)
+		{
+			int j = 0, k, l;
+			for (k = 0; k < 4; k++)
+			{
+				ty = y+k;//MIN(y+k, clampTClamp);
+				src = &p[(bpl * (ty-yoffset))];
+				for (l = 0; l < 4; l++)
+				{
+					tx = x+l;//MIN(x+l, clampSClamp);
+					if(tx >= xoffset && ty >= yoffset && tx <= xoffset+width && ty <= yoffset+height) {
+						((u16*)dest)[j+0] =		(u16) GXGetRGBA8888_RGBA8( (u64*)src, tx-xoffset, 0, 0 );	// AARR texels
+						((u16*)dest)[j+16] =	(u16) GXGetRGBA8888_RGBA8( (u64*)src, tx-xoffset, 0, 1 );	// GGBB texels -> next 32B block
+					}
+					j++;
+				}
+			}
+			dest+=64;
+		}
+		_sync();
+	}
+	DCFlushRange((unsigned char*)texture_list[glparamstate.glcurtex].data, 256*256*4);*/
 	unsigned char *p = pixels;
 	unsigned char *src;
     unsigned char *dest = (unsigned char*)texture_list[glparamstate.glcurtex].data;

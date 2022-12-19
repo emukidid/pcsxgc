@@ -41,13 +41,8 @@
 
 #define CLUTUSED     0x80000000
 
-#ifndef __GX__
 #define SETCOL(x)  if(x.c.lcol!=ulOLDCOL) {ulOLDCOL=x.c.lcol;glColor4ubv(x.c.col);} 
 #define SETPCOL(x)  if(x->c.lcol!=ulOLDCOL) {ulOLDCOL=x->c.lcol;glColor4ubv(x->c.col);}
-#else
-#define SETCOL(x)  if(x.c.lcol!=ulOLDCOL) {ulOLDCOL=x.c.lcol;} 
-#define SETPCOL(x)  if(x->c.lcol!=ulOLDCOL) {ulOLDCOL=x->c.lcol;}
-#endif
 
 #define GL_TO_EDGE_CLAMP              0x812F
 
@@ -201,12 +196,12 @@ typedef struct PSXDISPLAYTAG
 
 typedef struct OGLVertexTag 
 {
- float x;
- float y;
- float z;
+ GLfloat x;
+ GLfloat y;
+ GLfloat z;
 
- float sow;
- float tow;
+ GLfloat sow;
+ GLfloat tow;
 
  union
 COLTAG
@@ -289,7 +284,7 @@ extern BOOL           bSetClip;
 extern int            iForceVSync;
 extern int            iUseExts;
 extern int            iUsePalTextures;
-extern unsigned long  gTexScanName;
+extern GLuint         gTexScanName;
 
 #endif
 
@@ -332,11 +327,11 @@ extern PSXRect_t     xrMovieArea;
 extern PSXRect_t     xrUploadArea;
 extern PSXRect_t     xrUploadAreaIL;
 extern PSXRect_t     xrUploadAreaRGB24;
-extern textureWndCacheEntry*        gTexName;
+extern GLuint        gTexName;
 extern BOOL          bDrawNonShaded;
 extern BOOL          bDrawMultiPass;
-extern unsigned char ubGloColAlpha;
-extern unsigned char ubGloAlpha;
+extern GLubyte       ubGloColAlpha;
+extern GLubyte       ubGloAlpha;
 extern short         sSprite_ux2;
 extern short         sSprite_vy2;
 extern BOOL          bRenderFrontBuffer;
@@ -383,8 +378,8 @@ extern int            iFrameReadType;
 extern int            iClampType;
 extern int            iSortTexCnt;
 extern BOOL           bFakeFrontBuffer; 
-extern textureWndCacheEntry*         gTexFrameName;
-extern textureWndCacheEntry*         gTexBlurName;
+extern GLuint         gTexFrameName;
+extern GLuint         gTexBlurName;
 extern int            iVRamSize;
 extern int            iTexGarbageCollection;
 extern int            iFTexA;

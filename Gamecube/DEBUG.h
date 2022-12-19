@@ -33,25 +33,25 @@
 
 // profiling
 
-#define GFX_SECTION 0
-#define SECTION_NAME_0 "Graphics"
-#define AUDIO_SECTION 1
-#define SECTION_NAME_1 "Audio"
-#define XA_SECTION 2
-#define SECTION_NAME_2 "XA"
-#define IDLE_SECTION 3
-#define SECTION_NAME_3 "Idle"
-#define CDR_SECTION 4
-#define SECTION_NAME_4 "CDR"
-#define CDDA_SECTION 5
-#define SECTION_NAME_5 "CDDA"
-#define COMPILER_SECTION 6
-#define SECTION_NAME_6 "Compiler"
-#define CORE_SECTION 7
-#define SECTION_NAME_7 "Code Exec"
-#define FUNCS_SECTION 8
-#define SECTION_NAME_8 "Funcs"
-#define NUM_SECTIONS 9
+#define GFX_SECTION 1
+#define SECTION_NAME_1 "Graphics"
+#define AUDIO_SECTION 2
+#define SECTION_NAME_2 "Audio"
+#define XA_SECTION 3
+#define SECTION_NAME_3 "XA"
+#define IDLE_SECTION 4
+#define SECTION_NAME_4 "Idle"
+#define CDR_SECTION 5
+#define SECTION_NAME_5 "CDR"
+#define CDDA_SECTION 6
+#define SECTION_NAME_6 "CDDA"
+#define COMPILER_SECTION 7
+#define SECTION_NAME_7 "Compiler"
+#define CORE_SECTION 8
+#define SECTION_NAME_8 "Code Exec"
+#define FUNCS_SECTION 9
+#define SECTION_NAME_9 "Funcs"
+#define NUM_SECTIONS 10
 
 #ifdef PROFILE
 

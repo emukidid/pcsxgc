@@ -67,7 +67,7 @@ int 		   iUseDither=0;
 BOOL           bDrawDither;                            // sign for dither
 #endif
 BOOL           bUseMultiPass;                          // sign for multi pass
-textureWndCacheEntry* gTexName=NULL;                   // binded texture
+GLuint         gTexName;                               // binded texture
 BOOL           bTexEnabled;                            // texture enable flag
 BOOL           bBlendEnable;                           // blend enable flag
 PSXRect_t      xrUploadArea;                           // rect to upload
@@ -220,35 +220,11 @@ unsigned long DoubleBGR2RGB (unsigned long BGR)
 
 unsigned short BGR24to16 (unsigned long BGR)
 {
- return ((BGR>>3)&0x1f)|((BGR&0xf80000)>>9)|((BGR&0xf800)>>6);
+	return ((BGR>>3)&0x1f)|((BGR&0xf80000)>>9)|((BGR&0xf800)>>6);
 }
 
 #endif
 extern void SysPrintf(char *fmt, ...);
-
-void PrintVertexInfo3(OGLVertex* vertex1, OGLVertex* vertex2, 
-                                   OGLVertex* vertex3)
-{
-	//print_gecko("vertex1->x %.2f vertex1->y %.2f vertex1->z %.2f vertex1->sow %.2f vertex1->tow %.2f\r\n",
-	//	vertex1->x, vertex1->y, vertex1->z, vertex1->sow, vertex1->tow);
-	//print_gecko("vertex2->x %.2f vertex2->y %.2f vertex2->z %.2f vertex2->sow %.2f vertex2->tow %.2f\r\n",
-	//	vertex2->x, vertex2->y, vertex2->z, vertex2->sow, vertex2->tow);
-	//print_gecko("vertex3->x %.2f vertex3->y %.2f vertex3->z %.2f vertex3->sow %.2f vertex3->tow %.2f\r\n",
-	//	vertex3->x, vertex3->y, vertex3->z, vertex3->sow, vertex3->tow);
-}
-
-void PrintVertexInfo(OGLVertex* vertex1, OGLVertex* vertex2, 
-                                   OGLVertex* vertex3, OGLVertex* vertex4)
-{
-	//print_gecko("vertex1->x %.2f vertex1->y %.2f vertex1->z %.2f vertex1->sow %.2f vertex1->tow %.2f\r\n",
-	//	vertex1->x, vertex1->y, vertex1->z, vertex1->sow, vertex1->tow);
-	//print_gecko("vertex2->x %.2f vertex2->y %.2f vertex2->z %.2f vertex2->sow %.2f vertex2->tow %.2f\r\n",
-	//	vertex2->x, vertex2->y, vertex2->z, vertex2->sow, vertex2->tow);
-	//print_gecko("vertex3->x %.2f vertex3->y %.2f vertex3->z %.2f vertex3->sow %.2f vertex3->tow %.2f\r\n",
-	//	vertex3->x, vertex3->y, vertex3->z, vertex3->sow, vertex3->tow);
-	//print_gecko("vertex4->x %.2f vertex4->y %.2f vertex4->z %.2f vertex4->sow %.2f vertex4->tow %.2f\r\n",
-	//	vertex4->x, vertex4->y, vertex4->z, vertex4->sow, vertex4->tow);
-}
 
 ////////////////////////////////////////////////////////////////////////
 // OpenGL primitive drawing commands
@@ -756,12 +732,12 @@ void SetRenderMode(unsigned long DrawAttributes,BOOL bSCol)
  else {bDrawMultiPass = FALSE;SetSemiTrans();}
  if(bDrawTextured)                                     // texture ? build it/get it from cache
   {
-   textureWndCacheEntry *currTex;
+   GLuint currTex;
    if(bUsingTWin)       currTex=LoadTextureWnd(GlobalTexturePage,GlobalTextTP, ulClutID);
    else if(bUsingMovie) currTex=LoadTextureMovie();
    else                 currTex=SelectSubTextureS(GlobalTextTP,ulClutID);
    if(gTexName!=currTex)
-    {gTexName=currTex;glBindTexture(GL_TEXTURE_2D,currTex->texname);}
+    {gTexName=currTex;glBindTexture(GL_TEXTURE_2D,currTex);}
 
    if(!bTexEnabled)                                    // -> turn texturing on
     {bTexEnabled=TRUE;glEnable(GL_TEXTURE_2D);}
@@ -773,12 +749,12 @@ void SetRenderMode(unsigned long DrawAttributes,BOOL bSCol)
  if(bSCol)                                             // also set color ?
   {
    if((dwActFixes&4) && ((DrawAttributes&0x00ffffff)==0))
-     DrawAttributes|=0x007f7f7f;
+     DrawAttributes|=0x7f7f7f00;
 
    if(bDrawNonShaded)                                  // -> non shaded?
     {
-     if(bGLBlend)  vertex[0].c.lcol=0x7f7f7f;          // --> solid color...
-     else          vertex[0].c.lcol=0xffffff;
+     if(bGLBlend)  vertex[0].c.lcol=0x7f7f7f00;          // --> solid color...
+     else          vertex[0].c.lcol=0xffffff00;
     }
    else                                                // -> shaded?
     {
@@ -786,7 +762,7 @@ void SetRenderMode(unsigned long DrawAttributes,BOOL bSCol)
           vertex[0].c.lcol=DoubleBGR2RGB(DrawAttributes);
      else vertex[0].c.lcol=DrawAttributes;
     }
-   vertex[0].c.col[0]=ubGloAlpha;                      // -> set color with
+   vertex[0].c.col[3]=ubGloAlpha;                      // -> set color with
    SETCOL(vertex[0]);                                  //    texture alpha
   }
  
@@ -808,7 +784,7 @@ void SetOpaqueColor(unsigned long DrawAttributes)
  if(bDrawNonShaded) return;                            // no shading? bye
   
  DrawAttributes=DoubleBGR2RGB(DrawAttributes);         // multipass is just half color, so double it on opaque pass
- vertex[0].c.lcol=DrawAttributes|0xff000000;
+ vertex[0].c.lcol=DrawAttributes|0x000000FF;
  SETCOL(vertex[0]);                                    // set color
 }
 
@@ -1262,23 +1238,23 @@ unsigned char * LoadDirectMovieFast(void);
 
 void UploadScreenEx(long Position)
 {
-
  short ya,yb,xa,xb,x, y, YStep, XStep, U, UStep,ux[4],vy[4];
 
  if(!PSXDisplay.DisplayMode.x) return;
  if(!PSXDisplay.DisplayMode.y) return;
- bOldSmoothShaded=FALSE;
- bBlendEnable=FALSE;
- bTexEnabled=FALSE;
- //SysPrintf("UploadScreenEx\r\n");
+
  glDisable(GL_SCISSOR_TEST);
  glShadeModel(GL_FLAT);
+ bOldSmoothShaded=FALSE;
  glDisable(GL_BLEND);
+ bBlendEnable=FALSE;
  glDisable(GL_TEXTURE_2D);
+ bTexEnabled=FALSE;
  glDisable(GL_ALPHA_TEST);
 
  glPixelZoom(((float)rRatioRect.right)/((float)PSXDisplay.DisplayMode.x),
              -1.0f*(((float)rRatioRect.bottom)/((float)PSXDisplay.DisplayMode.y)));
+                                                      
  //----------------------------------------------------//
 
  YStep = 256;                                          // max texture size
@@ -1322,17 +1298,20 @@ void UploadScreenEx(long Position)
      xrMovieArea.x1=lx2+U; xrMovieArea.y1=ly2;
      
      offsetScreenUpload(Position);
+
      glRasterPos2f(vertex[0].x,vertex[0].y);
 
      glDrawPixels(xrMovieArea.x1-xrMovieArea.x0,
                   xrMovieArea.y1-xrMovieArea.y0,
                   GL_RGBA,GL_UNSIGNED_BYTE,
                   LoadDirectMovieFast());
+
      U+=UStep;
     }
   }
 
  //----------------------------------------------------//
+
  glPixelZoom(1.0F,1.0F);
 
  glEnable(GL_ALPHA_TEST);
@@ -1345,7 +1324,7 @@ void UploadScreen(long Position)
 {
  short x, y, YStep, XStep, U, s, UStep,ux[4],vy[4];
  short xa,xb,ya,yb;
- //SysPrintf("Upload\r\n");
+
  if(xrUploadArea.x0>1023) xrUploadArea.x0=1023;
  if(xrUploadArea.x1>1024) xrUploadArea.x1=1024;
  if(xrUploadArea.y0>iGPUHeightMask)  xrUploadArea.y0=iGPUHeightMask;
@@ -1367,7 +1346,7 @@ void UploadScreen(long Position)
  bDrawTextured     = TRUE;                             // just doing textures
  bDrawSmoothShaded = FALSE;
 
- if(bGLBlend) vertex[0].c.lcol=0xff7f7f7f;             // set solid col
+ if(bGLBlend) vertex[0].c.lcol=0x7f7f7fff;             // set solid col
  else          vertex[0].c.lcol=0xffffffff;
  SETCOL(vertex[0]); 
 
@@ -2028,9 +2007,8 @@ void primBlkFill(unsigned char * baseAddr)
        bDrawSmoothShaded = FALSE;
        SetRenderState((unsigned long)0x01000000);
        SetRenderMode((unsigned long)0x01000000, FALSE);
-       vertex[0].c.lcol=0xff000000;
+       vertex[0].c.lcol=0x000000FF;
        SETCOL(vertex[0]); 
-	   //SysPrintf("primBlkFill 2\r\n");
        if(ly0>pd->DisplayPosition.y)
         {
          vertex[0].x=0;vertex[0].y=0;
@@ -2048,22 +2026,23 @@ void primBlkFill(unsigned char * baseAddr)
          PRIMdrawQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
         }
       }
+
      glEnable(GL_SCISSOR_TEST);  
     }
    else
     {
-	//SysPrintf("primBlkFill 3\r\n");
      bDrawTextured     = FALSE;
      bDrawSmoothShaded = FALSE;
      SetRenderState((unsigned long)0x01000000);
      SetRenderMode((unsigned long)0x01000000, FALSE);
-     vertex[0].c.lcol=GETLE32(&gpuData[0])|0xff000000;
+     vertex[0].c.lcol=GETLE32(&gpuData[0])|0x000000FF;
      SETCOL(vertex[0]); 
      glDisable(GL_SCISSOR_TEST);                       
      PRIMdrawQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
      glEnable(GL_SCISSOR_TEST);                       
     }
   }
+
  //mmm... will clean all stuff, also if not all _should_ be cleaned...
  //if (IsInsideNextScreen(sprtX, sprtY, sprtW, sprtH))
  // try this:
@@ -2367,7 +2346,7 @@ void primTileS(unsigned char * baseAddr)
    offsetPSX4();
    if(bDrawOffscreen4())
     {
-     if(!(iTileCheat && sprtH==32 && GETLE32(&gpuData[0])==0x60ffffff)) // special cheat for certain ZiNc games
+     if(!(iTileCheat && sprtH==32 && GETLE32(&gpuData[0])==0x60ffffff)) // special cheat for certain ZiNc games 
       {
        InvalidateTextureAreaEx();   
        FillSoftwareAreaTrans(lx0,ly0,lx2,ly2,
@@ -2382,7 +2361,7 @@ void primTileS(unsigned char * baseAddr)
  if(bIgnoreNextTile) {bIgnoreNextTile=FALSE;return;}
 
  vertex[0].c.lcol=GETLE32(&gpuData[0]);
- vertex[0].c.col[0]=ubGloColAlpha;
+ vertex[0].c.col[3]=ubGloColAlpha;
  SETCOL(vertex[0]); 
  
  PRIMdrawQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
@@ -2422,14 +2401,14 @@ void primTile1(unsigned char * baseAddr)
     {
      InvalidateTextureAreaEx();   
      FillSoftwareAreaTrans(lx0,ly0,lx2,ly2,
-                           BGR24to16(GETLE32(&gpuData[0])));          
+                           BGR24to16(GETLE32(&gpuData[0])));
     }
   }
 
  SetRenderMode(GETLE32(&gpuData[0]), FALSE);
  SetZMask4NT();
 
- vertex[0].c.lcol=GETLE32(&gpuData[0]);vertex[0].c.col[0]=ubGloColAlpha;
+ vertex[0].c.lcol=GETLE32(&gpuData[0]);vertex[0].c.col[3]=ubGloColAlpha;
  SETCOL(vertex[0]); 
 
  PRIMdrawQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
@@ -2468,7 +2447,7 @@ void primTile8(unsigned char * baseAddr)
     {
      InvalidateTextureAreaEx();   
      FillSoftwareAreaTrans(lx0,ly0,lx2,ly2,
-                           BGR24to16(GETLE32(&gpuData[0])));    
+                           BGR24to16(GETLE32(&gpuData[0])));
     }
   }
 
@@ -2476,7 +2455,7 @@ void primTile8(unsigned char * baseAddr)
  SetZMask4NT();
 
  vertex[0].c.lcol=GETLE32(&gpuData[0]);
- vertex[0].c.col[0]=ubGloColAlpha;
+ vertex[0].c.col[3]=ubGloColAlpha;
  SETCOL(vertex[0]); 
 
  PRIMdrawQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
@@ -2515,7 +2494,7 @@ void primTile16(unsigned char * baseAddr)
     {
      InvalidateTextureAreaEx();   
      FillSoftwareAreaTrans(lx0,ly0,lx2,ly2,
-                           BGR24to16(GETLE32(&gpuData[0])));    
+                           BGR24to16(GETLE32(&gpuData[0])));
     }
   }
 
@@ -2523,7 +2502,7 @@ void primTile16(unsigned char * baseAddr)
  SetZMask4NT();
 
  vertex[0].c.lcol=GETLE32(&gpuData[0]);
- vertex[0].c.col[0]=ubGloColAlpha;
+ vertex[0].c.col[3]=ubGloColAlpha;
  SETCOL(vertex[0]); 
 
  PRIMdrawQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
@@ -2557,6 +2536,7 @@ void DrawMultiBlur(void)
  vertex[0].y+=fy;vertex[1].y+=fy;
  vertex[2].y+=fy;vertex[3].y+=fy;
  PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
+
  if(bDrawMultiPass) {obm1=obm2=GL_SRC_ALPHA;}
 
  GlobalTextABR=lABR;
@@ -2579,7 +2559,7 @@ void DrawMultiFilterSprite(void)
 
  lABR=GlobalTextABR;
  lDST=DrawSemiTrans;
- vertex[0].c.col[0]=ubGloAlpha/2;                      // -> set color with
+ vertex[0].c.col[3]=ubGloAlpha/2;                      // -> set color with
  SETCOL(vertex[0]);                                    //    texture alpha
  PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
  vertex[0].x+=POFF;vertex[1].x+=POFF;
@@ -2600,7 +2580,6 @@ void DrawMultiFilterSprite(void)
 
 void primSprt8(unsigned char * baseAddr)
 {
- //SysPrintf("primSprt8\r\n");
  unsigned long *gpuData = ((unsigned long *) baseAddr);
  short *sgpuData = ((short *) baseAddr);
  short s;
@@ -2695,8 +2674,9 @@ void primSprt8(unsigned char * baseAddr)
  if(ubOpaqueDraw)
   {
    SetZMask4O();
-   if(bUseMultiPass) SetOpaqueColor(GETLE32(&gpuData[0]));
+   if(bUseMultiPass) SetOpaqueColor(gpuData[0]);
    DEFOPAQUEON
+
    if(bSmallAlpha && iFilterType<=2)
     {
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -2706,6 +2686,7 @@ void primSprt8(unsigned char * baseAddr)
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
      SetZMask4O();
     }
+
    PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
    DEFOPAQUEOFF
   }
@@ -2720,7 +2701,6 @@ void primSprt8(unsigned char * baseAddr)
 
 void primSprt16(unsigned char * baseAddr)
 {
-//SysPrintf("primSprt16\r\n");
  unsigned long *gpuData = ((unsigned long *) baseAddr);
  short *sgpuData = ((short *) baseAddr);
  short s;
@@ -2814,8 +2794,9 @@ void primSprt16(unsigned char * baseAddr)
  if(ubOpaqueDraw)
   {
    SetZMask4O();
-   if(bUseMultiPass) SetOpaqueColor(GETLE32(&gpuData[0]));
+   if(bUseMultiPass) SetOpaqueColor(gpuData[0]);
    DEFOPAQUEON
+
    if(bSmallAlpha && iFilterType<=2)
     {
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -2825,6 +2806,7 @@ void primSprt16(unsigned char * baseAddr)
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
      SetZMask4O();
     }
+
    PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
    DEFOPAQUEOFF
   }
@@ -2839,7 +2821,6 @@ void primSprt16(unsigned char * baseAddr)
  
 void primSprtSRest(unsigned char * baseAddr,unsigned short type)
 {
- //SysPrintf("primSprtSRest\r\n");
  unsigned long *gpuData = ((unsigned long *) baseAddr);
  short *sgpuData = ((short *) baseAddr);
  short s;unsigned short sTypeRest=0;
@@ -2984,8 +2965,9 @@ void primSprtSRest(unsigned char * baseAddr,unsigned short type)
  if(ubOpaqueDraw)
   {
    SetZMask4O();
-   if(bUseMultiPass) SetOpaqueColor(GETLE32(&gpuData[0]));
+   if(bUseMultiPass) SetOpaqueColor(gpuData[0]);
    DEFOPAQUEON
+
    if(bSmallAlpha && iFilterType<=2)
     {
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -2995,6 +2977,7 @@ void primSprtSRest(unsigned char * baseAddr,unsigned short type)
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
      SetZMask4O();
     }
+
    PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
    DEFOPAQUEOFF
   }
@@ -3009,7 +2992,6 @@ void primSprtSRest(unsigned char * baseAddr,unsigned short type)
 
 void primSprtS(unsigned char * baseAddr)
 {
-// SysPrintf("primSprtS\r\n");
  unsigned long *gpuData = ((unsigned long *) baseAddr);
  short *sgpuData = ((short *) baseAddr);
 
@@ -3115,8 +3097,9 @@ void primSprtS(unsigned char * baseAddr)
  if(ubOpaqueDraw)
   {
    SetZMask4O();
-   if(bUseMultiPass) SetOpaqueColor(GETLE32(&gpuData[0]));
+   if(bUseMultiPass) SetOpaqueColor(gpuData[0]);
    DEFOPAQUEON
+
    if(bSmallAlpha && iFilterType<=2)
     {
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -3126,6 +3109,7 @@ void primSprtS(unsigned char * baseAddr)
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
      SetZMask4O();
     }
+
    PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
    DEFOPAQUEOFF
   }
@@ -3178,7 +3162,7 @@ void primPolyF4(unsigned char *baseAddr)
  SetRenderMode(GETLE32(&gpuData[0]), FALSE);
  SetZMask4NT();
 
- vertex[0].c.lcol=GETLE32(&gpuData[0]);vertex[0].c.col[0]=ubGloColAlpha;
+ vertex[0].c.lcol=GETLE32(&gpuData[0]);vertex[0].c.col[3]=ubGloColAlpha;
  SETCOL(vertex[0]); 
 
  PRIMdrawTri2(&vertex[0], &vertex[1], &vertex[2],&vertex[3]);
@@ -3296,7 +3280,7 @@ void primPolyG4(unsigned char * baseAddr)
  vertex[2].c.lcol=GETLE32(&gpuData[4]);
  vertex[3].c.lcol=GETLE32(&gpuData[6]);
 
- vertex[0].c.col[0]=vertex[1].c.col[0]=vertex[2].c.col[0]=vertex[3].c.col[0]=ubGloAlpha;
+ vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=vertex[3].c.col[3]=ubGloAlpha;
 
 
  PRIMdrawGouraudTri2Color(&vertex[0],&vertex[1], &vertex[2], &vertex[3]);
@@ -3310,7 +3294,6 @@ void primPolyG4(unsigned char * baseAddr)
 
 BOOL DoLineCheck(unsigned long * gpuData)
 {
- //SysPrintf("DoLineCheck\r\n");
  BOOL bQuad=FALSE;short dx,dy;
 
  if(lx0==lx1)
@@ -3461,7 +3444,7 @@ BOOL DoLineCheck(unsigned long * gpuData)
  if(ubOpaqueDraw)
   {
    SetZMask4O();
-   if(bUseMultiPass) SetOpaqueColor(GETLE32(&gpuData[0]));
+   if(bUseMultiPass) SetOpaqueColor(gpuData[0]);
    DEFOPAQUEON
    PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[3], &vertex[2]);
    DEFOPAQUEOFF
@@ -3535,7 +3518,7 @@ void primPolyFT3(unsigned char * baseAddr)
  if(ubOpaqueDraw)
   {
    SetZMask3O();
-   if(bUseMultiPass) SetOpaqueColor(GETLE32(&gpuData[0]));
+   if(bUseMultiPass) SetOpaqueColor(gpuData[0]);
    DEFOPAQUEON
    PRIMdrawTexturedTri(&vertex[0], &vertex[1], &vertex[2]);
    DEFOPAQUEOFF
@@ -3912,7 +3895,6 @@ void RectTexAlign(void)
 
 void primPolyFT4(unsigned char * baseAddr)
 {
-// SysPrintf("primPolyFT4\r\n");
  unsigned long *gpuData = ((unsigned long *) baseAddr);
  short *sgpuData = ((short *) baseAddr);
 
@@ -3974,17 +3956,19 @@ void primPolyFT4(unsigned char * baseAddr)
  if(ubOpaqueDraw)
   {
    SetZMask4O();
-   if(bUseMultiPass) SetOpaqueColor(GETLE32(&gpuData[0]));
+   if(bUseMultiPass) SetOpaqueColor(gpuData[0]);
    DEFOPAQUEON
+
    if(bSmallAlpha && iFilterType<=2)
     {
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-     PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
+     PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[3], &vertex[2]);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
      SetZMask4O();
     }
+
    PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[3], &vertex[2]);
    DEFOPAQUEOFF
   }
@@ -4044,9 +4028,9 @@ void primPolyGT3(unsigned char *baseAddr)
   {
    //if(!bUseMultiPass) vertex[0].lcol=DoubleBGR2RGB(gpuData[0]); else vertex[0].lcol=gpuData[0];
    // eat this...
-   if(bGLBlend) vertex[0].c.lcol=0x7f7f7f;
-   else         vertex[0].c.lcol=0xffffff;
-   vertex[0].c.col[0]=ubGloAlpha;
+   if(bGLBlend) vertex[0].c.lcol=0x7f7f7f00;
+   else         vertex[0].c.lcol=0xffffff00;
+   vertex[0].c.col[3]=ubGloAlpha;
    SETCOL(vertex[0]); 
 
    PRIMdrawTexturedTri(&vertex[0], &vertex[1], &vertex[2]);
@@ -4063,8 +4047,8 @@ void primPolyGT3(unsigned char *baseAddr)
 
  if(!bUseMultiPass  && !bGLBlend)
   {
-   vertex[0].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[0])); 
-   vertex[1].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[3])); 
+   vertex[0].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[0]));
+   vertex[1].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[3]));
    vertex[2].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[6]));
   }
  else
@@ -4073,7 +4057,7 @@ void primPolyGT3(unsigned char *baseAddr)
    vertex[1].c.lcol=GETLE32(&gpuData[3]);
    vertex[2].c.lcol=GETLE32(&gpuData[6]);
   }
- vertex[0].c.col[0]=vertex[1].c.col[0]=vertex[2].c.col[0]=ubGloAlpha;
+ vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=ubGloAlpha;
 
  PRIMdrawTexGouraudTriColor(&vertex[0], &vertex[1], &vertex[2]);
 
@@ -4088,10 +4072,10 @@ void primPolyGT3(unsigned char *baseAddr)
    SetZMask3O();
    if(bUseMultiPass) 
     {
-     vertex[0].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[0]));
-     vertex[1].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[3]));
-     vertex[2].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[6]));
-     vertex[0].c.col[0]=vertex[1].c.col[0]=vertex[2].c.col[0]=ubGloAlpha;
+     vertex[0].c.lcol=DoubleBGR2RGB(gpuData[0]);
+     vertex[1].c.lcol=DoubleBGR2RGB(gpuData[3]);
+     vertex[2].c.lcol=DoubleBGR2RGB(gpuData[6]);
+     vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=ubGloAlpha;
     }
    DEFOPAQUEON
    PRIMdrawTexGouraudTriColor(&vertex[0], &vertex[1], &vertex[2]);
@@ -4139,7 +4123,7 @@ void primPolyG3(unsigned char *baseAddr)
  vertex[0].c.lcol=GETLE32(&gpuData[0]);
  vertex[1].c.lcol=GETLE32(&gpuData[2]);
  vertex[2].c.lcol=GETLE32(&gpuData[4]);
- vertex[0].c.col[0]=vertex[1].c.col[0]=vertex[2].c.col[0]=ubGloColAlpha; 
+ vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=ubGloColAlpha;
 
  PRIMdrawGouraudTriColor(&vertex[0], &vertex[1], &vertex[2]);
 
@@ -4152,7 +4136,6 @@ void primPolyG3(unsigned char *baseAddr)
 
 void primPolyGT4(unsigned char *baseAddr)
 { 
- //SysPrintf("primPolyGT4\r\n");
  unsigned long *gpuData = ((unsigned long *) baseAddr);
  short *sgpuData = ((short *) baseAddr);
 
@@ -4204,9 +4187,9 @@ void primPolyGT4(unsigned char *baseAddr)
  if(bDrawNonShaded)
   {
    //if(!bUseMultiPass) vertex[0].lcol=DoubleBGR2RGB(gpuData[0]); else vertex[0].lcol=gpuData[0];
-   if(bGLBlend) vertex[0].c.lcol=0x7f7f7f;
-   else          vertex[0].c.lcol=0xffffff;
-   vertex[0].c.col[0]=ubGloAlpha;
+   if(bGLBlend) vertex[0].c.lcol=0x7f7f7f00;
+   else          vertex[0].c.lcol=0xffffff00;
+   vertex[0].c.col[3]=ubGloAlpha;
    SETCOL(vertex[0]); 
 
    PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[3], &vertex[2]);
@@ -4237,7 +4220,7 @@ void primPolyGT4(unsigned char *baseAddr)
    vertex[3].c.lcol=GETLE32(&gpuData[9]);
   }
 
- vertex[0].c.col[0]=vertex[1].c.col[0]=vertex[2].c.col[0]=vertex[3].c.col[0]=ubGloAlpha; 
+ vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=vertex[3].c.col[3]=ubGloAlpha;
 
  PRIMdrawTexGouraudTriColorQuad(&vertex[0], &vertex[1], &vertex[3],&vertex[2]);
  
@@ -4252,11 +4235,11 @@ void primPolyGT4(unsigned char *baseAddr)
    SetZMask4O();
    if(bUseMultiPass) 
     {
-     vertex[0].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[0]));
-     vertex[1].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[3]));
-     vertex[2].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[6]));
-     vertex[3].c.lcol=DoubleBGR2RGB(GETLE32(&gpuData[9]));
-     vertex[0].c.col[0]=vertex[1].c.col[0]=vertex[2].c.col[0]=vertex[3].c.col[0]=ubGloAlpha; 
+     vertex[0].c.lcol=DoubleBGR2RGB(gpuData[0]);
+     vertex[1].c.lcol=DoubleBGR2RGB(gpuData[3]);
+     vertex[2].c.lcol=DoubleBGR2RGB(gpuData[6]);
+     vertex[3].c.lcol=DoubleBGR2RGB(gpuData[9]);
+     vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=vertex[3].c.col[3]=ubGloAlpha;
     }
    ubGloAlpha=ubGloColAlpha=0xff;   
    DEFOPAQUEON
@@ -4302,8 +4285,8 @@ void primPolyF3(unsigned char *baseAddr)
  SetRenderMode(GETLE32(&gpuData[0]), FALSE);
  SetZMask3NT();
 
- vertex[0].c.lcol=gpuData[0];
- vertex[0].c.col[0]=ubGloColAlpha;
+ vertex[0].c.lcol=GETLE32(&gpuData[0]);
+ vertex[0].c.col[3]=ubGloColAlpha;
  SETCOL(vertex[0]); 
 
  PRIMdrawTri(&vertex[0], &vertex[1], &vertex[2]);
@@ -4353,7 +4336,7 @@ void primLineGEx(unsigned char *baseAddr)
  SetZMask4NT();
 
  vertex[0].c.lcol=vertex[3].c.lcol=GETLE32(&gpuData[0]);
- vertex[0].c.col[0]=vertex[3].c.col[0]=ubGloColAlpha; 
+ vertex[0].c.col[3]=vertex[3].c.col[3]=ubGloColAlpha;
  ly1 = (short)((GETLE32(&gpuData[1])>>16) & 0xffff);
  lx1 = (short)(GETLE32(&gpuData[1]) & 0xffff);
 
@@ -4367,7 +4350,7 @@ void primLineGEx(unsigned char *baseAddr)
    ly0 = ly1;lx0=lx1;
    vertex[1].c.lcol=vertex[2].c.lcol=vertex[0].c.lcol;
    vertex[0].c.lcol=vertex[3].c.lcol=GETLE32(&gpuData[i]);
-   vertex[0].c.col[0]=vertex[3].c.col[0]=ubGloColAlpha; 
+   vertex[0].c.col[3]=vertex[3].c.col[3]=ubGloColAlpha;
 
    i++;
 
@@ -4416,7 +4399,7 @@ void primLineG2(unsigned char *baseAddr)
 
  vertex[0].c.lcol=vertex[3].c.lcol=GETLE32(&gpuData[0]);
  vertex[1].c.lcol=vertex[2].c.lcol=GETLE32(&gpuData[2]);
- vertex[0].c.col[0]=vertex[1].c.col[0]=vertex[2].c.col[0]=vertex[3].c.col[0]=ubGloColAlpha; 
+ vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=vertex[3].c.col[3]=ubGloColAlpha;
 
  bDrawTextured = FALSE;
  bDrawSmoothShaded = TRUE;
@@ -4484,7 +4467,7 @@ void primLineFEx(unsigned char *baseAddr)
  SetZMask4NT();
 
  vertex[0].c.lcol=GETLE32(&gpuData[0]);
- vertex[0].c.col[0]=ubGloColAlpha; 
+ vertex[0].c.col[3]=ubGloColAlpha;
 
  ly1 = (short)((GETLE32(&gpuData[1])>>16) & 0xffff);
  lx1 = (short)(GETLE32(&gpuData[1]) & 0xffff);
@@ -4546,7 +4529,7 @@ void primLineF2(unsigned char *baseAddr)
  SetZMask4NT();
 
  vertex[0].c.lcol=GETLE32(&gpuData[0]);
- vertex[0].c.col[0]=ubGloColAlpha; 
+ vertex[0].c.col[3]=ubGloColAlpha;
 
  if(iOffscreenDrawing)
   {

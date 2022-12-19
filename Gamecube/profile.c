@@ -33,8 +33,8 @@
 
 #ifdef PROFILE
 
-char * profile_strings[] = {
-	SECTION_NAME_0,
+char * profile_strings[NUM_SECTIONS] = {
+	"Total Time",
 	SECTION_NAME_1,
 	SECTION_NAME_2,
 	SECTION_NAME_3,
@@ -48,54 +48,73 @@ char * profile_strings[] = {
 extern long long gettime();
 extern unsigned int diff_sec(long long, long long);
 
-typedef struct {
-	long long start;
-	long long timeused;
-	long long subtract;	// amount to remove taken by overlapping section(s)
-}_profile_section;
-
-static _profile_section profile_section[NUM_SECTIONS];
+static long long time_in_section[NUM_SECTIONS];
+static long long last_start[NUM_SECTIONS];
+static long long last_end[NUM_SECTIONS];
 static long long last_refresh;
+
 
 void start_section(int section_type)
 {
-   profile_section[section_type].start = gettime();
+	last_start[section_type] = gettime();
 }
 
 void end_section(int section_type)
 {
-   if(profile_section[section_type].start == 0) return;
-   long long end = gettime();
-   long long timeused = end - profile_section[section_type].start;
-   profile_section[section_type].timeused += timeused;
-   profile_section[section_type].start = 0;
-   
-   // Go through any sections we may have overlapped and add negative ticks
-   int i;
-   for(i = 0; i < NUM_SECTIONS; i++) {
-		if(i != section_type && profile_section[i].start > 0 && (profile_section[i].start < profile_section[section_type].start)) {
-			profile_section[i].subtract += timeused;
+	if(!last_start[section_type]) return;
+	long long end = gettime();
+	long long amount_not_ours = 0;
+	
+	last_end[section_type] = end;
+	time_in_section[section_type] += (end - last_start[section_type]);
+	
+	// have any other sections opened since ours did? if so, subtract their time from ours.
+	int i, oldest_open_type = 0;
+	long long oldest_open = 0; 
+	for(i=1; i<NUM_SECTIONS; i++) {
+		if(!last_end[i] && last_start[i] && i != section_type && last_start[i] > last_start[section_type] && (last_start[i] < oldest_open || oldest_open == 0)) {
+			oldest_open = last_start[i];
+			oldest_open_type = i;
 		}
-   }
+	}
+	if(oldest_open > 0) {
+		amount_not_ours = (end-last_start[oldest_open_type]);
+	}
+
+	// have any other sections opened and closed since ours did? if so, subtract their time from ours.
+	for(i=1; i<NUM_SECTIONS; i++) {
+		if(last_start[i] && last_end[i] && i != section_type && last_start[i] > last_start[section_type] && last_end[i] > last_start[section_type]) {
+			amount_not_ours += (time_in_section[i]);
+		}
+	}
+	if(amount_not_ours < time_in_section[section_type]) {
+		time_in_section[section_type]-=amount_not_ours;
+	}
 }
 
 void refresh_stat()
 {
-	int i;
-	for(i=0; i<NUM_SECTIONS; i++)
-		end_section(i);
 	long long this_tick = gettime();
-	long long time_in_refresh = this_tick - last_refresh;
-	if(diff_sec(last_refresh, this_tick) >= 1)
-	{
-		for(i=0; i<NUM_SECTIONS; i++) {
-			sprintf(txtbuffer, "%s=%f%%",profile_strings[i], 100.0f * (((float)profile_section[i].timeused-(float)profile_section[i].subtract) / (float)time_in_refresh));
+	if(diff_sec(last_refresh, this_tick) >= 1) {
+		time_in_section[0] = this_tick - last_start[0];
+
+		int i;
+		long long all_sections = 0;
+		for(i=1; i<NUM_SECTIONS; i++) {
+			sprintf(txtbuffer, "%s=%f%%",profile_strings[i], 100.0f * (float)time_in_section[i] / (float)time_in_section[0]);
 			DEBUG_print(txtbuffer, DBG_PROFILE_BASE+i);
-			profile_section[i].start = 0;
-			profile_section[i].timeused = 0;
-			profile_section[i].subtract = 0;
+			all_sections += time_in_section[i];
+			last_start[i] = 0;
+			last_end[i] = 0;
+			time_in_section[i] = 0;
 		}
-		last_refresh = gettime();
+		sprintf(txtbuffer, "unknown=%f%%  %llu %llu", 100.0f * ((float)(time_in_section[0]-all_sections) / (float)time_in_section[0])
+			, time_in_section[0]
+			, all_sections);
+		DEBUG_print(txtbuffer, NUM_SECTIONS);
+
+		last_start[0] = this_tick;
+		last_refresh = this_tick;
 	}
 }
 
