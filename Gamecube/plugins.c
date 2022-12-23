@@ -205,9 +205,9 @@ void CALLBACK GPUbusy( int ticks )
     //printf( "GPUbusy( %i )\n", ticks );
     //fflush( 0 );
 
-    psxRegs.interrupt |= (1 << PSXINT_GPUBUSY);
-    psxRegs.intCycle[PSXINT_GPUBUSY].cycle = ticks;
-    psxRegs.intCycle[PSXINT_GPUBUSY].sCycle = psxRegs.cycle;
+    psxCore.interrupt |= (1 << PSXINT_GPUBUSY);
+    psxCore.intCycle[PSXINT_GPUBUSY].cycle = ticks;
+    psxCore.intCycle[PSXINT_GPUBUSY].sCycle = psxCore.cycle;
 }
 
 long CALLBACK GPU__configure(void) { return 0; }

@@ -166,17 +166,21 @@ typedef struct {
 	psxCP0Regs CP0;		/* Coprocessor0 Registers */
 	psxCP2Data CP2D; 	/* Cop2 data registers */
 	psxCP2Ctrl CP2C; 	/* Cop2 control registers */
-  u32 pc;						/* Program counter */
-  u32 code;					/* The instruction */
+	u32 pc;						/* Program counter */
+	u32 code;					/* The instruction */
 	u32 cycle;
 	u32 interrupt;
 	struct { u32 sCycle, cycle; } intCycle[32];
 	u8 ICache_Addr[0x1000];
 	u8 ICache_Code[0x1000];
 	boolean ICache_valid;
-} psxRegisters;
+	s8 psxM[0x00220000] __attribute__((aligned(32))); // Kernel & User Memory (2 Meg)
+	s8 psxR[0x00080000] __attribute__((aligned(32))); // BIOS ROM (512K)
+	u8* psxMemWLUT[0x10000] __attribute__((aligned(32)));
+	u8* psxMemRLUT[0x10000] __attribute__((aligned(32)));
+} _psxCore;
 
-extern psxRegisters psxRegs;
+extern _psxCore psxCore;
 
 /*
 Formula One 2001
@@ -196,15 +200,15 @@ static inline u32 *Read_ICache(u32 pc, boolean isolate) {
 	pc_offset = pc & 0xffffff;
 	pc_cache = pc & 0xfff;
 
-	IAddr = psxRegs.ICache_Addr;
-	ICode = psxRegs.ICache_Code;
+	IAddr = psxCore.ICache_Addr;
+	ICode = psxCore.ICache_Code;
 
 	// clear I-cache
-	if (!psxRegs.ICache_valid) {
-		memset(psxRegs.ICache_Addr, 0xff, sizeof(psxRegs.ICache_Addr));
-		memset(psxRegs.ICache_Code, 0xff, sizeof(psxRegs.ICache_Code));
+	if (!psxCore.ICache_valid) {
+		memset(psxCore.ICache_Addr, 0xff, sizeof(psxCore.ICache_Addr));
+		memset(psxCore.ICache_Code, 0xff, sizeof(psxCore.ICache_Code));
 
-		psxRegs.ICache_valid = TRUE;
+		psxCore.ICache_valid = TRUE;
 	}
 
 	// uncached
@@ -277,7 +281,7 @@ static inline u32 *Read_ICache(u32 pc, boolean isolate) {
 #endif
 
 /**** R3000A Instruction Macros ****/
-#define _PC_       psxRegs.pc       // The next PC to be executed
+#define _PC_       psxCore.pc       // The next PC to be executed
 
 #define _fOp_(code)		((code >> 26)       )  // The opcode part of the instruction register 
 #define _fFunct_(code)	((code      ) & 0x3F)  // The funct part of the instruction register 
@@ -291,36 +295,36 @@ static inline u32 *Read_ICache(u32 pc, boolean isolate) {
 #define _fImm_(code)	((s16)code)            // sign-extended immediate
 #define _fImmU_(code)	(code&0xffff)          // zero-extended immediate
 
-#define _Op_     _fOp_(psxRegs.code)
-#define _Funct_  _fFunct_(psxRegs.code)
-#define _Rd_     _fRd_(psxRegs.code)
-#define _Rt_     _fRt_(psxRegs.code)
-#define _Rs_     _fRs_(psxRegs.code)
-#define _Sa_     _fSa_(psxRegs.code)
-#define _Im_     _fIm_(psxRegs.code)
-#define _Target_ _fTarget_(psxRegs.code)
+#define _Op_     _fOp_(psxCore.code)
+#define _Funct_  _fFunct_(psxCore.code)
+#define _Rd_     _fRd_(psxCore.code)
+#define _Rt_     _fRt_(psxCore.code)
+#define _Rs_     _fRs_(psxCore.code)
+#define _Sa_     _fSa_(psxCore.code)
+#define _Im_     _fIm_(psxCore.code)
+#define _Target_ _fTarget_(psxCore.code)
 
-#define _Imm_	 _fImm_(psxRegs.code)
-#define _ImmU_	 _fImmU_(psxRegs.code)
+#define _Imm_	 _fImm_(psxCore.code)
+#define _ImmU_	 _fImmU_(psxCore.code)
 
-#define _rRs_   psxRegs.GPR.r[_Rs_]   // Rs register
-#define _rRt_   psxRegs.GPR.r[_Rt_]   // Rt register
-#define _rRd_   psxRegs.GPR.r[_Rd_]   // Rd register
-#define _rSa_   psxRegs.GPR.r[_Sa_]   // Sa register
-#define _rFs_   psxRegs.CP0.r[_Rd_]   // Fs register
+#define _rRs_   psxCore.GPR.r[_Rs_]   // Rs register
+#define _rRt_   psxCore.GPR.r[_Rt_]   // Rt register
+#define _rRd_   psxCore.GPR.r[_Rd_]   // Rd register
+#define _rSa_   psxCore.GPR.r[_Sa_]   // Sa register
+#define _rFs_   psxCore.CP0.r[_Rd_]   // Fs register
 
-#define _c2dRs_ psxRegs.CP2D.r[_Rs_]  // Rs cop2 data register
-#define _c2dRt_ psxRegs.CP2D.r[_Rt_]  // Rt cop2 data register
-#define _c2dRd_ psxRegs.CP2D.r[_Rd_]  // Rd cop2 data register
-#define _c2dSa_ psxRegs.CP2D.r[_Sa_]  // Sa cop2 data register
+#define _c2dRs_ psxCore.CP2D.r[_Rs_]  // Rs cop2 data register
+#define _c2dRt_ psxCore.CP2D.r[_Rt_]  // Rt cop2 data register
+#define _c2dRd_ psxCore.CP2D.r[_Rd_]  // Rd cop2 data register
+#define _c2dSa_ psxCore.CP2D.r[_Sa_]  // Sa cop2 data register
 
-#define _rHi_   psxRegs.GPR.n.hi   // The HI register
-#define _rLo_   psxRegs.GPR.n.lo   // The LO register
+#define _rHi_   psxCore.GPR.n.hi   // The HI register
+#define _rLo_   psxCore.GPR.n.lo   // The LO register
 
 #define _JumpTarget_    ((_Target_ * 4) + (_PC_ & 0xf0000000))   // Calculates the target during a jump instruction
 #define _BranchTarget_  ((s16)_Im_ * 4 + _PC_)                 // Calculates the target during a branch instruction
 
-#define _SetLink(x)     psxRegs.GPR.r[x] = _PC_ + 4;       // Sets the return address in the link register
+#define _SetLink(x)     psxCore.GPR.r[x] = _PC_ + 4;       // Sets the return address in the link register
 
 int  psxInit();
 void psxReset();

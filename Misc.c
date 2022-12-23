@@ -149,7 +149,7 @@ int LoadCdrom() {
 	char exename[256];
 
 	if (!Config.HLE) {
-		if (!Config.SlowBoot) psxRegs.pc = psxRegs.GPR.n.ra;
+		if (!Config.SlowBoot) psxCore.pc = psxCore.GPR.n.ra;
 		return 0;
 	}
 
@@ -201,10 +201,10 @@ int LoadCdrom() {
 
 	memcpy(&tmpHead, buf + 12, sizeof(EXE_HEADER));
 
-	psxRegs.pc = SWAP32(tmpHead.pc0);
-	psxRegs.GPR.n.gp = SWAP32(tmpHead.gp0);
-	psxRegs.GPR.n.sp = SWAP32(tmpHead.s_addr); 
-	if (psxRegs.GPR.n.sp == 0) psxRegs.GPR.n.sp = 0x801fff00;
+	psxCore.pc = SWAP32(tmpHead.pc0);
+	psxCore.GPR.n.gp = SWAP32(tmpHead.gp0);
+	psxCore.GPR.n.sp = SWAP32(tmpHead.s_addr); 
+	if (psxCore.GPR.n.sp == 0) psxCore.GPR.n.sp = 0x801fff00;
 
 	tmpHead.t_size = SWAP32(tmpHead.t_size);
 	tmpHead.t_addr = SWAP32(tmpHead.t_addr);
@@ -392,7 +392,7 @@ static void LoadLibPS() {
 
 	if (f != NULL) {
 		fseek(f, 0x800, SEEK_SET);
-		fread(psxM + 0x10000, 0x61000, 1, f);
+		fread(psxCore.psxM + 0x10000, 0x61000, 1, f);
 		fclose(f);
 	}
 }*/
@@ -421,11 +421,11 @@ int Load(fileBrowser_file *exe) {
 				isoFile_seekFile(exe, 0x800, FILE_BROWSER_SEEK_SET);
 				isoFile_readFile(exe, (void *)PSXM(SWAP32(tmpHead.t_addr)), SWAP32(tmpHead.t_size));
 
-				psxRegs.pc = SWAP32(tmpHead.pc0);
-				psxRegs.GPR.n.gp = SWAP32(tmpHead.gp0);
-				psxRegs.GPR.n.sp = SWAP32(tmpHead.s_addr); 
-				if (psxRegs.GPR.n.sp == 0)
-					psxRegs.GPR.n.sp = 0x801fff00;
+				psxCore.pc = SWAP32(tmpHead.pc0);
+				psxCore.GPR.n.gp = SWAP32(tmpHead.gp0);
+				psxCore.GPR.n.sp = SWAP32(tmpHead.s_addr); 
+				if (psxCore.GPR.n.sp == 0)
+					psxCore.GPR.n.sp = 0x801fff00;
 				retval = 0;
 				break;
 
@@ -514,12 +514,13 @@ int SaveState() {
 		psxBiosFreeze(1);
 
 	 LoadingBar_showBar(0.10f, SAVE_STATE_MSG);
-	gzwrite(f, psxM, 0x00200000);
+	// TODO fix this, we're storing it twice.
+	gzwrite(f, psxCore.psxM, 0x00200000);
 	LoadingBar_showBar(0.40f, SAVE_STATE_MSG);
-	gzwrite(f, psxR, 0x00080000);
+	gzwrite(f, psxCore.psxR, 0x00080000);
 	LoadingBar_showBar(0.60f, SAVE_STATE_MSG);
 	gzwrite(f, psxH, 0x00010000);
-	gzwrite(f, (void*)&psxRegs, sizeof(psxRegs));
+	gzwrite(f, (void*)&psxCore, sizeof(psxCore));
 	LoadingBar_showBar(0.70f, SAVE_STATE_MSG);
 
 	// gpu
@@ -601,13 +602,13 @@ int LoadState() {
 	if (strncmp("STv3 PCSX", header, 9)) { gzclose(f); return -1; }
 
 	gzseek(f, 128*96*3, SEEK_CUR);
-
-	gzread(f, psxM, 0x00200000);
+	// TODO fix this, we're storing it twice.
+	gzread(f, psxCore.psxM, 0x00200000);
 	LoadingBar_showBar(0.40f, LOAD_STATE_MSG);
-	gzread(f, psxR, 0x00080000);
+	gzread(f, psxCore.psxR, 0x00080000);
 	LoadingBar_showBar(0.60f, LOAD_STATE_MSG);
 	gzread(f, psxH, 0x00010000);
-	gzread(f, (void*)&psxRegs, sizeof(psxRegs));
+	gzread(f, (void*)&psxCore, sizeof(psxCore));
   LoadingBar_showBar(0.70f, LOAD_STATE_MSG);
 	if (Config.HLE)
 		psxBiosFreeze(0);

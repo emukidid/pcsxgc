@@ -30,39 +30,39 @@ extern "C" {
 #include "psxmem.h"
 
 #define GPUDMA_INT(eCycle) { \
-	psxRegs.interrupt |= (1 << PSXINT_GPUDMA); \
-	psxRegs.intCycle[PSXINT_GPUDMA].cycle = eCycle; \
-	psxRegs.intCycle[PSXINT_GPUDMA].sCycle = psxRegs.cycle; \
+	psxCore.interrupt |= (1 << PSXINT_GPUDMA); \
+	psxCore.intCycle[PSXINT_GPUDMA].cycle = eCycle; \
+	psxCore.intCycle[PSXINT_GPUDMA].sCycle = psxCore.cycle; \
 }
 
 #define SPUDMA_INT(eCycle) { \
-	psxRegs.interrupt |= (1 << PSXINT_SPUDMA); \
-	psxRegs.intCycle[PSXINT_SPUDMA].cycle = eCycle; \
-	psxRegs.intCycle[PSXINT_SPUDMA].sCycle = psxRegs.cycle; \
+	psxCore.interrupt |= (1 << PSXINT_SPUDMA); \
+	psxCore.intCycle[PSXINT_SPUDMA].cycle = eCycle; \
+	psxCore.intCycle[PSXINT_SPUDMA].sCycle = psxCore.cycle; \
 }
 
 #define MDECOUTDMA_INT(eCycle) { \
-	psxRegs.interrupt |= (1 << PSXINT_MDECOUTDMA); \
-	psxRegs.intCycle[PSXINT_MDECOUTDMA].cycle = eCycle; \
-	psxRegs.intCycle[PSXINT_MDECOUTDMA].sCycle = psxRegs.cycle; \
+	psxCore.interrupt |= (1 << PSXINT_MDECOUTDMA); \
+	psxCore.intCycle[PSXINT_MDECOUTDMA].cycle = eCycle; \
+	psxCore.intCycle[PSXINT_MDECOUTDMA].sCycle = psxCore.cycle; \
 }
 
 #define MDECINDMA_INT(eCycle) { \
-	psxRegs.interrupt |= (1 << PSXINT_MDECINDMA); \
-	psxRegs.intCycle[PSXINT_MDECINDMA].cycle = eCycle; \
-	psxRegs.intCycle[PSXINT_MDECINDMA].sCycle = psxRegs.cycle; \
+	psxCore.interrupt |= (1 << PSXINT_MDECINDMA); \
+	psxCore.intCycle[PSXINT_MDECINDMA].cycle = eCycle; \
+	psxCore.intCycle[PSXINT_MDECINDMA].sCycle = psxCore.cycle; \
 }
 
 #define GPUOTCDMA_INT(eCycle) { \
-	psxRegs.interrupt |= (1 << PSXINT_GPUOTCDMA); \
-	psxRegs.intCycle[PSXINT_GPUOTCDMA].cycle = eCycle; \
-	psxRegs.intCycle[PSXINT_GPUOTCDMA].sCycle = psxRegs.cycle; \
+	psxCore.interrupt |= (1 << PSXINT_GPUOTCDMA); \
+	psxCore.intCycle[PSXINT_GPUOTCDMA].cycle = eCycle; \
+	psxCore.intCycle[PSXINT_GPUOTCDMA].sCycle = psxCore.cycle; \
 }
 
 #define CDRDMA_INT(eCycle) { \
-	psxRegs.interrupt |= (1 << PSXINT_CDRDMA); \
-	psxRegs.intCycle[PSXINT_CDRDMA].cycle = eCycle; \
-	psxRegs.intCycle[PSXINT_CDRDMA].sCycle = psxRegs.cycle; \
+	psxCore.interrupt |= (1 << PSXINT_CDRDMA); \
+	psxCore.intCycle[PSXINT_CDRDMA].cycle = eCycle; \
+	psxCore.intCycle[PSXINT_CDRDMA].sCycle = psxCore.cycle; \
 }
 
 /*

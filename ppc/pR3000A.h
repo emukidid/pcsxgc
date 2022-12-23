@@ -43,26 +43,26 @@
 #endif
 #define NUM_REGISTERS	34
 #undef _Op_
-#define _Op_     _fOp_(psxRegs.code)
+#define _Op_     _fOp_(psxCore.code)
 #undef _Funct_
-#define _Funct_  _fFunct_(psxRegs.code)
+#define _Funct_  _fFunct_(psxCore.code)
 #undef _Rd_
-#define _Rd_     _fRd_(psxRegs.code)
+#define _Rd_     _fRd_(psxCore.code)
 #undef _Rt_
-#define _Rt_     _fRt_(psxRegs.code)
+#define _Rt_     _fRt_(psxCore.code)
 #undef _Rs_
-#define _Rs_     _fRs_(psxRegs.code)
+#define _Rs_     _fRs_(psxCore.code)
 #undef _Sa_
-#define _Sa_     _fSa_(psxRegs.code)
+#define _Sa_     _fSa_(psxCore.code)
 #undef _Im_
-#define _Im_     _fIm_(psxRegs.code)
+#define _Im_     _fIm_(psxCore.code)
 #undef _Target_
-#define _Target_ _fTarget_(psxRegs.code)
+#define _Target_ _fTarget_(psxCore.code)
 
 #undef _Imm_
-#define _Imm_	 _fImm_(psxRegs.code)
+#define _Imm_	 _fImm_(psxCore.code)
 #undef _ImmU_
-#define _ImmU_	 _fImmU_(psxRegs.code)
+#define _ImmU_	 _fImmU_(psxCore.code)
 
 #undef PC_REC
 #undef PC_REC8
@@ -125,10 +125,7 @@ enum {
     ARG3 = 5,
 	TMP1 = 6,
 	TMP2 = 7,
-    PSXREGS,	// ptr
-	PSXMEM,		// ptr
-	PSXRLUT,	// ptr
-	PSXWLUT,	// ptr
+    PSXCORE,	// ptr
 	PSXRECLUT,	// ptr
     CYCLECOUNT,	// ptr
     PSXPC,		// ptr

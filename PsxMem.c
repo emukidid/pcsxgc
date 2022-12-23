@@ -33,13 +33,9 @@
 #include "Gamecube/fileBrowser/fileBrowser-CARD.h"
 #include "Gamecube/wiiSXconfig.h"
 
-s8 psxM[0x00220000] __attribute__((aligned(32))); // Kernel & User Memory (2 Meg)
 s8 *psxP = NULL; // Parallel Port (64K)
-s8 psxR[0x00080000] __attribute__((aligned(32))); // BIOS ROM (512K)
 s8 *psxH = NULL; // Scratch Pad (1K) & Hardware Registers (8K)
 
-u8* psxMemWLUT[0x10000] __attribute__((aligned(32)));
-u8* psxMemRLUT[0x10000] __attribute__((aligned(32)));
 
 /*  Playstation Memory Map (from Playstation doc by Joshua Walker)
 0x0000_0000-0x0000_ffff		Kernel (64K)
@@ -63,43 +59,43 @@ u8* psxMemRLUT[0x10000] __attribute__((aligned(32)));
 int psxMemInit() {
 	int i;
 
-	memset(psxMemRLUT, 0, 0x10000 * sizeof(void *));
-	memset(psxMemWLUT, 0, 0x10000 * sizeof(void *));
+	memset(psxCore.psxMemRLUT, 0, 0x10000 * sizeof(void *));
+	memset(psxCore.psxMemWLUT, 0, 0x10000 * sizeof(void *));
 
-	psxP = &psxM[0x200000];
-	psxH = &psxM[0x210000];
+	psxP = &psxCore.psxM[0x200000];
+	psxH = &psxCore.psxM[0x210000];
 
 // MemR
-	for (i = 0; i < 0x80; i++) psxMemRLUT[i + 0x0000] = (u8 *)&psxM[(i & 0x1f) << 16];
+	for (i = 0; i < 0x80; i++) psxCore.psxMemRLUT[i + 0x0000] = (u8 *)&psxCore.psxM[(i & 0x1f) << 16];
 
-	memcpy(psxMemRLUT + 0x8000, psxMemRLUT, 0x80 * sizeof(void *));
-	memcpy(psxMemRLUT + 0xa000, psxMemRLUT, 0x80 * sizeof(void *));
+	memcpy(psxCore.psxMemRLUT + 0x8000, psxCore.psxMemRLUT, 0x80 * sizeof(void *));
+	memcpy(psxCore.psxMemRLUT + 0xa000, psxCore.psxMemRLUT, 0x80 * sizeof(void *));
 
-	psxMemRLUT[0x1f00] = (u8 *)psxP;
-	psxMemRLUT[0x1f80] = (u8 *)psxH;
+	psxCore.psxMemRLUT[0x1f00] = (u8 *)psxP;
+	psxCore.psxMemRLUT[0x1f80] = (u8 *)psxH;
 
-	for (i = 0; i < 0x08; i++) psxMemRLUT[i + 0x1fc0] = (u8 *)&psxR[i << 16];
+	for (i = 0; i < 0x08; i++) psxCore.psxMemRLUT[i + 0x1fc0] = (u8 *)&psxCore.psxR[i << 16];
 
-	memcpy(psxMemRLUT + 0x9fc0, psxMemRLUT + 0x1fc0, 0x08 * sizeof(void *));
-	memcpy(psxMemRLUT + 0xbfc0, psxMemRLUT + 0x1fc0, 0x08 * sizeof(void *));
+	memcpy(psxCore.psxMemRLUT + 0x9fc0, psxCore.psxMemRLUT + 0x1fc0, 0x08 * sizeof(void *));
+	memcpy(psxCore.psxMemRLUT + 0xbfc0, psxCore.psxMemRLUT + 0x1fc0, 0x08 * sizeof(void *));
 
 // MemW
-	for (i = 0; i < 0x80; i++) psxMemWLUT[i + 0x0000] = (u8 *)&psxM[(i & 0x1f) << 16];
+	for (i = 0; i < 0x80; i++) psxCore.psxMemWLUT[i + 0x0000] = (u8 *)&psxCore.psxM[(i & 0x1f) << 16];
 
-	memcpy(psxMemWLUT + 0x8000, psxMemWLUT, 0x80 * sizeof(void *));
-	memcpy(psxMemWLUT + 0xa000, psxMemWLUT, 0x80 * sizeof(void *));
+	memcpy(psxCore.psxMemWLUT + 0x8000, psxCore.psxMemWLUT, 0x80 * sizeof(void *));
+	memcpy(psxCore.psxMemWLUT + 0xa000, psxCore.psxMemWLUT, 0x80 * sizeof(void *));
 
-	psxMemWLUT[0x1f00] = (u8 *)psxP;
-	psxMemWLUT[0x1f80] = (u8 *)psxH;
+	psxCore.psxMemWLUT[0x1f00] = (u8 *)psxP;
+	psxCore.psxMemWLUT[0x1f80] = (u8 *)psxH;
 
 	return 0;
 }
 
 void psxMemReset() {
 	int temp;
-	memset(psxM, 0, 0x00200000);
+	memset(psxCore.psxM, 0, 0x00200000);
 	memset(psxP, 0, 0x00010000);
-  memset(psxR, 0, 0x80000);
+  memset(psxCore.psxR, 0, 0x80000);
   if(!biosFile || (biosDevice == BIOSDEVICE_HLE)) {
     Config.HLE = BIOS_HLE;
     return;
@@ -108,7 +104,7 @@ void psxMemReset() {
     biosFile->offset = 0; //must reset otherwise the if statement will fail!
   	if(biosFile_readFile(biosFile, &temp, 4) == 4) {  //bios file exists
   	  biosFile->offset = 0;
-  		if(biosFile_readFile(biosFile, psxR, 0x80000) != 0x80000) { //failed size
+  		if(biosFile_readFile(biosFile, psxCore.psxR, 0x80000) != 0x80000) { //failed size
   		  //printf("Using HLE\n");
   		  Config.HLE = BIOS_HLE;
   	  }
@@ -129,37 +125,37 @@ void psxMemShutdown() {
 static int writeok = 1;
 
 u8 psxMemRead8(u32 mem) {
-	psxRegs.cycle += 0;
+	psxCore.cycle += 0;
 	
 	u32 t = mem >> 16;
 	if (t == 0x1f80) {
 		return (mem < 0x1f801000) ? psxHu8(mem) : psxHwRead8(mem);
 	} else {
-		char *p = (char *)(psxMemRLUT[t]);
+		char *p = (char *)(psxCore.psxMemRLUT[t]);
 		return (p == NULL) ? 0 : *(u8 *)(p + (mem & 0xffff));
 	}
 }
 
 u16 psxMemRead16(u32 mem) {
-	psxRegs.cycle += 1;
+	psxCore.cycle += 1;
 
 	u32 t = mem >> 16;
 	if (t == 0x1f80) {
 		return (mem < 0x1f801000) ? psxHu16(mem) : psxHwRead16(mem);
 	} else {
-		char *p = (char *)(psxMemRLUT[t]);
+		char *p = (char *)(psxCore.psxMemRLUT[t]);
 		return (p == NULL) ? 0 : SWAPu16(*(u16 *)(p + (mem & 0xffff)));
 	}
 }
 
 u32 psxMemRead32(u32 mem) {
-	psxRegs.cycle += 1;
+	psxCore.cycle += 1;
 	
 	u32 t = mem >> 16;
 	if (t == 0x1f80) {
 		return (mem < 0x1f801000) ? psxHu32(mem) : psxHwRead32(mem);
 	} else {
-		char *p = (char *)(psxMemRLUT[t]);
+		char *p = (char *)(psxCore.psxMemRLUT[t]);
 		return (p == NULL) ? 0 : SWAPu32(*(u32 *)(p + (mem & 0xffff)));
 	}
 }
@@ -192,7 +188,7 @@ void psxDynaMemWrite16(u32 mem, u16 value) {
 
 
 void psxMemWrite8(u32 mem, u8 value) {
-	psxRegs.cycle += 1;
+	psxCore.cycle += 1;
 
 	u32 t = mem >> 16;
 	if (t == 0x1f80) {
@@ -201,7 +197,7 @@ void psxMemWrite8(u32 mem, u8 value) {
 		else
 			psxHwWrite8(mem, value);
 	} else {
-		char *p = (char *)(psxMemWLUT[t]);
+		char *p = (char *)(psxCore.psxMemWLUT[t]);
 		if (p != NULL) {
 			*(u8 *)(p + (mem & 0xffff)) = value;
 			psxCpu->Clear((mem & (~3)), 1);
@@ -210,7 +206,7 @@ void psxMemWrite8(u32 mem, u8 value) {
 }
 
 void psxMemWrite16(u32 mem, u16 value) {
-	psxRegs.cycle += 1;
+	psxCore.cycle += 1;
 
 	u32 t = mem >> 16;
 	if (t == 0x1f80) {
@@ -219,7 +215,7 @@ void psxMemWrite16(u32 mem, u16 value) {
 		else
 			psxHwWrite16(mem, value);
 	} else {
-		char *p = (char *)(psxMemWLUT[t]);
+		char *p = (char *)(psxCore.psxMemWLUT[t]);
 		if (p != NULL) {
 			*(u16 *)(p + (mem & 0xffff)) = SWAPu16(value);
 			psxCpu->Clear((mem & (~3)), 1);
@@ -228,7 +224,7 @@ void psxMemWrite16(u32 mem, u16 value) {
 }
 
 void psxMemWrite32(u32 mem, u32 value) {
-	psxRegs.cycle += 1;
+	psxCore.cycle += 1;
 
 	u32 t = mem >> 16;
 	if (t == 0x1f80) {
@@ -237,7 +233,7 @@ void psxMemWrite32(u32 mem, u32 value) {
 		else
 			psxHwWrite32(mem, value);
 	} else {
-		char *p = (char *)(psxMemWLUT[t]);
+		char *p = (char *)(psxCore.psxMemWLUT[t]);
 		if (p != NULL) {
 			*(u32 *)(p + (mem & 0xffff)) = SWAPu32(value);
 			psxCpu->Clear(mem, 1);
@@ -253,18 +249,18 @@ void psxMemWrite32(u32 mem, u32 value) {
 					case 0x800: case 0x804:
 						if (writeok == 0) break;
 						writeok = 0;
-						memset(psxMemWLUT + 0x0000, 0, 0x80 * sizeof(void *));
-						memset(psxMemWLUT + 0x8000, 0, 0x80 * sizeof(void *));
-						memset(psxMemWLUT + 0xa000, 0, 0x80 * sizeof(void *));
+						memset(psxCore.psxMemWLUT + 0x0000, 0, 0x80 * sizeof(void *));
+						memset(psxCore.psxMemWLUT + 0x8000, 0, 0x80 * sizeof(void *));
+						memset(psxCore.psxMemWLUT + 0xa000, 0, 0x80 * sizeof(void *));
 
-						psxRegs.ICache_valid = 0;
+						psxCore.ICache_valid = 0;
 						break;
 					case 0x00: case 0x1e988:
 						if (writeok == 1) break;
 						writeok = 1;
-						for (i = 0; i < 0x80; i++) psxMemWLUT[i + 0x0000] = (void *)&psxM[(i & 0x1f) << 16];
-						memcpy(psxMemWLUT + 0x8000, psxMemWLUT, 0x80 * sizeof(void *));
-						memcpy(psxMemWLUT + 0xa000, psxMemWLUT, 0x80 * sizeof(void *));
+						for (i = 0; i < 0x80; i++) psxCore.psxMemWLUT[i + 0x0000] = (void *)&psxCore.psxM[(i & 0x1f) << 16];
+						memcpy(psxCore.psxMemWLUT + 0x8000, psxCore.psxMemWLUT, 0x80 * sizeof(void *));
+						memcpy(psxCore.psxMemWLUT + 0xa000, psxCore.psxMemWLUT, 0x80 * sizeof(void *));
 						break;
 					default:
 						break;
@@ -279,7 +275,7 @@ void *psxMemPointer(u32 mem) {
 	if (t == 0x1f80) {
 		return (mem < 0x1f801000) ? (void *)&psxH[mem] : NULL;
 	} else {
-		char *p = (char *)(psxMemWLUT[t]);
+		char *p = (char *)(psxCore.psxMemWLUT[t]);
 		return (p != NULL) ? (void *)(p + (mem & 0xffff)) : NULL;
 	}
 }

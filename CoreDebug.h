@@ -48,12 +48,12 @@ FILE *gteLog;
 
 //#define PAD_LOG  __Log
 //#define GTE_LOG  __Log
-//#define CDR_LOG  __Log("%8.8lx %8.8lx: ", psxRegs.pc, psxRegs.cycle); __Log
+//#define CDR_LOG  __Log("%8.8lx %8.8lx: ", psxCore.pc, psxCore.cycle); __Log
 
-//#define PSXHW_LOG   __Log("%8.8lx %8.8lx: ", psxRegs.pc, psxRegs.cycle); __Log
-//#define PSXBIOS_LOG __Log("%8.8lx %8.8lx: ", psxRegs.pc, psxRegs.cycle); __Log
+//#define PSXHW_LOG   __Log("%8.8lx %8.8lx: ", psxCore.pc, psxCore.cycle); __Log
+//#define PSXBIOS_LOG __Log("%8.8lx %8.8lx: ", psxCore.pc, psxCore.cycle); __Log
 //#define PSXDMA_LOG  __Log
-//#define PSXMEM_LOG  __Log("%8.8lx %8.8lx: ", psxRegs.pc, psxRegs.cycle); __Log
+//#define PSXMEM_LOG  __Log("%8.8lx %8.8lx: ", psxCore.pc, psxCore.cycle); __Log
 //#define PSXCPU_LOG  __Log
 
 //#define CDRCMD_DEBUG

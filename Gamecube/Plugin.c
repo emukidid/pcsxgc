@@ -193,7 +193,7 @@ int _OpenPlugins() {
 		strcpy(info.EmuName, "PCSX v1.5b3");
 		strncpy(info.CdromID, CdromId, 9);
 		strncpy(info.CdromLabel, CdromLabel, 9);
-		info.psxMem = psxM;
+		info.psxMem = psxCore.psxM;
 		info.GPU_showScreenPic = GPU_showScreenPic;
 		info.GPU_displayText = GPU_displayText;
 		info.GPU_showScreenPic = GPU_showScreenPic;

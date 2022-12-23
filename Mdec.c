@@ -439,7 +439,7 @@ void mdecInit(void) {
 	memset(&mdec, 0, sizeof(mdec));
 	memset(iq_y, 0, sizeof(iq_y));
 	memset(iq_uv, 0, sizeof(iq_uv));
-	mdec.rl = (u16 *)&psxM[0x100000];
+	mdec.rl = (u16 *)&psxCore.psxM[0x100000];
 }
 
 // command register

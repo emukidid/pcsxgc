@@ -93,6 +93,10 @@
 #define STB(REG_SRC, OFFSET, REG) \
 	{int _reg = (REG), _src=(REG_SRC); \
         INSTR = (0x98000000 | (_src << 21) | (_reg << 16) | ((OFFSET) & 0xffff));}
+		
+#define STBX(REG_SRC, REG, REG_OFF) \
+	{int _reg = (REG), _src=(REG_SRC), _off = (REG_OFF); \
+        INSTR = (0x7C0001AE | (_src << 21) | (_reg << 16) | (_off << 11));}
 
 #define STWU(REG_SRC, OFFSET, REG) \
 	{int _reg = (REG), _src=(REG_SRC); \

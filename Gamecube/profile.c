@@ -42,7 +42,8 @@ char * profile_strings[NUM_SECTIONS] = {
 	SECTION_NAME_5,
 	SECTION_NAME_6,
 	SECTION_NAME_7,
-	SECTION_NAME_8
+	SECTION_NAME_8,
+	SECTION_NAME_9
 };
 
 extern long long gettime();

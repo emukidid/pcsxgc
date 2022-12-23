@@ -34,7 +34,7 @@ extern int stop;
 // These macros are used to assemble the repassembler functions
 
 #ifdef PSXCPU_LOG
-#define debugI() PSXCPU_LOG("%s\n", disR3000AF(psxRegs.code, psxRegs.pc)); 
+#define debugI() PSXCPU_LOG("%s\n", disR3000AF(psxCore.code, psxCore.pc)); 
 #else
 #define debugI()
 #endif
@@ -52,48 +52,48 @@ void (*psxCP2BSC[32])();
 static void delayRead(int reg, u32 bpc) {
 	u32 rold, rnew;
 
-//	SysPrintf("delayRead at %x!\n", psxRegs.pc);
+//	SysPrintf("delayRead at %x!\n", psxCore.pc);
 
-	rold = psxRegs.GPR.r[reg];
-	psxBSC[psxRegs.code >> 26](); // branch delay load
-	rnew = psxRegs.GPR.r[reg];
+	rold = psxCore.GPR.r[reg];
+	psxBSC[psxCore.code >> 26](); // branch delay load
+	rnew = psxCore.GPR.r[reg];
 
-	psxRegs.pc = bpc;
+	psxCore.pc = bpc;
 
 	branch = 0;
 
-	psxRegs.GPR.r[reg] = rold;
+	psxCore.GPR.r[reg] = rold;
 	execI(); // first branch opcode
-	psxRegs.GPR.r[reg] = rnew;
+	psxCore.GPR.r[reg] = rnew;
 
 	psxBranchTest();
 }
 
 static void delayWrite(int reg, u32 bpc) {
 
-/*	SysPrintf("delayWrite at %x!\n", psxRegs.pc);
+/*	SysPrintf("delayWrite at %x!\n", psxCore.pc);
 
-	SysPrintf("%s\n", disR3000AF(psxRegs.code, psxRegs.pc-4));
+	SysPrintf("%s\n", disR3000AF(psxCore.code, psxCore.pc-4));
 	SysPrintf("%s\n", disR3000AF(PSXMu32(bpc), bpc));*/
 
 	// no changes from normal behavior
 
-	psxBSC[psxRegs.code >> 26]();
+	psxBSC[psxCore.code >> 26]();
 
 	branch = 0;
-	psxRegs.pc = bpc;
+	psxCore.pc = bpc;
 
 	psxBranchTest();
 }
 
 static void delayReadWrite(int reg, u32 bpc) {
 
-//	SysPrintf("delayReadWrite at %x!\n", psxRegs.pc);
+//	SysPrintf("delayReadWrite at %x!\n", psxCore.pc);
 
 	// the branch delay load is skipped
 
 	branch = 0;
-	psxRegs.pc = bpc;
+	psxCore.pc = bpc;
 
 	psxBranchTest();
 }
@@ -280,10 +280,10 @@ void psxDelayTest(int reg, u32 bpc) {
 		case 3:
 			delayWrite(reg, bpc); return;
 	}
-	psxBSC[psxRegs.code >> 26]();
+	psxBSC[psxCore.code >> 26]();
 
 	branch = 0;
-	psxRegs.pc = bpc;
+	psxCore.pc = bpc;
 
 	psxBranchTest();
 }
@@ -292,8 +292,8 @@ static u32 psxBranchNoDelay(void) {
 	u32 *code;
 	u32 temp;
 
-	code = Read_ICache(psxRegs.pc, TRUE);
-	psxRegs.code = ((code == NULL) ? 0 : SWAP32(*code));
+	code = Read_ICache(psxCore.pc, TRUE);
+	psxCore.code = ((code == NULL) ? 0 : SWAP32(*code));
 	switch (_Op_) {
 		case 0x00: // SPECIAL
 			switch (_Funct_) {
@@ -359,8 +359,8 @@ static int psxDelayBranchExec(u32 tar) {
 	execI();
 
 	branch = 0;
-	psxRegs.pc = tar;
-	psxRegs.cycle += BIAS;
+	psxCore.pc = tar;
+	psxCore.cycle += BIAS;
 	psxBranchTest();
 	return 1;
 }
@@ -380,33 +380,33 @@ static int psxDelayBranchTest(u32 tar1) {
 	 * - jump to tar2 (target of branch in delay slot; this branch
 	 *   has no normal delay slot, instruction at tar1 was fetched instead)
 	 */
-	psxRegs.pc = tar1;
+	psxCore.pc = tar1;
 	tmp1 = psxBranchNoDelay();
 	if (tmp1 == (u32)-1) {
 		return psxDelayBranchExec(tar2);
 	}
 	debugI();
-	psxRegs.cycle += BIAS;
+	psxCore.cycle += BIAS;
 
 	/*
 	 * Got a branch at tar1:
 	 * - execute 1 instruction at tar2
 	 * - jump to target of that branch (tmp1)
 	 */
-	psxRegs.pc = tar2;
+	psxCore.pc = tar2;
 	tmp2 = psxBranchNoDelay();
 	if (tmp2 == (u32)-1) {
 		return psxDelayBranchExec(tmp1);
 	}
 	debugI();
-	psxRegs.cycle += BIAS;
+	psxCore.cycle += BIAS;
 
 	/*
 	 * Got a branch at tar2:
 	 * - execute 1 instruction at tmp1
 	 * - jump to target of that branch (tmp2)
 	 */
-	psxRegs.pc = tmp1;
+	psxCore.pc = tmp1;
 	return psxDelayBranchExec(tmp2);
 }
 
@@ -422,17 +422,17 @@ static __inline void doBranch(u32 tar) {
 		return;
 
 	// branch delay slot
-	code = Read_ICache(psxRegs.pc, TRUE);
+	code = Read_ICache(psxCore.pc, TRUE);
 
-	psxRegs.code = ((code == NULL) ? 0 : SWAP32(*code));
+	psxCore.code = ((code == NULL) ? 0 : SWAP32(*code));
 
 	debugI();
 
-	psxRegs.pc += 4;
-	psxRegs.cycle += BIAS;
+	psxCore.pc += 4;
+	psxCore.cycle += BIAS;
 
 	// check for load delay
-	tmp = psxRegs.code >> 26;
+	tmp = psxCore.code >> 26;
 	switch (tmp) {
 		case 0x10: // COP0
 			switch (_Rs_) {
@@ -465,10 +465,10 @@ static __inline void doBranch(u32 tar) {
 			break;
 	}
 
-	psxBSC[psxRegs.code >> 26]();
+	psxBSC[psxCore.code >> 26]();
 
 	branch = 0;
-	psxRegs.pc = branchPC;
+	psxCore.pc = branchPC;
 
 	psxBranchTest();
 }
@@ -529,15 +529,15 @@ void psxDIVU() {
 void psxMULT() {
 	u64 res = (s64)((s64)_i32(_rRs_) * (s64)_i32(_rRt_));
 
-	psxRegs.GPR.n.lo = (u32)(res & 0xffffffff);
-	psxRegs.GPR.n.hi = (u32)((res >> 32) & 0xffffffff);
+	psxCore.GPR.n.lo = (u32)(res & 0xffffffff);
+	psxCore.GPR.n.hi = (u32)((res >> 32) & 0xffffffff);
 }
 
 void psxMULTU() {
 	u64 res = (u64)((u64)_u32(_rRs_) * (u64)_u32(_rRt_));
 
-	psxRegs.GPR.n.lo = (u32)(res & 0xffffffff);
-	psxRegs.GPR.n.hi = (u32)((res >> 32) & 0xffffffff);
+	psxCore.GPR.n.lo = (u32)(res & 0xffffffff);
+	psxCore.GPR.n.hi = (u32)((res >> 32) & 0xffffffff);
 }
 
 /*********************************************************
@@ -574,7 +574,7 @@ void psxSRLV() { if (!_Rd_) return; _u32(_rRd_) = _u32(_rRt_) >> _u32(_rRs_); } 
 * Load higher 16 bits of the first word in GPR with imm  *
 * Format:  OP rt, immediate                              *
 *********************************************************/
-void psxLUI() { if (!_Rt_) return; _u32(_rRt_) = psxRegs.code << 16; } // Upper halfword of Rt = Im
+void psxLUI() { if (!_Rt_) return; _u32(_rRt_) = psxCore.code << 16; } // Upper halfword of Rt = Im
 
 /*********************************************************
 * Move from HI/LO to GPR                                 *
@@ -599,14 +599,14 @@ void psxBREAK() {
 }
 
 void psxSYSCALL() {
-	psxRegs.pc -= 4;
+	psxCore.pc -= 4;
 	psxException(0x20, branch);
 }
 
 void psxRFE() {
 //	SysPrintf("psxRFE\n");
-	psxRegs.CP0.n.Status = (psxRegs.CP0.n.Status & 0xfffffff0) |
-						  ((psxRegs.CP0.n.Status & 0x3c) >> 2);
+	psxCore.CP0.n.Status = (psxCore.CP0.n.Status & 0xfffffff0) |
+						  ((psxCore.CP0.n.Status & 0x3c) >> 2);
 }
 
 /*********************************************************
@@ -652,8 +652,8 @@ void psxLB() {
 	if( branch == 0 )
 	{
 		// simulate: beq r0,r0,lw+4 / lw / (delay slot)
-		psxRegs.pc -= 4;
-		doBranch( psxRegs.pc + 4 );
+		psxCore.pc -= 4;
+		doBranch( psxCore.pc + 4 );
 
 		return;
 	}
@@ -672,8 +672,8 @@ void psxLBU() {
 	if( branch == 0 )
 	{
 		// simulate: beq r0,r0,lw+4 / lw / (delay slot)
-		psxRegs.pc -= 4;
-		doBranch( psxRegs.pc + 4 );
+		psxCore.pc -= 4;
+		doBranch( psxCore.pc + 4 );
 
 		return;
 	}
@@ -692,8 +692,8 @@ void psxLH() {
 	if( branch == 0 )
 	{
 		// simulate: beq r0,r0,lw+4 / lw / (delay slot)
-		psxRegs.pc -= 4;
-		doBranch( psxRegs.pc + 4 );
+		psxCore.pc -= 4;
+		doBranch( psxCore.pc + 4 );
 
 		return;
 	}
@@ -712,8 +712,8 @@ void psxLHU() {
 	if( branch == 0 )
 	{
 		// simulate: beq r0,r0,lw+4 / lw / (delay slot)
-		psxRegs.pc -= 4;
-		doBranch( psxRegs.pc + 4 );
+		psxCore.pc -= 4;
+		doBranch( psxCore.pc + 4 );
 
 		return;
 	}
@@ -732,8 +732,8 @@ void psxLW() {
 	if( branch == 0 )
 	{
 		// simulate: beq r0,r0,lw+4 / lw / (delay slot)
-		psxRegs.pc -= 4;
-		doBranch( psxRegs.pc + 4 );
+		psxCore.pc -= 4;
+		doBranch( psxCore.pc + 4 );
 
 		return;
 	}
@@ -760,8 +760,8 @@ void psxLWL() {
 	if( branch == 0 )
 	{
 		// simulate: beq r0,r0,lw+4 / lw / (delay slot)
-		psxRegs.pc -= 4;
-		doBranch( psxRegs.pc + 4 );
+		psxCore.pc -= 4;
+		doBranch( psxCore.pc + 4 );
 
 		return;
 	}
@@ -795,8 +795,8 @@ void psxLWR() {
 	if( branch == 0 )
 	{
 		// simulate: beq r0,r0,lw+4 / lw / (delay slot)
-		psxRegs.pc -= 4;
-		doBranch( psxRegs.pc + 4 );
+		psxCore.pc -= 4;
+		doBranch( psxCore.pc + 4 );
 
 		return;
 	}
@@ -872,8 +872,8 @@ void psxMFC0()
 	if( branch == 0 )
 	{
 		// simulate: beq r0,r0,lw+4 / lw / (delay slot)
-		psxRegs.pc -= 4;
-		doBranch( psxRegs.pc + 4 );
+		psxCore.pc -= 4;
+		doBranch( psxCore.pc + 4 );
 
 		return;
 	}
@@ -890,8 +890,8 @@ void psxCFC0()
 	if( branch == 0 )
 	{
 		// simulate: beq r0,r0,lw+4 / lw / (delay slot)
-		psxRegs.pc -= 4;
-		doBranch( psxRegs.pc + 4 );
+		psxCore.pc -= 4;
+		doBranch( psxCore.pc + 4 );
 
 		return;
 	}
@@ -905,9 +905,9 @@ void psxCFC0()
 void psxTestSWInts() {
 	// the next code is untested, if u know please
 	// tell me if it works ok or not (linuzappz)
-	if (psxRegs.CP0.n.Cause & psxRegs.CP0.n.Status & 0x0300 &&
-		psxRegs.CP0.n.Status & 0x1) {
-		psxException(psxRegs.CP0.n.Cause, branch);
+	if (psxCore.CP0.n.Cause & psxCore.CP0.n.Status & 0x0300 &&
+		psxCore.CP0.n.Status & 0x1) {
+		psxException(psxCore.CP0.n.Cause, branch);
 	}
 }
 
@@ -915,17 +915,17 @@ __inline void MTC0(int reg, u32 val) {
 //	SysPrintf("MTC0 %d: %x\n", reg, val);
 	switch (reg) {
 		case 12: // Status
-			psxRegs.CP0.r[12] = val;
+			psxCore.CP0.r[12] = val;
 			psxTestSWInts();
 			break;
 
 		case 13: // Cause
-			psxRegs.CP0.n.Cause = val & ~(0xfc00);
+			psxCore.CP0.n.Cause = val & ~(0xfc00);
 			psxTestSWInts();
 			break;
 
 		default:
-			psxRegs.CP0.r[reg] = val;
+			psxCore.CP0.r[reg] = val;
 			break;
 	}
 }
@@ -941,8 +941,8 @@ void psxMFC2()
 	if( branch == 0 )
 	{
 		// simulate: beq r0,r0,lw+4 / lw / (delay slot)
-		psxRegs.pc -= 4;
-		doBranch( psxRegs.pc + 4 );
+		psxCore.pc -= 4;
+		doBranch( psxCore.pc + 4 );
 
 		return;
 	}
@@ -957,8 +957,8 @@ void psxCFC2()
 	if( branch == 0 )
 	{
 		// simulate: beq r0,r0,lw+4 / lw / (delay slot)
-		psxRegs.pc -= 4;
-		doBranch( psxRegs.pc + 4 );
+		psxCore.pc -= 4;
+		doBranch( psxCore.pc + 4 );
 
 		return;
 	}
@@ -973,7 +973,7 @@ void psxCFC2()
 *********************************************************/
 void psxNULL() { 
 #ifdef PSXCPU_LOG
-	PSXCPU_LOG("psx: Unimplemented op %x\n", psxRegs.code);
+	PSXCPU_LOG("psx: Unimplemented op %x\n", psxCore.code);
 #endif
 }
 
@@ -990,7 +990,7 @@ void psxCOP0() {
 }
 
 void psxCOP2() {
-	if ((psxRegs.CP0.n.Status & 0x40000000) == 0 )
+	if ((psxCore.CP0.n.Status & 0x40000000) == 0 )
 		return;
 
 	psxCP2[_Funct_]();
@@ -1001,8 +1001,8 @@ void psxBASIC() {
 }
 
 void psxHLE() {
-//	psxHLEt[psxRegs.code & 0xffff]();
-	psxHLEt[psxRegs.code & 0x07]();		// HDHOSHY experimental patch
+//	psxHLEt[psxCore.code & 0xffff]();
+	psxHLEt[psxCore.code & 0x07]();		// HDHOSHY experimental patch
 }
 
 void (*psxBSC[64])() = {
@@ -1068,7 +1068,7 @@ static int intInit() {
 }
 
 static void intReset() {
-	psxRegs.ICache_valid = FALSE;
+	psxCore.ICache_valid = FALSE;
 }
 
 static void intExecute() {
@@ -1089,17 +1089,17 @@ static void intShutdown() {
 
 // interpreter execution
 void execI() { 
-	u32 *code = Read_ICache(psxRegs.pc, FALSE);
-	psxRegs.code = ((code == NULL) ? 0 : SWAP32(*code));
+	u32 *code = Read_ICache(psxCore.pc, FALSE);
+	psxCore.code = ((code == NULL) ? 0 : SWAP32(*code));
 
 	debugI();
 
 	//if (Config.Debug) ProcessDebug();
 
-	psxRegs.pc += 4;
-	psxRegs.cycle += BIAS;
+	psxCore.pc += 4;
+	psxCore.cycle += BIAS;
 
-	psxBSC[psxRegs.code >> 26]();
+	psxBSC[psxCore.code >> 26]();
 }
 
 R3000Acpu psxInt = {

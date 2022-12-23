@@ -49,8 +49,8 @@
 #define SECTION_NAME_7 "Compiler"
 #define CORE_SECTION 8
 #define SECTION_NAME_8 "Code Exec"
-#define FUNCS_SECTION 9
-#define SECTION_NAME_9 "Funcs"
+#define INTERP_SECTION 9
+#define SECTION_NAME_9 "Interpreter"
 #define NUM_SECTIONS 10
 
 #ifdef PROFILE

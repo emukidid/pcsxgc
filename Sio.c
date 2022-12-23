@@ -96,9 +96,9 @@ static int DongleInit;
 // Breaks Twisted Metal 2 intro
 #define SIO_INT(eCycle) { \
 	if (!Config.Sio) { \
-		psxRegs.interrupt |= (1 << PSXINT_SIO); \
-		psxRegs.intCycle[PSXINT_SIO].cycle = eCycle; \
-		psxRegs.intCycle[PSXINT_SIO].sCycle = psxRegs.cycle; \
+		psxCore.interrupt |= (1 << PSXINT_SIO); \
+		psxCore.intCycle[PSXINT_SIO].cycle = eCycle; \
+		psxCore.intCycle[PSXINT_SIO].sCycle = psxCore.cycle; \
 	} \
 	\
 	StatReg &= ~RX_RDY; \
@@ -108,9 +108,9 @@ static int DongleInit;
 
 #define SIO_INT(eCycle) { \
 	if (!Config.Sio) { \
-		psxRegs.interrupt |= (1 << PSXINT_SIO); \
-		psxRegs.intCycle[PSXINT_SIO].cycle = eCycle; \
-		psxRegs.intCycle[PSXINT_SIO].sCycle = psxRegs.cycle; \
+		psxCore.interrupt |= (1 << PSXINT_SIO); \
+		psxCore.intCycle[PSXINT_SIO].cycle = eCycle; \
+		psxCore.intCycle[PSXINT_SIO].sCycle = psxCore.cycle; \
 	} \
 }
 
@@ -773,7 +773,7 @@ void sioWriteCtrl16(unsigned short value) {
 	if ((CtrlReg & SIO_RESET) || (!CtrlReg)) {
 		padst = 0; mcdst = 0; parp = 0;
 		StatReg = TX_RDY | TX_EMPTY;
-		psxRegs.interrupt &= ~(1 << PSXINT_SIO);
+		psxCore.interrupt &= ~(1 << PSXINT_SIO);
 	}
 }
 
@@ -825,7 +825,7 @@ unsigned short sioReadStat16() {
 
 #if 0
 	// wait for IRQ first
-	if( psxRegs.interrupt & (1 << PSXINT_SIO) )
+	if( psxCore.interrupt & (1 << PSXINT_SIO) )
 	{
 		hard &= ~TX_RDY;
 		hard &= ~RX_RDY;
@@ -860,7 +860,7 @@ void netError() {
 
 void sioInterrupt() {
 #ifdef PAD_LOG
-	PAD_LOG("Sio Interrupt (CP0.Status = %x)\n", psxRegs.CP0.n.Status);
+	PAD_LOG("Sio Interrupt (CP0.Status = %x)\n", psxCore.CP0.n.Status);
 #endif
 //	SysPrintf("Sio Interrupt\n");
 	StatReg |= IRQ;

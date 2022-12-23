@@ -24,13 +24,13 @@
 #include "psxhle.h"
 
 static void hleDummy() {
-	psxRegs.pc = psxRegs.GPR.n.ra;
+	psxCore.pc = psxCore.GPR.n.ra;
 
 	psxBranchTest();
 }
 
 static void hleA0() {
-	u32 call = psxRegs.GPR.n.t1 & 0xff;
+	u32 call = psxCore.GPR.n.t1 & 0xff;
 
 	if (biosA0[call]) biosA0[call]();
 
@@ -38,7 +38,7 @@ static void hleA0() {
 }
 
 static void hleB0() {
-	u32 call = psxRegs.GPR.n.t1 & 0xff;
+	u32 call = psxCore.GPR.n.t1 & 0xff;
 
 	if (biosB0[call]) biosB0[call]();
 
@@ -46,7 +46,7 @@ static void hleB0() {
 }
 
 static void hleC0() {
-	u32 call = psxRegs.GPR.n.t1 & 0xff;
+	u32 call = psxCore.GPR.n.t1 & 0xff;
 
 	if (biosC0[call]) biosC0[call]();
 
@@ -57,7 +57,7 @@ static void hleBootstrap() { // 0xbfc00000
 	SysPrintf("hleBootstrap\n");
 	CheckCdrom();
 	LoadCdrom();
-	SysPrintf("CdromLabel: \"%s\": PC = %8.8lx (SP = %8.8lx)\n", CdromLabel, psxRegs.pc, psxRegs.GPR.n.sp);
+	SysPrintf("CdromLabel: \"%s\": PC = %8.8lx (SP = %8.8lx)\n", CdromLabel, psxCore.pc, psxCore.GPR.n.sp);
 }
 
 typedef struct {                   
@@ -75,18 +75,18 @@ typedef struct {
 } EXEC;
 
 static void hleExecRet() {
-	EXEC *header = (EXEC*)PSXM(psxRegs.GPR.n.s0);
+	EXEC *header = (EXEC*)PSXM(psxCore.GPR.n.s0);
 
-	SysPrintf("ExecRet %x: %x\n", psxRegs.GPR.n.s0, header->ret);
+	SysPrintf("ExecRet %x: %x\n", psxCore.GPR.n.s0, header->ret);
 
-	psxRegs.GPR.n.ra = header->ret;
-	psxRegs.GPR.n.sp = header->_sp;
-	psxRegs.GPR.n.s8 = header->_fp;
-	psxRegs.GPR.n.gp = header->_gp;
-	psxRegs.GPR.n.s0 = header->base;
+	psxCore.GPR.n.ra = header->ret;
+	psxCore.GPR.n.sp = header->_sp;
+	psxCore.GPR.n.s8 = header->_fp;
+	psxCore.GPR.n.gp = header->_gp;
+	psxCore.GPR.n.s0 = header->base;
 
-	psxRegs.GPR.n.v0 = 1;
-	psxRegs.pc = psxRegs.GPR.n.ra;
+	psxCore.GPR.n.v0 = 1;
+	psxCore.pc = psxCore.GPR.n.ra;
 }
 
 void (*psxHLEt[256])() = {

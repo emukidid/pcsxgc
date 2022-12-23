@@ -19,6 +19,7 @@
  ***************************************************************************/
 
 #include "./GameCube/DEBUG.h"
+#include "./GameCube/MEM2.h"
 #include "psxcommon.h"
 #include "plugins.h"
 #include "cdrom.h"
@@ -41,6 +42,8 @@ static FILE *subHandle = NULL;
 
 static boolean subChanMixed = FALSE;
 static boolean subChanRaw = FALSE;
+
+static unsigned char* readaheadBuffer = (char*)CDREADAHEAD_LO;
 
 static unsigned char cdbuffer[DATA_SIZE];
 static unsigned char subbuffer[SUB_FRAMESIZE];
@@ -881,6 +884,16 @@ static void DecodeRawSubData(void) {
 	memcpy(&subbuffer[12], subQData, 12);
 }
 
+static int readAheadMisses = 0;
+static int readAhead = 0;
+static unsigned int readAheadOffset = 0;
+
+void setReadAhead(int r) {
+	print_gecko("Set read-ahead %i\r\n", r);
+	readAhead = r;
+	readAheadMisses = 0;
+}
+
 // read track
 // time: byte 0 - minute; byte 1 - second; byte 2 - frame
 // uses bcd format
@@ -894,6 +907,7 @@ long CALLBACK ISOreadTrack(unsigned char *time) {
 
 	if (subChanMixed) {
 		fseek(cdHandle, MSF2SECT(btoi(time[0]), btoi(time[1]), btoi(time[2])) * (CD_FRAMESIZE_RAW + SUB_FRAMESIZE), SEEK_SET);
+		print_gecko("subchanmixed read\r\n");
 		fread(cdbuffer, 1, DATA_SIZE, cdHandle);
 		fread(subbuffer, 1, SUB_FRAMESIZE, cdHandle);
 
@@ -901,6 +915,7 @@ long CALLBACK ISOreadTrack(unsigned char *time) {
 	}
 	else {
 		if(isMode1ISO) {
+			print_gecko("isMode1ISO read\r\n");
 			fseek(cdHandle, MSF2SECT(btoi(time[0]), btoi(time[1]), btoi(time[2])) * MODE1_DATA_SIZE, SEEK_SET);
 			fread(cdbuffer + 12, 1, MODE1_DATA_SIZE, cdHandle);
 			memset(cdbuffer, 0, 12); //not really necessary, fake mode 2 header
@@ -909,11 +924,34 @@ long CALLBACK ISOreadTrack(unsigned char *time) {
 			cdbuffer[2] = (time[2]);
 			cdbuffer[3] = 1; //mode 1
 		} else {
-			fseek(cdHandle, MSF2SECT(btoi(time[0]), btoi(time[1]), btoi(time[2])) * CD_FRAMESIZE_RAW, SEEK_SET);
-			fread(cdbuffer, 1, CD_FRAMESIZE_RAW, cdHandle);
+			//print_gecko("!isMode1ISO read from %08X\r\n", offset);
+			unsigned int offset = MSF2SECT(btoi(time[0]), btoi(time[1]), btoi(time[2])) * CD_FRAMESIZE_RAW;
+			if(readAheadMisses > 2) setReadAhead(0);
+			if(readAhead) {
+				if(offset >= readAheadOffset && offset+CD_FRAMESIZE_RAW < readAheadOffset+CDREADAHEAD_SIZE) {
+					// return some cached data
+					memcpy(cdbuffer, &readaheadBuffer[offset-readAheadOffset], CD_FRAMESIZE_RAW);
+				}
+				else {
+					readAheadMisses++;
+					// read a bunch.
+					readAheadOffset = offset;
+					fseek(cdHandle, offset, SEEK_SET);
+					fread(readaheadBuffer, 1, CDREADAHEAD_SIZE, cdHandle);
+					memcpy(cdbuffer, &readaheadBuffer[0], CD_FRAMESIZE_RAW);
+					print_gecko("read into cache %08X\r\n", offset);
+				}
+				
+			}
+			else {
+				readAheadOffset = 0;
+				fseek(cdHandle, offset, SEEK_SET);
+				fread(cdbuffer, 1, CD_FRAMESIZE_RAW, cdHandle);
+			}
 		}
 
 		if (subHandle != NULL) {
+			print_gecko("subHandle read\r\n");
 			fseek(subHandle, MSF2SECT(btoi(time[0]), btoi(time[1]), btoi(time[2])) * SUB_FRAMESIZE, SEEK_SET);
 			fread(subbuffer, 1, SUB_FRAMESIZE, subHandle);
 

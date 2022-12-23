@@ -133,39 +133,39 @@ char *biosC0n[256] = {
 	"PatchAOTable",
 };
 
-//#define r0 (psxRegs.GPR.n.r0)
-#define at (psxRegs.GPR.n.at)
-#define v0 (psxRegs.GPR.n.v0)
-#define v1 (psxRegs.GPR.n.v1)
-#define a0 (psxRegs.GPR.n.a0)
-#define a1 (psxRegs.GPR.n.a1)
-#define a2 (psxRegs.GPR.n.a2)
-#define a3 (psxRegs.GPR.n.a3)
-#define t0 (psxRegs.GPR.n.t0)
-#define t1 (psxRegs.GPR.n.t1)
-#define t2 (psxRegs.GPR.n.t2)
-#define t3 (psxRegs.GPR.n.t3)
-#define t4 (psxRegs.GPR.n.t4)
-#define t5 (psxRegs.GPR.n.t5)
-#define t6 (psxRegs.GPR.n.t6)
-#define t7 (psxRegs.GPR.n.t7)
-#define t8 (psxRegs.GPR.n.t8)
-#define t9 (psxRegs.GPR.n.t9)
-#define s0 (psxRegs.GPR.n.s0)
-#define s1 (psxRegs.GPR.n.s1)
-#define s2 (psxRegs.GPR.n.s2)
-#define s3 (psxRegs.GPR.n.s3)
-#define s4 (psxRegs.GPR.n.s4)
-#define s5 (psxRegs.GPR.n.s5)
-#define s6 (psxRegs.GPR.n.s6)
-#define s7 (psxRegs.GPR.n.s7)
-#define k0 (psxRegs.GPR.n.k0)
-#define k1 (psxRegs.GPR.n.k1)
-#define gp (psxRegs.GPR.n.gp)
-#define sp (psxRegs.GPR.n.sp)
-#define fp (psxRegs.GPR.n.s8)
-#define ra (psxRegs.GPR.n.ra)
-#define pc0 (psxRegs.pc)
+//#define r0 (psxCore.GPR.n.r0)
+#define at (psxCore.GPR.n.at)
+#define v0 (psxCore.GPR.n.v0)
+#define v1 (psxCore.GPR.n.v1)
+#define a0 (psxCore.GPR.n.a0)
+#define a1 (psxCore.GPR.n.a1)
+#define a2 (psxCore.GPR.n.a2)
+#define a3 (psxCore.GPR.n.a3)
+#define t0 (psxCore.GPR.n.t0)
+#define t1 (psxCore.GPR.n.t1)
+#define t2 (psxCore.GPR.n.t2)
+#define t3 (psxCore.GPR.n.t3)
+#define t4 (psxCore.GPR.n.t4)
+#define t5 (psxCore.GPR.n.t5)
+#define t6 (psxCore.GPR.n.t6)
+#define t7 (psxCore.GPR.n.t7)
+#define t8 (psxCore.GPR.n.t8)
+#define t9 (psxCore.GPR.n.t9)
+#define s0 (psxCore.GPR.n.s0)
+#define s1 (psxCore.GPR.n.s1)
+#define s2 (psxCore.GPR.n.s2)
+#define s3 (psxCore.GPR.n.s3)
+#define s4 (psxCore.GPR.n.s4)
+#define s5 (psxCore.GPR.n.s5)
+#define s6 (psxCore.GPR.n.s6)
+#define s7 (psxCore.GPR.n.s7)
+#define k0 (psxCore.GPR.n.k0)
+#define k1 (psxCore.GPR.n.k1)
+#define gp (psxCore.GPR.n.gp)
+#define sp (psxCore.GPR.n.sp)
+#define fp (psxCore.GPR.n.s8)
+#define ra (psxCore.GPR.n.ra)
+#define pc0 (psxCore.pc)
 
 #define Ra0 ((char *)PSXM(a0))
 #define Ra1 ((char *)PSXM(a1))
@@ -294,16 +294,16 @@ static inline void DeliverEvent(u32 ev, u32 spec) {
 }
 
 static inline void SaveRegs() {
-	memcpy(regs, psxRegs.GPR.r, 32*4);
-	regs[32] = psxRegs.GPR.n.lo;
-	regs[33] = psxRegs.GPR.n.hi;
-	regs[34] = psxRegs.pc;
+	memcpy(regs, psxCore.GPR.r, 32*4);
+	regs[32] = psxCore.GPR.n.lo;
+	regs[33] = psxCore.GPR.n.hi;
+	regs[34] = psxCore.pc;
 }
 
 static inline void LoadRegs() {
-	memcpy(psxRegs.GPR.r, regs, 32*4);
-	psxRegs.GPR.n.lo = regs[32];
-	psxRegs.GPR.n.hi = regs[33];
+	memcpy(psxCore.GPR.r, regs, 32*4);
+	psxCore.GPR.n.lo = regs[32];
+	psxCore.GPR.n.hi = regs[33];
 }
 
 /*                                           *
@@ -359,7 +359,7 @@ void psxBios_setjmp() { // 0x13
 	jmp_buf[1] = sp;
 	jmp_buf[2] = fp;
 	for (i = 0; i < 8; i++) // s0-s7
-		jmp_buf[3 + i] = psxRegs.GPR.r[16 + i];
+		jmp_buf[3 + i] = psxCore.GPR.r[16 + i];
 	jmp_buf[11] = gp;
 
 	v0 = 0; pc0 = ra;
@@ -377,7 +377,7 @@ void psxBios_longjmp() { // 0x14
 	sp = jmp_buf[1]; /* sp */
 	fp = jmp_buf[2]; /* fp */
 	for (i = 0; i < 8; i++) // s0-s7
-		psxRegs.GPR.r[16 + i] = jmp_buf[3 + i];
+		psxCore.GPR.r[16 + i] = jmp_buf[3 + i];
 	gp = jmp_buf[11]; /* gp */
 
 	v0 = a1; pc0 = ra;
@@ -876,7 +876,7 @@ void psxBios_malloc() { // 0x33
 	}
 
 	// return pointer to allocated memory
-	v0 = ((unsigned long)chunk - (unsigned long)psxM) + 4;
+	v0 = ((unsigned long)chunk - (unsigned long)psxCore.psxM) + 4;
 	v0|= 0x80000000;
 	SysPrintf ("malloc %x,%x\n", v0, a0);
 	pc0 = ra;
@@ -935,7 +935,7 @@ void psxBios_InitHeap() { // 0x39
 	heap_end = (u32 *)((u8 *)heap_addr + size);
 	*heap_addr = SWAP32(size | 1);
 
-	SysPrintf("InitHeap %x,%x : %x %x\n",a0,a1, (uptr)heap_addr-(uptr)psxM, size);
+	SysPrintf("InitHeap %x,%x : %x %x\n",a0,a1, (uptr)heap_addr-(uptr)psxCore.psxM, size);
 
 	pc0 = ra;
 }
@@ -1072,7 +1072,7 @@ void psxBios_FlushCache() { // 44
 	PSXBIOS_LOG("psxBios_%s\n", biosA0n[0x44]);
 #endif
 
-	psxRegs.ICache_valid = 0;
+	psxCore.ICache_valid = 0;
 
 	pc0 = ra;
 }
@@ -1526,10 +1526,10 @@ void psxBios_ChangeTh() { // 10
 		if (Thread[CurThread].status == 2) {
 			Thread[CurThread].status = 1;
 			Thread[CurThread].func = ra;
-			memcpy(Thread[CurThread].reg, psxRegs.GPR.r, 32*4);
+			memcpy(Thread[CurThread].reg, psxCore.GPR.r, 32*4);
 		}
 
-		memcpy(psxRegs.GPR.r, Thread[th].reg, 32*4);
+		memcpy(psxCore.GPR.r, Thread[th].reg, 32*4);
 		pc0 = Thread[th].func;
 		Thread[th].status = 2;
 		CurThread = th;
@@ -1555,7 +1555,7 @@ void psxBios_StartPAD() { // 13
 #endif
 
 	psxHwWrite16(0x1f801074, (unsigned short)(psxHwRead16(0x1f801074) | 0x1));
-	psxRegs.CP0.n.Status |= 0x401;
+	psxCore.CP0.n.Status |= 0x401;
 	pc0 = ra;
 }
 
@@ -1576,7 +1576,7 @@ void psxBios_PAD_init() { // 15
 	psxHwWrite16(0x1f801074, (u16)(psxHwRead16(0x1f801074) | 0x1));
 	pad_buf = (int *)Ra1;
 	*pad_buf = -1;
-	psxRegs.CP0.n.Status |= 0x401;
+	psxCore.CP0.n.Status |= 0x401;
 	pc0 = ra;
 }
 
@@ -1591,11 +1591,11 @@ void psxBios_PAD_dr() { // 16
 void psxBios_ReturnFromException() { // 17
 	LoadRegs();
 
-	pc0 = psxRegs.CP0.n.EPC;
-	if (psxRegs.CP0.n.Cause & 0x80000000) pc0 += 4;
+	pc0 = psxCore.CP0.n.EPC;
+	if (psxCore.CP0.n.Cause & 0x80000000) pc0 += 4;
 
-	psxRegs.CP0.n.Status = (psxRegs.CP0.n.Status & 0xfffffff0) |
-						  ((psxRegs.CP0.n.Status & 0x3c) >> 2);
+	psxCore.CP0.n.Status = (psxCore.CP0.n.Status & 0xfffffff0) |
+						  ((psxCore.CP0.n.Status & 0x3c) >> 2);
 }
 
 void psxBios_ResetEntryInt() { // 18
@@ -2192,7 +2192,7 @@ void psxBios_ChangeClearRCnt() { // 0a
 	v0 = *ptr;
 	*ptr = a1;
 
-//	psxRegs.CP0.n.Status|= 0x404;
+//	psxCore.CP0.n.Status|= 0x404;
 	pc0 = ra;
 }
 
@@ -2540,7 +2540,7 @@ void psxBiosInit() {
 /**/
 	base = 0x1000;
 	size = sizeof(EvCB) * 32;
-	Event = (void *)&psxR[base]; base += size * 6;
+	Event = (void *)&psxCore.psxR[base]; base += size * 6;
 	memset(Event, 0, size * 6);
 	HwEV = Event;
 	EvEV = Event + 32;
@@ -2549,10 +2549,10 @@ void psxBiosInit() {
 	SwEV = Event + 32 * 4;
 	ThEV = Event + 32 * 5;
 
-	ptr = (u32 *)&psxM[0x0874]; // b0 table
+	ptr = (u32 *)&psxCore.psxM[0x0874]; // b0 table
 	ptr[0] = SWAPu32(0x4c54 - 0x884);
 
-	ptr = (u32 *)&psxM[0x0674]; // c0 table
+	ptr = (u32 *)&psxCore.psxM[0x0674]; // c0 table
 	ptr[6] = SWAPu32(0xc80);
 
 	memset(SysIntRP, 0, sizeof(SysIntRP));
@@ -2574,7 +2574,7 @@ void psxBiosInit() {
 	psxMu32ref(0x0150) = SWAPu32(0x160);
 	psxMu32ref(0x0154) = SWAPu32(0x320);
 	psxMu32ref(0x0160) = SWAPu32(0x248);
-	strcpy((char *)&psxM[0x248], "bu");
+	strcpy((char *)&psxCore.psxM[0x248], "bu");
 /*	psxMu32ref(0x0ca8) = SWAPu32(0x1f410004);
 	psxMu32ref(0x0cf0) = SWAPu32(0x3c020000);
 	psxMu32ref(0x0cf4) = SWAPu32(0x2442641c);
@@ -2601,9 +2601,9 @@ void psxBiosInit() {
 
 	// fonts
 	len = 0x80000 - 0x66000;
-	uncompress((Bytef *)(psxR + 0x66000), &len, font_8140, sizeof(font_8140));
+	uncompress((Bytef *)(psxCore.psxR + 0x66000), &len, font_8140, sizeof(font_8140));
 	len = 0x80000 - 0x69d68;
-	uncompress((Bytef *)(psxR + 0x69d68), &len, font_889f, sizeof(font_889f));
+	uncompress((Bytef *)(psxCore.psxR + 0x69d68), &len, font_889f, sizeof(font_889f));
 
 	// memory size 2 MB
 	psxHu32ref(0x1060) = SWAPu32(0x00000b88);
@@ -2727,7 +2727,7 @@ void biosInterrupt() {
 void psxBiosException() {
 	int i;
 
-	switch (psxRegs.CP0.n.Cause & 0x3c) {
+	switch (psxCore.CP0.n.Cause & 0x3c) {
 		case 0x00: // Interrupt
 #ifdef PSXCPU_LOG
 //			PSXCPU_LOG("interrupt\n");
@@ -2756,7 +2756,7 @@ void psxBiosException() {
 				sp = jmp_int[1];
 				fp = jmp_int[2];
 				for (i = 0; i < 8; i++) // s0-s7
-					 psxRegs.GPR.r[16 + i] = jmp_int[3 + i];
+					 psxCore.GPR.r[16 + i] = jmp_int[3 + i];
 				gp = jmp_int[11];
 
 				v0 = 1;
@@ -2772,18 +2772,18 @@ void psxBiosException() {
 #endif
 			switch (a0) {
 				case 1: // EnterCritical - disable irq's
-					psxRegs.CP0.n.Status &= ~0x404; 
+					psxCore.CP0.n.Status &= ~0x404; 
 v0=1;	// HDHOSHY experimental patch: Spongebob, Coldblood, fearEffect, Medievil2, Martian Gothic
 					break;
 
 				case 2: // ExitCritical - enable irq's
-					psxRegs.CP0.n.Status |= 0x404; 
+					psxCore.CP0.n.Status |= 0x404; 
 					break;
 			}
-			pc0 = psxRegs.CP0.n.EPC + 4;
+			pc0 = psxCore.CP0.n.EPC + 4;
 
-			psxRegs.CP0.n.Status = (psxRegs.CP0.n.Status & 0xfffffff0) |
-								  ((psxRegs.CP0.n.Status & 0x3c) >> 2);
+			psxCore.CP0.n.Status = (psxCore.CP0.n.Status & 0xfffffff0) |
+								  ((psxCore.CP0.n.Status & 0x3c) >> 2);
 			return;
 
 		default:
@@ -2793,16 +2793,16 @@ v0=1;	// HDHOSHY experimental patch: Spongebob, Coldblood, fearEffect, Medievil2
 			break;
 	}
 
-	pc0 = psxRegs.CP0.n.EPC;
-	if (psxRegs.CP0.n.Cause & 0x80000000) pc0+=4;
+	pc0 = psxCore.CP0.n.EPC;
+	if (psxCore.CP0.n.Cause & 0x80000000) pc0+=4;
 
-	psxRegs.CP0.n.Status = (psxRegs.CP0.n.Status & 0xfffffff0) |
-						  ((psxRegs.CP0.n.Status & 0x3c) >> 2);
+	psxCore.CP0.n.Status = (psxCore.CP0.n.Status & 0xfffffff0) |
+						  ((psxCore.CP0.n.Status & 0x3c) >> 2);
 }
 
 #define bfreeze(ptr, size) { \
-	if (Mode == 1) memcpy(&psxR[base], ptr, size); \
-	if (Mode == 0) memcpy(ptr, &psxR[base], size); \
+	if (Mode == 1) memcpy(&psxCore.psxR[base], ptr, size); \
+	if (Mode == 0) memcpy(ptr, &psxCore.psxR[base], size); \
 	base += size; \
 }
 
@@ -2811,10 +2811,10 @@ v0=1;	// HDHOSHY experimental patch: Spongebob, Coldblood, fearEffect, Medievil2
 
 #define bfreezepsxMptr(ptr, type) { \
 	if (Mode == 1) { \
-		if (ptr) psxRu32ref(base) = SWAPu32((s8 *)(ptr) - psxM); \
+		if (ptr) psxRu32ref(base) = SWAPu32((s8 *)(ptr) - psxCore.psxM); \
 		else psxRu32ref(base) = 0; \
 	} else { \
-		if (psxRu32(base) != 0) ptr = (type *)(psxM + psxRu32(base)); \
+		if (psxRu32(base) != 0) ptr = (type *)(psxCore.psxM + psxRu32(base)); \
 		else (ptr) = NULL; \
 	} \
 	base += sizeof(u32); \

@@ -152,33 +152,33 @@ extern SPUregisterCallback SPU_registerCallback;
 
 
 #define CDR_INT(eCycle) { \
-	psxRegs.interrupt |= (1 << PSXINT_CDR); \
-	psxRegs.intCycle[PSXINT_CDR].cycle = eCycle; \
-	psxRegs.intCycle[PSXINT_CDR].sCycle = psxRegs.cycle; \
+	psxCore.interrupt |= (1 << PSXINT_CDR); \
+	psxCore.intCycle[PSXINT_CDR].cycle = eCycle; \
+	psxCore.intCycle[PSXINT_CDR].sCycle = psxCore.cycle; \
 }
 
 #define CDREAD_INT(eCycle) { \
-	psxRegs.interrupt |= (1 << PSXINT_CDREAD); \
-	psxRegs.intCycle[PSXINT_CDREAD].cycle = eCycle; \
-	psxRegs.intCycle[PSXINT_CDREAD].sCycle = psxRegs.cycle; \
+	psxCore.interrupt |= (1 << PSXINT_CDREAD); \
+	psxCore.intCycle[PSXINT_CDREAD].cycle = eCycle; \
+	psxCore.intCycle[PSXINT_CDREAD].sCycle = psxCore.cycle; \
 }
 
 #define CDRDBUF_INT(eCycle) { \
-	psxRegs.interrupt |= (1 << PSXINT_CDRDBUF); \
-	psxRegs.intCycle[PSXINT_CDRDBUF].cycle = eCycle; \
-	psxRegs.intCycle[PSXINT_CDRDBUF].sCycle = psxRegs.cycle; \
+	psxCore.interrupt |= (1 << PSXINT_CDRDBUF); \
+	psxCore.intCycle[PSXINT_CDRDBUF].cycle = eCycle; \
+	psxCore.intCycle[PSXINT_CDRDBUF].sCycle = psxCore.cycle; \
 }
 
 #define CDRLID_INT(eCycle) { \
-	psxRegs.interrupt |= (1 << PSXINT_CDRLID); \
-	psxRegs.intCycle[PSXINT_CDRLID].cycle = eCycle; \
-	psxRegs.intCycle[PSXINT_CDRLID].sCycle = psxRegs.cycle; \
+	psxCore.interrupt |= (1 << PSXINT_CDRLID); \
+	psxCore.intCycle[PSXINT_CDRLID].cycle = eCycle; \
+	psxCore.intCycle[PSXINT_CDRLID].sCycle = psxCore.cycle; \
 }
 
 #define CDRPLAY_INT(eCycle) { \
-	psxRegs.interrupt |= (1 << PSXINT_CDRPLAY); \
-	psxRegs.intCycle[PSXINT_CDRPLAY].cycle = eCycle; \
-	psxRegs.intCycle[PSXINT_CDRPLAY].sCycle = psxRegs.cycle; \
+	psxCore.interrupt |= (1 << PSXINT_CDRPLAY); \
+	psxCore.intCycle[PSXINT_CDRPLAY].cycle = eCycle; \
+	psxCore.intCycle[PSXINT_CDRPLAY].sCycle = psxCore.cycle; \
 }
 
 #define StartReading(type, eCycle) { \
@@ -191,7 +191,7 @@ extern SPUregisterCallback SPU_registerCallback;
 #define StopReading() { \
 	if (cdr.Reading) { \
 		cdr.Reading = 0; \
-		psxRegs.interrupt &= ~(1 << PSXINT_CDREAD); \
+		psxCore.interrupt &= ~(1 << PSXINT_CDREAD); \
 	} \
 	cdr.StatP &= ~STATUS_READ;\
 }
@@ -1581,7 +1581,7 @@ void cdrInterrupt() {
 	CDR_LOG("cdrInterrupt() Log: CDR Interrupt IRQ %x\n", Irq);
 #endif
 }
-
+extern void setReadAhead(int r);
 void cdrReadInterrupt() {
 	u8 *buf;
 
@@ -1639,7 +1639,9 @@ void cdrReadInterrupt() {
 			 (cdr.Transfer[4 + 1] == cdr.Channel) &&
 			 (cdr.Transfer[4 + 0] == cdr.File)) {
 			int ret = xa_decode_sector(&cdr.Xa, cdr.Transfer+4, cdr.FirstSector);
-
+			if(cdr.FirstSector) {
+				setReadAhead(1);	
+			}
 			if (!ret) {
 #if 0
 				int xa_type;
@@ -1662,7 +1664,7 @@ void cdrReadInterrupt() {
 
 				SPU_playADPCMchannel(&cdr.Xa);
 				cdr.FirstSector = 0;
-
+				
 
 #if 0
 				cdr.Xa.stereo = xa_type;
@@ -1678,7 +1680,10 @@ void cdrReadInterrupt() {
 				psxHu32ref(0x1070) |= SWAP32((u32)0x200);
 #endif
 			}
-			else cdr.FirstSector = -1;
+			else {
+				cdr.FirstSector = -1;
+				setReadAhead(0);
+			}
 		}
 	}
 
@@ -2233,7 +2238,7 @@ void cdrWrite3(unsigned char rt) {
 		if( cdr.Irq == CdlGetlocP ) {
 			cdrInterrupt();
 
-			psxRegs.interrupt &= ~(1 << PSXINT_CDR);
+			psxCore.interrupt &= ~(1 << PSXINT_CDR);
 		}
 	}
 
