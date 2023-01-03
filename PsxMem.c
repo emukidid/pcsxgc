@@ -179,11 +179,44 @@ void psxDynaMemWrite8(u32 mem, u8 value) {
 		psxHwWrite8(mem, value);
 }
 
-void psxDynaMemWrite16(u32 mem, u16 value) {
-	if (mem < 0x1f801000)
-		psxHu16ref(mem) = SWAPu16(value);
-	else
-		psxHwWrite16(mem, value);
+// Assumes mem is either between 0x1F800000 -> 0x1F80FFFF, or a psxMemWLUT lookup failed.
+void psxDynaMemWrite32(u32 mem, u32 value) {
+	u32 t = mem >> 16;
+	if (t == 0x1f80) {
+		if (mem < 0x1f801000)
+			psxHu32ref(mem) = SWAPu32(value);
+		else
+			psxHwWrite32(mem, value);
+	} else {
+		if (mem != 0xfffe0130) {
+			if(!writeok)
+				psxCpu->Clear(mem, 1);
+		} else {
+			int i;
+
+			// a0-44: used for cache flushing
+			switch (value) {
+				case 0x800: case 0x804:
+					if (writeok == 0) break;
+					writeok = 0;
+					memset(psxCore.psxMemWLUT + 0x0000, 0, 0x80 * sizeof(void *));
+					memset(psxCore.psxMemWLUT + 0x8000, 0, 0x80 * sizeof(void *));
+					memset(psxCore.psxMemWLUT + 0xa000, 0, 0x80 * sizeof(void *));
+
+					psxCore.ICache_valid = 0;
+					break;
+				case 0x00: case 0x1e988:
+					if (writeok == 1) break;
+					writeok = 1;
+					for (i = 0; i < 0x80; i++) psxCore.psxMemWLUT[i + 0x0000] = (void *)&psxCore.psxM[(i & 0x1f) << 16];
+					memcpy(psxCore.psxMemWLUT + 0x8000, psxCore.psxMemWLUT, 0x80 * sizeof(void *));
+					memcpy(psxCore.psxMemWLUT + 0xa000, psxCore.psxMemWLUT, 0x80 * sizeof(void *));
+					break;
+				default:
+					break;
+			}
+		}
+	}
 }
 
 

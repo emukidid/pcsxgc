@@ -890,7 +890,7 @@ static unsigned int readAheadOffset = 0;
 
 void setReadAhead(int r) {
 	print_gecko("Set read-ahead %i\r\n", r);
-	readAhead = r;
+	//readAhead = r;
 	readAheadMisses = 0;
 }
 

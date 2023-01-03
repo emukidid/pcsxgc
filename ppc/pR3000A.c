@@ -465,6 +465,7 @@ static s32 GetHWRegSpecial(s32 which)
 		switch (which) {
 			case PSXCORE:
 			case PSXRECLUT:
+			case PSXMEMWLUT:
 				print_gecko("error! shouldn't be here!\n");
 				break;
 			case TARGETPTR:
@@ -964,7 +965,7 @@ __inline static void execute() {
 #ifdef PROFILE
 		start_section(CORE_SECTION);
 #endif
-	recRun(*recFunc, (u32)&psxCore, (u32)&psxRecLUT);
+	recRun(*recFunc, (u32)&psxCore, (u32)&psxRecLUT, (u32)&psxCore.psxMemWLUT);
 #ifdef PROFILE
 		end_section(CORE_SECTION);
 #endif
@@ -1778,34 +1779,31 @@ static void recSB() {
 	}
 
 	preMemWrite(1);
-	u32 *endstore, *faststore, *endstore2;
-	s32 tmp1 = PutHWRegSpecial(TMP1), tmp2 = PutHWRegSpecial(TMP2);
+	u32 *endstore1, *slowstore, *endstore2;
+	s32 tmp1 = PutHWRegSpecial(TMP1), tmp2 = PutHWRegSpecial(TMP2), tmp3 = PutHWRegSpecial(ARG3);
 	// Begin actual PPC generation	
 	RLWINM(tmp1, 3, 16, 16, 31);		//tmp1 = (Addr>>16) & 0xFFFF
 	CMPWI(tmp1, 0x1f80);				//If AddrHi == 0x1f80, interpret store
-	BNE_L(faststore);
+	BEQ_L(slowstore);
 	
-	CALLFunc((u32)psxDynaMemWrite8);
-	B_L(endstore);
-	B_DST(faststore);
 	// Lookup the Write LUT, do the store
-	SLWI(tmp1, tmp1, 2);
-	LIW(tmp2, offsetof(_psxCore, psxMemWLUT));
-	ADD(tmp1, tmp1, tmp2);
-	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXCORE));		// tmp2 = (char *)(psxCore.psxMemWLUT[Addr16]);
+	SLWI(tmp3, tmp1, 2);								// tmp3 = (Addr>>16) & 0xFFFF; tmp3 <<= 2
+	LWZX(tmp2, tmp3, GetHWRegSpecial(PSXMEMWLUT));		// tmp2 = (char *)(psxCore.psxMemWLUT[Addr16]);
 	CMPWI(tmp2, 0);
 	RLWINM(tmp1, 3, 0, 16, 31);				// tmp1 = (Addr) & 0xFFFF
-	BEQ_L(endstore2);
+	BEQ_L(endstore1);
 	STBX(4, tmp1, tmp2);						// *(u8 *)(p + (mem & 0xffff)) = value;
 	// Invalidate Dynarec memory
-	RLWINM(tmp1, 3, 18, 14, 29);			// tmp1 = (Addr>>16) & 0xFFFF; tmp1 <<= 2
-	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXRECLUT));
+	LWZX(tmp2, tmp3, GetHWRegSpecial(PSXRECLUT));
 	RLWINM(tmp1, 3, 0, 16, 29);				// tmp1 = (Addr) & 0xFFFC
-	ADD(tmp2, tmp2, tmp1);
-	LI(tmp1, 0);
-	STW(tmp1, 0, tmp2);						// recClear(mem, 1)
+	LI(tmp3, 0);
+	STWX(tmp3, tmp1, tmp2);						// equiv to recClear(mem, 1) (clear rec_mem at (Addr) & 0xFFFC)
+	B_L(endstore2);	// jump over the interp path
 	
-	B_DST(endstore);
+	B_DST(slowstore);
+	CALLFunc((u32)psxDynaMemWrite8);
+	
+	B_DST(endstore1);
 	B_DST(endstore2);
 }
 
@@ -1836,35 +1834,45 @@ static void recSH() {
 	}
 
 	preMemWrite(2);
-	u32 *endstore, *faststore, *endstore2;
-	s32 tmp1 = PutHWRegSpecial(TMP1), tmp2 = PutHWRegSpecial(TMP2);
+	u32 *endstore1, *slowstore, *endstore2, *sloweststore, *endstore3;
+	s32 tmp1 = PutHWRegSpecial(TMP1), tmp2 = PutHWRegSpecial(TMP2), tmp3 = PutHWRegSpecial(ARG3);
 	// Begin actual PPC generation	
 	RLWINM(tmp1, 3, 16, 16, 31);		//tmp1 = (Addr>>16) & 0xFFFF
 	CMPWI(tmp1, 0x1f80);				//If AddrHi == 0x1f80, interpret store
-	BNE_L(faststore);
+	BEQ_L(slowstore);
 	
-	CALLFunc((u32)psxDynaMemWrite16);
-	B_L(endstore);
-	B_DST(faststore);
 	// Lookup the Write LUT, do the store
-	SLWI(tmp1, tmp1, 2);
-	LIW(tmp2, offsetof(_psxCore, psxMemWLUT));
-	ADD(tmp1, tmp1, tmp2);
-	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXCORE));	// tmp2 = (char *)(psxCore.psxMemWLUT[Addr16]);
+	SLWI(tmp3, tmp1, 2);								// tmp3 = (Addr>>16) & 0xFFFF; tmp3 <<= 2
+	LWZX(tmp2, tmp3, GetHWRegSpecial(PSXMEMWLUT));	// tmp2 = (char *)(psxCore.psxMemWLUT[Addr16]);
 	CMPWI(tmp2, 0);
 	RLWINM(tmp1, 3, 0, 16, 31);				// tmp1 = (Addr) & 0xFFFF
-	BEQ_L(endstore2);
+	BEQ_L(endstore1);
 	STHBRX(4, tmp1, tmp2);						// *(u8 *)(p + (mem & 0xffff)) = value;
 	// Invalidate Dynarec memory
-	RLWINM(tmp1, 3, 18, 14, 29);			// tmp1 = (Addr>>16) & 0xFFFF; tmp1 <<= 2
-	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXRECLUT));
+	LWZX(tmp2, tmp3, GetHWRegSpecial(PSXRECLUT));
 	RLWINM(tmp1, 3, 0, 16, 29);				// tmp1 = (Addr) & 0xFFFC
-	ADD(tmp2, tmp2, tmp1);
-	LI(tmp1, 0);
-	STW(tmp1, 0, tmp2);						// recClear(mem, 1)
+	LI(tmp3, 0);
+	STWX(tmp3, tmp1, tmp2);						// equiv to recClear(mem, 1) (clear rec_mem at (Addr) & 0xFFFC)
+	B_L(endstore2);	// jump over the interp path
 	
-	B_DST(endstore);
+	B_DST(slowstore);
+	
+	// if addr & 0xFFFF < 0x1000, fast path store to psxH write
+	RLWINM(tmp1, 3, 0, 16, 31);		//tmp1 = Addr & 0xFFFF
+	CMPWI(tmp1, 0x1000);			//If Addr&0xFFFF > 0x1000, interpret store
+	BGE_L(sloweststore);
+	
+	//SLWI(tmp1, tmp1, 1);
+	LIW(tmp2, (u32)&psxH[0]);
+	STHBRX(4, tmp1, tmp2);	//psxH[addr&0xFFFF] = value;
+	
+	B_L(endstore3);
+	B_DST(sloweststore);
+	CALLFunc((u32)psxHwWrite16);
+	
+	B_DST(endstore1);
 	B_DST(endstore2);
+	B_DST(endstore3);
 }
 
 static void recSW() {
@@ -1892,37 +1900,31 @@ static void recSW() {
 			return;
 		}
 	}
-
-	u32 *startPpcPtr = ppcPtr;
-
+	
 	preMemWrite(4);
+	
 	u32 *endstore, *slowstore1, *slowstore2;
-	s32 tmp1 = PutHWRegSpecial(TMP1), tmp2 = PutHWRegSpecial(TMP2);
+	s32 tmp1 = PutHWRegSpecial(TMP1), tmp2 = PutHWRegSpecial(TMP2), tmp3 = PutHWRegSpecial(ARG3);
 	// Begin actual PPC generation	
 	RLWINM(tmp1, 3, 16, 16, 31);		//tmp1 = (Addr>>16) & 0xFFFF
 	CMPWI(tmp1, 0x1f80);				//If AddrHi == 0x1f80, interpret store
 	BEQ_L(slowstore1);
 	// Lookup the Write LUT, do the store
-	SLWI(tmp1, tmp1, 2);
-	LIW(tmp2, offsetof(_psxCore, psxMemWLUT));
-	ADD(tmp1, tmp1, tmp2);
-	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXCORE));		// tmp2 = (char *)(psxCore.psxMemWLUT[Addr16]);
+	SLWI(tmp3, tmp1, 2);								// tmp3 = (Addr>>16) & 0xFFFF; tmp3 <<= 2
+	LWZX(tmp2, tmp3, GetHWRegSpecial(PSXMEMWLUT));		// tmp2 = (char *)(psxCore.psxMemWLUT[Addr16]);
 	CMPWI(tmp2, 0);
 	RLWINM(tmp1, 3, 0, 16, 31);				// tmp1 = (Addr) & 0xFFFF
 	BEQ_L(slowstore2);						// can't do it ourselves, call interp.
 	STWBRX(4, tmp1, tmp2);						// *(u8 *)(p + (mem & 0xffff)) = value;
 	// Invalidate Dynarec memory
-	RLWINM(tmp1, 3, 18, 14, 29);			// tmp1 = (Addr>>16) & 0xFFFF; tmp1 <<= 2
-	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXRECLUT));
+	LWZX(tmp2, tmp3, GetHWRegSpecial(PSXRECLUT));
 	RLWINM(tmp1, 3, 0, 16, 29);				// tmp1 = (Addr) & 0xFFFC
-	ADD(tmp2, tmp2, tmp1);
-	LI(tmp1, 0);
-	STW(tmp1, 0, tmp2);						// recClear(mem, 1)
+	LI(tmp3, 0);
+	STWX(tmp3, tmp1, tmp2);						// equiv to recClear(mem, 1) (clear rec_mem at (Addr) & 0xFFFC)
 	B_L(endstore);							// jump over the interp path.
 	B_DST(slowstore1);
 	B_DST(slowstore2);
-	CALLFunc((u32)psxMemWrite32);
-	
+	CALLFunc((u32)psxDynaMemWrite32);
 	B_DST(endstore);
 
 }
@@ -2574,6 +2576,10 @@ static void recRecompile() {
 	HWRegisters[1].usage = HWUSAGE_SPECIAL | HWUSAGE_RESERVED | HWUSAGE_HARDWIRED;
 	HWRegisters[1].private = PSXRECLUT;
 	HWRegisters[1].k = (u32)&psxRecLUT;
+	
+	HWRegisters[2].usage = HWUSAGE_SPECIAL | HWUSAGE_RESERVED | HWUSAGE_HARDWIRED;
+	HWRegisters[2].private = PSXMEMWLUT;
+	HWRegisters[2].k = (u32)&psxCore.psxMemWLUT;
 
 	// reserve the special psxCore.cycle register
 	//HWRegisters[1].usage = HWUSAGE_SPECIAL | HWUSAGE_RESERVED | HWUSAGE_HARDWIRED;

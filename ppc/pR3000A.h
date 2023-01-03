@@ -127,6 +127,7 @@ enum {
 	TMP2 = 7,
     PSXCORE,	// ptr
 	PSXRECLUT,	// ptr
+	PSXMEMWLUT,	// ptr
     CYCLECOUNT,	// ptr
     PSXPC,		// ptr
     TARGETPTR,	// ptr

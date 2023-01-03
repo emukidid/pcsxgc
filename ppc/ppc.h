@@ -37,13 +37,12 @@ void ppcSetPtr(u32 *ptr);
 void ppcShutdown();
 
 void returnPC();
-void recRun(void (*func)(), u32 hw1, u32 hw2);
+void recRun(void (*func)(), u32 hw1, u32 hw2, u32 hw3);
 u8 psxDynaMemRead8(u32 mem);
 u16 psxDynaMemRead16(u32 mem);
 u32 psxDynaMemRead32(u32 mem);
 void psxDynaMemWrite8(u32 mem, u8 val);
-void psxDynaMemWrite16(u32 mem, u16 value);
-
+void psxDynaMemWrite32(u32 mem, u32 value);
 #endif /* __PPC_H__ */
 
 

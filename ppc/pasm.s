@@ -50,6 +50,7 @@ recRun:
 	mtctr	r3          # move func ptr to ctr
 	mr	r31, r4         # save hw1 to r31
 	mr	r30, r5         # save hw2 to r30
+	mr	r29, r6         # save hw3 to r29
 	bctrl               # branch to ctr (*func)
 
 # void returnPC()
