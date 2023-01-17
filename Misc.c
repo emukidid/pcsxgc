@@ -498,7 +498,6 @@ int SaveState() {
 	f = gzopen(filename, "wb");
 	if (f == NULL) return -1;
  LoadingBar_showBar(0.0f, SAVE_STATE_MSG);
-  pauseRemovalThread(); 
 
 	gzwrite(f, (void *)PcsxHeader, 32);
 	gzwrite(f, (void *)&SaveVersion, sizeof(u32));
@@ -552,7 +551,6 @@ int SaveState() {
 	LoadingBar_showBar(0.99f, SAVE_STATE_MSG);
 	gzclose(f);
 	
-continueRemovalThread();
 	LoadingBar_showBar(1.0f, SAVE_STATE_MSG);
 	return 1;
 }
@@ -591,7 +589,6 @@ int LoadState() {
 		return -1;
 	}
 
-	pauseRemovalThread();
 	LoadingBar_showBar(0.0f, LOAD_STATE_MSG);
 	//SysReset();
 	
@@ -639,7 +636,6 @@ int LoadState() {
 	mdecFreeze(f, 0);
 
 	gzclose(f);
-  continueRemovalThread();
   LoadingBar_showBar(1.0f, LOAD_STATE_MSG);
   
 	return 1;
