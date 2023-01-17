@@ -825,7 +825,6 @@ void Func_ExecuteBios()
 	}
 	CheckCdrom();
 	SysReset();
-	pauseRemovalThread();
 	resumeAudio();
 	resumeInput();
 	menuActive = 0;
@@ -833,7 +832,6 @@ void Func_ExecuteBios()
 	menuActive = 1;
 	pauseInput();
 	pauseAudio();
-	continueRemovalThread();
 }
 
 extern void writeConfig(FILE* f);

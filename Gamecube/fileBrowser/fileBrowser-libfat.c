@@ -35,8 +35,6 @@
 #include <di/di.h>
 #include <ogc/dvd.h>
 
-extern BOOL hasLoadedROM;
-extern int stop;
 
 #ifdef HW_RVL
 #include <sdcard/wiisd_io.h>
@@ -44,29 +42,15 @@ extern int stop;
 const DISC_INTERFACE* frontsd = &__io_wiisd;
 const DISC_INTERFACE* usb = &__io_usbstorage;
 const DISC_INTERFACE* dvd = &__io_wiidvd;
-#else
-const DISC_INTERFACE* dvd = &__io_gcdvd;
-#endif
 const DISC_INTERFACE* carda = &__io_gcsda;
 const DISC_INTERFACE* cardb = &__io_gcsdb;
 
-// Threaded insertion/removal detection
-#define THREAD_SLEEP 100
-#define FRONTSD 1
-#define CARD_A  2
-#define CARD_B  3
-
-static lwp_t removalThread = LWP_THREAD_NULL;
-static int rThreadRun = 0;
-static int rThreadCreated = 0;
-static char sdMounted  = 0;
-static char dvdMounted = 0;
-#ifdef HW_RVL
-static char usbMounted = 0;
-static char usbNeedsUnmount = 0;
-static char sdNeedsUnmount  = 0;
+#else
+const DISC_INTERFACE* dvd = &__io_gcdvd;
+const DISC_INTERFACE* carda = &__io_gcsda;
+const DISC_INTERFACE* cardb = &__io_gcsdb;
+const DISC_INTERFACE* sd2sp2 = &__io_gcsd2;
 #endif
-static char dvdNeedsUnmount = 0;
 
 fileBrowser_file topLevel_libfat_Default =
 	{ "sd:/wiisx/isos", // file name
@@ -132,81 +116,8 @@ fileBrowser_file biosDir_DVD =
 	  FILE_BROWSER_ATTR_DIR
 	 };
 
-void continueRemovalThread()
-{
-  //if(rThreadRun)
- //   return;
- // rThreadRun = 1;
- // LWP_ResumeThread(removalThread);
-}
-
-void pauseRemovalThread()
-{
-  if(!rThreadRun)
-    return;
-  rThreadRun = 0;
-
-  // wait for thread to finish
-  while(!LWP_ThreadIsSuspended(removalThread)) usleep(THREAD_SLEEP);
-}
-
-static int devsleep = 1*1000*1000;
-
-static void *removalCallback (void *arg)
-{
-  while(devsleep > 0)
-  {
-    if(!rThreadRun)
-      LWP_SuspendThread(removalThread);
-      usleep(THREAD_SLEEP);
-      devsleep -= THREAD_SLEEP;
-  }
-
-  while (1)
-  {
-#ifdef HW_RVL
-    switch(sdMounted) //some kind of SD is mounted
-    {
-      case FRONTSD:   //check which one, if removed, set as unmounted
-        if(!frontsd->isInserted()) {
-          sdNeedsUnmount=sdMounted;
-          sdMounted=0;
-        }
-        break;
-    }
-    if(usbMounted) // check if the device was removed
-      if(!usb->isInserted()) {
-        usbMounted = 0;
-        usbNeedsUnmount=1;
-      }
-#endif
-    if(dvdMounted)	// check if the device was removed
-      if(!dvd->isInserted()) {
-        dvdMounted = 0;
-        dvdNeedsUnmount=1;
-      }
-      
-    devsleep = 1000*1000; // 1 sec
-    while(devsleep > 0)
-    {
-      if(!rThreadRun)
-        LWP_SuspendThread(removalThread);
-      usleep(THREAD_SLEEP);
-      devsleep -= THREAD_SLEEP;
-    }
-  }
-  return NULL;
-}
-
-void InitRemovalThread()
-{
-  LWP_CreateThread (&removalThread, removalCallback, NULL, NULL, 0, 40);
-  rThreadCreated = 1;
-}
 
 int fileBrowser_libfat_readDir(fileBrowser_file* file, fileBrowser_file** dir){
-
-  pauseRemovalThread();
 
 	DIR* dp = opendir( file->name );
 	if(!dp) return FILE_BROWSER_ERROR;
@@ -233,7 +144,6 @@ int fileBrowser_libfat_readDir(fileBrowser_file* file, fileBrowser_file** dir){
 	}
 	
 	closedir(dp);
-	continueRemovalThread();
 
 	return num_entries;
 }
@@ -258,7 +168,6 @@ int fileBrowser_libfat_seekFile(fileBrowser_file* file, unsigned int where, unsi
 }
 
 int fileBrowser_libfat_readFile(fileBrowser_file* file, void* buffer, unsigned int length){
-  pauseRemovalThread();
 	FILE* f = fopen( file->name, "rb" );
 	if(!f) return FILE_BROWSER_ERROR;
 
@@ -267,12 +176,10 @@ int fileBrowser_libfat_readFile(fileBrowser_file* file, void* buffer, unsigned i
 	if(bytes_read > 0) file->offset += bytes_read;
 
 	fclose(f);
-	continueRemovalThread();
 	return bytes_read;
 }
 
 int fileBrowser_libfat_writeFile(fileBrowser_file* file, void* buffer, unsigned int length){
-  pauseRemovalThread();
 	FILE* f = fopen( file->name, "wb" );
 	if(!f) return FILE_BROWSER_ERROR;
 
@@ -281,7 +188,6 @@ int fileBrowser_libfat_writeFile(fileBrowser_file* file, void* buffer, unsigned 
 	if(bytes_read > 0) file->offset += bytes_read;
 
 	fclose(f);
-	continueRemovalThread();
 	return bytes_read;
 }
 
@@ -293,106 +199,62 @@ int fileBrowser_libfat_init(fileBrowser_file* f){
 
 	int res = 0;
 
-	if(!rThreadCreated) {
-	 	//InitRemovalThread();
- 	}
-
-	pauseRemovalThread();
 #ifdef HW_RVL
   	if(f->name[0] == 's') {      //SD
-    	if(!sdMounted) {
-			if(sdNeedsUnmount) {
-				fatUnmount("sd");
-				if(sdNeedsUnmount==FRONTSD)
-					frontsd->shutdown();
-				sdNeedsUnmount = 0;
-			}
-			if(fatMountSimple ("sd", frontsd)) {
-				sdMounted = FRONTSD;
+		if(res = fatMountSimple ("sd", frontsd)) {
 				res = 1;
-			}
-			else if(!res && fatMountSimple ("sd", carda)) {
-				sdMounted = CARD_A;
-				res = 1;
-			}
-			else if(!res && fatMountSimple ("sd", cardb)) {
-				sdMounted = CARD_B;
-				res = 1;
-			}
 		}
-		else
- 	    	res = 1;		// Already mounted
+		else if(!res && fatMountSimple ("sd", carda)) {
+			res = 1;
+		}
+		else if(!res && fatMountSimple ("sd", cardb)) {
+			res = 1;
+		}
  	}
 	else if(f->name[0] == 'u') {	// USB
-		if(!usbMounted) {
-			if(usbNeedsUnmount) {
-				fatUnmount("usb");
-				usb->shutdown();
-				usbNeedsUnmount=0;
-			}
-			if(fatMountSimple ("usb", usb)) {
-				usbMounted = 1;
-				res = 1;
-			}
+		if(fatMountSimple ("usb", usb)) {
+			res = 1;
 		}
-		else
-			res = 1;		// Already mounted
 	}
 	else if(f->name[0] == 'd') {	// DVD
-		if(!dvdMounted) {
-			if(dvdNeedsUnmount) {
-				ISO9660_Unmount("dvd");
-				dvdNeedsUnmount=0;
-			}
-			if(ISO9660_Mount("dvd", dvd)) {
-				dvdMounted = 1;
-				res = 1;
-			}
+		if(ISO9660_Mount("dvd", dvd)) {
+			res = 1;
 		}
-		else
-			res = 1;		// Alread mounted
 	}
-	continueRemovalThread();
 	return res;
 #else
 	if(f->name[0] == 's') {
-		if(!sdMounted) {           //GC has only SD
-			if(carda->startup()) {
-				res = fatMountSimple ("sd", carda);
-				if(res)
-					sdMounted = CARD_A;
-			}
-			if(!res && cardb->startup()) {
-				res = fatMountSimple ("sd", cardb);
-				if(res)
-					sdMounted = CARD_B;
-			}
+		if(sd2sp2->startup()) {
+			res = fatMountSimple ("sd", sd2sp2);
 		}
-		else 
-			res = 1;		// Already mounted
+		if(!res && carda->startup()) {
+			res = fatMountSimple ("sd", carda);
+		}
+		if(!res && cardb->startup()) {
+			res = fatMountSimple ("sd", cardb);
+		}
 	}
 	else if(f->name[0] == 'd') {	// DVD
-		if(!dvdMounted) {
-			if(dvdNeedsUnmount) {
-				ISO9660_Unmount("dvd");
-				dvdNeedsUnmount=0;
-			}
-			if(ISO9660_Mount("dvd", dvd)) {
-				dvdMounted = 1;
-				res = 1;
-			}
+		if(ISO9660_Mount("dvd", dvd)) {
+			res = 1;
 		}
-		else
-			res = 1;		// Alread mounted
 	}
-	continueRemovalThread();
 	return res; 				// Already mounted
 #endif
 }
 
 int fileBrowser_libfat_deinit(fileBrowser_file* f){
-  //we can't support multiple device re-insertion
-  //because there's no device removed callbacks
+  	if(f->name[0] == 's') {      //SD
+		fatUnmount("sd");
+ 	}
+#ifdef HW_RVL
+	else if(f->name[0] == 'u') {	// USB
+		fatUnmount("usb");
+	}
+#endif
+	else if(f->name[0] == 'd') {	// DVD
+		ISO9660_Unmount("dvd");
+	}
 	return 0;
 }
 
@@ -404,21 +266,16 @@ int fileBrowser_libfat_deinit(fileBrowser_file* f){
 static FILE* fd;
 
 int fileBrowser_libfatROM_deinit(fileBrowser_file* f){
-  pauseRemovalThread();
-  
-	if(fd) {
+  if(fd) {
 		fclose(fd);
 	}
 	
 	fd = NULL;
-	continueRemovalThread();
 	return 0;
 }
 
 int fileBrowser_libfatROM_readFile(fileBrowser_file* file, void* buffer, unsigned int length){
-  if(stop)     //do this only in the menu
-    pauseRemovalThread();
-	if(!fd) fd = fopen( file->name, "rb");
+    if(!fd) fd = fopen( file->name, "rb");
 
 	fseek(fd, file->offset, SEEK_SET);
 	int bytes_read = fread(buffer, 1, length, fd);
@@ -426,8 +283,6 @@ int fileBrowser_libfatROM_readFile(fileBrowser_file* file, void* buffer, unsigne
   	file->offset += bytes_read;
 	}
 
-	if(stop)
-	  continueRemovalThread();
 	return bytes_read;
 }
 

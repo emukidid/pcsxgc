@@ -17,7 +17,7 @@ include $(DEVKITPPC)/gamecube_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	CubeSX
 BUILD		:=	build
-SOURCES		:=	. ./gc_input/ ./libgui/ ./menu/ ./fileBrowser/ .. ../PeopsSoftGPU/ ../franspu/ ../ppc/
+SOURCES		:=	. ./gc_input/ ./vm/ ./libgui/ ./menu/ ./fileBrowser/ .. ../PeopsSoftGPU/ ../franspu/ ../ppc/
 
 DATA		:=	data  
 
@@ -28,9 +28,10 @@ INCLUDES	:=
 #---------------------------------------------------------------------------------
 LTO			 = #-flto # Uncomment to use link-time optimization
 
-CFLAGS	= -g -O3 $(LTO) -Wall $(MACHDEP) $(INCLUDE) -D__GAMECUBE__ -DHW_DOL -D__ppc__ \
+CFLAGS	= -g -O3 $(LTO) -Wall $(MACHDEP) $(INCLUDE) -Wno-strict-aliasing -Wno-misleading-indentation \
+		  -D__GAMECUBE__ -DHW_DOL -D__ppc__ \
 		  -D__GX__ -D_SDL -DEMBEDDED_FONTS \
-		  -DTHREADED_AUDIO -DRELEASE #-DSHOW_DEBUG #-DPROFILE
+		  -DTHREADED_AUDIO -DRELEASE -DSHOW_DEBUG #-DPROFILE
 		  
 CXXFLAGS	=	$(CFLAGS)
 
@@ -47,7 +48,7 @@ LIBS	:=	-laesnd -lz -lm -lfat -logc -liso9660
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= 
+LIBDIRS	:= $(PORTLIBS)
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -134,6 +135,9 @@ $(OUTPUT).elf: $(OFILES)
 	@echo $(notdir $<)
 	$(bin2o)
 
+dsihandler.o:		./vm/dsihandler.s
+		$(CC) -x assembler-with-cpp $(CFLAGS) -D_LANGUAGE_ASSEMBLY -c -o $@ $<
+	
 -include $(DEPENDS)
 
 #---------------------------------------------------------------------------------
