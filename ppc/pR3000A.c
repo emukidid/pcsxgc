@@ -30,6 +30,7 @@
 #include "reguse.h"
 #include "pR3000A.h"
 #include "../R3000A.h"
+#include "../PsxHw.h"
 #include "../PsxHLE.h"
 #include "../Gamecube/DEBUG.h"
 
@@ -466,6 +467,7 @@ static s32 GetHWRegSpecial(s32 which)
 			case PSXCORE:
 			case PSXRECLUT:
 			case PSXMEMWLUT:
+			case PSXMEMRLUT:
 				print_gecko("error! shouldn't be here!\n");
 				break;
 			case TARGETPTR:
@@ -965,7 +967,7 @@ __inline static void execute() {
 #ifdef PROFILE
 		start_section(CORE_SECTION);
 #endif
-	recRun(*recFunc, (u32)&psxCore, (u32)&psxRecLUT, (u32)&psxCore.psxMemWLUT);
+	recRun(*recFunc, (u32)&psxCore, (u32)&psxRecLUT, (u32)&psxCore.psxMemWLUT, (u32)&psxCore.psxMemRLUT);
 #ifdef PROFILE
 		end_section(CORE_SECTION);
 #endif
@@ -1435,9 +1437,7 @@ static void recLB() {
 	B_L(endload);
 	B_DST(fastload);
 	SLWI(tmp1, tmp1, 2);
-	LIW(tmp2, offsetof(_psxCore, psxMemRLUT));
-	ADD(tmp1, tmp1, tmp2);
-	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXCORE));	// r15 = (char *)(psxCore.psxMemRLUT[Addr16]);
+	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXMEMRLUT));	// r15 = (char *)(psxCore.psxMemRLUT[Addr16]);
 	CMPWI(tmp2, 0);
 	RLWINM(tmp1, 3, 0, 16, 31);				// r14 = (Addr) & 0xFFFF
 	LI(3, 0);
@@ -1488,9 +1488,7 @@ static void recLBU() {
 	B_L(endload);
 	B_DST(fastload);
 	SLWI(tmp1, tmp1, 2);
-	LIW(tmp2, offsetof(_psxCore, psxMemRLUT));
-	ADD(tmp1, tmp1, tmp2);
-	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXCORE));	// r15 = (char *)(psxCore.psxMemRLUT[Addr16]);
+	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXMEMRLUT));	// r15 = (char *)(psxCore.psxMemRLUT[Addr16]);
 	CMPWI(tmp2, 0);
 	RLWINM(tmp1, 3, 0, 16, 31);				// r14 = (Addr) & 0xFFFF
 	LI(3, 0);
@@ -1543,9 +1541,7 @@ static void recLH() {
 	B_L(endload);
 	B_DST(fastload);
 	SLWI(tmp1, tmp1, 2);
-	LIW(tmp2, offsetof(_psxCore, psxMemRLUT));
-	ADD(tmp1, tmp1, tmp2);
-	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXCORE));	// r15 = (char *)(psxCore.psxMemRLUT[Addr16]);
+	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXMEMRLUT));	// r15 = (char *)(psxCore.psxMemRLUT[Addr16]);
 	CMPWI(tmp2, 0);
 	RLWINM(tmp1, 3, 0, 16, 31);					// r14 = (Addr) & 0xFFFF
 	LI(3, 0);
@@ -1642,9 +1638,7 @@ static void recLHU() {
 	B_L(endload);
 	B_DST(fastload);
 	SLWI(tmp1, tmp1, 2);
-	LIW(tmp2, offsetof(_psxCore, psxMemRLUT));
-	ADD(tmp1, tmp1, tmp2);
-	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXCORE));	// r15 = (char *)(psxCore.psxMemRLUT[Addr16]);
+	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXMEMRLUT));	// r15 = (char *)(psxCore.psxMemRLUT[Addr16]);
 	CMPWI(tmp2, 0);
 	RLWINM(tmp1, 3, 0, 16, 31);					// r14 = (Addr) & 0xFFFF
 	LI(3, 0);
@@ -1730,9 +1724,7 @@ static void recLW() {
 	B_L(endload);
 	B_DST(fastload);
 	SLWI(tmp1, tmp1, 2);
-	LIW(tmp2, offsetof(_psxCore, psxMemRLUT));
-	ADD(tmp1, tmp1, tmp2);
-	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXCORE));	// r15 = (char *)(psxCore.psxMemRLUT[Addr16]);
+	LWZX(tmp2, tmp1, GetHWRegSpecial(PSXMEMRLUT));	// r15 = (char *)(psxCore.psxMemRLUT[Addr16]);
 	CMPWI(tmp2, 0);
 	RLWINM(tmp1, 3, 0, 16, 31);				// r14 = (Addr) & 0xFFFF
 	LI(3, 0);
@@ -2580,6 +2572,10 @@ static void recRecompile() {
 	HWRegisters[2].usage = HWUSAGE_SPECIAL | HWUSAGE_RESERVED | HWUSAGE_HARDWIRED;
 	HWRegisters[2].private = PSXMEMWLUT;
 	HWRegisters[2].k = (u32)&psxCore.psxMemWLUT;
+	
+	HWRegisters[3].usage = HWUSAGE_SPECIAL | HWUSAGE_RESERVED | HWUSAGE_HARDWIRED;
+	HWRegisters[3].private = PSXMEMRLUT;
+	HWRegisters[3].k = (u32)&psxCore.psxMemRLUT;
 
 	// reserve the special psxCore.cycle register
 	//HWRegisters[1].usage = HWUSAGE_SPECIAL | HWUSAGE_RESERVED | HWUSAGE_HARDWIRED;

@@ -128,6 +128,7 @@ enum {
     PSXCORE,	// ptr
 	PSXRECLUT,	// ptr
 	PSXMEMWLUT,	// ptr
+	PSXMEMRLUT,	// ptr
     CYCLECOUNT,	// ptr
     PSXPC,		// ptr
     TARGETPTR,	// ptr
