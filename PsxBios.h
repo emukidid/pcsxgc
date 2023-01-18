@@ -24,11 +24,11 @@
 extern "C" {
 #endif
 
-#include "psxcommon.h"
-#include "r3000a.h"
-#include "psxmem.h"
-#include "misc.h"
-#include "sio.h"
+#include "PsxCommon.h"
+#include "R3000A.h"
+#include "PsxMem.h"
+#include "Misc.h"
+#include "Sio.h"
 
 extern char *biosA0n[256];
 extern char *biosB0n[256];

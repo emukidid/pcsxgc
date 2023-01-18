@@ -3,7 +3,7 @@
 #include <gccore.h>
 #include <malloc.h>
 #include "franspu.h"
-#include "../PSXCommon.h"
+#include "../PsxCommon.h"
 #include "../Decode_XA.h"
 #include "../Gamecube/DEBUG.h"
 

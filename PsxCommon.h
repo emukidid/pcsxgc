@@ -57,7 +57,7 @@ typedef uintptr_t uptr;
 #endif
 
 // Local includes
-#include "system.h"
+#include "System.h"
 #include "debug.h"
 
 #if defined (__LINUX__) || defined (__MACOSX__) || defined(HW_RVL) || defined(HW_DOL)

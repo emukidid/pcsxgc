@@ -1,7 +1,7 @@
 #ifndef __SPUPSX4ALL_H__
 #define __SPUPSX4ALL_H__
 
-#include "../PSXCommon.h"
+#include "../PsxCommon.h"
 #include "../Decode_XA.h"
 
 #ifndef __WIN32__

@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#include "psxcommon.h"
+#include "PsxCommon.h"
 
 //#define ENABLE_SIO1API 1
 
@@ -51,10 +51,10 @@ typedef long (CALLBACK* SIO1open)(HWND);
 
 #endif
 
-#include "spu.h"
+#include "Spu.h"
 
-#include "psemu_plugin_defs.h"
-#include "decode_xa.h"
+#include "PSEmu_Plugin_Defs.h"
+#include "Decode_XA.h"
 
 int LoadPlugins();
 void ReleasePlugins();

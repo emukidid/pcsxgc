@@ -18,11 +18,11 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA 02111-1307 USA.           *
  ***************************************************************************/
 
-#include "./GameCube/DEBUG.h"
-#include "./GameCube/MEM2.h"
-#include "psxcommon.h"
+#include "./Gamecube/DEBUG.h"
+#include "./Gamecube/MEM2.h"
+#include "PsxCommon.h"
 #include "plugins.h"
-#include "cdrom.h"
+#include "CdRom.h"
 #include "cdriso.h"
 
 #ifdef _WIN32

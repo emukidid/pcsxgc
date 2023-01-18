@@ -24,10 +24,10 @@
 extern "C" {
 #endif
 
-#include "psxcommon.h"
+#include "PsxCommon.h"
 #include "plugins.h"
-#include "r3000a.h"
-#include "psxmem.h"
+#include "R3000A.h"
+#include "PsxMem.h"
 
 #define H_SPUirqAddr     0x0da4
 #define H_SPUaddr        0x0da6

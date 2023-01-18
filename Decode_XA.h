@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#include "psxcommon.h"
+#include "PsxCommon.h"
 
 typedef struct {
 	s32	y0, y1;

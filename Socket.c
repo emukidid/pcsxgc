@@ -19,8 +19,8 @@
 #include <winsock2.h>
 #endif
 
-#include "psxcommon.h"
-#include "socket.h"
+#include "PsxCommon.h"
+#include "Socket.h"
 
 #ifndef _WIN32
 //#include <sys/socket.h>

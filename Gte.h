@@ -26,8 +26,8 @@
 extern "C" {
 #endif
 
-#include "psxcommon.h"
-#include "r3000a.h"
+#include "PsxCommon.h"
+#include "R3000A.h"
 
 void gteMFC2();
 void gteCFC2();

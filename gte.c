@@ -23,8 +23,8 @@
 * GTE functions.
 */
 
-#include "gte.h"
-#include "psxmem.h"
+#include "Gte.h"
+#include "PsxMem.h"
 
 #define VX(n) (n < 3 ? psxCore.CP2D.p[n << 1].sw.l : psxCore.CP2D.p[9].sw.l)
 #define VY(n) (n < 3 ? psxCore.CP2D.p[n << 1].sw.h : psxCore.CP2D.p[10].sw.l)

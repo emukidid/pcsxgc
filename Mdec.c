@@ -18,7 +18,7 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA 02111-1307 USA.           *
  ***************************************************************************/
 
-#include "mdec.h"
+#include "Mdec.h"
 
 /* memory speed is 1 byte per MDEC_BIAS psx clock
  * That mean (PSXCLK / MDEC_BIAS) B/s

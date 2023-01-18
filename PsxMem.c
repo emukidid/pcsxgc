@@ -21,9 +21,9 @@
 * PSX memory functions.
 */
 
-#include "psxmem.h"
-#include "r3000a.h"
-#include "psxhw.h"
+#include "PsxMem.h"
+#include "R3000A.h"
+#include "PsxHw.h"
 
 #ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS MAP_ANON

@@ -21,9 +21,9 @@
 * Handles all CD-ROM registers and functions.
 */
 
-#include "cdrom.h"
+#include "CdRom.h"
 #include "ppf.h"
-#include "psxdma.h"
+#include "PsxDma.h"
 
 cdrStruct cdr;
 
