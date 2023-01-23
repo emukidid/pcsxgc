@@ -28,10 +28,10 @@ INCLUDES	:=
 #---------------------------------------------------------------------------------
 LTO			 = #-flto # Uncomment to use link-time optimization
 
-CFLAGS	= -g -O3 $(LTO) -Wall $(MACHDEP) $(INCLUDE) -Wno-strict-aliasing -Wno-misleading-indentation \
+CFLAGS	= -g -O3 $(LTO) -Wall $(MACHDEP) $(INCLUDE) -Wno-stringop-truncation -Wno-strict-aliasing -Wno-misleading-indentation \
 		  -D__GAMECUBE__ -DHW_DOL -D__ppc__ \
 		  -D__GX__ -D_SDL -DEMBEDDED_FONTS \
-		  -DTHREADED_AUDIO -DRELEASE -DSHOW_DEBUG #-DPROFILE
+		  -DTHREADED_AUDIO -DRELEASE -DSHOW_DEBUG #-DPRINTGECKO #-DPROFILE
 		  
 CXXFLAGS	=	$(CFLAGS)
 

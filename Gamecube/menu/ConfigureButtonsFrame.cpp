@@ -29,8 +29,6 @@
 #include "../libgui/FocusManager.h"
 #include "../libgui/CursorManager.h"
 #include "../libgui/MessageBox.h"
-//#include "../main/timers.h"
-//#include "../main/wii64config.h"
 
 extern "C" {
 #include "../gc_input/controller.h"
@@ -103,7 +101,7 @@ static char FRAME_STRINGS[27][20] =
 	  "Btn R3",
 	  "Menu:"};
 
-static char TITLE_STRING[50] = "Gamecube Pad 1 to PSX Pad 1 Mapping";
+static char TITLE_STRING[64] = "Gamecube Pad 1 to PSX Pad 1 Mapping";
 
 struct ButtonInfo
 {

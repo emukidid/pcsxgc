@@ -387,8 +387,8 @@ void fileBrowserFrame_Error(fileBrowser_file* dir, int error_code)
   	sprintf(feedback_string,"SMB failed to connect");
 	}
 	//set first entry to read 'error' and return to main menu
-	else if(dir->name)
-	  sprintf(feedback_string,"Error opening directory \"%s\"",&dir->name[0]);
+	else if(strlen(dir->name) > 0)
+	  snprintf(feedback_string, 255, "Error opening directory \"%s\"",&dir->name[0]);
 	else
 	  strcpy(feedback_string,"An error occured");
 /*	FRAME_BUTTONS[2].buttonString = feedback_string;
@@ -516,19 +516,6 @@ void fileBrowserFrame_LoadFile(int i)
 		}
 		else		// If not.
 		{
-/*  		switch(ret) {
-    		case ROM_CACHE_ERROR_READ:
-			    strcpy(feedback_string,"A read error occured");
-			    break;
-			  case ROM_CACHE_INVALID_ROM:
-			   strcpy(feedback_string,"Invalid ROM type");
-			    break;
-			  default:
-			    strcpy(feedback_string,"An error has occured");
-			    break;
-		  }
-*/
-			sprintf(feedback_string, "%s\n%s",feedback_string,dir_entries[i].name);
 			menu::MessageBox::getInstance().setMessage(feedback_string);
 		}
 

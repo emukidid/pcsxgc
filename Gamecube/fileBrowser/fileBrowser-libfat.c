@@ -134,7 +134,7 @@ int fileBrowser_libfat_readDir(fileBrowser_file* file, fileBrowser_file** dir){
 			++num_entries;
 			*dir = realloc( *dir, num_entries * sizeof(fileBrowser_file) ); 
 		}
-		sprintf((*dir)[i].name, "%s/%s", file->name, entry->d_name);
+		snprintf((*dir)[i].name, 255, "%s/%s", file->name, entry->d_name);
 		stat((*dir)[i].name,&fstat);
 		(*dir)[i].offset = 0;
 		(*dir)[i].size   = fstat.st_size;

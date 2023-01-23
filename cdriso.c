@@ -946,7 +946,7 @@ long CALLBACK ISOreadTrack(unsigned char *time) {
 			else {
 				readAheadOffset = 0;
 				fseek(cdHandle, offset, SEEK_SET);
-				fread(cdbuffer, 1, CD_FRAMESIZE_RAW, cdHandle);
+				fread(cdbuffer, 1, DATA_SIZE, cdHandle);
 			}
 		}
 
