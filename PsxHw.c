@@ -21,9 +21,9 @@
 * Functions for PSX hardware control.
 */
 
-#include "psxhw.h"
-#include "mdec.h"
-#include "cdrom.h"
+#include "PsxHw.h"
+#include "Mdec.h"
+#include "CdRom.h"
 #include "PsxGpu.h"
 
 void psxHwReset() {

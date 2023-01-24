@@ -20,7 +20,7 @@
 /*
  * Internal PSX counters.
  */
-#include "psxcounters.h"
+#include "PsxCounters.h"
 
 /******************************************************************************/
 

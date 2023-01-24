@@ -16,9 +16,9 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02111-1307 USA
  */
 
-#include "psxhw.h"
+#include "PsxHw.h"
 #include "PsxGpu.h"
-#include "psxdma.h"
+#include "PsxDma.h"
 
 extern unsigned int hSyncCount;
 

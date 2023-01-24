@@ -21,7 +21,7 @@
 * SIO functions.
 */
 
-#include "sio.h"
+#include "Sio.h"
 #include "Gamecube/fileBrowser/fileBrowser.h"
 #include "Gamecube/fileBrowser/fileBrowser-libfat.h"
 #include <sys/stat.h>

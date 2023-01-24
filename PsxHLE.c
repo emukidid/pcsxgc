@@ -21,7 +21,7 @@
 * Internal PSX HLE functions.
 */
 
-#include "psxhle.h"
+#include "PsxHLE.h"
 
 static void hleDummy() {
 	psxCore.pc = psxCore.GPR.n.ra;

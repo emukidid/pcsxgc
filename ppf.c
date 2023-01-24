@@ -20,9 +20,9 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02111-1307 USA
  */
 
-#include "psxcommon.h"
+#include "PsxCommon.h"
 #include "ppf.h"
-#include "cdrom.h"
+#include "CdRom.h"
 
 typedef struct tagPPF_DATA {
 	s32					addr;

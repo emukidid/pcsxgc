@@ -24,10 +24,10 @@
 extern "C" {
 #endif
 
-#include "psxcommon.h"
-#include "psxmem.h"
-#include "psxcounters.h"
-#include "psxbios.h"
+#include "PsxCommon.h"
+#include "PsxMem.h"
+#include "PsxCounters.h"
+#include "PsxBios.h"
 
 typedef struct {
 	int  (*Init)();
@@ -161,11 +161,21 @@ enum {
 	PSXINT_CDRPLAY
 };
 
+typedef struct psxCP2Regs {
+	psxCP2Data CP2D; 	/* Cop2 data registers */
+	psxCP2Ctrl CP2C; 	/* Cop2 control registers */
+} psxCP2Regs;
+
 typedef struct {
 	psxGPRRegs GPR;		/* General Purpose Registers */
 	psxCP0Regs CP0;		/* Coprocessor0 Registers */
-	psxCP2Data CP2D; 	/* Cop2 data registers */
-	psxCP2Ctrl CP2C; 	/* Cop2 control registers */
+	union {
+		struct {
+			psxCP2Data CP2D; 	/* Cop2 data registers */
+			psxCP2Ctrl CP2C; 	/* Cop2 control registers */
+		};
+		psxCP2Regs CP2;
+	};
 	u32 pc;						/* Program counter */
 	u32 code;					/* The instruction */
 	u32 cycle;

@@ -21,11 +21,11 @@
 * R3000A CPU functions.
 */
 
-#include "r3000a.h"
-#include "cdrom.h"
-#include "mdec.h"
+#include "R3000A.h"
+#include "CdRom.h"
+#include "Mdec.h"
 #include "PsxGpu.h"
-#include "gte.h"
+#include "Gte.h"
 
 R3000Acpu *psxCpu = NULL;
 _psxCore psxCore;

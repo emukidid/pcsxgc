@@ -24,9 +24,9 @@
 extern "C" {
 #endif
 
-#include "psxcommon.h"
-#include "r3000a.h"
-#include "psxmem.h"
+#include "PsxCommon.h"
+#include "R3000A.h"
+#include "PsxMem.h"
 #include "plugins.h"
 
 extern u32 psxNextCounter, psxNextsCounter;

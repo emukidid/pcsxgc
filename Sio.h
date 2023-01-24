@@ -25,11 +25,11 @@
 extern "C" {
 #endif
 
-#include "psxcommon.h"
-#include "r3000a.h"
-#include "psxmem.h"
+#include "PsxCommon.h"
+#include "R3000A.h"
+#include "PsxMem.h"
 #include "plugins.h"
-#include "psemu_plugin_defs.h"
+#include "PSEmu_Plugin_Defs.h"
 #include "Gamecube/fileBrowser/fileBrowser.h"
 
 #define MCD_SIZE	(1024 * 8 * 16)

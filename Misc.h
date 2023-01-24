@@ -24,11 +24,11 @@
 extern "C" {
 #endif
 
-#include "psxcommon.h"
-#include "coff.h"
+#include "PsxCommon.h"
+#include "Coff.h"
 #include "plugins.h"
-#include "r3000a.h"
-#include "psxmem.h"
+#include "R3000A.h"
+#include "PsxMem.h"
 #include "Gamecube/fileBrowser/fileBrowser.h"
 
 #undef s_addr

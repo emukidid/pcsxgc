@@ -21,8 +21,8 @@
  * Internal simulated HLE BIOS.
  */
 
-#include "psxbios.h"
-#include "psxhw.h"
+#include "PsxBios.h"
+#include "PsxHw.h"
 extern char mcd1Written;
 extern char mcd2Written;
 

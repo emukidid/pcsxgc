@@ -26,8 +26,10 @@
 extern "C" {
 #endif
 
-#include "psxcommon.h"
-#include "r3000a.h"
+#include "PsxCommon.h"
+#include "R3000A.h"
+
+struct psxCP2Regs;
 
 void gteMFC2();
 void gteCFC2();
@@ -36,28 +38,28 @@ void gteCTC2();
 void gteLWC2();
 void gteSWC2();
 
-void gteRTPS();
-void gteOP();
-void gteNCLIP();
-void gteDPCS();
-void gteINTPL();
-void gteMVMVA();
-void gteNCDS();
-void gteNCDT();
-void gteCDP();
-void gteNCCS();
-void gteCC();
-void gteNCS();
-void gteNCT();
-void gteSQR();
-void gteDCPL();
-void gteDPCT();
-void gteAVSZ3();
-void gteAVSZ4();
-void gteRTPT();
-void gteGPF();
-void gteGPL();
-void gteNCCT();
+void gteRTPS(struct psxCP2Regs *regs);
+void gteOP(struct psxCP2Regs *regs);
+void gteNCLIP(struct psxCP2Regs *regs);
+void gteDPCS(struct psxCP2Regs *regs);
+void gteINTPL(struct psxCP2Regs *regs);
+void gteMVMVA(struct psxCP2Regs *regs);
+void gteNCDS(struct psxCP2Regs *regs);
+void gteNCDT(struct psxCP2Regs *regs);
+void gteCDP(struct psxCP2Regs *regs);
+void gteNCCS(struct psxCP2Regs *regs);
+void gteCC(struct psxCP2Regs *regs);
+void gteNCS(struct psxCP2Regs *regs);
+void gteNCT(struct psxCP2Regs *regs);
+void gteSQR(struct psxCP2Regs *regs);
+void gteDCPL(struct psxCP2Regs *regs);
+void gteDPCT(struct psxCP2Regs *regs);
+void gteAVSZ3(struct psxCP2Regs *regs);
+void gteAVSZ4(struct psxCP2Regs *regs);
+void gteRTPT(struct psxCP2Regs *regs);
+void gteGPF(struct psxCP2Regs *regs);
+void gteGPL(struct psxCP2Regs *regs);
+void gteNCCT(struct psxCP2Regs *regs);
 
 #ifdef __cplusplus
 }
