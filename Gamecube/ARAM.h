@@ -32,7 +32,7 @@
 #define MB (1024*1024)
 #define KB (1024)
 
-#define MRAM_BACKING	(2*MB)			// Use 2MB to page our 16MB
+#define MRAM_BACKING	(256*KB)			// Use 256KB to page our 16MB, change this when we use ARAM for more.
 
 #define ARAM_RESERVED	(64*KB)			// Reserved for DSP/AESND/etc
 
