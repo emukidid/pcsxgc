@@ -891,6 +891,7 @@ static void rec##f() { \
 	iFlushRegs(0); \
 	LIW(0, (u32)psxCore.code); \
 	STW(0, OFFSET(&psxCore, &psxCore.code), GetHWRegSpecial(PSXCORE)); \
+	LIW(PutHWRegSpecial(ARG1), (u32)&psxCore.CP2); \
 	FlushAllHWReg(); \
 	CALLFunc ((u32)gte##f); \
 	cop2readypc = pc + (psxCP2time[_fFunct_(psxCore.code)] << 2); \
@@ -900,6 +901,7 @@ static void rec##f() { \
 void gte##f(); \
 static void rec##f() { \
 	if (pc < cop2readypc) idlecyclecount += ((cop2readypc - pc)>>2); \
+	LIW(PutHWRegSpecial(ARG1), (u32)&psxCore.CP2); \
 	iFlushRegs(0); \
 	CALLFunc ((u32)gte##f); \
 	cop2readypc = pc + (psxCP2time[_fFunct_(psxCore.code)] << 2); \
