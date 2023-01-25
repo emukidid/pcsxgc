@@ -15,8 +15,10 @@
 
 char text[DEBUG_TEXT_HEIGHT][DEBUG_TEXT_WIDTH];
 char printToSD = 1;
+/*
 extern u32 dyna_used;
 extern u32 dyna_total;
+*/
 
 #ifdef SHOW_DEBUG
 char txtbuffer[1024];
@@ -27,8 +29,10 @@ static void check_heap_space(void){
 	sprintf(txtbuffer,"%dKB MEM1 available", SYS_GetArena1Size()/1024);
 	DEBUG_print(txtbuffer,DBG_MEMFREEINFO);
 	
+	/*
 	sprintf(txtbuffer,"Dynarec (KB) %04d/%04d",dyna_used,dyna_total/1024);
 	DEBUG_print(txtbuffer,DBG_CORE1);
+	*/
 }
 #endif
 

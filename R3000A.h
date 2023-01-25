@@ -158,7 +158,8 @@ enum {
 	PSXINT_SPUASYNC,
 	PSXINT_CDRDBUF,
 	PSXINT_CDRLID,
-	PSXINT_CDRPLAY
+	PSXINT_CDRPLAY,
+	PSXINT_COUNT
 };
 
 typedef struct psxCP2Regs {
@@ -184,6 +185,7 @@ typedef struct {
 	u8 ICache_Addr[0x1000];
 	u8 ICache_Code[0x1000];
 	boolean ICache_valid;
+	s8 code_buffer [0x200000] __attribute__((aligned(32))); // 2 MiB code buffer for Lightrec
 	s8 psxM[0x00220000] __attribute__((aligned(32))); // Kernel & User Memory (2 Meg)
 	s8 psxR[0x00080000] __attribute__((aligned(32))); // BIOS ROM (512K)
 	u8* psxMemWLUT[0x10000] __attribute__((aligned(32)));
