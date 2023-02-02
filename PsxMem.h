@@ -26,13 +26,10 @@ extern "C" {
 
 #include "PsxCommon.h"
 
-#if defined(HW_RVL) || defined(HW_DOL) || defined(__BIGENDIAN__)
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__ || defined(HW_RVL) || defined(HW_DOL) || defined(__BIGENDIAN__)
 
-#define _SWAP16(b) ((((unsigned char *)&(b))[0] & 0xff) | (((unsigned char *)&(b))[1] & 0xff) << 8)
-#define _SWAP32(b) ((((unsigned char *)&(b))[0] & 0xff) | ((((unsigned char *)&(b))[1] & 0xff) << 8) | ((((unsigned char *)&(b))[2] & 0xff) << 16) | (((unsigned char *)&(b))[3] << 24))
-
-#define SWAP16(v) ((((v) & 0xff00) >> 8) +(((v) & 0xff) << 8))
-#define SWAP32(v) ((((v) & 0xff000000ul) >> 24) + (((v) & 0xff0000ul) >> 8) + (((v) & 0xff00ul)<<8) +(((v) & 0xfful) << 24))
+#define SWAP16(v) __builtin_bswap16(v)
+#define SWAP32(v) __builtin_bswap32(v)
 #define SWAPu32(v) SWAP32((u32)(v))
 #define SWAPs32(v) SWAP32((s32)(v))
 
@@ -47,6 +44,12 @@ extern "C" {
 #define SWAPu16(b) (b)
 #define SWAPu32(b) (b)
 
+#endif
+
+#ifdef LIGHTREC
+#define INVALID_PTR ((void *)-1)
+#else
+#define INVALID_PTR NULL
 #endif
 
 #define psxMs8(mem)		psxCore.psxM[(mem) & 0x1fffff]
@@ -108,7 +111,7 @@ extern s8 *psxH;
 #define psxHu32ref(mem)	(*(u32 *)&psxH[(mem) & 0xffff])
 
 
-#define PSXM(mem)		(psxCore.psxMemRLUT[(mem) >> 16] == 0 ? NULL : (u8*)(psxCore.psxMemRLUT[(mem) >> 16] + ((mem) & 0xffff)))
+#define PSXM(mem)		(psxCore.psxMemRLUT[(mem) >> 16] == INVALID_PTR ? INVALID_PTR : (u8*)(psxCore.psxMemRLUT[(mem) >> 16] + ((mem) & 0xffff)))
 #define PSXMs8(mem)		(*(s8 *)PSXM(mem))
 #define PSXMs16(mem)	(SWAP16(*(s16 *)PSXM(mem)))
 #define PSXMs32(mem)	(SWAP32(*(s32 *)PSXM(mem)))
@@ -117,10 +120,6 @@ extern s8 *psxH;
 #define PSXMu32(mem)	(SWAP32(*(u32 *)PSXM(mem)))
 
 #define PSXMu32ref(mem)	(*(u32 *)PSXM(mem))
-
-#if !defined PSXREC && (defined(__x86_64__) || defined(__i386__) || defined(__sh__) || defined(__ppc__) || defined(HW_RVL)) || defined(HW_DOL)
-#define PSXREC
-#endif
 
 int psxMemInit();
 void psxMemReset();

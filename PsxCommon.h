@@ -31,6 +31,17 @@ extern "C" {
 
 #include "config.h"
 
+// XXX: don't care but maybe fix it someday
+#if defined(__GNUC__) && __GNUC__ >= 8
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+#pragma GCC diagnostic ignored "-Wformat-overflow"
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
+// devkitpro has uint32_t as long, unfortunately
+#ifdef _3DS
+#pragma GCC diagnostic ignored "-Wformat"
+#endif
+
 // System includes
 #include <stdio.h>
 #include <string.h>
@@ -40,13 +51,25 @@ extern "C" {
 #include <math.h>
 #include <time.h>
 #include <ctype.h>
+#ifndef __SWITCH__
 #include <sys/types.h>
+#endif
 #include <assert.h>
-#include <zlib.h>
 
 // Define types
-typedef uint8_t boolean;
+typedef int8_t s8;
+typedef int16_t s16;
+typedef int32_t s32;
+typedef int64_t s64;
+typedef intptr_t sptr;
+
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
 typedef uintptr_t uptr;
+
+typedef uint8_t boolean;
 
 #ifndef TRUE
 #define TRUE 1
@@ -58,9 +81,8 @@ typedef uintptr_t uptr;
 
 // Local includes
 #include "System.h"
-#include "debug.h"
 
-#if defined (__LINUX__) || defined (__MACOSX__) || defined(HW_RVL) || defined(HW_DOL)
+#ifndef _WIN32
 #define strnicmp strncasecmp
 #endif
 #define __inline inline
@@ -90,6 +112,8 @@ extern int Log;
 
 void __Log(char *fmt, ...);
 
+#define CYCLE_MULT_DEFAULT 175
+
 typedef struct {
 	char Gpu[MAXPATHLEN];
 	char Spu[MAXPATHLEN];
@@ -97,7 +121,7 @@ typedef struct {
 	char Pad1[MAXPATHLEN];
 	char Pad2[MAXPATHLEN];
 	char Net[MAXPATHLEN];
-    char Sio1[MAXPATHLEN];
+	char Sio1[MAXPATHLEN];
 	char Mcd1[MAXPATHLEN];
 	char Mcd2[MAXPATHLEN];
 	char Bios[MAXPATHLEN];
@@ -105,20 +129,27 @@ typedef struct {
 	char PluginsDir[MAXPATHLEN];
 	char PatchesDir[MAXPATHLEN];
 	boolean Xa;
-	boolean Sio;
 	boolean Mdec;
 	boolean PsxAuto;
 	boolean Cdda;
+	boolean AsyncCD;
+	boolean CHD_Precache; /* loads disk image into memory, works with CHD only. */
 	boolean HLE;
 	boolean SlowBoot;
 	boolean Debug;
 	boolean PsxOut;
-	boolean SpuIrq;
-	boolean RCntFix;
 	boolean UseNet;
-	boolean VSyncWA;
+	boolean icache_emulation;
+	boolean DisableStalls;
+	int GpuListWalking;
+	int cycle_multiplier; // 100 for 1.0
+	int cycle_multiplier_override;
 	u8 Cpu; // CPU_DYNAREC or CPU_INTERPRETER
 	u8 PsxType; // PSX_TYPE_NTSC or PSX_TYPE_PAL
+	struct {
+		boolean cdr_read_timing;
+		boolean gpu_slow_list_walking;
+	} hacks;
 #ifdef _WIN32
 	char Lang[256];
 #endif
@@ -127,15 +158,20 @@ typedef struct {
 extern PcsxConfig Config;
 extern boolean NetOpened;
 
+struct PcsxSaveFuncs {
+	void *(*open)(const char *name, const char *mode);
+	int   (*read)(void *file, void *buf, u32 len);
+	int   (*write)(void *file, const void *buf, u32 len);
+	long  (*seek)(void *file, long offs, int whence);
+	void  (*close)(void *file);
+};
+extern struct PcsxSaveFuncs SaveFuncs;
+
 #define gzfreeze(ptr, size) { \
-	if (Mode == 1) gzwrite(f, ptr, size); \
-	if (Mode == 0) gzread(f, ptr, size); \
+	if (Mode == 1) SaveFuncs.write(f, ptr, size); \
+	if (Mode == 0) SaveFuncs.read(f, ptr, size); \
 }
 
-// Make the timing events trigger faster as we are currently assuming everything
-// takes one cycle, which is not the case on real hardware.
-// FIXME: Count the proper cycle and get rid of this
-#define BIAS	2
 #define PSXCLK	33868800	/* 33.8688 MHz */
 
 enum {

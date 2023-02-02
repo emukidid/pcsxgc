@@ -26,6 +26,7 @@ extern "C" {
 typedef struct {
 	uint32_t	Addr;
 	uint16_t	Val;
+	uint16_t	OldVal;
 } CheatCode;
 
 typedef struct {
@@ -33,6 +34,7 @@ typedef struct {
 	int			First;		// index of the first cheat code
 	int			n;			// number of cheat codes for this cheat
 	int			Enabled;
+	int			WasEnabled;
 } Cheat;
 
 void ClearAllCheats();
@@ -86,6 +88,9 @@ extern int NumCodes;
 extern s8 *prevM;
 extern u32 *SearchResults;
 extern int NumSearchResults;
+
+extern int NumCheatsAllocated;
+extern int NumCodesAllocated;
 
 #define PREVM(mem)		(&prevM[mem])
 #define PrevMu8(mem)	(*(u8 *)PREVM(mem))

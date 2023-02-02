@@ -27,8 +27,22 @@ void BuildPPFCache();
 void FreePPFCache();
 void CheckPPFCache(unsigned char *pB, unsigned char m, unsigned char s, unsigned char f);
 
-void LoadSBI();
-boolean CheckSBI(const u8 *time);
+int LoadSBI(const char *fname, int sector_count);
+void UnloadSBI(void);
+
+extern unsigned char *sbi_sectors;
+
+#include "cdrom.h"
+
+static inline int CheckSBI(const u8 *t)
+{
+	int s;
+	if (sbi_sectors == NULL)
+		return 0;
+
+	s = MSF2SECT(t[0], t[1], t[2]);
+	return (sbi_sectors[s >> 3] >> (s & 7)) & 1;
+}
 
 #ifdef __cplusplus
 }

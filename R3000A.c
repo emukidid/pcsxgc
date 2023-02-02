@@ -24,22 +24,27 @@
 #include "R3000A.h"
 #include "CdRom.h"
 #include "Mdec.h"
-#include "PsxGpu.h"
+#include "gpu.h"
 #include "Gte.h"
+#include "psxinterpreter.h"
 
 R3000Acpu *psxCpu = NULL;
+//#ifdef DRC_DISABLE
 _psxCore psxCore;
+//#endif
 
 int psxInit() {
 	SysPrintf(_("Running PCSX Version %s (%s).\n"), PACKAGE_VERSION, __DATE__);
 
-#ifdef PSXREC
+#ifndef DRC_DISABLE
 	if (Config.Cpu == CPU_INTERPRETER) {
 		psxCpu = &psxInt;
 	} else psxCpu = &psxRec;
 #else
+	Config.Cpu = CPU_INTERPRETER;
 	psxCpu = &psxInt;
 #endif
+	printf("Config.Cpu = %i %08X\r\n", Config.Cpu, (u32)psxCpu);
 
 	Log = 0;
 
@@ -49,8 +54,6 @@ int psxInit() {
 }
 
 void psxReset() {
-	psxCpu->Reset();
-
 	psxMemReset();
 
 	memset(&psxCore, 0, offsetof(_psxCore,psxM));	// Don't clear ptr data stored in there.
@@ -59,6 +62,9 @@ void psxReset() {
 
 	psxCore.CP0.r[12] = 0x10900000; // COP0 enabled | BEV = 1 | TS = 1
 	psxCore.CP0.r[15] = 0x00000002; // PRevID = Revision ID, same as R3000A
+
+	psxCpu->ApplyConfig();
+	psxCpu->Reset();
 
 	psxHwReset();
 	psxBiosInit();
@@ -73,22 +79,32 @@ void psxReset() {
 }
 
 void psxShutdown() {
-	psxMemShutdown();
 	psxBiosShutdown();
 
 	psxCpu->Shutdown();
+
+	psxMemShutdown();
 }
 
 void psxException(u32 code, u32 bd) {
+	psxCore.code = PSXMu32(psxCore.pc);
+	
+	if (!Config.HLE && ((((psxCore.code) >> 24) & 0xfe) == 0x4a)) {
+		// "hokuto no ken" / "Crash Bandicot 2" ...
+		// BIOS does not allow to return to GTE instructions
+		// (just skips it, supposedly because it's scheduled already)
+		// so we execute it here
+		psxCP2[psxCore.code & 0x3f](&psxCore.CP2);
+	}
+
 	// Set the Cause
-	psxCore.CP0.n.Cause = code;
+	psxCore.CP0.n.Cause = (psxCore.CP0.n.Cause & 0x300) | code;
 
 	// Set the EPC & PC
 	if (bd) {
 #ifdef PSXCPU_LOG
 		PSXCPU_LOG("bd set!!!\n");
 #endif
-		SysPrintf("bd set!!!\n");
 		psxCore.CP0.n.Cause |= 0x80000000;
 		psxCore.CP0.n.EPC = (psxCore.pc - 4);
 	} else
@@ -107,50 +123,11 @@ void psxException(u32 code, u32 bd) {
 }
 
 void psxBranchTest() {
-	// GameShark Sampler: Give VSync pin some delay before exception eats it
-	if (psxHu32(0x1070) & psxHu32(0x1074)) {
-		if ((psxCore.CP0.n.Status & 0x401) == 0x401) {
-			u32 opcode;
-
-			// Crash Bandicoot 2: Don't run exceptions when GTE in pipeline
-			opcode = SWAP32(*Read_ICache(psxCore.pc, TRUE));
-			if( ((opcode >> 24) & 0xfe) != 0x4a ) {
-#ifdef PSXCPU_LOG
-				PSXCPU_LOG("Interrupt: %x %x\n", psxHu32(0x1070), psxHu32(0x1074));
-#endif
-				psxException(0x400, 0);
-			}
-		}
-	}
-
-#if 0
-	if( SPU_async )
-	{
-		static int init;
-		int elapsed;
-
-		if( init == 0 ) {
-			// 10 apu cycles
-			// - Final Fantasy Tactics (distorted - dropped sound effects)
-			psxCore.intCycle[PSXINT_SPUASYNC].cycle = PSXCLK / 44100 * 10;
-
-			init = 1;
-		}
-
-		elapsed = psxCore.cycle - psxCore.intCycle[PSXINT_SPUASYNC].sCycle;
-		if (elapsed >= psxCore.intCycle[PSXINT_SPUASYNC].cycle) {
-			SPU_async( elapsed );
-
-			psxCore.intCycle[PSXINT_SPUASYNC].sCycle = psxCore.cycle;
-		}
-	}
-#endif
-
 	if ((psxCore.cycle - psxNextsCounter) >= psxNextCounter)
 		psxRcntUpdate();
 
 	if (psxCore.interrupt) {
-		if ((psxCore.interrupt & (1 << PSXINT_SIO)) && !Config.Sio) { // sio
+		if ((psxCore.interrupt & (1 << PSXINT_SIO))) { // sio
 			if ((psxCore.cycle - psxCore.intCycle[PSXINT_SIO].sCycle) >= psxCore.intCycle[PSXINT_SIO].cycle) {
 				psxCore.interrupt &= ~(1 << PSXINT_SIO);
 				sioInterrupt();
@@ -165,7 +142,7 @@ void psxBranchTest() {
 		if (psxCore.interrupt & (1 << PSXINT_CDREAD)) { // cdr read
 			if ((psxCore.cycle - psxCore.intCycle[PSXINT_CDREAD].sCycle) >= psxCore.intCycle[PSXINT_CDREAD].cycle) {
 				psxCore.interrupt &= ~(1 << PSXINT_CDREAD);
-				cdrReadInterrupt();
+				cdrPlayReadInterrupt();
 			}
 		}
 		if (psxCore.interrupt & (1 << PSXINT_GPUDMA)) { // gpu dma
@@ -186,53 +163,45 @@ void psxBranchTest() {
 				spuInterrupt();
 			}
 		}
-    if (psxCore.interrupt & (1 << PSXINT_GPUBUSY)) { // gpu busy
-      if ((psxCore.cycle - psxCore.intCycle[PSXINT_GPUBUSY].sCycle) >= psxCore.intCycle[PSXINT_GPUBUSY].cycle) {
-        psxCore.interrupt &= ~(1 << PSXINT_GPUBUSY);
-        GPU_idle();
-      }
-    }
-
 		if (psxCore.interrupt & (1 << PSXINT_MDECINDMA)) { // mdec in
 			if ((psxCore.cycle - psxCore.intCycle[PSXINT_MDECINDMA].sCycle) >= psxCore.intCycle[PSXINT_MDECINDMA].cycle) {
 				psxCore.interrupt &= ~(1 << PSXINT_MDECINDMA);
 				mdec0Interrupt();
 			}
 		}
-
 		if (psxCore.interrupt & (1 << PSXINT_GPUOTCDMA)) { // gpu otc
 			if ((psxCore.cycle - psxCore.intCycle[PSXINT_GPUOTCDMA].sCycle) >= psxCore.intCycle[PSXINT_GPUOTCDMA].cycle) {
 				psxCore.interrupt &= ~(1 << PSXINT_GPUOTCDMA);
 				gpuotcInterrupt();
 			}
 		}
-
 		if (psxCore.interrupt & (1 << PSXINT_CDRDMA)) { // cdrom
 			if ((psxCore.cycle - psxCore.intCycle[PSXINT_CDRDMA].sCycle) >= psxCore.intCycle[PSXINT_CDRDMA].cycle) {
 				psxCore.interrupt &= ~(1 << PSXINT_CDRDMA);
 				cdrDmaInterrupt();
 			}
 		}
-
-		if (psxCore.interrupt & (1 << PSXINT_CDRPLAY)) { // cdr play timing
-			if ((psxCore.cycle - psxCore.intCycle[PSXINT_CDRPLAY].sCycle) >= psxCore.intCycle[PSXINT_CDRPLAY].cycle) {
-				psxCore.interrupt &= ~(1 << PSXINT_CDRPLAY);
-				cdrPlayInterrupt();
-			}
-		}
-
-		if (psxCore.interrupt & (1 << PSXINT_CDRDBUF)) { // cdr decoded buffer
-			if ((psxCore.cycle - psxCore.intCycle[PSXINT_CDRDBUF].sCycle) >= psxCore.intCycle[PSXINT_CDRDBUF].cycle) {
-				psxCore.interrupt &= ~(1 << PSXINT_CDRDBUF);
-				cdrDecodedBufferInterrupt();
-			}
-		}
-
 		if (psxCore.interrupt & (1 << PSXINT_CDRLID)) { // cdr lid states
 			if ((psxCore.cycle - psxCore.intCycle[PSXINT_CDRLID].sCycle) >= psxCore.intCycle[PSXINT_CDRLID].cycle) {
 				psxCore.interrupt &= ~(1 << PSXINT_CDRLID);
 				cdrLidSeekInterrupt();
 			}
+		}
+		if (psxCore.interrupt & (1 << PSXINT_SPU_UPDATE)) { // scheduled spu update
+			if ((psxCore.cycle - psxCore.intCycle[PSXINT_SPU_UPDATE].sCycle) >= psxCore.intCycle[PSXINT_SPU_UPDATE].cycle) {
+				psxCore.interrupt &= ~(1 << PSXINT_SPU_UPDATE);
+				spuUpdate();
+			}
+		}
+	}
+
+	if (psxHu32(0x1070) & psxHu32(0x1074)) {
+		if ((psxCore.CP0.n.Status & 0x401) == 0x401) {
+#ifdef PSXCPU_LOG
+			PSXCPU_LOG("Interrupt: %x %x\n", psxHu32(0x1070), psxHu32(0x1074));
+#endif
+//			SysPrintf("Interrupt (%x): %x %x\n", psxCore.cycle, psxHu32(0x1070), psxHu32(0x1074));
+			psxException(0x400, 0);
 		}
 	}
 }

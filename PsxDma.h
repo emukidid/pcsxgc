@@ -33,49 +33,51 @@ extern "C" {
 	psxCore.interrupt |= (1 << PSXINT_GPUDMA); \
 	psxCore.intCycle[PSXINT_GPUDMA].cycle = eCycle; \
 	psxCore.intCycle[PSXINT_GPUDMA].sCycle = psxCore.cycle; \
+	new_dyna_set_event(PSXINT_GPUDMA, eCycle); \
 }
 
 #define SPUDMA_INT(eCycle) { \
 	psxCore.interrupt |= (1 << PSXINT_SPUDMA); \
 	psxCore.intCycle[PSXINT_SPUDMA].cycle = eCycle; \
 	psxCore.intCycle[PSXINT_SPUDMA].sCycle = psxCore.cycle; \
+	new_dyna_set_event(PSXINT_SPUDMA, eCycle); \
 }
 
 #define MDECOUTDMA_INT(eCycle) { \
 	psxCore.interrupt |= (1 << PSXINT_MDECOUTDMA); \
 	psxCore.intCycle[PSXINT_MDECOUTDMA].cycle = eCycle; \
 	psxCore.intCycle[PSXINT_MDECOUTDMA].sCycle = psxCore.cycle; \
+	new_dyna_set_event(PSXINT_MDECOUTDMA, eCycle); \
 }
 
 #define MDECINDMA_INT(eCycle) { \
 	psxCore.interrupt |= (1 << PSXINT_MDECINDMA); \
 	psxCore.intCycle[PSXINT_MDECINDMA].cycle = eCycle; \
 	psxCore.intCycle[PSXINT_MDECINDMA].sCycle = psxCore.cycle; \
+	new_dyna_set_event(PSXINT_MDECINDMA, eCycle); \
 }
 
 #define GPUOTCDMA_INT(eCycle) { \
 	psxCore.interrupt |= (1 << PSXINT_GPUOTCDMA); \
 	psxCore.intCycle[PSXINT_GPUOTCDMA].cycle = eCycle; \
 	psxCore.intCycle[PSXINT_GPUOTCDMA].sCycle = psxCore.cycle; \
+	new_dyna_set_event(PSXINT_GPUOTCDMA, eCycle); \
 }
 
 #define CDRDMA_INT(eCycle) { \
 	psxCore.interrupt |= (1 << PSXINT_CDRDMA); \
 	psxCore.intCycle[PSXINT_CDRDMA].cycle = eCycle; \
 	psxCore.intCycle[PSXINT_CDRDMA].sCycle = psxCore.cycle; \
+	new_dyna_set_event(PSXINT_CDRDMA, eCycle); \
 }
 
-/*
-DMA5 = N/A (PIO)
-*/
-
+void psxDma2(u32 madr, u32 bcr, u32 chcr);
 void psxDma3(u32 madr, u32 bcr, u32 chcr);
 void psxDma4(u32 madr, u32 bcr, u32 chcr);
 void psxDma6(u32 madr, u32 bcr, u32 chcr);
+void gpuInterrupt();
 void spuInterrupt();
-void mdec0Interrupt();
 void gpuotcInterrupt();
-void cdrDmaInterrupt();
 
 #ifdef __cplusplus
 }

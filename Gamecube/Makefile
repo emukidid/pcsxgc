@@ -17,7 +17,7 @@ include $(DEVKITPPC)/gamecube_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	CubeSX
 BUILD		:=	build
-SOURCES		:=	. ./gc_input/ ./vm/ ./libgui/ ./menu/ ./fileBrowser/ .. ../PeopsSoftGPU/ ../franspu/
+SOURCES		:=	. ./gc_input/ ./vm/ ./libgui/ ./menu/ ./fileBrowser/ .. ../PeopsSoftGPU/ ../franspu/ ../ppc/
 
 DATA		:=	data  
 
@@ -30,7 +30,7 @@ LTO			 = #-flto # Uncomment to use link-time optimization
 
 CFLAGS	= -g -O3 $(LTO) -Wall $(MACHDEP) $(INCLUDE) -Wno-stringop-truncation -Wno-strict-aliasing -Wno-misleading-indentation \
 		  -D__GAMECUBE__ -DHW_DOL -D__ppc__ \
-		  -D__GX__ -D_SDL -DEMBEDDED_FONTS \
+		  -D__GX__ -D_SDL -DEMBEDDED_FONTS -DOLDDYNAREC \
 		  -DTHREADED_AUDIO -DRELEASE -DSHOW_DEBUG #-DPRINTGECKO #-DPROFILE
 		  
 CXXFLAGS	=	$(CFLAGS)
@@ -42,7 +42,7 @@ LDFLAGS	=	-g $(MACHDEP) $(LTO) -mogc -Wl,-Map,$(notdir $@).map
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-laesnd -lz -lm -lfat -logc -liso9660 -llightrec -llightning
+LIBS	:=	-laesnd -lz -lm -lfat -logc -liso9660
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

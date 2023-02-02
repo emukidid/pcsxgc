@@ -15,32 +15,47 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses>.
  */
 
+#ifdef NO_SOCKET
+
+int StartServer() { return 0;}
+void StopServer() {}
+void GetClient() {}
+void CloseClient() {}
+int HasClient() { return 0;}
+int ReadSocket(char * buffer, int len) { return 0;}
+int RawReadSocket(char * buffer, int len) { return 0;}
+void WriteSocket(char * buffer, int len) {}
+
+void SetsBlock() {}
+void SetsNonblock() {}
+
+#else // NO_SOCKET
+
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
 
-#include "PsxCommon.h"
-#include "Socket.h"
+#include "psxcommon.h"
+#include "socket.h"
 
 #ifndef _WIN32
-//#include <sys/socket.h>
-//#include <sys/ioctl.h>
-//#include <arpa/inet.h>
-//#include <netinet/in.h>
-//#include <unistd.h>
-//#include <fcntl.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <fcntl.h>
 #endif
 
-//static int server_socket = 0;
+static int server_socket = 0;
 static int client_socket = 0;
 
-//static char tbuf[513];
-//static int ptr = 0;
+static char tbuf[513];
+static int ptr = 0;
 
 #define PORT_NUMBER 12345
 
 int StartServer() {
-#if 0
     struct in_addr localhostaddr;
     struct sockaddr_in localsocketaddr;
 
@@ -80,12 +95,11 @@ int StartServer() {
 
     if (listen(server_socket, 1) != 0)
         return -1;
-#endif
+
     return 0;
 }
 
 void StopServer() {
-#if 0
 #ifdef _WIN32
     shutdown(server_socket, SD_BOTH);
     closesocket(server_socket);
@@ -94,11 +108,9 @@ void StopServer() {
     shutdown(server_socket, SHUT_RDWR);
     close(server_socket);
 #endif
-#endif
 }
 
 void GetClient() {
-#if 0
     int new_socket;
     char hello[256];
 
@@ -123,14 +135,12 @@ void GetClient() {
     }
 #endif
 
-    sprintf(hello, "000 PCSX Version %s - Debug console\r\n", PACKAGE_VERSION);
+    sprintf(hello, "000 PCSX Version %s - Debug console\r\n", PCSX_VERSION);
     WriteSocket(hello, strlen(hello));
     ptr = 0;
-#endif
 }
 
 void CloseClient() {
-#if 0
     if (client_socket) {
 #ifdef _WIN32
         shutdown(client_socket, SD_BOTH);
@@ -141,7 +151,6 @@ void CloseClient() {
 #endif
         client_socket = 0;
     }
-#endif
 }
 
 int HasClient() {
@@ -149,7 +158,6 @@ int HasClient() {
 }
 
 int ReadSocket(char * buffer, int len) {
-#if 0
     int r;
     char * endl;
 
@@ -195,13 +203,10 @@ int ReadSocket(char * buffer, int len) {
     buffer[r] = 0;
 
     return r;
-#endif 
-	return 0;
 }
 
 int RawReadSocket(char * buffer, int len) {
-#if 0
-    int r;
+    int r = 0;
     int mlen = len < ptr ? len : ptr;
 
     if (!client_socket)
@@ -235,21 +240,16 @@ int RawReadSocket(char * buffer, int len) {
     r += mlen;
 
     return r;
-#endif
-	return 0;
 }
 
 void WriteSocket(char * buffer, int len) {
-#if 0
     if (!client_socket)
         return;
 
     send(client_socket, buffer, len, 0);
-#endif
 }
 
 void SetsBlock() {
-#if 0
 #ifdef _WIN32
     u_long b = 0;
     ioctlsocket(server_socket, FIONBIO, &b);
@@ -257,11 +257,9 @@ void SetsBlock() {
     int flags = fcntl(server_socket, F_GETFL, 0);
     fcntl(server_socket, F_SETFL, flags & ~O_NONBLOCK);
 #endif
-#endif
 }
 
 void SetsNonblock() {
-#if 0
 #ifdef _WIN32
     u_long b = 1;
     ioctlsocket(server_socket, FIONBIO, &b);
@@ -269,5 +267,5 @@ void SetsNonblock() {
     int flags = fcntl(server_socket, F_GETFL, 0);
     fcntl(server_socket, F_SETFL, flags | O_NONBLOCK);
 #endif
-#endif
 }
+#endif // NO_SOCKET

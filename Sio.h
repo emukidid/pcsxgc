@@ -36,7 +36,7 @@ extern "C" {
 
 extern unsigned char *Mcd1Data;
 extern unsigned char *Mcd2Data;
-
+extern char McdDisable[2];
 
 void sioWrite8(unsigned char value);
 void sioWriteStat16(unsigned short value);
@@ -53,14 +53,14 @@ unsigned short sioReadBaud16();
 void netError();
 
 void sioInterrupt();
-int sioFreeze(gzFile f, int Mode);
+int sioFreeze(void *f, int Mode);
 
-extern int LoadMcd(int mcd, fileBrowser_file *savepath);
-extern int LoadMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2);
-extern int SaveMcd(int mcd, fileBrowser_file *savepath);
-extern int SaveMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2);
-extern bool CreateMcd(int slot, fileBrowser_file *mcd);
-extern void ConvertMcd(char *mcd, char *data);
+void LoadMcd(int mcd, fileBrowser_file *savepath);
+void LoadMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2);
+void SaveMcd(int mcd, fileBrowser_file *savepath);
+void SaveMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2);
+void CreateMcd(int slot, fileBrowser_file *mcd);
+void ConvertMcd(char *mcd, char *data);
 
 typedef struct {
 	char Title[48 + 1]; // Title in ASCII

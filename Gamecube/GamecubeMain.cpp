@@ -369,6 +369,8 @@ int main(int argc, char *argv[])
 	//DEBUG_Init(GDBSTUB_DEVICE_TCP,GDBSTUB_DEF_TCPPORT); //Default port is 2828
 	DEBUG_Init(GDBSTUB_DEVICE_USB, 1);
 	_break();
+#else
+	CON_EnableGecko(EXI_CHANNEL_1, TRUE);
 #endif
 
 	control_info_init(); //Perform controller auto assignment at least once at startup.
@@ -467,25 +469,24 @@ int loadISO(fileBrowser_file* file)
 			break;
 		}
 		// Try loading everything
-		int result = 0;
 		saveFile_init(saveFile_dir);
-		result += LoadMcd(1,saveFile_dir);
-		result += LoadMcd(2,saveFile_dir);
+		LoadMcd(1,saveFile_dir);
+		LoadMcd(2,saveFile_dir);
 		saveFile_deinit(saveFile_dir);
 		
 		switch (nativeSaveDevice)
 		{
 		case NATIVESAVEDEVICE_SD:
-			if (result) autoSaveLoaded = NATIVESAVEDEVICE_SD;
+			autoSaveLoaded = NATIVESAVEDEVICE_SD;
 			break;
 		case NATIVESAVEDEVICE_USB:
-			if (result) autoSaveLoaded = NATIVESAVEDEVICE_USB;
+			autoSaveLoaded = NATIVESAVEDEVICE_USB;
 			break;
 		case NATIVESAVEDEVICE_CARDA:
-			if (result) autoSaveLoaded = NATIVESAVEDEVICE_CARDA;
+			autoSaveLoaded = NATIVESAVEDEVICE_CARDA;
 			break;
 		case NATIVESAVEDEVICE_CARDB:
-			if (result) autoSaveLoaded = NATIVESAVEDEVICE_CARDB;
+			autoSaveLoaded = NATIVESAVEDEVICE_CARDB;
 			break;
 		}
 	}	

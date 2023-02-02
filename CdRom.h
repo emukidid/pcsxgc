@@ -34,6 +34,10 @@ extern "C" {
 #define btoi(b)     ((b) / 16 * 10 + (b) % 16) /* BCD to u_char */
 #define itob(i)     ((i) / 10 * 16 + (i) % 10) /* u_char to BCD */
 
+#define ABS_CD(x) ((x >= 0) ? x : -x)
+#define MIN_VALUE(a,b) ({ __typeof__ (a) _a = (a); __typeof__ (b) _b = (b); _a < _b ? _a : _b; })
+#define MAX_VALUE(a,b) ({ __typeof__ (a) _a = (a); __typeof__ (b) _b = (b); _a > _b ? _a : _b; })
+
 #define MSF2SECT(m, s, f)		(((m) * 60 + (s) - 2) * 75 + (f))
 
 #define CD_FRAMESIZE_RAW		2352
@@ -41,70 +45,13 @@ extern "C" {
 
 #define SUB_FRAMESIZE			96
 
-typedef struct {
-	unsigned char OCUP;
-	unsigned char Reg1Mode;
-	unsigned char Reg2;
-	unsigned char CmdProcess;
-	unsigned char Ctrl;
-	unsigned char Stat;
-
-	unsigned char StatP;
-
-	unsigned char Transfer[CD_FRAMESIZE_RAW];
-	unsigned int  transferIndex;
-
-	unsigned char Prev[4];
-	unsigned char Param[8];
-	unsigned char Result[16];
-
-	unsigned char ParamC;
-	unsigned char ParamP;
-	unsigned char ResultC;
-	unsigned char ResultP;
-	unsigned char ResultReady;
-	unsigned char Cmd;
-	unsigned char Readed;
-	u32 Reading;
-
-	unsigned char ResultTN[6];
-	unsigned char ResultTD[4];
-	unsigned char SetSector[4];
-	unsigned char SetSectorSeek[4];
-	unsigned char SetSectorPlay[4];
-	unsigned char Track;
-	boolean Play, Muted;
-	int CurTrack;
-	int Mode, File, Channel;
-	int Reset;
-	int RErr;
-	int FirstSector;
-
-	xa_decode_t Xa;
-
-	int Init;
-
-	unsigned char Irq;
-	u32 eCycle;
-
-	boolean Seeked;
-
-	u8 LidCheck;
-	u8 FastForward;
-	u8 FastBackward;
-
-	u8 AttenuatorLeft[2], AttenuatorRight[2];
-} cdrStruct;
-
-extern cdrStruct cdr;
-
-void cdrDecodedBufferInterrupt();
-
 void cdrReset();
-void cdrInterrupt();
-void cdrReadInterrupt();
-void cdrLidSeekInterrupt();
-void cdrPlayInterrupt();
+
+void cdrInterrupt(void);
+void cdrPlayReadInterrupt(void);
+void cdrLidSeekInterrupt(void);
+void cdrDmaInterrupt(void);
+void LidInterrupt(void);
 unsigned char cdrRead0(void);
 unsigned char cdrRead1(void);
 unsigned char cdrRead2(void);
@@ -113,7 +60,7 @@ void cdrWrite0(unsigned char rt);
 void cdrWrite1(unsigned char rt);
 void cdrWrite2(unsigned char rt);
 void cdrWrite3(unsigned char rt);
-int cdrFreeze(gzFile f, int Mode);
+int cdrFreeze(void *f, int Mode);
 
 #ifdef __cplusplus
 }

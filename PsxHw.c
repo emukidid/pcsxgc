@@ -24,23 +24,24 @@
 #include "PsxHw.h"
 #include "Mdec.h"
 #include "CdRom.h"
-#include "PsxGpu.h"
+#include "gpu.h"
+
+//#undef PSXHW_LOG
+//#define PSXHW_LOG printf
 
 void psxHwReset() {
-	if (Config.Sio) psxHu32ref(0x1070) |= SWAP32(0x80);
-	if (Config.SpuIrq) psxHu32ref(0x1070) |= SWAP32(0x200);
-
 	memset(psxH, 0, 0x10000);
 
 	mdecInit(); // initialize mdec decoder
 	cdrReset();
 	psxRcntInit();
+	HW_GPU_STATUS = SWAP32(0x14802000);
 }
 
 u8 psxHwRead8(u32 add) {
 	unsigned char hard;
 
-	switch (add) {
+	switch (add & 0x1fffffff) {
 		case 0x1f801040: hard = sioRead8();break; 
 #ifdef ENABLE_SIO1API
 		case 0x1f801050: hard = SIO1_readData8(); break;
@@ -66,7 +67,7 @@ u8 psxHwRead8(u32 add) {
 u16 psxHwRead16(u32 add) {
 	unsigned short hard;
 
-	switch (add) {
+	switch (add & 0x1fffffff) {
 #ifdef PSXHW_LOG
 		case 0x1f801070: PSXHW_LOG("IREG 16bit read %x\n", psxHu16(0x1070));
 			return psxHu16(0x1070);
@@ -120,6 +121,13 @@ u16 psxHwRead16(u32 add) {
 		case 0x1f80105e:
 			hard = SIO1_readBaud16();
 			return hard;
+#else
+		/* Fixes Armored Core misdetecting the Link cable being detected.
+		 * We want to turn that thing off and force it to do local multiplayer instead.
+		 * Thanks Sony for the fix, they fixed it in their PS Classic fork.
+		 */
+		case 0x1f801054:
+			return 0x80;
 #endif
 		case 0x1f801100:
 			hard = psxRcntRcount(0);
@@ -179,6 +187,10 @@ u16 psxHwRead16(u32 add) {
 		//case 0x1f802030: hard =   //int_2000????
 		//case 0x1f802040: hard =//dip switches...??
 
+		case 0x1f801800:
+		case 0x1f801802:
+			log_unhandled("cdrom r16 %x\n", add);
+			// falthrough
 		default:
 			if (add >= 0x1f801c00 && add < 0x1f801e00) {
             	hard = SPU_readRegister(add);
@@ -200,7 +212,7 @@ u16 psxHwRead16(u32 add) {
 u32 psxHwRead32(u32 add) {
 	u32 hard;
 
-	switch (add) {
+	switch (add & 0x1fffffff) {
 		case 0x1f801040:
 			hard = sioRead8();
 			hard |= sioRead8() << 8;
@@ -236,7 +248,10 @@ u32 psxHwRead32(u32 add) {
 #endif
 			return hard;
 		case 0x1f801814:
-			hard = gpuReadStatus();
+			gpuSyncPluginSR();
+			hard = SWAP32(HW_GPU_STATUS);
+			if (hSyncCount < 240 && (hard & PSXGPU_ILACE_BITS) != PSXGPU_ILACE_BITS)
+				hard |= PSXGPU_LCF & (psxCore.cycle << 20);
 #ifdef PSXHW_LOG
 			PSXHW_LOG("GPU STATUS 32bit read %x\n", hard);
 #endif
@@ -334,6 +349,9 @@ u32 psxHwRead32(u32 add) {
 #endif
 			return hard;
 
+		case 0x1f801800:
+			log_unhandled("cdrom r32 %x\n", add);
+			// falthrough
 		default:
 			hard = psxHu32(add); 
 #ifdef PSXHW_LOG
@@ -348,7 +366,7 @@ u32 psxHwRead32(u32 add) {
 }
 
 void psxHwWrite8(u32 add, u8 value) {
-	switch (add) {
+	switch (add & 0x1fffffff) {
 		case 0x1f801040: sioWrite8(value); break;
 #ifdef ENABLE_SIO1API
 		case 0x1f801050: SIO1_writeData8(value); break;
@@ -359,20 +377,20 @@ void psxHwWrite8(u32 add, u8 value) {
 		case 0x1f801803: cdrWrite3(value); break;
 
 		default:
-			psxHu8ref(add) = value;
+			psxHu8(add) = value;
 #ifdef PSXHW_LOG
 			PSXHW_LOG("*Unknown 8bit write at address %x value %x\n", add, value);
 #endif
 			return;
 	}
-	psxHu8ref(add) = value;
+	psxHu8(add) = value;
 #ifdef PSXHW_LOG
 	PSXHW_LOG("*Known 8bit write at address %x value %x\n", add, value);
 #endif
 }
 
 void psxHwWrite16(u32 add, u16 value) {
-	switch (add) {
+	switch (add & 0x1fffffff) {
 		case 0x1f801040:
 			sioWrite8((unsigned char)value);
 			sioWrite8((unsigned char)(value>>8));
@@ -422,9 +440,7 @@ void psxHwWrite16(u32 add, u16 value) {
 #ifdef PSXHW_LOG
 			PSXHW_LOG("IREG 16bit write %x\n", value);
 #endif
-			if (Config.Sio) psxHu16ref(0x1070) |= SWAPu16(0x80);
-			if (Config.SpuIrq) psxHu16ref(0x1070) |= SWAPu16(0x200);
-			psxHu16ref(0x1070) &= SWAPu16((psxHu16(0x1074) & value));
+			psxHu16ref(0x1070) &= SWAPu16(value);
 			return;
 
 		case 0x1f801074:
@@ -432,6 +448,8 @@ void psxHwWrite16(u32 add, u16 value) {
 			PSXHW_LOG("IMASK 16bit write %x\n", value);
 #endif
 			psxHu16ref(0x1074) = SWAPu16(value);
+			if (psxHu16ref(0x1070) & SWAPu16(value))
+				new_dyna_set_event(PSXINT_NEWDRC_CHECK, 1);
 			return;
 
 		case 0x1f801100:
@@ -484,7 +502,7 @@ void psxHwWrite16(u32 add, u16 value) {
 
 		default:
 			if (add>=0x1f801c00 && add<0x1f801e00) {
-            	SPU_writeRegister(add, value);
+				SPU_writeRegister(add, value, psxCore.cycle);
 				return;
 			}
 
@@ -501,6 +519,8 @@ void psxHwWrite16(u32 add, u16 value) {
 }
 
 #define DmaExec(n) { \
+	if (value & SWAPu32(HW_DMA##n##_CHCR) & 0x01000000) \
+		log_unhandled("dma" #n " %08x -> %08x\n", HW_DMA##n##_CHCR, value); \
 	HW_DMA##n##_CHCR = SWAPu32(value); \
 \
 	if (SWAPu32(HW_DMA##n##_CHCR) & 0x01000000 && SWAPu32(HW_DMA_PCR) & (8 << (n * 4))) { \
@@ -509,7 +529,7 @@ void psxHwWrite16(u32 add, u16 value) {
 }
 
 void psxHwWrite32(u32 add, u32 value) {
-	switch (add) {
+	switch (add & 0x1fffffff) {
 	    case 0x1f801040:
 			sioWrite8((unsigned char)value);
 			sioWrite8((unsigned char)((value&0xff) >>  8));
@@ -535,15 +555,15 @@ void psxHwWrite32(u32 add, u32 value) {
 #ifdef PSXHW_LOG
 			PSXHW_LOG("IREG 32bit write %x\n", value);
 #endif
-			if (Config.Sio) psxHu32ref(0x1070) |= SWAPu32(0x80);
-			if (Config.SpuIrq) psxHu32ref(0x1070) |= SWAPu32(0x200);
-			psxHu32ref(0x1070) &= SWAPu32((psxHu32(0x1074) & value));
+			psxHu32ref(0x1070) &= SWAPu32(value);
 			return;
 		case 0x1f801074:
 #ifdef PSXHW_LOG
 			PSXHW_LOG("IMASK 32bit write %x\n", value);
 #endif
 			psxHu32ref(0x1074) = SWAPu32(value);
+			if (psxHu32ref(0x1070) & SWAPu32(value))
+				new_dyna_set_event(PSXINT_NEWDRC_CHECK, 1);
 			return;
 
 #ifdef PSXHW_LOG
@@ -655,8 +675,15 @@ void psxHwWrite32(u32 add, u32 value) {
 			PSXHW_LOG("DMA ICR 32bit write %x\n", value);
 #endif
 		{
-			u32 tmp = (~value) & SWAPu32(HW_DMA_ICR);
-			HW_DMA_ICR = SWAPu32(((tmp ^ value) & 0xffffff) ^ tmp);
+			u32 tmp = value & 0x00ff803f;
+			tmp |= (SWAPu32(HW_DMA_ICR) & ~value) & 0x7f000000;
+			if ((tmp & HW_DMA_ICR_GLOBAL_ENABLE && tmp & 0x7f000000)
+			    || tmp & HW_DMA_ICR_BUS_ERROR) {
+				if (!(SWAPu32(HW_DMA_ICR) & HW_DMA_ICR_IRQ_SENT))
+					psxHu32ref(0x1070) |= SWAP32(8);
+				tmp |= HW_DMA_ICR_IRQ_SENT;
+			}
+			HW_DMA_ICR = SWAPu32(tmp);
 			return;
 		}
 
@@ -669,7 +696,9 @@ void psxHwWrite32(u32 add, u32 value) {
 #ifdef PSXHW_LOG
 			PSXHW_LOG("GPU STATUS 32bit write %x\n", value);
 #endif
-			GPU_writeStatus(value); return;
+			GPU_writeStatus(value);
+			gpuSyncPluginSR();
+			return;
 
 		case 0x1f801820:
 			mdecWrite0(value); break;
@@ -727,16 +756,10 @@ void psxHwWrite32(u32 add, u32 value) {
 		default:
 			// Dukes of Hazard 2 - car engine noise
 			if (add>=0x1f801c00 && add<0x1f801e00) {
-        SPU_writeRegister(add, value&0xffff);
-				
-				add += 2;
-				value >>= 16;
-
-				if (add>=0x1f801c00 && add<0x1f801e00)
-					SPU_writeRegister(add, value&0xffff);
+				SPU_writeRegister(add, value&0xffff, psxCore.cycle);
+				SPU_writeRegister(add + 2, value>>16, psxCore.cycle);
 				return;
 			}
-
 
 			psxHu32ref(add) = SWAPu32(value);
 #ifdef PSXHW_LOG
@@ -750,6 +773,6 @@ void psxHwWrite32(u32 add, u32 value) {
 #endif
 }
 
-int psxHwFreeze(gzFile f, int Mode) {
+int psxHwFreeze(void *f, int Mode) {
 	return 0;
 }

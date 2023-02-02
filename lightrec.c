@@ -4,9 +4,10 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/stat.h>
 
 #include "CdRom.h"
-#include "PsxGpu.h"
+#include "gpu.h"
 #include "Gte.h"
 #include "Mdec.h"
 #include "PsxCounters.h"
@@ -25,17 +26,21 @@
 #	define unlikely(x)     (x)
 #endif
 
-#define FORCE_STEP_BY_STEP 1
+#define FORCE_STEP_BY_STEP 0
 
 struct lightrec_state *lightrec_state;
 
-static char *name = "pcsx";
+#ifdef WII
+static char *name = "sd:/wiisx/WiiSX.elf";
+#else
+static char *name = "sd:/wiisx/CubeSX.elf";
+#endif
 
-static u32 event_cycles[PSXINT_COUNT];
-static u32 next_interrupt;
+u32 event_cycles[PSXINT_COUNT];
+u32 next_interupt;
 
 static bool ram_disabled;
-static bool use_lightrec_interpreter = true;
+static bool use_lightrec_interpreter = false;
 static bool booting;
 
 enum my_cp2_opcodes {
@@ -115,13 +120,11 @@ static bool has_interrupt(void)
 }
 
 static void lightrec_restore_state(struct lightrec_state *state)
-{
-	lightrec_reset_cycle_count(state, psxCore.cycle);
-
+{	
 	if (FORCE_STEP_BY_STEP || booting || has_interrupt())
 		lightrec_set_exit_flags(state, LIGHTREC_EXIT_CHECK_INTERRUPT);
 	else
-		lightrec_set_target_cycle_count(state, next_interrupt);
+		lightrec_set_target_cycle_count(state, next_interupt);
 }
 
 static void hw_write_byte(struct lightrec_state *state,
@@ -365,10 +368,20 @@ static bool lightrec_can_hw_direct(u32 kaddr, bool is_write, u8 size)
 	}
 }
 
+extern void DCFlushRange(void *ptr, u32 len);
+extern void ICInvalidateRange(void *ptr, u32 len);
+
+static void lightrec_code_inv(void *ptr, uint32_t len)
+{
+	DCFlushRange(ptr, len);
+	ICInvalidateRange(ptr, len);
+}
+
 static const struct lightrec_ops lightrec_ops = {
 	.cop2_op = cop2_op,
 	.enable_ram = lightrec_enable_ram,
 	.hw_direct = lightrec_can_hw_direct,
+	.code_inv = lightrec_code_inv,
 };
 
 static int lightrec_plugin_init(void)
@@ -428,15 +441,18 @@ static void schedule_timeslice(void)
 		if (0 < dif && dif < min)
 			min = dif;
 	}
-	next_interrupt = c + min;
+	next_interupt = c + min;
 }
 
 typedef void (irq_func)();
+static void unusedInterrupt()
+{
+}
 
 static irq_func * const irq_funcs[] = {
 	[PSXINT_SIO]	= sioInterrupt,
 	[PSXINT_CDR]	= cdrInterrupt,
-	[PSXINT_CDREAD]	= cdrReadInterrupt,
+	[PSXINT_CDREAD]	= cdrPlayReadInterrupt,
 	[PSXINT_GPUDMA]	= gpuInterrupt,
 	[PSXINT_MDECOUTDMA] = mdec1Interrupt,
 	[PSXINT_SPUDMA]	= spuInterrupt,
@@ -444,10 +460,9 @@ static irq_func * const irq_funcs[] = {
 	[PSXINT_GPUOTCDMA] = gpuotcInterrupt,
 	[PSXINT_CDRDMA] = cdrDmaInterrupt,
 	[PSXINT_CDRLID] = cdrLidSeekInterrupt,
-	[PSXINT_CDRPLAY] = cdrPlayInterrupt,
-	[PSXINT_CDRDBUF] = cdrDecodedBufferInterrupt,
-	//[PSXINT_SPU_UPDATE] = spuUpdate,
-	//[PSXINT_RCNT] = psxRcntUpdate,
+	[PSXINT_CDRPLAY_OLD] = unusedInterrupt,
+	[PSXINT_SPU_UPDATE] = spuUpdate,
+	[PSXINT_RCNT] = psxRcntUpdate,
 };
 
 /* local dupe of psxBranchTest, using event_cycles */
@@ -477,6 +492,8 @@ static void irq_test(void)
 
 void gen_interupt()
 {
+	//printf("%08x, %u->%u (%d)\r\n", psxCore.pc, psxCore.cycle,
+	//	next_interupt, next_interupt - psxCore.cycle);
 	irq_test();
 	schedule_timeslice();
 }
@@ -489,17 +506,19 @@ static void lightrec_plugin_execute_block(void)
 		gen_interupt();
 
 	if (FORCE_STEP_BY_STEP || booting)
-		next_interrupt = psxCore.cycle;
+		next_interupt = psxCore.cycle;
 
 	lightrec_reset_cycle_count(lightrec_state, psxCore.cycle);
 	lightrec_restore_regs(lightrec_state);
 
 	if (use_lightrec_interpreter) {
 		psxCore.pc = lightrec_run_interpreter(lightrec_state,
-						      psxCore.pc, next_interrupt);
+						      psxCore.pc, next_interupt);
 	} else {
+		//if(!booting)
+		//	printf("Cycles %08X next_interupt %08X\r\n", psxCore.pc, next_interupt);
 		psxCore.pc = lightrec_execute(lightrec_state,
-					      psxCore.pc, next_interrupt);
+					      psxCore.pc, next_interupt);
 	}
 
 	psxCore.cycle = lightrec_current_cycle_count(lightrec_state);
@@ -593,7 +612,26 @@ void lightrec_plugin_prepare_save_state(void)
 	memcpy(&psxCore.CP0, regs->cp0, sizeof(regs->cp0));
 	memcpy(&psxCore.GPR, regs->gpr, sizeof(regs->gpr));
 }
+static void lightrec_plugin_notify(int note, void *data)
+{
+	/*
+	To change once proper icache emulation is emulated
+	switch (note)
+	{
+		case R3000ACPU_NOTIFY_CACHE_UNISOLATED:
+			lightrec_plugin_clear(0, 0x200000/4);
+			break;
+		case R3000ACPU_NOTIFY_CACHE_ISOLATED:
+		// Sent from psxDma3().
+		case R3000ACPU_NOTIFY_DMA3_EXE_LOAD:
+		default:
+			break;
+	}*/
+}
 
+static void lightrec_plugin_apply_config()
+{
+}
 R3000Acpu psxRec =
 {
 	lightrec_plugin_init,
@@ -601,6 +639,8 @@ R3000Acpu psxRec =
 	lightrec_plugin_execute,
 	lightrec_plugin_execute_block,
 	lightrec_plugin_clear,
+	lightrec_plugin_notify,
+	lightrec_plugin_apply_config,
 	lightrec_plugin_shutdown,
 };
 
@@ -613,4 +653,9 @@ long sysconf(int name)
 	default:
 		return -EINVAL;
 	}
+}
+
+mode_t umask(mode_t mask)
+{
+	return mask;
 }

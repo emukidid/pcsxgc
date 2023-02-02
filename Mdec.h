@@ -36,8 +36,9 @@ u32 mdecRead0();
 u32 mdecRead1();
 void psxDma0(u32 madr, u32 bcr, u32 chcr);
 void psxDma1(u32 madr, u32 bcr, u32 chcr);
+void mdec0Interrupt();
 void mdec1Interrupt();
-int mdecFreeze(gzFile f, int Mode);
+int mdecFreeze(void *f, int Mode);
 
 #ifdef __cplusplus
 }

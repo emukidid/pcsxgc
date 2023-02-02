@@ -1,8 +1,7 @@
-/*  PPF/SBI Support for PCSX-Reloaded
+/*  PPF Patch Support for PCSX-Reloaded
  *  Copyright (c) 2009, Wei Mingzhi <whistler_wmz@users.sf.net>.
- *  Copyright (c) 2010, shalma.
  *
- *  PPF code based on P.E.Op.S CDR Plugin by Pete Bernert.
+ *  Based on P.E.Op.S CDR Plugin by Pete Bernert.
  *  Copyright (c) 2002, Pete Bernert.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -184,20 +183,20 @@ void BuildPPFCache() {
 	char			method, undo = 0, blockcheck = 0;
 	int				dizlen, dizyn;
 	unsigned char	ppfmem[512];
-	char			szPPF[MAXPATHLEN];
+	char			szPPF[MAXPATHLEN * 2];
 	int				count, seekpos, pos;
 	u32				anz; // use 32-bit to avoid stupid overflows
 	s32				ladr, off, anx;
 
 	FreePPFCache();
 
-    if (CdromId[0] == '\0') return;
+	if (CdromId[0] == '\0') return;
 
 	// Generate filename in the format of SLUS_123.45
-	buffer[0] = toupper((u32)CdromId[0]);
-	buffer[1] = toupper((u32)CdromId[1]);
-	buffer[2] = toupper((u32)CdromId[2]);
-	buffer[3] = toupper((u32)CdromId[3]);
+	buffer[0] = toupper(CdromId[0]);
+	buffer[1] = toupper(CdromId[1]);
+	buffer[2] = toupper(CdromId[2]);
+	buffer[3] = toupper(CdromId[3]);
 	buffer[4] = '_';
 	buffer[5] = CdromId[4];
 	buffer[6] = CdromId[5];
@@ -213,7 +212,8 @@ void BuildPPFCache() {
 	if (ppffile == NULL) return;
 
 	memset(buffer, 0, 5);
-	fread(buffer, 3, 1, ppffile);
+	if (fread(buffer, 1, 3, ppffile) != 3)
+		goto fail_io;
 
 	if (strcmp(buffer, "PPF") != 0) {
 		SysPrintf(_("Invalid PPF patch: %s.\n"), szPPF);
@@ -236,12 +236,14 @@ void BuildPPFCache() {
 			fseek(ppffile, -8, SEEK_END);
 
 			memset(buffer, 0, 5);
-			fread(buffer, 4, 1, ppffile);
+			if (fread(buffer, 1, 4, ppffile) != 4)
+				goto fail_io;
 
 			if (strcmp(".DIZ", buffer) != 0) {
 				dizyn = 0;
 			} else {
-				fread(&dizlen, 4, 1, ppffile);
+				if (fread(&dizlen, 1, 4, ppffile) != 4)
+					goto fail_io;
 				dizlen = SWAP32(dizlen);
 				dizyn = 1;
 			}
@@ -267,12 +269,15 @@ void BuildPPFCache() {
 
 			fseek(ppffile, -6, SEEK_END);
 			memset(buffer, 0, 5);
-			fread(buffer, 4, 1, ppffile);
+			if (fread(buffer, 1, 4, ppffile) != 4)
+				goto fail_io;
 			dizlen = 0;
 
 			if (strcmp(".DIZ", buffer) == 0) {
 				fseek(ppffile, -2, SEEK_END);
-				fread(&dizlen, 2, 1, ppffile);
+				// TODO: Endian/size unsafe?
+				if (fread(&dizlen, 1, 2, ppffile) != 2)
+					goto fail_io;
 				dizlen = SWAP32(dizlen);
 				dizlen += 36;
 			}
@@ -299,13 +304,19 @@ void BuildPPFCache() {
 	// now do the data reading
 	do {                                                
 		fseek(ppffile, seekpos, SEEK_SET);
-		fread(&pos, 4, 1, ppffile);
+		if (fread(&pos, 1, sizeof(pos), ppffile) != sizeof(pos))
+			goto fail_io;
 		pos = SWAP32(pos);
 
-		if (method == 2) fread(buffer, 4, 1, ppffile); // skip 4 bytes on ppf3 (no int64 support here)
+		if (method == 2) {
+			// skip 4 bytes on ppf3 (no int64 support here)
+			if (fread(buffer, 1, 4, ppffile) != 4)
+				goto fail_io;
+		}
 
 		anz = fgetc(ppffile);
-		fread(ppfmem, anz, 1, ppffile);   
+		if (fread(ppfmem, 1, anz, ppffile) != anz)
+			goto fail_io;
 
 		ladr = pos / CD_FRAMESIZE_RAW;
 		off = pos % CD_FRAMESIZE_RAW;
@@ -332,65 +343,76 @@ void BuildPPFCache() {
 	FillPPFCache(); // build address array
 
 	SysPrintf(_("Loaded PPF %d.0 patch: %s.\n"), method + 1, szPPF);
+
+fail_io:
+#ifndef NDEBUG
+	SysPrintf(_("File IO error in <%s:%s>.\n"), __FILE__, __func__);
+#endif
+	fclose(ppffile);
 }
 
-// redump.org SBI files
-static u8 sbitime[256][3], sbicount;
+// redump.org SBI files, slightly different handling from PCSX-Reloaded
+unsigned char *sbi_sectors;
 
-void LoadSBI() {
+int LoadSBI(const char *fname, int sector_count) {
+	char buffer[16];
 	FILE *sbihandle;
-	char buffer[16], sbifile[MAXPATHLEN];
+	u8 sbitime[3], t;
+	int s;
 
-    if (CdromId[0] == '\0') return;
+	sbihandle = fopen(fname, "rb");
+	if (sbihandle == NULL)
+		return -1;
 
-	// Generate filename in the format of SLUS_123.45.sbi
-	buffer[0] = toupper((u32)CdromId[0]);
-	buffer[1] = toupper((u32)CdromId[1]);
-	buffer[2] = toupper((u32)CdromId[2]);
-	buffer[3] = toupper((u32)CdromId[3]);
-	buffer[4] = '_';
-	buffer[5] = CdromId[4];
-	buffer[6] = CdromId[5];
-	buffer[7] = CdromId[6];
-	buffer[8] = '.';
-	buffer[9] = CdromId[7];
-	buffer[10] = CdromId[8];
-	buffer[11] = '.';
-	buffer[12] = 's';
-	buffer[13] = 'b';
-	buffer[14] = 'i';
-	buffer[15] = '\0';
-
-	sprintf(sbifile, "%s%s", Config.PatchesDir, buffer);
-
-	// init
-	sbicount = 0;
-
-	sbihandle = fopen(sbifile, "rb");
-	if (sbihandle == NULL) return;
+	sbi_sectors = calloc(1, sector_count / 8);
+	if (sbi_sectors == NULL) {
+		fclose(sbihandle);
+		return -1;
+	}
 
 	// 4-byte SBI header
-	fread(buffer, 1, 4, sbihandle);
-	while (!feof(sbihandle)) {
-		fread(sbitime[sbicount++], 1, 3, sbihandle);
-		fread(buffer, 1, 11, sbihandle);
+	if (fread(buffer, 1, 4, sbihandle) != 4)
+		goto fail_io;
+
+	while (1) {
+		s = fread(sbitime, 1, 3, sbihandle);
+		if (s != 3)
+			goto fail_io;
+		if (fread(&t, 1, sizeof(t), sbihandle) != sizeof(t))
+			goto fail_io;
+		switch (t) {
+		default:
+		case 1:
+			s = 10;
+			break;
+		case 2:
+		case 3:
+			s = 3;
+			break;
+		}
+		fseek(sbihandle, s, SEEK_CUR);
+
+		s = MSF2SECT(btoi(sbitime[0]), btoi(sbitime[1]), btoi(sbitime[2]));
+		if (s < sector_count)
+			sbi_sectors[s >> 3] |= 1 << (s&7);
+		else
+			SysPrintf(_("SBI sector %d >= %d?\n"), s, sector_count);
 	}
 
 	fclose(sbihandle);
+	return 0;
 
-	SysPrintf(_("Loaded SBI file: %s.\n"), sbifile);
+fail_io:
+#ifndef NDEBUG
+	SysPrintf(_("File IO error in <%s:%s>.\n"), __FILE__, __func__);
+#endif
+	fclose(sbihandle);
+	return -1;
 }
 
-boolean CheckSBI(const u8 *time) {
-	int lcv;
-
-	// both BCD format
-	for (lcv = 0; lcv < sbicount; lcv++) {
-		if (time[0] == sbitime[lcv][0] && 
-				time[1] == sbitime[lcv][1] && 
-				time[2] == sbitime[lcv][2])
-			return TRUE;
+void UnloadSBI(void) {
+	if (sbi_sectors) {
+		free(sbi_sectors);
+		sbi_sectors = NULL;
 	}
-
-	return FALSE;
 }

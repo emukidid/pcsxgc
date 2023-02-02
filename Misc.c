@@ -21,10 +21,14 @@
 * Miscellaneous functions, including savestates and CD-ROM loading.
 */
 
+#include <stddef.h>
 #include "Misc.h"
 #include "CdRom.h"
 #include "Mdec.h"
+#include "gpu.h"
 #include "ppf.h"
+#include "database.h"
+#include <zlib.h>
 #include "Gamecube/wiiSXconfig.h"
 #include "Gamecube/fileBrowser/fileBrowser-libfat.h"
 
@@ -53,14 +57,11 @@ struct iso_directory_record {
 	char name			[1];
 };
 
-void mmssdd( char *b, char *p )
+static void mmssdd( char *b, char *p )
 {
 	int m, s, d;
-#if defined(HW_RVL) || defined(HW_DOL) || defined(BIG_ENDIAN)
-	int block = (b[0] & 0xff) | ((b[1] & 0xff) << 8) | ((b[2] & 0xff) << 16) | (b[3] << 24);
-#else
-	int block = *((int*)b);
-#endif
+	unsigned char *ub = (void *)b;
+	int block = (ub[3] << 24) | (ub[2] << 16) | (ub[1] << 8) | ub[0];
 
 	block += 150;
 	m = block / 4500;			// minutes
@@ -70,7 +71,7 @@ void mmssdd( char *b, char *p )
 
 	m = ((m / 10) << 4) | m % 10;
 	s = ((s / 10) << 4) | s % 10;
-	d = ((d / 10) << 4) | d % 10;	
+	d = ((d / 10) << 4) | d % 10;
 
 	p[0] = m;
 	p[1] = s;
@@ -91,9 +92,10 @@ void mmssdd( char *b, char *p )
 	time[0] = itob(time[0]); time[1] = itob(time[1]); time[2] = itob(time[2]);
 
 #define READTRACK() \
-	if (CDR_readTrack(time) == -1) return -1; \
-	buf = CDR_getBuffer(); \
-	if (buf == NULL) return -1; else CheckPPFCache(buf, time[0], time[1], time[2]);
+	if (!CDR_readTrack(time)) return -1; \
+	buf = (void *)CDR_getBuffer(); \
+	if (buf == NULL) return -1; \
+	else CheckPPFCache((u8 *)buf, time[0], time[1], time[2]);
 
 #define READDIR(_dir) \
 	READTRACK(); \
@@ -105,12 +107,13 @@ void mmssdd( char *b, char *p )
 
 int GetCdromFile(u8 *mdir, u8 *time, char *filename) {
 	struct iso_directory_record *dir;
-	char ddir[4096];
+	int retval = -1;
+	u8 ddir[4096];
 	u8 *buf;
 	int i;
 
 	// only try to scan if a filename is given
-	if (!strlen((char*)filename)) return -1;
+	if (!strlen(filename)) return -1;
 
 	i = 0;
 	while (i < 4096) {
@@ -118,10 +121,10 @@ int GetCdromFile(u8 *mdir, u8 *time, char *filename) {
 		if (dir->length[0] == 0) {
 			return -1;
 		}
-		i += dir->length[0];
+		i += (u8)dir->length[0];
 
 		if (dir->flags[0] & 0x2) { // it's a dir
-			if (!strnicmp((char *)&dir->name[0], (char*)filename, dir->name_len[0])) {
+			if (!strnicmp((char *)&dir->name[0], filename, dir->name_len[0])) {
 				if (filename[dir->name_len[0]] != '\\') continue;
 
 				filename += dir->name_len[0] + 1;
@@ -129,27 +132,55 @@ int GetCdromFile(u8 *mdir, u8 *time, char *filename) {
 				mmssdd(dir->extent, (char *)time);
 				READDIR(ddir);
 				i = 0;
-				mdir = (u8*)ddir;
+				mdir = ddir;
 			}
 		} else {
-			if (!strnicmp((char *)&dir->name[0], (char*)filename, strlen(filename))) {
+			if (!strnicmp((char *)&dir->name[0], filename, strlen(filename))) {
 				mmssdd(dir->extent, (char *)time);
+				retval = 0;
 				break;
 			}
 		}
 	}
-	return 0;
+	return retval;
+}
+
+static const unsigned int gpu_ctl_def[] = {
+	0x00000000, 0x01000000, 0x03000000, 0x04000000,
+	0x05000800, 0x06c60260, 0x0703fc10, 0x08000027,
+};
+
+static const unsigned int gpu_data_def[] = {
+	0xe100360b, 0xe2000000, 0xe3000800, 0xe4077e7f,
+	0xe5001000, 0xe6000000,
+	0x02000000, 0x00000000, 0x01ff03ff,
+};
+
+static void fake_bios_gpu_setup(void)
+{
+	int i;
+
+	for (i = 0; i < sizeof(gpu_ctl_def) / sizeof(gpu_ctl_def[0]); i++)
+		GPU_writeStatus(gpu_ctl_def[i]);
+
+	for (i = 0; i < sizeof(gpu_data_def) / sizeof(gpu_data_def[0]); i++)
+		GPU_writeData(gpu_data_def[i]);
 }
 
 int LoadCdrom() {
 	EXE_HEADER tmpHead;
 	struct iso_directory_record *dir;
-	u8 time[4],*buf;
+	u8 time[4], *buf;
 	u8 mdir[4096];
 	char exename[256];
 
-	if (!Config.HLE) {
-		if (!Config.SlowBoot) psxCore.pc = psxCore.GPR.n.ra;
+	// not the best place to do it, but since BIOS boot logo killer
+	// is just below, do it here
+	fake_bios_gpu_setup();
+
+	if (!Config.HLE && !Config.SlowBoot) {
+		// skip BIOS logos
+		psxCore.pc = psxCore.GPR.n.ra;
 		return 0;
 	}
 
@@ -158,7 +189,7 @@ int LoadCdrom() {
 	READTRACK();
 
 	// skip head and sub, and go to the root directory record
-	dir = (struct iso_directory_record*) &buf[12+156]; 
+	dir = (struct iso_directory_record*) &buf[12+156];
 
 	mmssdd(dir->extent, (char*)time);
 
@@ -175,11 +206,11 @@ int LoadCdrom() {
 		// read the SYSTEM.CNF
 		READTRACK();
 
-		sscanf((char *)buf + 12, "BOOT = cdrom:\\%256s", exename);
+		sscanf((char *)buf + 12, "BOOT = cdrom:\\%255s", exename);
 		if (GetCdromFile(mdir, time, exename) == -1) {
-			sscanf((char *)buf + 12, "BOOT = cdrom:%256s", exename);
+			sscanf((char *)buf + 12, "BOOT = cdrom:%255s", exename);
 			if (GetCdromFile(mdir, time, exename) == -1) {
-				char *ptr = strstr((char*)buf + 12, "cdrom:");
+				char *ptr = strstr((char *)buf + 12, "cdrom:");
 				if (ptr != NULL) {
 					ptr += 6;
 					while (*ptr == '\\' || *ptr == '/') ptr++;
@@ -203,20 +234,23 @@ int LoadCdrom() {
 
 	psxCore.pc = SWAP32(tmpHead.pc0);
 	psxCore.GPR.n.gp = SWAP32(tmpHead.gp0);
-	psxCore.GPR.n.sp = SWAP32(tmpHead.s_addr); 
+	psxCore.GPR.n.sp = SWAP32(tmpHead.s_addr);
 	if (psxCore.GPR.n.sp == 0) psxCore.GPR.n.sp = 0x801fff00;
 
 	tmpHead.t_size = SWAP32(tmpHead.t_size);
 	tmpHead.t_addr = SWAP32(tmpHead.t_addr);
 
+	psxCpu->Clear(tmpHead.t_addr, tmpHead.t_size / 4);
+	psxCpu->Reset();
+
 	// Read the rest of the main executable
-	while (tmpHead.t_size) {
+	while (tmpHead.t_size & ~2047) {
 		void *ptr = (void *)PSXM(tmpHead.t_addr);
 
 		incTime();
 		READTRACK();
 
-		if (ptr != NULL) memcpy(ptr, buf+12, 2048);
+		if (ptr != INVALID_PTR) memcpy(ptr, buf+12, 2048);
 
 		tmpHead.t_size -= 2048;
 		tmpHead.t_addr += 2048;
@@ -231,15 +265,16 @@ int LoadCdromFile(const char *filename, EXE_HEADER *head) {
 	u8 mdir[4096];
 	char exename[256];
 	u32 size, addr;
+	void *mem;
 
-	sscanf(filename, "cdrom:\\%256s", exename);
+	sscanf(filename, "cdrom:\\%255s", exename);
 
 	time[0] = itob(0); time[1] = itob(2); time[2] = itob(0x10);
 
 	READTRACK();
 
 	// skip head and sub, and go to the root directory record
-	dir = (struct iso_directory_record *)&buf[12 + 156]; 
+	dir = (struct iso_directory_record *)&buf[12 + 156];
 
 	mmssdd(dir->extent, (char*)time);
 
@@ -253,11 +288,16 @@ int LoadCdromFile(const char *filename, EXE_HEADER *head) {
 	size = head->t_size;
 	addr = head->t_addr;
 
-	while (size) {
+	psxCpu->Clear(addr, size / 4);
+	psxCpu->Reset();
+
+	while (size & ~2047) {
 		incTime();
 		READTRACK();
 
-		memcpy((void *)PSXM(addr), buf + 12, 2048);
+		mem = PSXM(addr);
+		if (mem != INVALID_PTR)
+			memcpy(mem, buf + 12, 2048);
 
 		size -= 2048;
 		addr += 2048;
@@ -268,10 +308,11 @@ int LoadCdromFile(const char *filename, EXE_HEADER *head) {
 
 int CheckCdrom() {
 	struct iso_directory_record *dir;
-	unsigned char time[4], *buf;
+	unsigned char time[4];
+	char *buf;
 	unsigned char mdir[4096];
 	char exename[256];
-	int i, c;
+	int i, len, c;
 
 	FreePPFCache();
 
@@ -281,16 +322,14 @@ int CheckCdrom() {
 
 	READTRACK();
 
-	CdromLabel[0] = '\0';
-	CdromId[0] = '\0';
+	memset(CdromLabel, 0, sizeof(CdromLabel));
+	memset(CdromId, 0, sizeof(CdromId));
+	memset(exename, 0, sizeof(exename));
 
-	strncpy(CdromLabel, (char*)buf + 52, 32);
-	for(i = 32; i > 0; i--)
-		if(CdromLabel[i] == ' ')
-			CdromLabel[i] = 0;
+	strncpy(CdromLabel, buf + 52, 32);
 
 	// skip head and sub, and go to the root directory record
-	dir = (struct iso_directory_record *)&buf[12 + 156]; 
+	dir = (struct iso_directory_record *)&buf[12 + 156];
 
 	mmssdd(dir->extent, (char *)time);
 
@@ -299,11 +338,11 @@ int CheckCdrom() {
 	if (GetCdromFile(mdir, time, "SYSTEM.CNF;1") != -1) {
 		READTRACK();
 
-		sscanf((char *)buf + 12, "BOOT = cdrom:\\%256s", exename);
+		sscanf(buf + 12, "BOOT = cdrom:\\%255s", exename);
 		if (GetCdromFile(mdir, time, exename) == -1) {
-			sscanf((char *)buf + 12, "BOOT = cdrom:%256s", exename);
+			sscanf(buf + 12, "BOOT = cdrom:%255s", exename);
 			if (GetCdromFile(mdir, time, exename) == -1) {
-				char *ptr = strstr((char*)buf + 12, "cdrom:");			// possibly the executable is in some subdir
+				char *ptr = strstr(buf + 12, "cdrom:");			// possibly the executable is in some subdir
 				if (ptr != NULL) {
 					ptr += 6;
 					while (*ptr == '\\' || *ptr == '/') ptr++;
@@ -318,6 +357,14 @@ int CheckCdrom() {
 					return -1;
 			}
 		}
+		/* Workaround for Wild Arms EU/US which has non-standard string causing incorrect region detection */
+		if (exename[0] == 'E' && exename[1] == 'X' && exename[2] == 'E' && exename[3] == '\\') {
+			size_t offset = 4;
+			size_t i, len = strlen(exename) - offset;
+			for (i = 0; i < len; i++)
+				exename[i] = exename[i + offset];
+			exename[i] = '\0';
+		}
 	} else if (GetCdromFile(mdir, time, "PSX.EXE;1") != -1) {
 		strcpy(exename, "PSX.EXE;1");
 		strcpy(CdromId, "SLUS99999");
@@ -325,22 +372,27 @@ int CheckCdrom() {
 		return -1;		// SYSTEM.CNF and PSX.EXE not found
 
 	if (CdromId[0] == '\0') {
-		i = strlen(exename);
-		if (i >= 2) {
-			if (exename[i - 2] == ';') i-= 2;
-			c = 8; i--;
-			while (i >= 0 && c >= 0) {
-				if (isalnum(exename[i])) CdromId[c--] = exename[i];
-				i--;
-			}
+		len = strlen(exename);
+		c = 0;
+		for (i = 0; i < len; ++i) {
+			if (exename[i] == ';' || c >= sizeof(CdromId) - 1)
+				break;
+			if (isalnum(exename[i]))
+				CdromId[c++] = exename[i];
 		}
 	}
 
+	if (CdromId[0] == '\0')
+		strcpy(CdromId, "SLUS99999");
+
 	if (Config.PsxAuto) { // autodetect system (pal or ntsc)
-		if((CdromId[2] == 'e') || (CdromId[2] == 'E') ||
-			!strncmp(CdromId, "PBPX95001", 10) || // according to redump.org, these PAL
-			!strncmp(CdromId, "PBPX95007", 10) || // demos have a non-standard ID;
-			!strncmp(CdromId, "PBPX95008", 10))   // add more serials if they are discovered.
+		if (
+			/* Make sure Wild Arms SCUS-94608 is not detected as a PAL game. */
+			((CdromId[0] == 's' || CdromId[0] == 'S') && (CdromId[2] == 'e' || CdromId[2] == 'E')) ||
+			!strncmp(CdromId, "DTLS3035", 8) ||
+			!strncmp(CdromId, "PBPX95001", 9) || // according to redump.org, these PAL
+			!strncmp(CdromId, "PBPX95007", 9) || // discs have a non-standard ID;
+			!strncmp(CdromId, "PBPX95008", 9))   // add more serials if they are discovered.
 			Config.PsxType = PSX_TYPE_PAL; // pal
 		else Config.PsxType = PSX_TYPE_NTSC; // ntsc
 	}
@@ -350,9 +402,11 @@ int CheckCdrom() {
 	}
 	SysPrintf(_("CD-ROM Label: %.32s\n"), CdromLabel);
 	SysPrintf(_("CD-ROM ID: %.9s\n"), CdromId);
+	SysPrintf(_("CD-ROM EXE Name: %.255s\n"), exename);
+	
+	Apply_Hacks_Cdrom();
 
 	BuildPPFCache();
-	LoadSBI();
 
 	return 0;
 }
@@ -365,8 +419,10 @@ static int PSXGetFileType(fileBrowser_file *f) {
 
 	current = f->offset;
     isoFile_seekFile(f, 0, FILE_BROWSER_SEEK_SET);
-    isoFile_readFile(f, mybuf, 2048);
-    isoFile_seekFile(f, current, FILE_BROWSER_SEEK_SET);
+	if (isoFile_readFile(f, mybuf, 2048) != sizeof(mybuf))
+		goto io_fail;
+	
+	isoFile_seekFile(f, current, FILE_BROWSER_SEEK_SET);
 
 	exe_hdr = (EXE_HEADER *)mybuf;
 	if (memcmp(exe_hdr->id, "PS-X EXE", 8) == 0)
@@ -380,67 +436,110 @@ static int PSXGetFileType(fileBrowser_file *f) {
 		return COFF_EXE;
 
 	return INVALID_EXE;
+
+io_fail:
+#ifndef NDEBUG
+	SysPrintf(_("File IO error in <%s:%s>.\n"), __FILE__, __func__);
+#endif
+	return INVALID_EXE;
 }
-/*
-static void LoadLibPS() {
-	char buf[MAXPATHLEN];
-	FILE *f;
 
-	// Load Net Yaroze runtime library (if exists)
-	sprintf(buf, "%s/libps.exe", Config.BiosDir);
-	f = fopen(buf, "rb");
+// temporary pandora workaround..
+// FIXME: remove
+size_t fread_to_ram(void *ptr, size_t size, size_t nmemb, FILE *stream)
+{
+	void *tmp;
+	size_t ret = 0;
 
-	if (f != NULL) {
-		fseek(f, 0x800, SEEK_SET);
-		fread(psxCore.psxM + 0x10000, 0x61000, 1, f);
-		fclose(f);
+	tmp = malloc(size * nmemb);
+	if (tmp) {
+		ret = fread(tmp, size, nmemb, stream);
+		memcpy(ptr, tmp, size * nmemb);
+		free(tmp);
 	}
-}*/
+	return ret;
+}
 
-/* TODO Error handling - return integer for each error case below, defined in an enum. Pass variable on return */
 int Load(fileBrowser_file *exe) {
 	EXE_HEADER tmpHead;
 	int temp;
 	int type;
 	int retval = 0;
+	u8 opcode;
+	u32 section_address, section_size;
+	void *mem;
 
-	strncpy(CdromId, "Homebrew\0", 9);
-	strncpy(CdromLabel, "Demo\0",  5);
+	strcpy(CdromId, "SLUS99999");
+	strcpy(CdromLabel, "SLUS_999.99");
 
 	if (isoFile_readFile(exe, &temp, 4) != 4) {
-		SysMessage(_("Error opening file: %s"), exe->name);
-		retval = 0;
-
+		SysPrintf(_("Error opening file: %s.\n"), exe->name);
+		retval = -1;
 	} else {
-  	exe->offset = 0;  //reset the offset back to 0
 		type = PSXGetFileType(exe);
-
 		switch (type) {
 			case PSX_EXE:
-				isoFile_readFile(exe, &tmpHead, sizeof(EXE_HEADER));
-				isoFile_seekFile(exe, 0x800, FILE_BROWSER_SEEK_SET);
-				isoFile_readFile(exe, (void *)PSXM(SWAP32(tmpHead.t_addr)), SWAP32(tmpHead.t_size));
-
+				if (isoFile_readFile(exe, &tmpHead, sizeof(EXE_HEADER)) != sizeof(EXE_HEADER))
+					goto fail_io;
+				section_address = SWAP32(tmpHead.t_addr);
+				section_size = SWAP32(tmpHead.t_size);
+				mem = PSXM(section_address);
+				if (mem != INVALID_PTR) {
+					isoFile_seekFile(exe, 0x800, FILE_BROWSER_SEEK_SET);
+					isoFile_readFile(exe, mem, section_size);
+					psxCpu->Clear(section_address, section_size / 4);
+				}
 				psxCore.pc = SWAP32(tmpHead.pc0);
 				psxCore.GPR.n.gp = SWAP32(tmpHead.gp0);
-				psxCore.GPR.n.sp = SWAP32(tmpHead.s_addr); 
+				psxCore.GPR.n.sp = SWAP32(tmpHead.s_addr);
 				if (psxCore.GPR.n.sp == 0)
 					psxCore.GPR.n.sp = 0x801fff00;
 				retval = 0;
 				break;
-
 			case CPE_EXE:
-				SysMessage(_("CPE files not supported."));
-				retval = -1;
+				isoFile_seekFile(exe, 6, SEEK_SET); /* Something tells me we should go to 4 and read the "08 00" here... */
+				do {
+					if (isoFile_readFile(exe, &opcode, sizeof(opcode)) != sizeof(opcode))
+						goto fail_io;
+					switch (opcode) {
+						case 1: /* Section loading */
+							if (isoFile_readFile(exe, &section_address, sizeof(section_address)) != sizeof(section_address))
+								goto fail_io;
+							if (isoFile_readFile(exe, &section_size, sizeof(section_size)) != sizeof(section_size))
+								goto fail_io;
+							section_address = SWAPu32(section_address);
+							section_size = SWAPu32(section_size);
+#ifdef EMU_LOG
+							EMU_LOG("Loading %08X bytes from %08X to %08X\n", section_size, ftell(tmpFile), section_address);
+#endif
+							mem = PSXM(section_address);
+							if (mem != INVALID_PTR) {
+								isoFile_readFile(exe, mem, section_size);
+								psxCpu->Clear(section_address, section_size / 4);
+							}
+							break;
+						case 3: /* register loading (PC only?) */
+							isoFile_seekFile(exe, 2, SEEK_CUR); /* unknown field */
+							if (isoFile_readFile(exe, &psxCore.pc, sizeof(psxCore.pc)) != sizeof(psxCore.pc))
+								goto fail_io;
+							psxCore.pc = SWAPu32(psxCore.pc);
+							break;
+						case 0: /* End of file */
+							break;
+						default:
+							SysPrintf(_("Unknown CPE opcode %02x at position %08x.\n"), opcode, exe->offset - 1);
+							retval = -1;
+							break;
+					}
+				} while (opcode != 0 && retval == 0);
 				break;
-
 			case COFF_EXE:
-				SysMessage(_("COFF files not supported."));
+				SysPrintf(_("COFF files not supported.\n"));
 				retval = -1;
 				break;
-
 			case INVALID_EXE:
-				SysPrintf(_("This file does not appear to be a valid PSX file.\n"));
+				SysPrintf(_("This file does not appear to be a valid PSX EXE file.\n"));
+				SysPrintf(_("(did you forget -cdfile ?)\n"));
 				retval = -1;
 				break;
 		}
@@ -452,211 +551,201 @@ int Load(fileBrowser_file *exe) {
 	}
 
 	return retval;
+
+fail_io:
+#ifndef NDEBUG
+	SysPrintf(_("File IO error in <%s:%s>.\n"), __FILE__, __func__);
+#endif
+
+	return -1;
 }
 
 // STATES
-void LoadingBar_showBar(float percent, const char* string);
-char* statespath = "/wiisx/saves/";
-static unsigned int savestates_slot = 0;
 extern unsigned char  *psxVub;
-extern unsigned short  spuMem[256*1024];
-#define iGPUHeight 512
-#define SAVE_STATE_MSG "Saving State .."
-#define LOAD_STATE_MSG "Loading State .."
-
-static const char PcsxHeader[32] = "STv4 PCSX v" PACKAGE_VERSION;
-void savestates_select_slot(unsigned int s)
+extern unsigned short  spuMem[256*1024];static unsigned int savestates_slot = 0;void savestates_select_slot(unsigned int s)
 {
    if (s > 9) {
      return;
    }
    savestates_slot = s;
 }
+static void *zlib_open(const char *name, const char *mode)
+{
+	return gzopen(name, mode);
+}
+
+static int zlib_read(void *file, void *buf, u32 len)
+{
+	return gzread(file, buf, len);
+}
+
+static int zlib_write(void *file, const void *buf, u32 len)
+{
+	return gzwrite(file, buf, len);
+}
+
+static long zlib_seek(void *file, long offs, int whence)
+{
+	return gzseek(file, offs, whence);
+}
+
+static void zlib_close(void *file)
+{
+	gzclose(file);
+}
+
+struct PcsxSaveFuncs SaveFuncs = {
+	zlib_open, zlib_read, zlib_write, zlib_seek, zlib_close
+};
+
+static const char PcsxHeader[32] = "STv4 PCSX v" PACKAGE_VERSION;
 
 // Savestate Versioning!
 // If you make changes to the savestate version, please increment the value below.
-static const u32 SaveVersion = 0x8b410007;
+static const u32 SaveVersion = 0x8b410006;
 
-int SaveState() {
-	gzFile f;
+int SaveState(const char *file) {
+	void *f;
 	GPUFreeze_t *gpufP;
 	SPUFreeze_t *spufP;
 	int Size;
 	unsigned char *pMem;
-		char *filename;
-	
-  /* fix the filename to %s.st%d format */
-	filename = malloc(1024);
-	
-#ifdef HW_RVL
-  sprintf(filename, "%s%s%s.st%d",(saveStateDevice==SAVESTATEDEVICE_USB)?"usb:":"sd:",
-                           statespath, CdromId, savestates_slot);
-#else
-  sprintf(filename, "sd:%s%s.st%d", statespath, CdromId, savestates_slot);
-#endif
 
-	f = gzopen(filename, "wb");
+	f = SaveFuncs.open(file, "wb");
 	if (f == NULL) return -1;
- LoadingBar_showBar(0.0f, SAVE_STATE_MSG);
 
-	gzwrite(f, (void *)PcsxHeader, 32);
-	gzwrite(f, (void *)&SaveVersion, sizeof(u32));
-	gzwrite(f, (void *)&Config.HLE, sizeof(boolean));
+	lightrec_plugin_prepare_save_state();
+
+	SaveFuncs.write(f, (void *)PcsxHeader, 32);
+	SaveFuncs.write(f, (void *)&SaveVersion, sizeof(u32));
+	SaveFuncs.write(f, (void *)&Config.HLE, sizeof(boolean));
 
 	pMem = (unsigned char *)malloc(128 * 96 * 3);
 	if (pMem == NULL) return -1;
 	GPU_getScreenPic(pMem);
-	gzwrite(f, pMem, 128 * 96 * 3);
+	SaveFuncs.write(f, pMem, 128 * 96 * 3);
 	free(pMem);
 
 	if (Config.HLE)
 		psxBiosFreeze(1);
 
-	 LoadingBar_showBar(0.10f, SAVE_STATE_MSG);
-	// TODO fix this, we're storing it twice.
-	gzwrite(f, psxCore.psxM, 0x00200000);
-	LoadingBar_showBar(0.40f, SAVE_STATE_MSG);
-	gzwrite(f, psxCore.psxR, 0x00080000);
-	LoadingBar_showBar(0.60f, SAVE_STATE_MSG);
-	gzwrite(f, psxH, 0x00010000);
-	gzwrite(f, (void*)&psxCore, sizeof(psxCore));
-	LoadingBar_showBar(0.70f, SAVE_STATE_MSG);
+	SaveFuncs.write(f, psxCore.psxM, 0x00200000);
+	SaveFuncs.write(f, psxCore.psxR, 0x00080000);
+	SaveFuncs.write(f, psxH, 0x00010000);
+	// only partial save of psxRegisters to maintain savestate compat
+	SaveFuncs.write(f, &psxCore, offsetof(_psxCore, gteBusyCycle));
 
 	// gpu
 	gpufP = (GPUFreeze_t *)malloc(sizeof(GPUFreeze_t));
 	gpufP->ulFreezeVersion = 1;
 	GPU_freeze(1, gpufP);
-	gzwrite(f, gpufP, sizeof(GPUFreeze_t));
+	SaveFuncs.write(f, gpufP, sizeof(GPUFreeze_t));
 	free(gpufP);
-	// gpu VRAM save (save directly to save memory)
-	gzwrite(f, &psxVub[0], 1024*iGPUHeight*2);
-	LoadingBar_showBar(0.80f, SAVE_STATE_MSG);
+
 	// spu
 	spufP = (SPUFreeze_t *) malloc(16);
-	SPU_freeze(2, spufP);
-	Size = spufP->Size; gzwrite(f, &Size, 4);
+	SPU_freeze(2, spufP, psxCore.cycle);
+	Size = spufP->Size; SaveFuncs.write(f, &Size, 4);
 	free(spufP);
 	spufP = (SPUFreeze_t *) malloc(Size);
-	SPU_freeze(1, spufP);
-	gzwrite(f, spufP, Size);
+	SPU_freeze(1, spufP, psxCore.cycle);
+	SaveFuncs.write(f, spufP, Size);
 	free(spufP);
-	// spu spuMem save (save directly to save memory)
-	gzwrite(f, &spuMem[0], 0x80000);
-	LoadingBar_showBar(0.90f, SAVE_STATE_MSG);
+
 	sioFreeze(f, 1);
 	cdrFreeze(f, 1);
 	psxHwFreeze(f, 1);
 	psxRcntFreeze(f, 1);
 	mdecFreeze(f, 1);
-	LoadingBar_showBar(0.99f, SAVE_STATE_MSG);
-	gzclose(f);
-	
-	LoadingBar_showBar(1.0f, SAVE_STATE_MSG);
-	return 1;
+	//new_dyna_freeze(f, 1);
+
+	SaveFuncs.close(f);
+
+	//new_dyna_after_save();
+
+	return 0;
 }
 
-int LoadState() {
-	gzFile f;
+int LoadState(const char *file) {
+	void *f;
 	GPUFreeze_t *gpufP;
 	SPUFreeze_t *spufP;
 	int Size;
 	char header[32];
 	u32 version;
 	boolean hle;
-	char *filename;
-	
-  /* fix the filename to %s.st%d format */
-	filename = malloc(1024);
-#ifdef HW_RVL
-  sprintf(filename, "%s%s%s.st%d",(saveStateDevice==SAVESTATEDEVICE_USB)?"usb:":"sd:",
-                           statespath, CdromId, savestates_slot);
-#else
-  sprintf(filename, "sd:%s%s.st%d", statespath, CdromId, savestates_slot);
-#endif
 
-	f = gzopen(filename, "rb");
-  free(filename);
-   	
-  if(!f) 
-  	return 0;
+	f = SaveFuncs.open(file, "rb");
+	if (f == NULL) return -1;
 
-	gzread(f, header, sizeof(header));
-	gzread(f, &version, sizeof(u32));
-	gzread(f, &hle, sizeof(boolean));
+	SaveFuncs.read(f, header, sizeof(header));
+	SaveFuncs.read(f, &version, sizeof(u32));
+	SaveFuncs.read(f, &hle, sizeof(boolean));
 
-	if (strncmp("STv4 PCSX", header, 9) != 0 || version != SaveVersion || hle != Config.HLE) {
-		gzclose(f);
+	if (strncmp("STv4 PCSX", header, 9) != 0 || version != SaveVersion) {
+		SaveFuncs.close(f);
 		return -1;
 	}
+	Config.HLE = hle;
 
-	LoadingBar_showBar(0.0f, LOAD_STATE_MSG);
-	//SysReset();
-	
+	if (Config.HLE)
+		psxBiosInit();
+
 	psxCpu->Reset();
-  LoadingBar_showBar(0.10f, LOAD_STATE_MSG);
-	gzread(f, header, 32);
+	SaveFuncs.seek(f, 128 * 96 * 3, SEEK_CUR);
 
-	if (strncmp("STv3 PCSX", header, 9)) { gzclose(f); return -1; }
+	SaveFuncs.read(f, psxCore.psxM, 0x00200000);
+	SaveFuncs.read(f, psxCore.psxR, 0x00080000);
+	SaveFuncs.read(f, psxH, 0x00010000);
+	SaveFuncs.read(f, &psxCore, offsetof(_psxCore, gteBusyCycle));
+	psxCore.gteBusyCycle = psxCore.cycle;
 
-	gzseek(f, 128*96*3, SEEK_CUR);
-	// TODO fix this, we're storing it twice.
-	gzread(f, psxCore.psxM, 0x00200000);
-	LoadingBar_showBar(0.40f, LOAD_STATE_MSG);
-	gzread(f, psxCore.psxR, 0x00080000);
-	LoadingBar_showBar(0.60f, LOAD_STATE_MSG);
-	gzread(f, psxH, 0x00010000);
-	gzread(f, (void*)&psxCore, sizeof(psxCore));
-  LoadingBar_showBar(0.70f, LOAD_STATE_MSG);
 	if (Config.HLE)
 		psxBiosFreeze(0);
 
 	// gpu
-	gpufP = (GPUFreeze_t *) malloc (sizeof(GPUFreeze_t));
-	gzread(f, gpufP, sizeof(GPUFreeze_t));
+	gpufP = (GPUFreeze_t *)malloc(sizeof(GPUFreeze_t));
+	SaveFuncs.read(f, gpufP, sizeof(GPUFreeze_t));
 	GPU_freeze(0, gpufP);
 	free(gpufP);
-	// gpu VRAM load (load directly to save memory)
-	gzread(f, &psxVub[0], 1024*iGPUHeight*2);
-	LoadingBar_showBar(0.80f, LOAD_STATE_MSG);
-	
+	if (HW_GPU_STATUS == 0)
+		HW_GPU_STATUS = SWAP32(GPU_readStatus());
+
 	// spu
-	gzread(f, &Size, 4);
-	spufP = (SPUFreeze_t *) malloc (Size);
-	gzread(f, spufP, Size);
-	SPU_freeze(0, spufP);
+	SaveFuncs.read(f, &Size, 4);
+	spufP = (SPUFreeze_t *)malloc(Size);
+	SaveFuncs.read(f, spufP, Size);
+	SPU_freeze(0, spufP, psxCore.cycle);
 	free(spufP);
-  // spu spuMem save (save directly to save memory)
-  gzread(f, &spuMem[0], 0x80000);
-  LoadingBar_showBar(0.99f, LOAD_STATE_MSG);
-  
+
 	sioFreeze(f, 0);
 	cdrFreeze(f, 0);
 	psxHwFreeze(f, 0);
 	psxRcntFreeze(f, 0);
 	mdecFreeze(f, 0);
+	lightrec_plugin_prepare_load_state();
 
-	gzclose(f);
-  LoadingBar_showBar(1.0f, LOAD_STATE_MSG);
-  
-	return 1;
+	SaveFuncs.close(f);
+
+	return 0;
 }
 
 int CheckState(const char *file) {
-	gzFile f;
+	void *f;
 	char header[32];
 	u32 version;
 	boolean hle;
 
-	f = gzopen(file, "rb");
+	f = SaveFuncs.open(file, "rb");
 	if (f == NULL) return -1;
 
-	gzread(f, header, sizeof(header));
-	gzread(f, &version, sizeof(u32));
-	gzread(f, &hle, sizeof(boolean));
+	SaveFuncs.read(f, header, sizeof(header));
+	SaveFuncs.read(f, &version, sizeof(u32));
+	SaveFuncs.read(f, &hle, sizeof(boolean));
 
-	gzclose(f);
+	SaveFuncs.close(f);
 
-	if (strncmp("STv4 PCSX", header, 9) != 0 || version != SaveVersion || hle != Config.HLE)
+	if (strncmp("STv4 PCSX", header, 9) != 0 || version != SaveVersion)
 		return -1;
 
 	return 0;
@@ -668,10 +757,13 @@ int SendPcsxInfo() {
 	if (NET_recvData == NULL || NET_sendData == NULL)
 		return 0;
 
+	boolean Sio_old = 0;
+	boolean SpuIrq_old = 0;
+	boolean RCntFix_old = 0;
 	NET_sendData(&Config.Xa, sizeof(Config.Xa), PSE_NET_BLOCKING);
-	NET_sendData(&Config.Sio, sizeof(Config.Sio), PSE_NET_BLOCKING);
-	NET_sendData(&Config.SpuIrq, sizeof(Config.SpuIrq), PSE_NET_BLOCKING);
-	NET_sendData(&Config.RCntFix, sizeof(Config.RCntFix), PSE_NET_BLOCKING);
+	NET_sendData(&Sio_old, sizeof(Sio_old), PSE_NET_BLOCKING);
+	NET_sendData(&SpuIrq_old, sizeof(SpuIrq_old), PSE_NET_BLOCKING);
+	NET_sendData(&RCntFix_old, sizeof(RCntFix_old), PSE_NET_BLOCKING);
 	NET_sendData(&Config.PsxType, sizeof(Config.PsxType), PSE_NET_BLOCKING);
 	NET_sendData(&Config.Cpu, sizeof(Config.Cpu), PSE_NET_BLOCKING);
 
@@ -684,10 +776,13 @@ int RecvPcsxInfo() {
 	if (NET_recvData == NULL || NET_sendData == NULL)
 		return 0;
 
+	boolean Sio_old = 0;
+	boolean SpuIrq_old = 0;
+	boolean RCntFix_old = 0;
 	NET_recvData(&Config.Xa, sizeof(Config.Xa), PSE_NET_BLOCKING);
-	NET_recvData(&Config.Sio, sizeof(Config.Sio), PSE_NET_BLOCKING);
-	NET_recvData(&Config.SpuIrq, sizeof(Config.SpuIrq), PSE_NET_BLOCKING);
-	NET_recvData(&Config.RCntFix, sizeof(Config.RCntFix), PSE_NET_BLOCKING);
+	NET_recvData(&Sio_old, sizeof(Sio_old), PSE_NET_BLOCKING);
+	NET_recvData(&SpuIrq_old, sizeof(SpuIrq_old), PSE_NET_BLOCKING);
+	NET_recvData(&RCntFix_old, sizeof(RCntFix_old), PSE_NET_BLOCKING);
 	NET_recvData(&Config.PsxType, sizeof(Config.PsxType), PSE_NET_BLOCKING);
 
 	SysUpdate();
@@ -696,7 +791,7 @@ int RecvPcsxInfo() {
 	NET_recvData(&Config.Cpu, sizeof(Config.Cpu), PSE_NET_BLOCKING);
 	if (tmp != Config.Cpu) {
 		psxCpu->Shutdown();
-#ifdef PSXREC
+#ifndef DRC_DISABLE
 		if (Config.Cpu == CPU_INTERPRETER) psxCpu = &psxInt;
 		else psxCpu = &psxRec;
 #else

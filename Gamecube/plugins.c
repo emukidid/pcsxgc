@@ -29,7 +29,7 @@ static s64 cdOpenCaseTime = 0;
 
 GPUupdateLace         GPU_updateLace;
 GPUinit               GPU_init;
-GPUshutdown           GPU_shutdown;
+GPUshutdown           GPU_shutdown; 
 GPUconfigure          GPU_configure;
 GPUtest               GPU_test;
 GPUabout              GPU_about;
@@ -38,7 +38,7 @@ GPUclose              GPU_close;
 GPUreadStatus         GPU_readStatus;
 GPUreadData           GPU_readData;
 GPUreadDataMem        GPU_readDataMem;
-GPUwriteStatus        GPU_writeStatus;
+GPUwriteStatus        GPU_writeStatus; 
 GPUwriteData          GPU_writeData;
 GPUwriteDataMem       GPU_writeDataMem;
 GPUdmaChain           GPU_dmaChain;
@@ -50,15 +50,11 @@ GPUgetScreenPic       GPU_getScreenPic;
 GPUshowScreenPic      GPU_showScreenPic;
 GPUclearDynarec       GPU_clearDynarec;
 GPUvBlank             GPU_vBlank;
-GPUregisterCallback   GPU_registerCallback;
-GPUidle               GPU_idle;
-GPUvisualVibration    GPU_visualVibration;
-GPUcursor             GPU_cursor;
 
 CDRinit               CDR_init;
 CDRshutdown           CDR_shutdown;
 CDRopen               CDR_open;
-CDRclose              CDR_close;
+CDRclose              CDR_close; 
 CDRtest               CDR_test;
 CDRgetTN              CDR_getTN;
 CDRgetTD              CDR_getTD;
@@ -92,6 +88,7 @@ SPUreadDMAMem         SPU_readDMAMem;
 SPUplayADPCMchannel   SPU_playADPCMchannel;
 SPUfreeze             SPU_freeze;
 SPUregisterCallback   SPU_registerCallback;
+SPUregisterScheduleCb SPU_registerScheduleCb;
 SPUasync              SPU_async;
 SPUplayCDDAchannel    SPU_playCDDAchannel;
 
@@ -108,8 +105,6 @@ PADkeypressed         PAD1_keypressed;
 PADstartPoll          PAD1_startPoll;
 PADpoll               PAD1_poll;
 PADsetSensitive       PAD1_setSensitive;
-PADregisterVibration  PAD1_registerVibration;
-PADregisterCursor     PAD1_registerCursor;
 
 PADconfigure          PAD2_configure;
 PADabout              PAD2_about;
@@ -124,13 +119,11 @@ PADkeypressed         PAD2_keypressed;
 PADstartPoll          PAD2_startPoll;
 PADpoll               PAD2_poll;
 PADsetSensitive       PAD2_setSensitive;
-PADregisterVibration  PAD2_registerVibration;
-PADregisterCursor     PAD2_registerCursor;
 
 NETinit               NET_init;
 NETshutdown           NET_shutdown;
 NETopen               NET_open;
-NETclose              NET_close;
+NETclose              NET_close; 
 NETtest               NET_test;
 NETconfigure          NET_configure;
 NETabout              NET_about;
@@ -149,7 +142,7 @@ NETkeypressed         NET_keypressed;
 SIO1init              SIO1_init;
 SIO1shutdown          SIO1_shutdown;
 SIO1open              SIO1_open;
-SIO1close             SIO1_close;
+SIO1close             SIO1_close; 
 SIO1test              SIO1_test;
 SIO1configure         SIO1_configure;
 SIO1about             SIO1_about;
@@ -200,16 +193,6 @@ void CALLBACK GPU__displayText(char *pText) {
 	SysPrintf("%s\n", pText);
 }
 
-void CALLBACK GPUbusy( int ticks )
-{
-    //printf( "GPUbusy( %i )\n", ticks );
-    //fflush( 0 );
-
-    psxCore.interrupt |= (1 << PSXINT_GPUBUSY);
-    psxCore.intCycle[PSXINT_GPUBUSY].cycle = ticks;
-    psxCore.intCycle[PSXINT_GPUBUSY].sCycle = psxCore.cycle;
-}
-
 long CALLBACK GPU__configure(void) { return 0; }
 long CALLBACK GPU__test(void) { return 0; }
 void CALLBACK GPU__about(void) {}
@@ -219,10 +202,6 @@ long CALLBACK GPU__getScreenPic(unsigned char *pMem) { return -1; }
 long CALLBACK GPU__showScreenPic(unsigned char *pMem) { return -1; }
 void CALLBACK GPU__clearDynarec(void (CALLBACK *callback)(void)) {}
 void CALLBACK GPU__vBlank(int val) {}
-void CALLBACK GPU__registerCallback(void (CALLBACK *callback)(int)) {}
-void CALLBACK GPU__idle(void) {}
-void CALLBACK GPU__visualVibration(unsigned long iSmall, unsigned long iBig) {}
-void CALLBACK GPU__cursor(int player, int x, int y) {}
 
 #define LoadGpuSym1(dest, name) \
 	LoadSym(GPU_##dest, GPU##dest, name, TRUE);
@@ -238,9 +217,9 @@ static int LoadGPUplugin(const char *GPUdll) {
 	void *drv;
 
 	hGPUDriver = SysLoadLibrary(GPUdll);
-	if (hGPUDriver == NULL) {
+	if (hGPUDriver == NULL) { 
 		GPU_configure = NULL;
-		SysMessage (_("Could not load GPU plugin %s!"), GPUdll); return -1;
+		SysMessage (_("Could not load GPU plugin %s!"), GPUdll); return -1; 
 	}
 	drv = hGPUDriver;
 	LoadGpuSym1(init, "GPUinit");
@@ -256,17 +235,13 @@ static int LoadGPUplugin(const char *GPUdll) {
 	LoadGpuSym1(dmaChain, "GPUdmaChain");
 	LoadGpuSym1(updateLace, "GPUupdateLace");
 	LoadGpuSym0(keypressed, "GPUkeypressed");
-	LoadGpuSym1(displayText, "GPUdisplayText");
+	LoadGpuSym0(displayText, "GPUdisplayText");
 	LoadGpuSym0(makeSnapshot, "GPUmakeSnapshot");
 	LoadGpuSym1(freeze, "GPUfreeze");
 	LoadGpuSym0(getScreenPic, "GPUgetScreenPic");
 	LoadGpuSym0(showScreenPic, "GPUshowScreenPic");
 	LoadGpuSym0(clearDynarec, "GPUclearDynarec");
     LoadGpuSym0(vBlank, "GPUvBlank");
-    LoadGpuSym0(registerCallback, "GPUregisterCallback");
-    LoadGpuSym0(idle, "GPUidle");
-    LoadGpuSym0(visualVibration, "GPUvisualVibration");
-    LoadGpuSym0(cursor, "GPUcursor");
 	LoadGpuSym0(configure, "GPUconfigure");
 	LoadGpuSym0(test, "GPUtest");
 	LoadGpuSym0(about, "GPUabout");
@@ -346,6 +321,7 @@ void *hSPUDriver = NULL;
 long CALLBACK SPU__configure(void) { return 0; }
 void CALLBACK SPU__about(void) {}
 long CALLBACK SPU__test(void) { return 0; }
+void CALLBACK SPU__registerScheduleCb(void (CALLBACK *cb)(unsigned int)) {}
 
 #define LoadSpuSym1(dest, name) \
 	LoadSym(SPU_##dest, SPU##dest, name, TRUE);
@@ -374,7 +350,7 @@ static int LoadSPUplugin(const char *SPUdll) {
 	LoadSpuSym0(about, "SPUabout");
 	LoadSpuSym0(test, "SPUtest");
 	LoadSpuSym1(writeRegister, "SPUwriteRegister");
-	LoadSpuSym1(readRegister, "SPUreadRegister");
+	LoadSpuSym1(readRegister, "SPUreadRegister");		
 	LoadSpuSym1(writeDMA, "SPUwriteDMA");
 	LoadSpuSym1(readDMA, "SPUreadDMA");
 	LoadSpuSym1(writeDMAMem, "SPUwriteDMAMem");
@@ -382,6 +358,7 @@ static int LoadSPUplugin(const char *SPUdll) {
 	LoadSpuSym1(playADPCMchannel, "SPUplayADPCMchannel");
 	LoadSpuSym1(freeze, "SPUfreeze");
 	LoadSpuSym1(registerCallback, "SPUregisterCallback");
+	LoadSpuSym0(registerScheduleCb, "SPUregisterScheduleCb");
 	LoadSpuSymN(async, "SPUasync");
 	LoadSpuSymN(playCDDAchannel, "SPUplayCDDAchannel");
 
@@ -484,8 +461,6 @@ void CALLBACK PAD1__about(void) {}
 long CALLBACK PAD1__test(void) { return 0; }
 long CALLBACK PAD1__query(void) { return 3; }
 long CALLBACK PAD1__keypressed() { return 0; }
-void CALLBACK PAD1__registerVibration(void (CALLBACK *callback)(unsigned long, unsigned long)) {}
-void CALLBACK PAD1__registerCursor(void (CALLBACK *callback)(int, int, int)) {}
 
 #define LoadPad1Sym1(dest, name) \
 	LoadSym(PAD1_##dest, PAD##dest, name, TRUE);
@@ -519,8 +494,6 @@ static int LoadPAD1plugin(const char *PAD1dll) {
 	LoadPad1Sym1(startPoll, "PADstartPoll");
 	LoadPad1Sym1(poll, "PADpoll");
 	LoadPad1SymN(setSensitive, "PADsetSensitive");
-    LoadPad1Sym0(registerVibration, "PADregisterVibration");
-    LoadPad1Sym0(registerCursor, "PADregisterCursor");
 
 	return 0;
 }
@@ -529,7 +502,7 @@ unsigned char CALLBACK PAD2__startPoll(int pad) {
 	PadDataS padd;
 
 	PAD2_readPort2(&padd);
-
+    
 	return _PADstartPoll(&padd);
 }
 
@@ -542,8 +515,6 @@ void CALLBACK PAD2__about(void) {}
 long CALLBACK PAD2__test(void) { return 0; }
 long CALLBACK PAD2__query(void) { return PSE_PAD_USE_PORT1 | PSE_PAD_USE_PORT2; }
 long CALLBACK PAD2__keypressed() { return 0; }
-void CALLBACK PAD2__registerVibration(void (CALLBACK *callback)(unsigned long, unsigned long)) {}
-void CALLBACK PAD2__registerCursor(void (CALLBACK *callback)(int, int, int)) {}
 
 #define LoadPad2Sym1(dest, name) \
 	LoadSym(PAD2_##dest, PAD##dest, name, TRUE);
@@ -577,8 +548,6 @@ static int LoadPAD2plugin(const char *PAD2dll) {
 	LoadPad2Sym1(startPoll, "PADstartPoll");
 	LoadPad2Sym1(poll, "PADpoll");
 	LoadPad2SymN(setSensitive, "PADsetSensitive");
-    LoadPad2Sym0(registerVibration, "PADregisterVibration");
-    LoadPad2Sym0(registerCursor, "PADregisterCursor");
 
 	return 0;
 }
@@ -734,7 +703,7 @@ void CALLBACK clearDynarec(void) {
 
 int LoadPlugins() {
 	int ret;
-	char Plugin[MAXPATHLEN];
+	char Plugin[MAXPATHLEN * 2];
 
 	ReleasePlugins();
 
@@ -794,7 +763,7 @@ void ReleasePlugins() {
 	if (hPAD1Driver != NULL) PAD1_shutdown();
 	if (hPAD2Driver != NULL) PAD2_shutdown();
 
-	if (Config.UseNet && hNETDriver != NULL) NET_shutdown();
+	if (Config.UseNet && hNETDriver != NULL) NET_shutdown(); 
 
 	if (hCDRDriver != NULL) { SysCloseLibrary(hCDRDriver); hCDRDriver = NULL; }
 	if (hGPUDriver != NULL) { SysCloseLibrary(hGPUDriver); hGPUDriver = NULL; }
@@ -815,12 +784,24 @@ void ReleasePlugins() {
 #endif
 }
 
+// for CD swap
+int ReloadCdromPlugin()
+{
+	if (hCDRDriver != NULL || cdrIsoActive()) CDR_shutdown();
+	if (hCDRDriver != NULL) { SysCloseLibrary(hCDRDriver); hCDRDriver = NULL; }
+
+
+	LoadCDRplugin("CDR");
+
+	return CDR_init();
+}
+
 void SetIsoFile(const char *filename) {
 	if (filename == NULL) {
 		IsoFile[0] = '\0';
 		return;
 	}
-	strncpy(IsoFile, filename, MAXPATHLEN);
+	strncpy(IsoFile, filename, MAXPATHLEN - 1);
 }
 
 const char *GetIsoFile(void) {

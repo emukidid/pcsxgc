@@ -28,6 +28,7 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
+#include <gccore.h>
 #include <stdio.h>
 
 extern char padNeedScan, wpadNeedScan;

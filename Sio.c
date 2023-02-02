@@ -26,6 +26,10 @@
 #include "Gamecube/fileBrowser/fileBrowser-libfat.h"
 #include <sys/stat.h>
 
+#ifdef USE_LIBRETRO_VFS
+#include <streams/file_stream_transforms.h>
+#endif
+
 // Status Flags
 #define TX_RDY		0x0001
 #define RX_RDY		0x0002
@@ -49,16 +53,9 @@
 
 // *** FOR WORKS ON PADS AND MEMORY CARDS *****
 
-
-void LoadDongle( char *str );
-void SaveDongle( char *str );
-
-
-#define BUFFER_SIZE 0x1010
-
-static unsigned char buf[ BUFFER_SIZE ];
-
-unsigned char cardh[4] = { 0x00, 0x00, 0x5a, 0x5d };
+static unsigned char buf[256];
+static unsigned char cardh1[4] = { 0xff, 0x08, 0x5a, 0x5d };
+static unsigned char cardh2[4] = { 0xff, 0x08, 0x5a, 0x5d };
 
 // Transfer Ready and the Buffer is Empty
 // static unsigned short StatReg = 0x002b;
@@ -72,7 +69,6 @@ static unsigned int parp;
 static unsigned int mcdst, rdwr;
 static unsigned char adrH, adrL;
 static unsigned int padst;
-static unsigned int gsdonglest;
 
 #ifdef HW_RVL
 #include "Gamecube/MEM2.h"
@@ -81,73 +77,20 @@ static unsigned int gsdonglest;
 #endif
 unsigned char *Mcd1Data = (unsigned char*)MCD1_LO;
 unsigned char *Mcd2Data = (unsigned char*)MCD2_LO;
+char McdDisable[2];
 char mcd1Written = 0;
 char mcd2Written = 0;
-
-
-#define DONGLE_SIZE 0x40 * 0x1000
-
-unsigned int DongleBank;
-unsigned char *DongleData = (unsigned char*)SIODONGLE_LO;
-static int DongleInit;
-
-
-#if 0
-// Breaks Twisted Metal 2 intro
 #define SIO_INT(eCycle) { \
-	if (!Config.Sio) { \
-		psxCore.interrupt |= (1 << PSXINT_SIO); \
-		psxCore.intCycle[PSXINT_SIO].cycle = eCycle; \
-		psxCore.intCycle[PSXINT_SIO].sCycle = psxCore.cycle; \
-	} \
-	\
-	StatReg &= ~RX_RDY; \
-	StatReg &= ~TX_RDY; \
+	psxCore.interrupt |= (1 << PSXINT_SIO); \
+	psxCore.intCycle[PSXINT_SIO].cycle = eCycle; \
+	psxCore.intCycle[PSXINT_SIO].sCycle = psxCore.cycle; \
+	new_dyna_set_event(PSXINT_SIO, eCycle); \
 }
-#endif
-
-#define SIO_INT(eCycle) { \
-	if (!Config.Sio) { \
-		psxCore.interrupt |= (1 << PSXINT_SIO); \
-		psxCore.intCycle[PSXINT_SIO].cycle = eCycle; \
-		psxCore.intCycle[PSXINT_SIO].sCycle = psxCore.cycle; \
-	} \
-}
-
 
 // clk cycle byte
 // 4us * 8bits = (PSXCLK / 1000000) * 32; (linuzappz)
-// TODO: add SioModePrescaler
-#define SIO_CYCLES (BaudReg * 8)
-
-// rely on this for now - someone's actual testing
-//#define SIO_CYCLES (PSXCLK / 57600)
-//PCSX 1.9.91
-//#define SIO_CYCLES 200
-//PCSX 1.9.91
-//#define SIO_CYCLES 270
-// ePSXe 1.6.0
-//#define SIO_CYCLES		535
-// ePSXe 1.7.0
-//#define SIO_CYCLES 635
-
-unsigned char reverse_8( unsigned char bits )
-{
-	unsigned char tmp;
-	int lcv;
-
-	tmp = 0;
-	for( lcv = 0; lcv < 8; lcv++ )
-	{
-		tmp >>= 1;
-		tmp |= (bits & 0x80);
-
-		bits <<= 1;
-	}
-
-	return tmp;
-}
-
+// TODO: add SioModePrescaler and BaudReg
+#define SIO_CYCLES		535
 
 void sioWrite8(unsigned char value) {
 #ifdef PAD_LOG
@@ -155,23 +98,6 @@ void sioWrite8(unsigned char value) {
 #endif
 	switch (padst) {
 		case 1: SIO_INT(SIO_CYCLES);
-			/*
-			$41-4F
-			$41 = Find bits in poll respones
-			$42 = Polling command
-			$43 = Config mode (Dual shock?)
-			$44 = Digital / Analog (after $F3)
-			$45 = Get status info (Dual shock?)
-
-			ID:
-			$41 = Digital
-			$73 = Analogue Red LED
-			$53 = Analogue Green LED
-
-			$23 = NegCon
-			$12 = Mouse
-			*/
-
 			if ((value & 0x40) == 0x40) {
 				padst = 2; parp = 1;
 				if (!Config.UseNet) {
@@ -192,33 +118,11 @@ void sioWrite8(unsigned char value) {
 				} else {
 					bufcount = 2 + (buf[parp] & 0x0f) * 2;
 				}
-
-
-				// Digital / Dual Shock Controller
 				if (buf[parp] == 0x41) {
 					switch (value) {
-						// enter config mode
 						case 0x43:
 							buf[1] = 0x43;
 							break;
-
-						// get status
-						case 0x45:
-							buf[1] = 0xf3;
-							break;
-					}
-				}
-
-
-				// NegCon - Wipeout 3
-				if( buf[parp] == 0x23 ) {
-					switch (value) {
-						// enter config mode
-						case 0x43:
-							buf[1] = 0x79;
-							break;
-
-						// get status
 						case 0x45:
 							buf[1] = 0xf3;
 							break;
@@ -313,369 +217,20 @@ void sioWrite8(unsigned char value) {
 			return;
 		case 5:
 			parp++;
+			if ((rdwr == 1 && parp == 132) ||
+			    (rdwr == 2 && parp == 129)) {
+				// clear "new card" flags
+				if (CtrlReg & 0x2000)
+					cardh2[1] &= ~8;
+				else
+					cardh1[1] &= ~8;
+			}
 			if (rdwr == 2) {
 				if (parp < 128) buf[parp + 1] = value;
 			}
 			SIO_INT(SIO_CYCLES);
 			return;
 	}
-
-
-	/*
-	GameShark CDX
-	
-	ae - be - ef - 04 + [00]
-	ae - be - ef - 01 + 00 + [00] * $1000
-	ae - be - ef - 01 + 42 + [00] * $1000
-	ae - be - ef - 03 + 01,01,1f,e3,85,ae,d1,28 + [00] * 4
-	*/
-	switch (gsdonglest) {
-		// main command loop
-		case 1:
-			SIO_INT( SIO_CYCLES );
-
-			// GS CDX
-			// - unknown output
-
-			// reset device when fail?
-			if( value == 0xae )
-			{
-				StatReg |= RX_RDY;
-
-				parp = 0;
-				bufcount = parp;
-			}
-
-
-			// GS CDX
-			else if( value == 0xbe )
-			{
-				StatReg |= RX_RDY;
-
-				parp = 0;
-				bufcount = parp;
-
-
-				buf[0] = reverse_8( 0xde );
-			}
-
-
-			// GS CDX
-			else if( value == 0xef )
-			{
-				StatReg |= RX_RDY;
-
-				parp = 0;
-				bufcount = parp;
-
-
-				buf[0] = reverse_8( 0xad );
-			}
-
-
-			// GS CDX [1 in + $1000 out + $1 out]
-			else if( value == 0x01 )
-			{
-				StatReg |= RX_RDY;
-
-				parp = 0;
-				bufcount = parp;
-
-
-				// $00 = 0000 0000
-				// - (reverse) 0000 0000
-				buf[0] = 0x00;
-				gsdonglest = 2;
-			}
-
-
-			// GS CDX [1 in + $1000 in + $1 out]
-			else if( value == 0x02 )
-			{
-				StatReg |= RX_RDY;
-
-				parp = 0;
-				bufcount = parp;
-
-
-				// $00 = 0000 0000
-				// - (reverse) 0000 0000
-				buf[0] = 0x00;
-				gsdonglest = 3;
-			}
-
-
-			// GS CDX [8 in, 4 out]
-			else if( value == 0x03 )
-			{
-				StatReg |= RX_RDY;
-
-				parp = 0;
-				bufcount = parp;
-
-				// $00 = 0000 0000
-				// - (reverse) 0000 0000
-				buf[0] = 0x00;
-
-				gsdonglest = 4;
-			}
-
-
-			// GS CDX [out 1]
-			else if( value == 0x04 )
-			{
-				StatReg |= RX_RDY;
-
-				parp = 0;
-				bufcount = parp;
-
-
-				// $00 = 0000 0000
-				// - (reverse) 0000 0000
-				buf[0] = 0x00;
-				gsdonglest = 5;
-			}
-			else
-			{
-				// ERROR!!
-				StatReg |= RX_RDY;
-
-				parp = 0;
-				bufcount = parp;
-				buf[0] = 0xff;
-
-				gsdonglest = 0;
-			}
-
-			return;
-
-
-		// be - ef - 01
-		case 2: {
-			unsigned char checksum;
-			unsigned int lcv;
-
-			SIO_INT( SIO_CYCLES );
-			StatReg |= RX_RDY;
-
-
-			// read 1 byte
-			DongleBank = buf[ 0 ];
-
-
-			// write data + checksum
-			checksum = 0;
-			for( lcv = 0; lcv < 0x1000; lcv++ )
-			{
-				unsigned char data;
-
-				data = DongleData[ DongleBank * 0x1000 + lcv ];
-
-				buf[ lcv+1 ] = reverse_8( data );
-				checksum += data;
-			}
-
-
-			parp = 0;
-			bufcount = 0x1001;
-			buf[ 0x1001 ] = reverse_8( checksum );
-
-
-			gsdonglest = 255;
-			return;
-		}
-
-
-		// be - ef - 02
-		case 3:
-			SIO_INT( SIO_CYCLES );
-			StatReg |= RX_RDY;
-
-			// command start
-			if( parp < 0x1000+1 )
-			{
-				// read 1 byte
-				buf[ parp ] = value;
-				parp++;
-			}
-
-			if( parp == 0x1001 )
-			{
-				unsigned char checksum;
-				unsigned int lcv;
-
-				DongleBank = buf[0];
-				memcpy( DongleData + DongleBank * 0x1000, buf+1, 0x1000 );
-
-				// save to file
-				SaveDongle( "memcards/CDX_Dongle.bin" );
-
-
-				// write 8-bit checksum
-				checksum = 0;
-				for( lcv = 1; lcv < 0x1001; lcv++ )
-				{
-					checksum += buf[ lcv ];
-				}
-
-				parp = 0;
-				bufcount = 1;
-				buf[1] = reverse_8( checksum );
-
-
-				// flush result
-				gsdonglest = 255;
-			}
-			return;
-
-
-		// be - ef - 03
-		case 4:
-			SIO_INT( SIO_CYCLES );
-			StatReg |= RX_RDY;
-
-			// command start
-			if( parp < 8 )
-			{
-				// read 2 (?,?) + 4 (DATA?) + 2 (CRC?)
-				buf[ parp ] = value;
-				parp++;
-			}
-
-			if( parp == 8 )
-			{
-				// now write 4 bytes via -FOUR- $00 writes
-				parp = 8;
-				bufcount = 12;
-
-
-				// TODO: Solve CDX algorithm
-
-
-				// GS CDX [magic key]
-				if( buf[2] == 0x12 && buf[3] == 0x34 &&
-						buf[4] == 0x56 && buf[5] == 0x78 )
-				{
-					buf[9] = reverse_8( 0x3e );
-					buf[10] = reverse_8( 0xa0 );
-					buf[11] = reverse_8( 0x40 );
-					buf[12] = reverse_8( 0x29 );
-				}
-
-				// GS CDX [address key #2 = 6ec]
-				else if( buf[2] == 0x1f && buf[3] == 0xe3 &&
-								 buf[4] == 0x45 && buf[5] == 0x60 )
-				{
-					buf[9] = reverse_8( 0xee );
-					buf[10] = reverse_8( 0xdd );
-					buf[11] = reverse_8( 0x71 );
-					buf[12] = reverse_8( 0xa8 );
-				}
-
-				// GS CDX [address key #3 = ???]
-				else if( buf[2] == 0x1f && buf[3] == 0xe3 &&
-								 buf[4] == 0x72 && buf[5] == 0xe3 )
-				{
-					// unsolved!!
-
-					// Used here: 80090348 / 80090498
-
-					// dummy value - MSB
-					buf[9] = reverse_8( 0xfa );
-					buf[10] = reverse_8( 0xde );
-					buf[11] = reverse_8( 0x21 );
-					buf[12] = reverse_8( 0x97 );
-				}
-
-				// GS CDX [address key #4 = a00]
-				else if( buf[2] == 0x1f && buf[3] == 0xe3 &&
-								 buf[4] == 0x85 && buf[5] == 0xae )
-				{
-					buf[9] = reverse_8( 0xee );
-					buf[10] = reverse_8( 0xdd );
-					buf[11] = reverse_8( 0x7d );
-					buf[12] = reverse_8( 0x44 );
-				}
-
-				// GS CDX [address key #5 = 9ec]
-				else if( buf[2] == 0x17 && buf[3] == 0xe3 &&
-								 buf[4] == 0xb5 && buf[5] == 0x60 )
-				{
-					buf[9] = reverse_8( 0xee );
-					buf[10] = reverse_8( 0xdd );
-					buf[11] = reverse_8( 0x7e );
-					buf[12] = reverse_8( 0xa8 );
-				}
-
-				else
-				{
-					// dummy value - MSB
-					buf[9] = reverse_8( 0xfa );
-					buf[10] = reverse_8( 0xde );
-					buf[11] = reverse_8( 0x21 );
-					buf[12] = reverse_8( 0x97 );
-				}						
-
-				// flush bytes -> done
-				gsdonglest = 255;
-			}
-			return;
-
-
-		// be - ef - 04
-		case 5:
-			if( value == 0x00 )
-			{
-				SIO_INT( SIO_CYCLES );
-				StatReg |= RX_RDY;
-
-
-				// read 1 byte
-				parp = 0;
-				bufcount = parp;
-
-				// size of dongle card?
-				buf[ 0 ] = reverse_8( DONGLE_SIZE / 0x1000 );
-
-
-				// done already
-				gsdonglest = 0;
-			}
-			return;
-
-
-		// flush bytes -> done
-		case 255:
-			if( value == 0x00 )
-			{
-				//SIO_INT( SIO_CYCLES );
-				SIO_INT(1);
-				StatReg |= RX_RDY;
-
-				parp++;
-				if( parp == bufcount )
-				{
-					gsdonglest = 0;
-
-#ifdef GSDONGLE_LOG
-					PAD_LOG("(gameshark dongle) DONE!!\n" );
-#endif
-				}
-			}
-			else
-			{
-				// ERROR!!
-				StatReg |= RX_RDY;
-
-				parp = 0;
-				bufcount = parp;
-				buf[0] = 0xff;
-
-				gsdonglest = 0;
-			}
-			return;
-	}
-
 
 	switch (value) {
 		case 0x01: // start pad
@@ -724,38 +279,31 @@ void sioWrite8(unsigned char value) {
 			SIO_INT(SIO_CYCLES);
 			return;
 		case 0x81: // start memcard
+			if (CtrlReg & 0x2000)
+			{
+				if (McdDisable[1])
+					goto no_device;
+				memcpy(buf, cardh2, 4);
+			}
+			else
+			{
+				if (McdDisable[0])
+					goto no_device;
+				memcpy(buf, cardh1, 4);
+			}
 			StatReg |= RX_RDY;
-#if 0
-			// Chronicles of the Sword - no memcard = password options
-			if( Config.Memcard == 1 ) return;
-#endif
-			memcpy(buf, cardh, 4);
 			parp = 0;
 			bufcount = 3;
 			mcdst = 1;
 			rdwr = 0;
 			SIO_INT(SIO_CYCLES);
 			return;
-
-		case 0xae: // GameShark CDX - start dongle
+		default:
+		no_device:
 			StatReg |= RX_RDY;
-			gsdonglest = 1;
-
+			buf[0] = 0xff;
 			parp = 0;
-			bufcount = parp;
-
-			if( !DongleInit )
-			{
-				LoadDongle( "memcards/CDX_Dongle.bin" );
-
-				DongleInit = 1;
-			}
-
-			SIO_INT( SIO_CYCLES );
-			return;
-
-		default: // no hardware found
-			StatReg |= RX_RDY;
+			bufcount = 0;
 			return;
 	}
 }
@@ -770,7 +318,7 @@ void sioWriteMode16(unsigned short value) {
 void sioWriteCtrl16(unsigned short value) {
 	CtrlReg = value & ~RESET_ERR;
 	if (value & RESET_ERR) StatReg &= ~IRQ;
-	if ((CtrlReg & SIO_RESET) || (!CtrlReg)) {
+	if ((CtrlReg & SIO_RESET) || !(CtrlReg & DTR)) {
 		padst = 0; mcdst = 0; parp = 0;
 		StatReg = TX_RDY | TX_EMPTY;
 		psxCore.interrupt &= ~(1 << PSXINT_SIO);
@@ -819,21 +367,7 @@ unsigned char sioRead8() {
 }
 
 unsigned short sioReadStat16() {
-	u16 hard;
-
-	hard = StatReg;
-
-#if 0
-	// wait for IRQ first
-	if( psxCore.interrupt & (1 << PSXINT_SIO) )
-	{
-		hard &= ~TX_RDY;
-		hard &= ~RX_RDY;
-		hard &= ~TX_EMPTY;
-	}
-#endif
-
-	return hard;
+	return StatReg;
 }
 
 unsigned short sioReadMode16() {
@@ -863,89 +397,81 @@ void sioInterrupt() {
 	PAD_LOG("Sio Interrupt (CP0.Status = %x)\n", psxCore.CP0.n.Status);
 #endif
 //	SysPrintf("Sio Interrupt\n");
-	StatReg |= IRQ;
-	psxHu32ref(0x1070) |= SWAPu32(0x80);
-
-#if 0
-	// Rhapsody: fixes input problems
-	// Twisted Metal 2: breaks intro
-	StatReg |= TX_RDY;
-	StatReg |= RX_RDY;
-#endif
+	if (!(StatReg & IRQ)) {
+		StatReg |= IRQ;
+		psxHu32ref(0x1070) |= SWAPu32(0x80);
+	}
 }
 
 //call me from menu, takes slot and save path as args
-int LoadMcd(int mcd, fileBrowser_file *savepath) {
-	int temp = 0;
-	bool ret = 0;
-	unsigned char *data = NULL;
-  fileBrowser_file saveFile;
+void LoadMcd(int mcd, fileBrowser_file *savepath) {
+	char *data = NULL;
+	fileBrowser_file saveFile;
 	memcpy(&saveFile, savepath, sizeof(fileBrowser_file));
 	memset(&saveFile.name[0],0,FILE_BROWSER_MAX_PATH_LEN);
-	
-	if(mcd == 1) {
-	  sprintf((char*)saveFile.name,"%s/%s.mcd",savepath->name,CdromId);
-	  data = &Mcd1Data[0];
-  }
+	if (mcd != 1 && mcd != 2)
+		return;
+
+	if (mcd == 1) {
+		data = Mcd1Data;
+		cardh1[1] |= 8; // mark as new
+		sprintf((char*)saveFile.name,"%s/%s.mcd",savepath->name,CdromId);
+	}
 	if (mcd == 2) {
-  	sprintf((char*)saveFile.name,"%s/slot2.mcd",savepath->name);
-  	data = &Mcd2Data[0];
+		sprintf((char*)saveFile.name,"%s/slot2.mcd",savepath->name);
+		data = Mcd2Data;
+		cardh2[1] |= 8;
 	}
 
+	McdDisable[mcd - 1] = 0;
+#ifdef HAVE_LIBRETRO
+	// memcard1 is handled by libretro
+	if (mcd == 1)
+		return;
+#endif
+	u32 temp;
 	if(saveFile_readFile(&saveFile, &temp, 4) == 4) {  //file exists
 		saveFile.offset = 0;
-		if(saveFile_readFile(&saveFile, data, MCD_SIZE)==MCD_SIZE)
-		  ret = 1;
+		saveFile_readFile(&saveFile, data, MCD_SIZE);
 	}
 	else {
-		if(CreateMcd(mcd, &saveFile)) {  //created ok
-		  saveFile.offset = 0;
-			if(saveFile_readFile(&saveFile, data, MCD_SIZE)==MCD_SIZE)
-			  ret = 1;
-		}
+		CreateMcd(mcd, &saveFile);
+		saveFile.offset = 0;
+		saveFile_readFile(&saveFile, data, MCD_SIZE);
 	}
-	return ret;
 }
 
-//we need to get rid of this joint function and start using the individual versions
-int LoadMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2) {
-  if((LoadMcd(1, mcd1)) && (LoadMcd(2, mcd2)))
-    return 1;
-  return 0;
+void LoadMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2) {
+	LoadMcd(1, mcd1);
+	LoadMcd(2, mcd2);
 }
 
-//call me from menu, takes slot and save path as args
-int SaveMcd(int mcd, fileBrowser_file *savepath) {
-  bool ret = 0;
-  unsigned char *data = NULL;
-  fileBrowser_file saveFile;
-  
+void SaveMcd(int mcd, fileBrowser_file *savepath) {
+	unsigned char *data = NULL;
+	fileBrowser_file saveFile;
+
 	memcpy(&saveFile, savepath, sizeof(fileBrowser_file));
 	memset(&saveFile.name[0],0,FILE_BROWSER_MAX_PATH_LEN);
 	
 	if(mcd == 1) {
-	  sprintf((char*)saveFile.name,"%s/%s.mcd",savepath->name,CdromId);
-	  data = &Mcd1Data[0];
+		sprintf((char*)saveFile.name,"%s/%s.mcd",savepath->name,CdromId);
+		data = &Mcd1Data[0];
   }
 	if (mcd == 2) {
-  	sprintf((char*)saveFile.name,"%s/slot2.mcd",savepath->name);
-  	data = &Mcd2Data[0];
+		sprintf((char*)saveFile.name,"%s/slot2.mcd",savepath->name);
+		data = &Mcd2Data[0];
 	}
 	
-  if(saveFile_writeFile(&saveFile, data, MCD_SIZE)==MCD_SIZE)
-    ret = 1;
-  
-  return ret;
+	saveFile_writeFile(&saveFile, data, MCD_SIZE);
+
 }
 
-//we need to get rid of this joint function and start using the individual versions
-int SaveMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2) {
-  if((SaveMcd(1, mcd1)) && (SaveMcd(2, mcd2)))
-    return 1;
-  return 0;
+void SaveMcds(fileBrowser_file *mcd1, fileBrowser_file *mcd2) {
+	SaveMcd(1, mcd1);
+	SaveMcd(2, mcd2);
 }
 
-bool CreateMcd(int slot, fileBrowser_file *mcd) {
+void CreateMcd(int slot, fileBrowser_file *mcd) {
 	unsigned char *cardData = NULL;
 	if (slot == 1) cardData = Mcd1Data;
 	if (slot == 2) cardData = Mcd2Data;
@@ -971,23 +497,22 @@ bool CreateMcd(int slot, fileBrowser_file *mcd) {
 	//blank out the rest
 	for(i = curPos; i < MCD_SIZE; i++)
 	  cardData[i] = 0;
-	if(saveFile_writeFile(mcd, cardData, MCD_SIZE)==MCD_SIZE)
-	  return 1;
-	return 0;
+	saveFile_writeFile(mcd, cardData, MCD_SIZE);
+
 }
 
 void ConvertMcd(char *mcd, char *data) {
 	/*FILE *f;
-	int i=0;
+	int i = 0;
 	int s = MCD_SIZE;
-	
-	if (strstr(mcd, ".gme")) {		
+
+	if (strstr(mcd, ".gme")) {
 		f = fopen(mcd, "wb");
-		if (f != NULL) {		
-			fwrite(data-3904, 1, MCD_SIZE+3904, f);
+		if (f != NULL) {
+			fwrite(data - 3904, 1, MCD_SIZE + 3904, f);
 			fclose(f);
-		}		
-		f = fopen(mcd, "r+");		
+		}
+		f = fopen(mcd, "r+");
 		s = s + 3904;
 		fputc('1', f); s--;
 		fputc('2', f); s--;
@@ -1000,9 +525,9 @@ void ConvertMcd(char *mcd, char *data) {
 		fputc('S', f); s--;
 		fputc('T', f); s--;
 		fputc('D', f); s--;
-		for(i=0;i<7;i++) {
+		for (i = 0; i < 7; i++) {
 			fputc(0, f); s--;
-		}		
+		}
 		fputc(1, f); s--;
 		fputc(0, f); s--;
 		fputc(1, f); s--;
@@ -1015,14 +540,14 @@ void ConvertMcd(char *mcd, char *data) {
 		fputc(0xff, f);
 		while (s-- > (MCD_SIZE+1)) fputc(0, f);
 		fclose(f);
-	} else if(strstr(mcd, ".mem") || strstr(mcd,".vgs")) {		
+	} else if(strstr(mcd, ".mem") || strstr(mcd,".vgs")) {
 		f = fopen(mcd, "wb");
-		if (f != NULL) {		
+		if (f != NULL) {
 			fwrite(data-64, 1, MCD_SIZE+64, f);
 			fclose(f);
-		}		
-		f = fopen(mcd, "r+");		
-		s = s + 64;				
+		}
+		f = fopen(mcd, "r+");
+		s = s + 64;
 		fputc('V', f); s--;
 		fputc('g', f); s--;
 		fputc('s', f); s--;
@@ -1039,7 +564,7 @@ void ConvertMcd(char *mcd, char *data) {
 		fclose(f);
 	} else {
 		f = fopen(mcd, "wb");
-		if (f != NULL) {		
+		if (f != NULL) {
 			fwrite(data, 1, MCD_SIZE, f);
 			fclose(f);
 		}
@@ -1054,8 +579,14 @@ void GetMcdBlockInfo(int mcd, int block, McdBlock *Info) {
 
 	memset(Info, 0, sizeof(McdBlock));
 
-	if (mcd == 1) data = (char*)Mcd1Data;
-	if (mcd == 2) data = (char*)Mcd2Data;
+	if (mcd != 1 && mcd != 2)
+		return;
+
+	if (McdDisable[mcd - 1])
+		return;
+
+	if (mcd == 1) data = Mcd1Data;
+	if (mcd == 2) data = Mcd2Data;
 
 	ptr = data + block * 8192 + 2;
 
@@ -1134,7 +665,7 @@ void GetMcdBlockInfo(int mcd, int block, McdBlock *Info) {
 	strncpy(Info->Name, ptr, 16);
 }
 
-int sioFreeze(gzFile f, int Mode) {
+int sioFreeze(void *f, int Mode) {
 	gzfreeze(buf, sizeof(buf));
 	gzfreeze(&StatReg, sizeof(StatReg));
 	gzfreeze(&ModeReg, sizeof(ModeReg));
@@ -1149,52 +680,4 @@ int sioFreeze(gzFile f, int Mode) {
 	gzfreeze(&padst, sizeof(padst));
 
 	return 0;
-}
-
-
-void LoadDongle( char *str )
-{
-	FILE *f;
-	
-	f = fopen(str, "r+b");
-	if (f != NULL) {
-		fread( DongleData, 1, DONGLE_SIZE, f );
-		fclose( f );
-	}
-	else {
-		u32 *ptr, lcv;
-
-		ptr = (u32 *) DongleData;
-
-		// create temp data
-		ptr[0] = (u32) 0x02015447;
-		ptr[1] = (u32) 7;
-		ptr[2] = (u32) 1;
-		ptr[3] = (u32) 0;
-
-		for( lcv=4; lcv<0x6c / 4; lcv++ )
-		{
-			ptr[ lcv ] = 0;
-		}
-
-		ptr[ lcv ] = (u32) 0x02000100;
-		lcv++;
-
-		while( lcv < 0x1000/4 )
-		{
-			ptr[ lcv ] = (u32) 0xffffffff;
-			lcv++;
-		}
-	}
-}
-
-void SaveDongle( char *str )
-{
-	FILE *f;
-	
-	f = fopen(str, "wb");
-	if (f != NULL) {
-		fwrite( DongleData, 1, DONGLE_SIZE, f );
-		fclose( f );
-	}
 }

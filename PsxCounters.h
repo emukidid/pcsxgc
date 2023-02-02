@@ -31,6 +31,16 @@ extern "C" {
 
 extern u32 psxNextCounter, psxNextsCounter;
 
+extern u32 hSyncCount, frame_counter;
+
+typedef struct Rcnt
+{
+    u16 mode, target;
+    u32 rate, irq, counterState, irqState;
+    u32 cycle, cycleStart;
+} Rcnt;
+extern Rcnt rcnts[];
+
 void psxRcntInit();
 void psxRcntUpdate();
 
@@ -42,7 +52,7 @@ u32 psxRcntRcount(u32 index);
 u32 psxRcntRmode(u32 index);
 u32 psxRcntRtarget(u32 index);
 
-s32 psxRcntFreeze(gzFile f, s32 Mode);
+s32 psxRcntFreeze(void *f, s32 Mode);
 
 #ifdef __cplusplus
 }

@@ -29,24 +29,29 @@ extern "C" {
 #include "PsxCounters.h"
 #include "PsxBios.h"
 
+enum {
+	R3000ACPU_NOTIFY_CACHE_ISOLATED = 0,
+	R3000ACPU_NOTIFY_CACHE_UNISOLATED = 1,
+	R3000ACPU_NOTIFY_DMA3_EXE_LOAD = 2
+};
+
 typedef struct {
 	int  (*Init)();
 	void (*Reset)();
 	void (*Execute)();		/* executes up to a break */
 	void (*ExecuteBlock)();	/* executes up to a jump */
 	void (*Clear)(u32 Addr, u32 Size);
+	void (*Notify)(int note, void *data);
+	void (*ApplyConfig)();
 	void (*Shutdown)();
 } R3000Acpu;
 
 extern R3000Acpu *psxCpu;
 extern R3000Acpu psxInt;
-#if defined(__x86_64__) || defined(__i386__) || defined(__sh__) || defined(__ppc__) || defined(HW_RVL) || defined(HW_DOL)
 extern R3000Acpu psxRec;
-#define PSXREC
-#endif
 
 typedef union {
-#if defined(HW_RVL) || defined(HW_DOL) || defined(__BIGENDIAN__)
+#if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) || defined(HW_RVL) || defined(HW_DOL) || defined(__BIGENDIAN__)
 	struct { u8 h3, h2, h, l; } b;
 	struct { s8 h3, h2, h, l; } sb;
 	struct { u16 h, l; } w;
@@ -72,16 +77,17 @@ typedef union {
 
 typedef union {
 	struct {
-		u32	Index,     Random,    EntryLo0,  BPC,
-				Context,   BDA,       PIDMask,   DCIC,
-				BadVAddr,  BDAM,      EntryHi,   BPCM,
-				Status,    Cause,     EPC,       PRid,
-				Config,    LLAddr,    WatchLO,   WatchHI,
-				XContext,  Reserved1, Reserved2, Reserved3,
-				Reserved4, Reserved5, ECC,       CacheErr,
-				TagLo,     TagHi,     ErrorEPC,  Reserved6;
+		u32	Index,     Random,    EntryLo0,  EntryLo1,
+						Context,   PageMask,  Wired,     Reserved0,
+						BadVAddr,  Count,     EntryHi,   Compare,
+						Status,    Cause,     EPC,       PRid,
+						Config,    LLAddr,    WatchLO,   WatchHI,
+						XContext,  Reserved1, Reserved2, Reserved3,
+						Reserved4, Reserved5, ECC,       CacheErr,
+						TagLo,     TagHi,     ErrorEPC,  Reserved6;
 	} n;
 	u32 r[32];
+	PAIR p[32];
 } psxCP0Regs;
 
 typedef struct {
@@ -155,10 +161,11 @@ enum {
 	PSXINT_MDECINDMA,
 	PSXINT_GPUOTCDMA,
 	PSXINT_CDRDMA,
-	PSXINT_SPUASYNC,
-	PSXINT_CDRDBUF,
+	PSXINT_NEWDRC_CHECK,
+	PSXINT_RCNT,
 	PSXINT_CDRLID,
-	PSXINT_CDRPLAY,
+	PSXINT_CDRPLAY_OLD,	/* unused */
+	PSXINT_SPU_UPDATE,
 	PSXINT_COUNT
 };
 
@@ -177,166 +184,46 @@ typedef struct {
 		};
 		psxCP2Regs CP2;
 	};
-	u32 pc;						/* Program counter */
-	u32 code;					/* The instruction */
+    u32 pc;				/* Program counter */
+    u32 code;			/* The instruction */
 	u32 cycle;
 	u32 interrupt;
 	struct { u32 sCycle, cycle; } intCycle[32];
-	u8 ICache_Addr[0x1000];
-	u8 ICache_Code[0x1000];
-	boolean ICache_valid;
-	s8 code_buffer [0x200000] __attribute__((aligned(32))); // 2 MiB code buffer for Lightrec
+	u32 gteBusyCycle;
+	u32 muldivBusyCycle;
+	u32 subCycle;		/* interpreter cycle counting */
+	u32 subCycleStep;
+	// warning: changing anything in psxRegisters requires update of all
+	// asm in libpcsxcore/new_dynarec/
 	s8 psxM[0x00220000] __attribute__((aligned(32))); // Kernel & User Memory (2 Meg)
 	s8 psxR[0x00080000] __attribute__((aligned(32))); // BIOS ROM (512K)
 	u8* psxMemWLUT[0x10000] __attribute__((aligned(32)));
 	u8* psxMemRLUT[0x10000] __attribute__((aligned(32)));
+	s8 code_buffer [0x400000] __attribute__((aligned(32))); // 2 MiB code buffer for Lightrec
 } _psxCore;
 
 extern _psxCore psxCore;
 
-/*
-Formula One 2001
-- Use old CPU cache code when the RAM location is
-  updated with new code (affects in-game racing)
+/* new_dynarec stuff */
+extern u32 event_cycles[PSXINT_COUNT];
+extern u32 next_interupt;
 
-TODO:
-- I-cache / D-cache swapping
-- Isolate D-cache from RAM
-*/
+void new_dyna_before_save(void);
+void new_dyna_after_save(void);
+void new_dyna_freeze(void *f, int mode);
 
-static inline u32 *Read_ICache(u32 pc, boolean isolate) {
-	u32 pc_bank, pc_offset, pc_cache;
-	u8 *IAddr, *ICode;
-
-	pc_bank = pc >> 24;
-	pc_offset = pc & 0xffffff;
-	pc_cache = pc & 0xfff;
-
-	IAddr = psxCore.ICache_Addr;
-	ICode = psxCore.ICache_Code;
-
-	// clear I-cache
-	if (!psxCore.ICache_valid) {
-		memset(psxCore.ICache_Addr, 0xff, sizeof(psxCore.ICache_Addr));
-		memset(psxCore.ICache_Code, 0xff, sizeof(psxCore.ICache_Code));
-
-		psxCore.ICache_valid = TRUE;
-	}
-
-	// uncached
-	if (pc_bank >= 0xa0)
-		return (u32 *)PSXM(pc);
-
-	// cached - RAM
-	if (pc_bank == 0x80 || pc_bank == 0x00) {
-		if (SWAP32(*(u32 *)(IAddr + pc_cache)) == pc_offset) {
-			// Cache hit - return last opcode used
-			return (u32 *)(ICode + pc_cache);
-		} else {
-			// Cache miss - addresses don't match
-			// - default: 0xffffffff (not init)
-
-			if (!isolate) {
-				// cache line is 4 bytes wide
-				pc_offset &= ~0xf;
-				pc_cache &= ~0xf;
-
-				// address line
-				*(u32 *)(IAddr + pc_cache + 0x0) = SWAP32(pc_offset + 0x0);
-				*(u32 *)(IAddr + pc_cache + 0x4) = SWAP32(pc_offset + 0x4);
-				*(u32 *)(IAddr + pc_cache + 0x8) = SWAP32(pc_offset + 0x8);
-				*(u32 *)(IAddr + pc_cache + 0xc) = SWAP32(pc_offset + 0xc);
-
-				// opcode line
-				pc_offset = pc & ~0xf;
-				*(u32 *)(ICode + pc_cache + 0x0) = psxMu32ref(pc_offset + 0x0);
-				*(u32 *)(ICode + pc_cache + 0x4) = psxMu32ref(pc_offset + 0x4);
-				*(u32 *)(ICode + pc_cache + 0x8) = psxMu32ref(pc_offset + 0x8);
-				*(u32 *)(ICode + pc_cache + 0xc) = psxMu32ref(pc_offset + 0xc);
-			}
-
-			// normal code
-			return (u32 *)PSXM(pc);
-		}
-	}
-
-	/*
-	TODO: Probably should add cached BIOS
-	*/
-
-	// default
-	return (u32 *)PSXM(pc);
+#define new_dyna_set_event_abs(e, abs) { \
+	u32 abs_ = abs; \
+	s32 di_ = next_interupt - abs_; \
+	event_cycles[e] = abs_; \
+	if (di_ > 0) { \
+		/*printf("%u: next_interupt %u -> %u\n", psxCore.cycle, next_interupt, abs_);*/ \
+		next_interupt = abs_; \
+	} \
 }
 
-#if defined(HW_RVL) || defined(HW_DOL) || defined(BIG_ENDIAN)
-
-#define _i32(x) *(s32 *)&x
-#define _u32(x) x
-
-#define _i16(x) (((short *)&x)[1])
-#define _u16(x) (((unsigned short *)&x)[1])
-
-#define _i8(x) (((char *)&x)[3])
-#define _u8(x) (((unsigned char *)&x)[3])
-
-#else
-
-#define _i32(x) *(s32 *)&x
-#define _u32(x) x
-
-#define _i16(x) *(short *)&x
-#define _u16(x) *(unsigned short *)&x
-
-#define _i8(x) *(char *)&x
-#define _u8(x) *(unsigned char *)&x
-
-#endif
-
-/**** R3000A Instruction Macros ****/
-#define _PC_       psxCore.pc       // The next PC to be executed
-
-#define _fOp_(code)		((code >> 26)       )  // The opcode part of the instruction register 
-#define _fFunct_(code)	((code      ) & 0x3F)  // The funct part of the instruction register 
-#define _fRd_(code)		((code >> 11) & 0x1F)  // The rd part of the instruction register 
-#define _fRt_(code)		((code >> 16) & 0x1F)  // The rt part of the instruction register 
-#define _fRs_(code)		((code >> 21) & 0x1F)  // The rs part of the instruction register 
-#define _fSa_(code)		((code >>  6) & 0x1F)  // The sa part of the instruction register
-#define _fIm_(code)		((u16)code)            // The immediate part of the instruction register
-#define _fTarget_(code)	(code & 0x03ffffff)    // The target part of the instruction register
-
-#define _fImm_(code)	((s16)code)            // sign-extended immediate
-#define _fImmU_(code)	(code&0xffff)          // zero-extended immediate
-
-#define _Op_     _fOp_(psxCore.code)
-#define _Funct_  _fFunct_(psxCore.code)
-#define _Rd_     _fRd_(psxCore.code)
-#define _Rt_     _fRt_(psxCore.code)
-#define _Rs_     _fRs_(psxCore.code)
-#define _Sa_     _fSa_(psxCore.code)
-#define _Im_     _fIm_(psxCore.code)
-#define _Target_ _fTarget_(psxCore.code)
-
-#define _Imm_	 _fImm_(psxCore.code)
-#define _ImmU_	 _fImmU_(psxCore.code)
-
-#define _rRs_   psxCore.GPR.r[_Rs_]   // Rs register
-#define _rRt_   psxCore.GPR.r[_Rt_]   // Rt register
-#define _rRd_   psxCore.GPR.r[_Rd_]   // Rd register
-#define _rSa_   psxCore.GPR.r[_Sa_]   // Sa register
-#define _rFs_   psxCore.CP0.r[_Rd_]   // Fs register
-
-#define _c2dRs_ psxCore.CP2D.r[_Rs_]  // Rs cop2 data register
-#define _c2dRt_ psxCore.CP2D.r[_Rt_]  // Rt cop2 data register
-#define _c2dRd_ psxCore.CP2D.r[_Rd_]  // Rd cop2 data register
-#define _c2dSa_ psxCore.CP2D.r[_Sa_]  // Sa cop2 data register
-
-#define _rHi_   psxCore.GPR.n.hi   // The HI register
-#define _rLo_   psxCore.GPR.n.lo   // The LO register
-
-#define _JumpTarget_    ((_Target_ * 4) + (_PC_ & 0xf0000000))   // Calculates the target during a jump instruction
-#define _BranchTarget_  ((s16)_Im_ * 4 + _PC_)                 // Calculates the target during a branch instruction
-
-#define _SetLink(x)     psxCore.GPR.r[x] = _PC_ + 4;       // Sets the return address in the link register
+#define new_dyna_set_event(e, c) \
+	new_dyna_set_event_abs(e, psxCore.cycle + (c))
 
 int  psxInit();
 void psxReset();
@@ -344,9 +231,6 @@ void psxShutdown();
 void psxException(u32 code, u32 bd);
 void psxBranchTest();
 void psxExecuteBios();
-int  psxTestLoadDelay(int reg, u32 tmp);
-void psxDelayTest(int reg, u32 bpc);
-void psxTestSWInts();
 void psxJumpTest();
 
 #ifdef __cplusplus
