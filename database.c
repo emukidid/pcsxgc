@@ -1,5 +1,5 @@
-#include "misc.h"
-#include "sio.h"
+#include "Misc.h"
+#include "Sio.h"
 //#include "new_dynarec/new_dynarec.h"
 
 /* It's duplicated from emu_if.c */

@@ -32,7 +32,7 @@ void UnloadSBI(void);
 
 extern unsigned char *sbi_sectors;
 
-#include "cdrom.h"
+#include "CdRom.h"
 
 static inline int CheckSBI(const u8 *t)
 {

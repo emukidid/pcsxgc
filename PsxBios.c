@@ -35,7 +35,7 @@
 extern char mcd1Written;
 extern char mcd2Written;
 #include "gpu.h"
-#include "sio.h"
+#include "Sio.h"
 #include <zlib.h>
 
 #if (defined(__GNUC__) && __GNUC__ >= 5) || defined(__clang__)

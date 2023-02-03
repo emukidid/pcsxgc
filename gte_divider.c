@@ -9,7 +9,7 @@
  * Licensed under the BSD-3-Clause
  */
 
-#include "gte.h"
+#include "Gte.h"
 #include "gte_divider.h"
 
 static const u8 table[] =
