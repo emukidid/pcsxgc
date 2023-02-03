@@ -26,7 +26,7 @@ INCLUDES	:=
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-LTO			 = #-flto # Uncomment to use link-time optimization
+LTO			 = -flto # Uncomment to use link-time optimization
 
 CFLAGS	= -g -O3 $(LTO) -Wall $(MACHDEP) $(INCLUDE) -Wno-stringop-truncation -Wno-strict-aliasing -Wno-misleading-indentation \
 		  -D__GAMECUBE__ -DHW_DOL -D__ppc__ -DNO_SOCKET \
@@ -37,12 +37,12 @@ CXXFLAGS	=	$(CFLAGS)
 
 ASFLAGS := -DHW_DOL
 
-LDFLAGS	=	-g $(MACHDEP) $(LTO) -mogc -Wl,-Map,$(notdir $@).map
+LDFLAGS	=	-g $(MACHDEP) $(CFLAGS) -mogc -Wl,-Map,$(notdir $@).map
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-laesnd -lz -lm -lfat -logc -liso9660 -llightrec -llightning  -lopcodes -lbfd -liberty -lz
+LIBS	:=	-laesnd -lz -lm -lfat -logc -liso9660 -llightrec -llightning
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
