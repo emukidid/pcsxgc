@@ -143,6 +143,30 @@ static PTE* insert_pte(u32 virtual, u32 physical, u8 WIMG, u8 PP)
 	return NULL;
 }
 
+int lightrec_mmap(void *mem, u32 virtual, size_t size)
+{
+	unsigned int i;
+	u32 phys;
+	PTE *pte;
+
+	if (((u32)mem | virtual) & (PAGE_SIZE - 1)) {
+		/* Invalid alignment */
+		return -EINVAL;
+	}
+
+	phys = MEM_VIRTUAL_TO_PHYSICAL(mem);
+
+	for (i = 0; i < size; i += PAGE_SIZE) {
+		pte = insert_pte(virtual + i, phys + i, 0, 0b10);
+		if (!pte)
+			return -ENOMEM;
+	}
+
+	asm volatile("mtsrin %0,%1" :: "r"(virtual >> 28), "r"(virtual));
+
+	return 0;
+}
+
 static void tlbia(void)
 {
 	int i;

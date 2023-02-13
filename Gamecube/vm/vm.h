@@ -94,4 +94,6 @@ typedef PTE* PTEG;
 extern void* VM_Init(u32 VMSize, u32 MEMSize);
 extern void VM_Deinit(void);
 
+int lightrec_mmap(void *mem, u32 virt, size_t size);
+
 #endif

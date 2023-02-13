@@ -33,6 +33,8 @@
 //#include "lightrec/mem.h"
 //#include "memmap.h"
 
+#include "Gamecube/vm/vm.h"
+
 #ifdef USE_LIBRETRO_VFS
 #include <streams/file_stream_transforms.h>
 #endif
@@ -203,6 +205,20 @@ int psxMemInit(void)
 	}*/
 	psxP = &psxM[0x200000];
 	psxH = &psxM[0x210000];
+
+	/* Memory-map the allocated buffers */
+	if (lightrec_mmap(psxM, 0x0, 0x200000)
+	    || lightrec_mmap(psxM, 0x200000, 0x200000)
+	    || lightrec_mmap(psxM, 0x400000, 0x200000)
+	    || lightrec_mmap(psxM, 0x600000, 0x200000)) {
+		SysMessage(_("Error mapping RAM"));
+	}
+
+	if (lightrec_mmap(psxR, 0x1fc00000, 0x80000))
+		SysMessage(_("Error mapping BIOS"));
+
+	if (lightrec_mmap(psxM + 0x210000, 0x1f800000, 0x3000))
+		SysMessage(_("Error mapping scratch/IO"));
 
 	memset(psxCore.psxMemRLUT, (uintptr_t)INVALID_PTR, 0x10000 * sizeof(void *));
 	memset(psxCore.psxMemWLUT, (uintptr_t)INVALID_PTR, 0x10000 * sizeof(void *));
