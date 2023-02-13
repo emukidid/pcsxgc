@@ -285,9 +285,9 @@ static struct lightrec_mem_map lightrec_map[] = {
 static void lightrec_enable_ram(struct lightrec_state *state, bool enable)
 {
 	if (enable)
-		memcpy(psxCore.psxM, cache_buf, sizeof(cache_buf));
+		memcpy(psxM, cache_buf, sizeof(cache_buf));
 	else
-		memcpy(cache_buf, psxCore.psxM, sizeof(cache_buf));
+		memcpy(cache_buf, psxM, sizeof(cache_buf));
 
 	ram_disabled = !enable;
 }
@@ -386,11 +386,11 @@ static const struct lightrec_ops lightrec_ops = {
 
 static int lightrec_plugin_init(void)
 {
-	lightrec_map[PSX_MAP_KERNEL_USER_RAM].address = psxCore.psxM;
-	lightrec_map[PSX_MAP_BIOS].address = psxCore.psxR;
-	lightrec_map[PSX_MAP_SCRATCH_PAD].address = psxCore.psxM + 0x210000;
-	lightrec_map[PSX_MAP_PARALLEL_PORT].address = psxCore.psxM + 0x200000;
-	lightrec_map[PSX_MAP_HW_REGISTERS].address = psxCore.psxM + 0x211000;
+	lightrec_map[PSX_MAP_KERNEL_USER_RAM].address = psxM;
+	lightrec_map[PSX_MAP_BIOS].address = psxR;
+	lightrec_map[PSX_MAP_SCRATCH_PAD].address = psxM + 0x210000;
+	lightrec_map[PSX_MAP_PARALLEL_PORT].address = psxM + 0x200000;
+	lightrec_map[PSX_MAP_HW_REGISTERS].address = psxM + 0x211000;
 	lightrec_map[PSX_MAP_CODE_BUFFER].address = psxCore.code_buffer;
 	/*
 	lightrec_map[PSX_MAP_MIRROR1].address = psxM + 0x200000;

@@ -195,8 +195,6 @@ typedef struct {
 	u32 subCycleStep;
 	// warning: changing anything in psxRegisters requires update of all
 	// asm in libpcsxcore/new_dynarec/
-	s8 psxM[0x00220000] __attribute__((aligned(32))); // Kernel & User Memory (2 Meg)
-	s8 psxR[0x00080000] __attribute__((aligned(32))); // BIOS ROM (512K)
 	u8* psxMemWLUT[0x10000] __attribute__((aligned(32)));
 	u8* psxMemRLUT[0x10000] __attribute__((aligned(32)));
 	s8 code_buffer [0x400000] __attribute__((aligned(32))); // 2 MiB code buffer for Lightrec

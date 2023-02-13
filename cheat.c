@@ -488,7 +488,7 @@ void FreeCheatSearchMem() {
 
 void CheatSearchBackupMemory() {
 	if (prevM != NULL) {
-		memcpy(prevM, psxCore.psxM, 0x200000);
+		memcpy(prevM, psxM, 0x200000);
 	}
 }
 

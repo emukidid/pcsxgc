@@ -188,7 +188,7 @@ void psxDma2(u32 madr, u32 bcr, u32 chcr) { // GPU
 				do_walking = Config.hacks.gpu_slow_list_walking;
 			madr_next_p = do_walking ? &madr_next : NULL;
 
-			size = GPU_dmaChain((u32 *)psxCore.psxM, madr & 0x1fffff, madr_next_p);
+			size = GPU_dmaChain((u32 *)psxM, madr & 0x1fffff, madr_next_p);
 			if ((int)size <= 0)
 				size = gpuDmaChainSize(madr);
 
@@ -215,7 +215,7 @@ void gpuInterrupt() {
 	if (HW_DMA2_CHCR == SWAP32(0x01000401) && !(HW_DMA2_MADR & SWAP32(0x800000)))
 	{
 		u32 size, madr_next = 0xffffff;
-		size = GPU_dmaChain((u32 *)psxCore.psxM, HW_DMA2_MADR & 0x1fffff, &madr_next);
+		size = GPU_dmaChain((u32 *)psxM, HW_DMA2_MADR & 0x1fffff, &madr_next);
 		HW_DMA2_MADR = SWAPu32(madr_next);
 		GPUDMA_INT(size);
 		return;

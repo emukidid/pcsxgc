@@ -629,8 +629,8 @@ int SaveState(const char *file) {
 	if (Config.HLE)
 		psxBiosFreeze(1);
 
-	SaveFuncs.write(f, psxCore.psxM, 0x00200000);
-	SaveFuncs.write(f, psxCore.psxR, 0x00080000);
+	SaveFuncs.write(f, psxM, 0x00200000);
+	SaveFuncs.write(f, psxR, 0x00080000);
 	SaveFuncs.write(f, psxH, 0x00010000);
 	// only partial save of psxRegisters to maintain savestate compat
 	SaveFuncs.write(f, &psxCore, offsetof(_psxCore, gteBusyCycle));
@@ -694,8 +694,8 @@ int LoadState(const char *file) {
 	psxCpu->Reset();
 	SaveFuncs.seek(f, 128 * 96 * 3, SEEK_CUR);
 
-	SaveFuncs.read(f, psxCore.psxM, 0x00200000);
-	SaveFuncs.read(f, psxCore.psxR, 0x00080000);
+	SaveFuncs.read(f, psxM, 0x00200000);
+	SaveFuncs.read(f, psxR, 0x00080000);
 	SaveFuncs.read(f, psxH, 0x00010000);
 	SaveFuncs.read(f, &psxCore, offsetof(_psxCore, gteBusyCycle));
 	psxCore.gteBusyCycle = psxCore.cycle;
