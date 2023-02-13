@@ -56,7 +56,7 @@ int psxInit() {
 void psxReset() {
 	psxMemReset();
 
-	memset(&psxCore, 0, offsetof(_psxCore,psxM));	// Don't clear ptr data stored in there.
+	memset(&psxCore, 0, offsetof(_psxCore,psxMemWLUT));	// Don't clear ptr data stored in there.
 
 	psxCore.pc = 0xbfc00000; // Start in bootstrap
 

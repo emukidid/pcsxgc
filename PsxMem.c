@@ -45,6 +45,11 @@
 #include "Gamecube/fileBrowser/fileBrowser-CARD.h"
 #include "Gamecube/wiiSXconfig.h"
 
+static s8 psxM_buf[0x220000] __attribute__((aligned(4096)));
+static s8 psxR_buf[0x80000] __attribute__((aligned(4096)));
+
+s8 *psxM = psxM_buf; // Kernel & User Memory (2 Meg)
+s8 *psxR = psxR_buf; // BIOS ROM (512K)
 s8 *psxP = NULL; // Parallel Port (64K)
 s8 *psxH = NULL; // Scratch Pad (1K) & Hardware Registers (8K)
 
@@ -196,14 +201,14 @@ int psxMemInit(void)
 		psxMemShutdown();
 		return -1;
 	}*/
-	psxP = &psxCore.psxM[0x200000];
-	psxH = &psxCore.psxM[0x210000];
+	psxP = &psxM[0x200000];
+	psxH = &psxM[0x210000];
 
 	memset(psxCore.psxMemRLUT, (uintptr_t)INVALID_PTR, 0x10000 * sizeof(void *));
 	memset(psxCore.psxMemWLUT, (uintptr_t)INVALID_PTR, 0x10000 * sizeof(void *));
 
 // MemR
-	for (i = 0; i < 0x80; i++) psxCore.psxMemRLUT[i + 0x0000] = (u8 *)&psxCore.psxM[(i & 0x1f) << 16];
+	for (i = 0; i < 0x80; i++) psxCore.psxMemRLUT[i + 0x0000] = (u8 *)&psxM[(i & 0x1f) << 16];
 
 	memcpy(psxCore.psxMemRLUT + 0x8000, psxCore.psxMemRLUT, 0x80 * sizeof(void *));
 	memcpy(psxCore.psxMemRLUT + 0xa000, psxCore.psxMemRLUT, 0x80 * sizeof(void *));
@@ -211,13 +216,13 @@ int psxMemInit(void)
 	psxCore.psxMemRLUT[0x1f00] = (u8 *)psxP;
 	psxCore.psxMemRLUT[0x1f80] = (u8 *)psxH;
 
-	for (i = 0; i < 0x08; i++) psxCore.psxMemRLUT[i + 0x1fc0] = (u8 *)&psxCore.psxR[i << 16];
+	for (i = 0; i < 0x08; i++) psxCore.psxMemRLUT[i + 0x1fc0] = (u8 *)&psxR[i << 16];
 
 	memcpy(psxCore.psxMemRLUT + 0x9fc0, psxCore.psxMemRLUT + 0x1fc0, 0x08 * sizeof(void *));
 	memcpy(psxCore.psxMemRLUT + 0xbfc0, psxCore.psxMemRLUT + 0x1fc0, 0x08 * sizeof(void *));
 
 // MemW
-	for (i = 0; i < 0x80; i++) psxCore.psxMemWLUT[i + 0x0000] = (u8 *)&psxCore.psxM[(i & 0x1f) << 16];
+	for (i = 0; i < 0x80; i++) psxCore.psxMemWLUT[i + 0x0000] = (u8 *)&psxM[(i & 0x1f) << 16];
 
 	memcpy(psxCore.psxMemWLUT + 0x8000, psxCore.psxMemWLUT, 0x80 * sizeof(void *));
 	memcpy(psxCore.psxMemWLUT + 0xa000, psxCore.psxMemWLUT, 0x80 * sizeof(void *));
@@ -234,9 +239,9 @@ int psxMemInit(void)
 
 void psxMemReset() {
 	int temp;
-	memset(psxCore.psxM, 0, 0x00200000);
+	memset(psxM, 0, 0x00200000);
 	memset(psxP, 0xff, 0x00010000);
-	memset(psxCore.psxR, 0, 0x80000);
+	memset(psxR, 0, 0x80000);
   if(!biosFile || (biosDevice == BIOSDEVICE_HLE)) {
     Config.HLE = BIOS_HLE;
     return;
@@ -245,7 +250,7 @@ void psxMemReset() {
     biosFile->offset = 0; //must reset otherwise the if statement will fail!
   	if(biosFile_readFile(biosFile, &temp, 4) == 4) {  //bios file exists
   	  biosFile->offset = 0;
-  		if(biosFile_readFile(biosFile, psxCore.psxR, 0x80000) != 0x80000) { //failed size
+  		if(biosFile_readFile(biosFile, psxR, 0x80000) != 0x80000) { //failed size
   		  //printf("Using HLE\n");
   		  Config.HLE = BIOS_HLE;
   	  }
@@ -447,7 +452,7 @@ void psxMemWrite32(u32 mem, u32 value) {
 					case 0x00: case 0x1e988:
 						if (writeok == 1) break;
 						writeok = 1;
-						for (i = 0; i < 0x80; i++) psxCore.psxMemWLUT[i + 0x0000] = (void *)&psxCore.psxM[(i & 0x1f) << 16];
+						for (i = 0; i < 0x80; i++) psxCore.psxMemWLUT[i + 0x0000] = (void *)&psxM[(i & 0x1f) << 16];
 						memcpy(psxCore.psxMemWLUT + 0x8000, psxCore.psxMemWLUT, 0x80 * sizeof(void *));
 						memcpy(psxCore.psxMemWLUT + 0xa000, psxCore.psxMemWLUT, 0x80 * sizeof(void *));
 						/* Dynarecs might take this opportunity to flush their code cache */
