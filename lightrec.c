@@ -386,6 +386,7 @@ static const struct lightrec_ops lightrec_ops = {
 
 static int lightrec_plugin_init(void)
 {
+#if 0
 	lightrec_map[PSX_MAP_KERNEL_USER_RAM].address = psxM;
 	lightrec_map[PSX_MAP_BIOS].address = psxR;
 	lightrec_map[PSX_MAP_SCRATCH_PAD].address = psxM + 0x210000;
@@ -397,6 +398,17 @@ static int lightrec_plugin_init(void)
 	lightrec_map[PSX_MAP_MIRROR2].address = psxM + 0x400000;
 	lightrec_map[PSX_MAP_MIRROR3].address = psxM + 0x600000;
 	*/
+#else
+	lightrec_map[PSX_MAP_KERNEL_USER_RAM].address = (void *)0x0;
+	lightrec_map[PSX_MAP_MIRROR1].address = (void *)0x200000;
+	lightrec_map[PSX_MAP_MIRROR2].address = (void *)0x400000;
+	lightrec_map[PSX_MAP_MIRROR3].address = (void *)0x600000;
+
+	lightrec_map[PSX_MAP_BIOS].address = (void *)0x1fc00000;
+	lightrec_map[PSX_MAP_SCRATCH_PAD].address = (void *)0x1f800000;
+	lightrec_map[PSX_MAP_HW_REGISTERS].address = (void *)0x1f801000;
+	lightrec_map[PSX_MAP_CODE_BUFFER].address = psxCore.code_buffer;
+#endif
 
 	lightrec_state = lightrec_init(name,
 			lightrec_map, ARRAY_SIZE(lightrec_map),
