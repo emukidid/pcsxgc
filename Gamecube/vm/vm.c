@@ -85,13 +85,13 @@ static u16 locate_oldest(void)
 	}
 }
 
-static PTE* StorePTE(PTEG pteg, u32 virtual, u32 physical, u8 WIMG, u8 PP, int secondary)
+static PTE* StorePTE(PTEG pteg, u32 virtual, u32 physical, u8 WIMG, u8 PP, int secondary, u32 vsid)
 {
 	int i;
 	PTE p = {{0}};
 
 	p.valid = 1;
-	p.VSID = VM_VSID;
+	p.VSID = vsid;
 	p.hash = secondary ? 1:0;
 	p.API = virtual >> 22;
 	p.RPN = physical >> 12;
@@ -112,11 +112,11 @@ static PTE* StorePTE(PTEG pteg, u32 virtual, u32 physical, u8 WIMG, u8 PP, int s
 	return NULL;
 }
 
-static PTEG CalcPTEG(u32 virtual, int secondary)
+static PTEG CalcPTEG(u32 virtual, int secondary, u32 vsid)
 {
 	uint32_t segment_index = (virtual >> 12) & 0xFFFF;
 	u32 ptr = MEM_VIRTUAL_TO_PHYSICAL(HTABORG);
-	u32 hash = segment_index ^ VM_VSID;
+	u32 hash = segment_index ^ vsid;
 
 	if (secondary) hash = ~hash;
 
@@ -126,16 +126,16 @@ static PTEG CalcPTEG(u32 virtual, int secondary)
 	return (PTEG)MEM_PHYSICAL_TO_K0(ptr);
 }
 
-static PTE* insert_pte(u16 index, u32 physical, u8 WIMG, u8 PP)
+static PTE* insert_pte(u32 virtual, u32 physical, u8 WIMG, u8 PP)
 {
+	u32 vsid = virtual >> 28;
 	PTE *pte;
 	int i;
-	u32 virtual = (u32)(VM_Base+index);
 
 	for (i=0; i < 2; i++)
 	{
-		PTEG pteg = CalcPTEG(virtual, i);
-		pte = StorePTE(pteg, virtual, physical, WIMG, PP, i);
+		PTEG pteg = CalcPTEG(virtual, i, vsid);
+		pte = StorePTE(pteg, virtual, physical, WIMG, PP, i, vsid);
 		if (pte)
 			return pte;
 	}
@@ -220,7 +220,9 @@ void* VM_Init(u32 VMSize, u32 MEMSize)
 		phys_map[index].locked = 0;
 		phys_map[index].dirty = 0;
 		phys_map[index].page_index = v_index;
-		phys_map[index].pte_index = insert_pte(v_index, MEM_VIRTUAL_TO_PHYSICAL(MEM_Base+index), 0, 0b10) - HTABORG;
+		phys_map[index].pte_index = insert_pte((u32)(VM_Base+v_index),
+						       MEM_VIRTUAL_TO_PHYSICAL(MEM_Base+index),
+						       0, 0b10) - HTABORG;
 		virt_map[v_index].committed = 0;
 		virt_map[v_index].p_map_index = index;
 	}
@@ -237,7 +239,7 @@ void* VM_Init(u32 VMSize, u32 MEMSize)
 	// set SDR1
 	mtspr(25, MEM_VIRTUAL_TO_PHYSICAL(HTABORG)|HTABMASK);
 	// enable SR
-	asm volatile("mtsrin %0,%1" :: "r"(VM_VSID), "r"(VM_Base));
+	asm volatile("mtsrin %0,%1" :: "r"((u32)VM_Base >> 28), "r"(VM_Base));
 	// hook DSI
 	__exception_sethandler(EX_DSI, dsi_handler);
 
@@ -312,7 +314,9 @@ int vm_dsi_handler(u32 DSISR, u32 DAR)
 
 	virt_map[v_index].p_map_index = p_index;
 	phys_map[p_index].page_index = v_index;
-	phys_map[p_index].pte_index = insert_pte(v_index, MEM_VIRTUAL_TO_PHYSICAL(MEM_Base+p_index), 0, 0b10) - HTABORG;
+	phys_map[p_index].pte_index = insert_pte((u32)(VM_Base+v_index),
+						 MEM_VIRTUAL_TO_PHYSICAL(MEM_Base+p_index),
+						 0, 0b10) - HTABORG;
 
 	LWP_MutexUnlock(vm_mutex);
 

@@ -39,7 +39,6 @@
 #define PAGE_SIZE        4096
 #define PAGE_MASK        (~(PAGE_SIZE-1))
 
-#define VM_VSID          0
 #define VM_SEGMENT       0x70000000
 
 // use 64KB for PTEs
