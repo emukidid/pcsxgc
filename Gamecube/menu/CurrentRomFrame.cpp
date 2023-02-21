@@ -172,7 +172,7 @@ extern BOOL hasLoadedISO;
 
 extern "C" {
 void SysReset();
-void SysInit();
+int SysInit();
 void SysClose();
 void CheckCdrom();
 void LoadCdrom();

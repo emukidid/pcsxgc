@@ -45,7 +45,6 @@
 PadDataS lastport1;
 PadDataS lastport2;
 
-extern void SysPrintf(char *fmt, ...);
 extern int stop;
 
 /* Controller type, later do this by a Variable in the GUI */

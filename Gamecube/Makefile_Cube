@@ -15,7 +15,7 @@ include $(DEVKITPPC)/gamecube_rules
 # SOURCES is a list of directories containing source code
 # INCLUDES is a list of directories containing extra header files
 #---------------------------------------------------------------------------------
-TARGET		:=	CubeSX_LR
+TARGET		:=	CubeSX
 BUILD		:=	build
 SOURCES		:=	. ./gc_input/ ./vm/ ./libgui/ ./menu/ ./fileBrowser/ .. ../PeopsSoftGPU/ ../franspu/
 
@@ -108,7 +108,7 @@ export OUTPUT	:=	$(CURDIR)/$(TARGET)
 #---------------------------------------------------------------------------------
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
-	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile_Cube_Lightrec
+	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile_Cube
 	@echo creating ... $(notdir $(OUTPUT)).dol
 	@$(DEVKITPRO)/tools/bin/elf2dol $(OUTPUT).elf $(OUTPUT).dol
 

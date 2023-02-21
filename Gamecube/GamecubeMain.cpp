@@ -56,21 +56,6 @@ extern u32 __di_check_ahbprot(void);
 }
 #endif //WII
 
-/* function prototypes */
-extern "C" {
-int SysInit();
-void SysReset();
-void SysClose();
-void SysPrintf(const char *fmt, ...);
-void *SysLoadLibrary(char *lib);
-void *SysLoadSym(void *lib, char *sym);
-char *SysLibError();
-void SysCloseLibrary(void *lib);
-void SysUpdate();
-void SysRunGui();
-void SysMessage(char *fmt, ...);
-}
-
 u32* xfb[2] = { NULL, NULL };	/*** Framebuffers ***/
 int whichfb = 0;        /*** Frame buffer toggle ***/
 GXRModeObj *vmode;				/*** Graphics Mode Object ***/
@@ -334,16 +319,14 @@ PluginTable plugins[] =
 	  PLUGIN_SLOT_1,
 	  PLUGIN_SLOT_2,
 	  PLUGIN_SLOT_3,
-	  PLUGIN_SLOT_4,
-	  PLUGIN_SLOT_5,
-	  PLUGIN_SLOT_6,
-	  PLUGIN_SLOT_7 };
+	  PLUGIN_SLOT_4 };
 }
 
 int main(int argc, char *argv[]) 
 {
 	/* INITIALIZE */
 #ifdef HW_RVL
+	VM_Init(ARAM_SIZE, MRAM_BACKING);
 	DI_UseCache(false);
 	if (!__di_check_ahbprot()) {
 		s32 preferred = IOS_GetPreferredVersion();
@@ -639,7 +622,7 @@ void SysPrintf(const char *fmt, ...)
 #endif
 }
 
-void *SysLoadLibrary(char *lib) 
+void *SysLoadLibrary(const char *lib) 
 {
 	int i;
 	for(i=0; i<NUM_PLUGINS; i++)
@@ -648,7 +631,7 @@ void *SysLoadLibrary(char *lib)
 	return NULL;
 }
 
-void *SysLoadSym(void *lib, char *sym) 
+void *SysLoadSym(void *lib, const char *sym) 
 {
 	PluginTable* plugin = plugins + (int)lib;
 	int i;
@@ -665,8 +648,8 @@ void SysUpdate()
 }
 
 void SysRunGui() {}
-void SysMessage(char *fmt, ...) {}
+void SysMessage(const char *fmt, ...) {}
 void SysCloseLibrary(void *lib) {}
-char *SysLibError() {	return NULL; }
+const char *SysLibError() {	return NULL; }
 
 } //extern "C"

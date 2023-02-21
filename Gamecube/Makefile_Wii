@@ -17,7 +17,7 @@ include $(DEVKITPPC)/wii_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	WiiSX
 BUILD		:=	build
-SOURCES		:=	. ./gc_input/ ./libgui/ ./menu/ ./fileBrowser/ .. ../PeopsSoftGPU/ ../franspu/ ../ppc/
+SOURCES		:=	. ./gc_input/ ./vm/ ./libgui/ ./menu/ ./fileBrowser/ .. ../PeopsSoftGPU/ ../franspu/
 
 DATA		:=	data  
 
@@ -28,21 +28,21 @@ INCLUDES	:=
 #---------------------------------------------------------------------------------
 LTO			 = -flto # Uncomment to use link-time optimization
 
-CFLAGS	= -g -O3 $(LTO) -Wall $(MACHDEP) $(INCLUDE) -Wno-strict-aliasing -Wno-misleading-indentation \
-		  -D__GAMECUBE__ -DWII -DHW_RVL -D__ppc__ \
+CFLAGS	= -g -O3 $(LTO) -Wall $(MACHDEP) $(INCLUDE) -Wno-stringop-truncation -Wno-strict-aliasing -Wno-misleading-indentation \
+		  -D__GAMECUBE__ -DWII -DHW_RVL -DHW_DOL -D__ppc__ -DNO_SOCKET \
 		  -D__GX__ -D_SDL -DEMBEDDED_FONTS \
-		  -DTHREADED_AUDIO -DRELEASE #-DSHOW_DEBUG #-DPROFILE #-DDEBUGON #-DPROFILE
+		  -DTHREADED_AUDIO -DRELEASE -DSHOW_DEBUG #-DPRINTGECKO #-DPROFILE
 		  
 CXXFLAGS	=	$(CFLAGS)
 
 ASFLAGS := -DHW_RVL
 
-LDFLAGS	=	-g $(MACHDEP) $(LTO) -Wl,-Map,$(notdir $@).map
+LDFLAGS	=	-g $(MACHDEP) $(CFLAGS) -mrvl -Wl,-Map,$(notdir $@).map
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-laesnd -ldi -lm -lfat -ldb -lwiiuse -lbte -logc -lz -ltinysmb -liso9660
+LIBS	:=	-laesnd -ldi -lz -lm -lfat -logc -ldb -lwiiuse -lbte -liso9660 -llightrec -llightning -ltinysmb
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
@@ -135,6 +135,9 @@ $(OUTPUT).elf: $(OFILES)
 	@echo $(notdir $<)
 	$(bin2o)
 
+dsihandler.o:		./vm/dsihandler.s
+		$(CC) -x assembler-with-cpp $(CFLAGS) -D_LANGUAGE_ASSEMBLY -c -o $@ $<
+	
 -include $(DEPENDS)
 
 #---------------------------------------------------------------------------------

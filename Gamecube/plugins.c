@@ -280,39 +280,7 @@ long CALLBACK CDR__setfilename(char*filename) { return 0; }
 	LoadSym(CDR_##dest, CDR##dest, name, FALSE);
 
 static int LoadCDRplugin(const char *CDRdll) {
-	void *drv;
-
-	//if (CDRdll == NULL) {
-	//	cdrIsoInit();
-	//	return 0;
-	//}
-
-	hCDRDriver = SysLoadLibrary(CDRdll);
-	if (hCDRDriver == NULL) {
-		CDR_configure = NULL;
-		SysMessage (_("Could not load CD-ROM plugin %s!"), CDRdll);  return -1;
-	}
-	drv = hCDRDriver;
-	LoadCdrSym1(init, "CDRinit");
-	LoadCdrSym1(shutdown, "CDRshutdown");
-	LoadCdrSym1(open, "CDRopen");
-	LoadCdrSym1(close, "CDRclose");
-	LoadCdrSym1(getTN, "CDRgetTN");
-	LoadCdrSym1(getTD, "CDRgetTD");
-	LoadCdrSym1(readTrack, "CDRreadTrack");
-	LoadCdrSym1(getBuffer, "CDRgetBuffer");
-	LoadCdrSym1(getBufferSub, "CDRgetBufferSub");
-	LoadCdrSym0(play, "CDRplay");
-	LoadCdrSym0(stop, "CDRstop");
-	LoadCdrSym0(getStatus, "CDRgetStatus");
-	LoadCdrSym0(getDriveLetter, "CDRgetDriveLetter");
-	LoadCdrSym0(configure, "CDRconfigure");
-	LoadCdrSym0(test, "CDRtest");
-	LoadCdrSym0(about, "CDRabout");
-	LoadCdrSym0(setfilename, "CDRsetfilename");
-	LoadCdrSymN(readCDDA, "CDRreadCDDA");
-	LoadCdrSymN(getTE, "CDRgetTE");
-
+	cdrIsoInit();
 	return 0;
 }
 

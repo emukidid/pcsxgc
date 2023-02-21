@@ -17,8 +17,8 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA 02111-1307 USA.           *
  ***************************************************************************/
 
-#ifndef __SYSTEM_H__
-#define __SYSTEM_H__
+#ifndef __SYSTEM_1_H__
+#define __SYSTEM_1_H__
 
 #ifdef __cplusplus
 extern "C" {

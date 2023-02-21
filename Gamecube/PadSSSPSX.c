@@ -70,7 +70,6 @@ static struct
 	int cmdLen;			//# of bytes in pad reply
 } global;
 
-extern void SysPrintf(char *fmt, ...);
 extern int stop;
 
 /* Controller type, later do this by a Variable in the GUI */
