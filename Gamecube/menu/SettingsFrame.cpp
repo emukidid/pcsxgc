@@ -30,6 +30,7 @@
 #include "../../PsxCommon.h"
 
 extern "C" {
+#include "../../dfsound/spu_config.h"
 #include "../gc_input/controller.h"
 #include "../fileBrowser/fileBrowser.h"
 #include "../fileBrowser/fileBrowser-libfat.h"
@@ -149,7 +150,7 @@ Disable Audio: Yes; No
 Disable XA: Yes; No
 Disable CDDA: Yes; No
 Volume Level: ("0: low", "1: medium", "2: loud", "3: loudest")
-	Note: iVolume=4-ComboBox_GetCurSel(hWC);, so 1 is loudest and 4 is low; default is medium
+	Note: volume=4-ComboBox_GetCurSel(hWC);, so 1 is loudest and 4 is low; default is medium
 
 Saves Tab:
 Memcard Save Device: SD; USB; CardA; CardB
@@ -209,10 +210,10 @@ static char FRAME_STRINGS[56][24] =
 	  "Disable XA",
 	  "Disable CDDA",
 	  "Volume",
-	  "loudest",	//iVolume=1
+	  "loudest",	//volume=1
 	  "loud",
 	  "medium",
-	  "low",		//iVolume=4
+	  "low",		//volume=4
 	//Strings for Saves tab (starting at FRAME_STRINGS[51]) ..was[55]
 	  "Memcard Save Device",
 	  "Auto Save Memcards",
@@ -493,7 +494,7 @@ void SettingsFrame::activateSubmenu(int submenu)
 			else								FRAME_BUTTONS[42].button->setSelected(true);
 			if (Config.Cdda == CDDA_DISABLE)	FRAME_BUTTONS[43].button->setSelected(true);
 			else								FRAME_BUTTONS[44].button->setSelected(true);
-			FRAME_BUTTONS[45].buttonString = FRAME_STRINGS[46+iVolume];
+			FRAME_BUTTONS[45].buttonString = FRAME_STRINGS[46+volume];
 			for (int i = 39; i < 46; i++)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
@@ -1170,11 +1171,10 @@ extern "C" void SetVolume(void);
 
 void Func_VolumeToggle()
 {
-	iVolume--;
-	if (iVolume<1)
-		iVolume = 4;
-	FRAME_BUTTONS[45].buttonString = FRAME_STRINGS[46+iVolume];
-	volume = iVolume;
+	volume--;
+	if (volume<1)
+		volume = 4;
+	FRAME_BUTTONS[45].buttonString = FRAME_STRINGS[46+volume];
 	SetVolume();
 }
 

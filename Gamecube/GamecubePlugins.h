@@ -26,7 +26,7 @@
 #include "../PSEmu_Plugin_Defs.h"
 #include "../plugins.h"
 
-#define SYMS_PER_LIB 20
+#define SYMS_PER_LIB 22
 typedef struct {
 	const char* lib;
 	int   numSyms;
@@ -35,53 +35,7 @@ typedef struct {
 		void* pntr;
 	} syms[SYMS_PER_LIB];
 } PluginTable;
-#define NUM_PLUGINS 5
-
-/* SPU NULL */
-//typedef long (* SPUopen)(void);
-void NULL_SPUwriteRegister(unsigned long reg, unsigned short val);
-unsigned short NULL_SPUreadRegister(unsigned long reg);
-unsigned short NULL_SPUreadDMA(void);
-void NULL_SPUwriteDMA(unsigned short val);
-void NULL_SPUwriteDMAMem(unsigned short * pusPSXMem,int iSize);
-void NULL_SPUreadDMAMem(unsigned short * pusPSXMem,int iSize);
-void NULL_SPUplayADPCMchannel(xa_decode_t *xap);
-long NULL_SPUinit(void);
-long NULL_SPUopen(void);
-void NULL_SPUsetConfigFile(char * pCfg);
-long NULL_SPUclose(void);
-long NULL_SPUshutdown(void);
-long NULL_SPUtest(void);
-void NULL_SPUregisterCallback(void (*callback)(void));
-void NULL_SPUregisterCDDAVolume(void (*CDDAVcallback)(unsigned short,unsigned short));
-char * NULL_SPUgetLibInfos(void);
-void NULL_SPUabout(void);
-long NULL_SPUfreeze(unsigned long ulFreezeMode,SPUFreeze_t *);
-
-
-/* franspu */
-//spu_registers.cpp
-void FRAN_SPU_writeRegister(unsigned long reg, unsigned short val);
-unsigned short FRAN_SPU_readRegister(unsigned long reg);
-//spu_dma.cpp
-unsigned short FRAN_SPU_readDMA(void);
-void FRAN_SPU_readDMAMem(unsigned short * pusPSXMem,int iSize);
-void FRAN_SPU_writeDMA(unsigned short val);
-void FRAN_SPU_writeDMAMem(unsigned short * pusPSXMem,int iSize);
-//spu.cpp
-void FRAN_SPU_async(unsigned long cycle);
-void FRAN_SPU_playADPCMchannel(xa_decode_t *xap);
-long FRAN_SPU_init(void);
-s32 FRAN_SPU_open(void);
-long FRAN_SPU_close(void);
-long FRAN_SPU_shutdown(void);
-long FRAN_SPU_freeze(unsigned long ulFreezeMode,SPUFreeze_t * pF);
-void FRAN_SPU_setConfigFile(char *cfgfile);
-void FRAN_SPU_About();
-void FRAN_SPU_test();
-void FRAN_SPU_registerCallback(void (*callback)(void));
-void FRAN_SPU_registerCDDAVolume(void (*CDDAVcallback)(unsigned short,unsigned short));
-
+#define NUM_PLUGINS 6
 
 /* PEOPS GPU */
 long PEOPS_GPUopen(unsigned long *, char *, char *); 
@@ -120,6 +74,29 @@ unsigned char SSS_PADstartPoll (int pad);
 unsigned char SSS_PADpoll (const unsigned char value);
 long SSS_PADreadPort1 (PadDataS* pads);
 long SSS_PADreadPort2 (PadDataS* pads);
+
+/* DFSound Plugin */
+int CALLBACK DFS_SPUplayCDDAchannel(short *pcm, int nbytes, unsigned int cycle, int is_start);
+void CALLBACK DFS_SPUplayADPCMchannel(xa_decode_t *xap, unsigned int cycle, int is_start);
+void CALLBACK DFS_SPUupdate(void);
+void CALLBACK DFS_SPUasync(unsigned int cycle, unsigned int flags);
+long CALLBACK DFS_SPUinit(void);
+long CALLBACK DFS_SPUshutdown(void);
+long CALLBACK DFS_SPUtest(void);
+long CALLBACK DFS_SPUconfigure(void);
+void CALLBACK DFS_SPUabout(void);
+void CALLBACK DFS_SPUregisterCallback(void (CALLBACK *callback)(void));
+void CALLBACK DFS_SPUregisterCDDAVolume(void (CALLBACK *CDDAVcallback)(short, short));
+void CALLBACK DFS_SPUregisterScheduleCb(void (CALLBACK *callback)(unsigned int));
+void CALLBACK DFS_SPUwriteDMAMem(unsigned short *pusPSXMem, int iSize, unsigned int cycles);
+void CALLBACK DFS_SPUwriteDMA(unsigned short val);
+void CALLBACK DFS_SPUreadDMAMem(unsigned short *pusPSXMem, int iSize, unsigned int cycles);
+unsigned short CALLBACK DFS_SPUreadDMA(void);
+unsigned short CALLBACK DFS_SPUreadRegister(unsigned long reg);
+void CALLBACK DFS_SPUwriteRegister(unsigned long reg, unsigned short val, unsigned int cycles);
+long CALLBACK DFS_SPUopen(void);
+long CALLBACK DFS_SPUclose(void);
+long CALLBACK DFS_SPUfreeze(uint32_t ulFreezeMode, SPUFreeze_t * pF, uint32_t cycles);
 
 #define EMPTY_PLUGIN \
 	{ NULL,      \
@@ -165,45 +142,49 @@ long SSS_PADreadPort2 (PadDataS* pads);
 	      (void*)SSS_PADreadPort2} \
 	       } }
 
-#define FRANSPU_PLUGIN \
+#define DFSOUND_PLUGIN \
 	{ "SPU",      \
-	  18,         \
+	  20,         \
 	  { { "SPUinit",  \
-	      (void*)FRAN_SPU_init }, \
+	      (void*)DFS_SPUinit }, \
 	    { "SPUshutdown",	\
-	      (void*)FRAN_SPU_shutdown}, \
+	      (void*)DFS_SPUshutdown}, \
 	    { "SPUopen", \
-	      (void*)FRAN_SPU_open}, \
+	      (void*)DFS_SPUopen}, \
 	    { "SPUclose", \
-	      (void*)FRAN_SPU_close}, \
+	      (void*)DFS_SPUclose}, \
 	    { "SPUconfigure", \
-	      (void*)FRAN_SPU_setConfigFile}, \
+	      (void*)DFS_SPUconfigure}, \
 	    { "SPUabout", \
-	      (void*)FRAN_SPU_About}, \
+	      (void*)DFS_SPUabout}, \
 	    { "SPUtest", \
-	      (void*)FRAN_SPU_test}, \
+	      (void*)DFS_SPUtest}, \
 	    { "SPUwriteRegister", \
-	      (void*)FRAN_SPU_writeRegister}, \
+	      (void*)DFS_SPUwriteRegister}, \
 	    { "SPUreadRegister", \
-	      (void*)FRAN_SPU_readRegister}, \
+	      (void*)DFS_SPUreadRegister}, \
 	    { "SPUwriteDMA", \
-	      (void*)FRAN_SPU_writeDMA}, \
+	      (void*)DFS_SPUwriteDMA}, \
 	    { "SPUreadDMA", \
-	      (void*)FRAN_SPU_readDMA}, \
+	      (void*)DFS_SPUreadDMA}, \
 	    { "SPUwriteDMAMem", \
-	      (void*)FRAN_SPU_writeDMAMem}, \
+	      (void*)DFS_SPUwriteDMAMem}, \
 	    { "SPUreadDMAMem", \
-	      (void*)FRAN_SPU_readDMAMem}, \
+	      (void*)DFS_SPUreadDMAMem}, \
 	    { "SPUplayADPCMchannel", \
-	      (void*)FRAN_SPU_playADPCMchannel}, \
+	      (void*)DFS_SPUplayADPCMchannel}, \
 	    { "SPUfreeze", \
-	      (void*)FRAN_SPU_freeze}, \
+	      (void*)DFS_SPUfreeze}, \
 	    { "SPUregisterCallback", \
-	      (void*)FRAN_SPU_registerCallback}, \
+	      (void*)DFS_SPUregisterCallback}, \
 	    { "SPUregisterCDDAVolume", \
-	      (void*)FRAN_SPU_registerCDDAVolume}, \
+	      (void*)DFS_SPUregisterCDDAVolume}, \
+	    { "SPUplayCDDAchannel", \
+	      (void*)DFS_SPUplayCDDAchannel}, \
+		{ "SPUregisterScheduleCb", \
+	      (void*)DFS_SPUregisterScheduleCb}, \
 	    { "SPUasync", \
-	      (void*)FRAN_SPU_async} \
+	      (void*)DFS_SPUasync} \
 	       } }
 
 #define GPU_PEOPS_PLUGIN \
@@ -239,11 +220,12 @@ long SSS_PADreadPort2 (PadDataS* pads);
 	      (void*)PEOPS_GPUupdateLace} \
 	       } }
 
-#define PLUGIN_SLOT_0 SSS_PAD1_PLUGIN
-#define PLUGIN_SLOT_1 SSS_PAD2_PLUGIN
-#define PLUGIN_SLOT_2 FRANSPU_PLUGIN
-#define PLUGIN_SLOT_3 GPU_PEOPS_PLUGIN
-#define PLUGIN_SLOT_4 EMPTY_PLUGIN
+#define PLUGIN_SLOT_0 EMPTY_PLUGIN
+#define PLUGIN_SLOT_1 SSS_PAD1_PLUGIN
+#define PLUGIN_SLOT_2 SSS_PAD2_PLUGIN
+#define PLUGIN_SLOT_3 DFSOUND_PLUGIN
+#define PLUGIN_SLOT_4 GPU_PEOPS_PLUGIN
+#define PLUGIN_SLOT_5 EMPTY_PLUGIN
 
 #endif
 

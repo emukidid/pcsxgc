@@ -36,6 +36,7 @@
 #include "wiiSXconfig.h"
 #include "menu/MenuContext.h"
 extern "C" {
+#include "../dfsound/spu_config.h"
 #include "DEBUG.h"
 #include "fileBrowser/fileBrowser.h"
 #include "fileBrowser/fileBrowser-libfat.h"
@@ -196,7 +197,13 @@ void loadSettings(int argc, char *argv[])
 	Config.HLE = 1;
 	Config.Xa = 0;  //XA enabled
 	Config.Cdda = 1; //CDDA disabled
-	iVolume = volume; //Volume="medium" in PEOPSspu
+	spu_config.iVolume = 768 - (volume * 192); //Volume="medium" in PEOPSspu
+	//spu_config.iUseThread = 1;
+	spu_config.iUseFixedUpdates = 1;
+	spu_config.iUseReverb = 0;
+	spu_config.iUseInterpolation = 0;
+	spu_config.iXAPitch = 0;
+	spu_config.iTempo = 0;
 	Config.PsxAuto = 1; //Autodetect
 	LoadCdBios = BOOTTHRUBIOS_NO;
 
@@ -285,7 +292,6 @@ void loadSettings(int argc, char *argv[])
 
 	//Synch settings with Config
 	Config.Cpu=dynacore;
-	iVolume = volume;
 }
 
 void ScanPADSandReset(u32 dummy) 
@@ -319,7 +325,8 @@ PluginTable plugins[] =
 	  PLUGIN_SLOT_1,
 	  PLUGIN_SLOT_2,
 	  PLUGIN_SLOT_3,
-	  PLUGIN_SLOT_4 };
+	  PLUGIN_SLOT_4,
+	  PLUGIN_SLOT_5 };
 }
 
 int main(int argc, char *argv[]) 
@@ -605,16 +612,16 @@ void print_gecko(const char *fmt, ...) {
 
 void SysPrintf(const char *fmt, ...) 
 {
-#if 0
+#if 1
 	va_list list;
 	char msg[512];
 
 	va_start(list, fmt);
 	vsprintf(msg, fmt, list);
 	va_end(list);
-
+	printf("%s\r\n", msg);
 	//if (Config.PsxOut) printf ("%s", msg);
-	DEBUG_print(msg, DBG_USBGECKO);
+	//DEBUG_print(msg, DBG_USBGECKO);
 #if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
 	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
 	fprintf(emuLog, "%s", msg);

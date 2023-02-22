@@ -44,7 +44,6 @@ enum ConfigCdda //Config.Cdda
 	CDDA_DISABLE
 };
 
-extern int iVolume;
 extern char volume;
 enum iVolume
 {

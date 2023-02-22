@@ -17,7 +17,7 @@ include $(DEVKITPPC)/wii_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	WiiSX
 BUILD		:=	build
-SOURCES		:=	. ./gc_input/ ./vm/ ./libgui/ ./menu/ ./fileBrowser/ .. ../PeopsSoftGPU/ ../franspu/
+SOURCES		:=	. ./gc_input/ ./vm/ ./libgui/ ./menu/ ./fileBrowser/ .. ../PeopsSoftGPU/ ../dfsound/
 
 DATA		:=	data  
 
@@ -29,7 +29,7 @@ INCLUDES	:=
 LTO			 = -flto # Uncomment to use link-time optimization
 
 CFLAGS	= -g -O3 $(LTO) -Wall $(MACHDEP) $(INCLUDE) -Wno-stringop-truncation -Wno-strict-aliasing -Wno-misleading-indentation \
-		  -D__GAMECUBE__ -DWII -DHW_RVL -DHW_DOL -D__ppc__ -DNO_SOCKET \
+		  -DWII -DHW_RVL -DHW_DOL -D__ppc__ -DNO_SOCKET -DHAVE_AESND \
 		  -D__GX__ -D_SDL -DEMBEDDED_FONTS \
 		  -DTHREADED_AUDIO -DRELEASE -DSHOW_DEBUG #-DPRINTGECKO #-DPROFILE
 		  

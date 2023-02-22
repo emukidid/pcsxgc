@@ -179,6 +179,7 @@ int _OpenPlugins() {
 	ret = SPU_open();
 	if (ret < 0) { SysPrintf("Error Opening SPU Plugin\n"); return -1; }
 	SPU_registerCallback(SPUirq);
+	SPU_registerScheduleCb(SPUschedule);
 	ret = GPU_open(&gpuDisp, "PCSX", NULL);
 	if (ret < 0) { SysPrintf("Error Opening GPU Plugin\n"); return -1; }
 	ret = PAD1_open(&gpuDisp);
