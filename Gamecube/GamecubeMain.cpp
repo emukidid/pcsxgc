@@ -612,16 +612,16 @@ void print_gecko(const char *fmt, ...) {
 
 void SysPrintf(const char *fmt, ...) 
 {
-#if 1
+#if 0
 	va_list list;
 	char msg[512];
 
 	va_start(list, fmt);
 	vsprintf(msg, fmt, list);
 	va_end(list);
-	printf("%s\r\n", msg);
+
 	//if (Config.PsxOut) printf ("%s", msg);
-	//DEBUG_print(msg, DBG_USBGECKO);
+	DEBUG_print(msg, DBG_USBGECKO);
 #if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
 	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)
 	fprintf(emuLog, "%s", msg);
