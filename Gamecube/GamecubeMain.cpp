@@ -329,10 +329,26 @@ PluginTable plugins[] =
 	  PLUGIN_SLOT_5 };
 }
 
+bool Autoboot;
+char AutobootROM[1024];
+char AutobootPath[1024];
+
 int main(int argc, char *argv[]) 
 {
 	/* INITIALIZE */
 #ifdef HW_RVL
+	if(argc > 2 && argv[1] != NULL && argv[2] != NULL)
+	{
+		Autoboot = true;
+		strncpy(AutobootPath, argv[1], sizeof(AutobootPath));
+		strncpy(AutobootROM, argv[2], sizeof(AutobootROM));
+	}
+	else
+	{
+		Autoboot = false;
+		memset(AutobootPath, 0, sizeof(AutobootPath));
+		memset(AutobootROM, 0, sizeof(AutobootROM));
+	}
 	VM_Init(ARAM_SIZE, MRAM_BACKING);
 	DI_UseCache(false);
 	if (!__di_check_ahbprot()) {
@@ -374,9 +390,15 @@ int main(int argc, char *argv[])
 	  init_network_thread();
   }
 #endif
+
+	if(Autoboot)
+	{
+		menu->Autoboot();
+		Autoboot = false;
+	}
 	
 	while (menu->isRunning()) {}
-	
+
 	// Shut down AESND
 	AESND_Reset();
 
