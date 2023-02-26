@@ -165,9 +165,9 @@ void Func_Credits()
 	char CreditsInfo[512] = "";
 #ifdef HW_RVL
 	int iosversion = IOS_GetVersion();
-	sprintf(CreditsInfo,"WiiSX Beta 2.1 - emulatemii.com - IOS %i\n", iosversion);
+	sprintf(CreditsInfo,"WiiSX Beta 2.1 - IOS %i\n", iosversion);
 #else
-	sprintf(CreditsInfo,"CubeSX Beta 2.1 - emulatemii.com\n");
+	sprintf(CreditsInfo,"CubeSX Beta 2.1\n");
 #endif
 	strcat(CreditsInfo,"\n");
 	strcat(CreditsInfo,"Wii64 Team:\n");
@@ -175,10 +175,10 @@ void Func_Credits()
 	strcat(CreditsInfo,"      sepp256 - graphics & menu\n");
 	strcat(CreditsInfo,"tehpola - audio  \n");
 	strcat(CreditsInfo,"\n");
-	strcat(CreditsInfo,"Special Thanks To:\n");
+	strcat(CreditsInfo,"Special thanks to:\n");
 	strcat(CreditsInfo,"       drmr - for menu graphics\n");
-	strcat(CreditsInfo,"PCSX/PCSX-df Teams\n");
-	strcat(CreditsInfo,"Wintermute/Shagkur - devkitPro/libOGC\n");
+	strcat(CreditsInfo,"PCSX/-df/-ReARMed teams\n");
+	strcat(CreditsInfo,"WinterMute/Shagkur - devkitPro/libOGC\n");
 #ifdef HW_RVL
 	strcat(CreditsInfo,"Team Twiizers - for Wii homebrew\n");
 #endif
