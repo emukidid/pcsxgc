@@ -55,7 +55,10 @@ MenuContext::MenuContext(GXRModeObj *vmode)
 	menu::Gui::getInstance().addFrame(configureButtonsFrame);
 
 	menu::Focus::getInstance().setFocusActive(true);
-	setActiveFrame(FRAME_MAIN);
+
+	// Don't show the menu if we autoboot a game.
+	if (!strlen(&AutobootROM[0]))
+		setActiveFrame(FRAME_MAIN);
 }
 
 MenuContext::~MenuContext()
@@ -159,4 +162,14 @@ menu::Frame* MenuContext::getFrame(int frameIndex)
 void MenuContext::draw()
 {
 	menu::Gui::getInstance().draw();
+}
+
+void MenuContext::Autoboot()
+{
+	if(strcasestr(AutobootPath,"sd:/") != NULL)
+		Func_LoadFromSD();
+	else
+		Func_LoadFromUSB();
+
+	fileBrowserFrame_AutoBootFile();
 }

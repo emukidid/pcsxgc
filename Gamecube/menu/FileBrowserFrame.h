@@ -45,4 +45,6 @@ private:
 
 };
 
+void fileBrowserFrame_AutoBootFile();
+
 #endif
