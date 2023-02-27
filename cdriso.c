@@ -31,13 +31,6 @@
 #include <windows.h>
 #define strcasecmp _stricmp
 #define usleep(x) Sleep((x) / 1000)
-#else
-#include <ogc/lwp.h>
-#include <sys/time.h>
-#include <unistd.h>
-#define PLAY_STACK_SIZE 1024 // MEM: I could get away with a smaller stack
-static char  play_stack[PLAY_STACK_SIZE];
-#define PLAY_PRIORITY 100
 #endif
 #include <errno.h>
 #include <zlib.h>

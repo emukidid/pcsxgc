@@ -27,23 +27,28 @@ char audioEnabled;
 static AESNDPB* voice = NULL;
 
 #define NUM_BUFFERS 4
-static struct { void* buffer; u32 len;} buffers[NUM_BUFFERS];
-static u32 fill_buffer, play_buffer;
+#define BUFFER_SIZE 2*DSP_STREAMBUFFER_SIZE
+char buffers[NUM_BUFFERS][BUFFER_SIZE];
+int playBuffer = 0;
+int fillBuffer = 0;
+int fillBufferOffset = 0;
+int bytesBuffered = 0;
 
 static void aesnd_callback(AESNDPB* voice, u32 state){
 	if(state == VOICE_STATE_STREAM) {
-		if(play_buffer != fill_buffer) {
+		if(playBuffer != fillBuffer) {
 			AESND_SetVoiceBuffer(voice,
-					buffers[play_buffer].buffer, buffers[play_buffer].len);
-			play_buffer = (play_buffer + 1) % NUM_BUFFERS;
+					buffers[playBuffer], BUFFER_SIZE);
+			playBuffer = (playBuffer + 1) % NUM_BUFFERS;
+			bytesBuffered -= BUFFER_SIZE;
 		}
 	}
 }
 
 void SetVolume(void)
 {
-	u16 _volume = (4 - volume + 1) * 64 - 1;
-	if (voice) AESND_SetVoiceVolume(voice, 255, 255);
+	u16 aesnd_vol = (u16)(((float)(spu_config.iVolume / 1024.0f)) * 255);
+	if (voice) AESND_SetVoiceVolume(voice, aesnd_vol, aesnd_vol);
 }
 
 static int aesnd_init(void) {
@@ -52,7 +57,7 @@ static int aesnd_init(void) {
 	AESND_SetVoiceFrequency(voice, 44100);
 	SetVolume();
 	AESND_SetVoiceStream(voice, true);
-	fill_buffer = play_buffer = 0;
+	fillBuffer = playBuffer = 0;
 	return 0;
 }
 
@@ -61,23 +66,35 @@ static void aesnd_finish(void) {
 }
 
 static int aesnd_busy(void) {
-	unsigned long bytes_buffered = 0, i = fill_buffer;
-	while(1) {
-		bytes_buffered += buffers[i].len;
-		
-		if(i == play_buffer) break;
-		i = (i + NUM_BUFFERS - 1) % NUM_BUFFERS;
-	}
-	
-	return bytes_buffered;
+	return bytesBuffered;
 }
 
 static void aesnd_feed(void *pSound, int lBytes) {
 	if(!audioEnabled) return;
 	
-	buffers[fill_buffer].buffer = pSound;
-	buffers[fill_buffer].len = lBytes;
-	fill_buffer = (fill_buffer + 1) % NUM_BUFFERS;
+    char *soundData = (char *)pSound;
+    int bytesRemaining = lBytes;
+
+    while (bytesRemaining > 0) {
+        // Compute how many bytes to copy into the fillBuffer
+        int bytesToCopy = BUFFER_SIZE - fillBufferOffset;
+        if (bytesToCopy > bytesRemaining) {
+            bytesToCopy = bytesRemaining;
+        }
+
+        // Copy the sound data into the fillBuffer
+        memcpy(&buffers[fillBuffer][fillBufferOffset], soundData, bytesToCopy);
+        soundData += bytesToCopy;
+        bytesRemaining -= bytesToCopy;
+        fillBufferOffset += bytesToCopy;
+        bytesBuffered += bytesToCopy;
+
+        // If the fillBuffer is full, advance to the next fillBuffer
+        if (fillBufferOffset == BUFFER_SIZE) {
+            fillBuffer = (fillBuffer + 1) % NUM_BUFFERS;
+            fillBufferOffset = 0;
+        }
+    }
 	
 	AESND_SetVoiceStop(voice, false);
 }

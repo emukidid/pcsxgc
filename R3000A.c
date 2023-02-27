@@ -44,7 +44,6 @@ int psxInit() {
 	Config.Cpu = CPU_INTERPRETER;
 	psxCpu = &psxInt;
 #endif
-	printf("Config.Cpu = %i %08X\r\n", Config.Cpu, (u32)psxCpu);
 
 	Log = 0;
 

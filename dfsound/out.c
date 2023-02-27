@@ -50,6 +50,6 @@ void SetupSound(void)
 	}
 
 	out_current = &out_drivers[i];
-	SysPrintf("selected sound output driver: %s\n", out_current->name);
+	//SysPrintf("selected sound output driver: %s\n", out_current->name);
 }
 

@@ -45,11 +45,12 @@ extern "C" {
 #include "gc_input/controller.h"
 #ifdef HW_DOL
 #include "ARAM.h"
-#include "vm/vm.h"
 #endif
+#include "vm/vm.h"
 }
 
 #ifdef WII
+#include "MEM2.h"
 unsigned int MALLOC_MEM2 = 0;
 extern "C" {
 #include <di/di.h>
@@ -196,9 +197,9 @@ void loadSettings(int argc, char *argv[])
 	Config.PsxOut = 1;
 	Config.HLE = 1;
 	Config.Xa = 0;  //XA enabled
-	Config.Cdda = 1; //CDDA disabled
-	spu_config.iVolume = 768 - (volume * 192); //Volume="medium" in PEOPSspu
-	//spu_config.iUseThread = 1;
+	Config.Cdda = 0; //CDDA enabled
+	spu_config.iVolume = 1024 - (volume * 192); //Volume="medium" in PEOPSspu
+	spu_config.iUseThread = 0;	// Don't enable, broken on GC/Wii
 	spu_config.iUseFixedUpdates = 1;
 	spu_config.iUseReverb = 0;
 	spu_config.iUseInterpolation = 0;
@@ -349,7 +350,8 @@ int main(int argc, char *argv[])
 		memset(AutobootPath, 0, sizeof(AutobootPath));
 		memset(AutobootROM, 0, sizeof(AutobootROM));
 	}
-	VM_Init(ARAM_SIZE, MRAM_BACKING);
+	VM_Init(1024*1024, 256*1024); // whatever for now, we're not really using this for anything other than mmap on Wii.
+  
 	DI_UseCache(false);
 	if (!__di_check_ahbprot()) {
 		s32 preferred = IOS_GetPreferredVersion();
@@ -376,7 +378,9 @@ int main(int argc, char *argv[])
 	DEBUG_Init(GDBSTUB_DEVICE_USB, 1);
 	_break();
 #else
+#ifdef PRINTGECKO
 	CON_EnableGecko(EXI_CHANNEL_1, TRUE);
+#endif
 #endif
 
 	control_info_init(); //Perform controller auto assignment at least once at startup.

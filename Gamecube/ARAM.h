@@ -32,7 +32,11 @@
 #define MB (1024*1024)
 #define KB (1024)
 
-#define MRAM_BACKING	(256*KB)			// Use 256KB to page our 16MB, change this when we use ARAM for more.
+#ifdef GX_GPU
+#define MRAM_BACKING	(1024*KB)			// This needs to be big enough to allow texture data to be in main RAM, even if temporarily.
+#else
+#define MRAM_BACKING	(256*KB)			// Use 256KB to page our 16MB
+#endif
 
 #define ARAM_RESERVED	(64*KB)			// Reserved for DSP/AESND/etc
 
