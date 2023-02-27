@@ -15,9 +15,9 @@ include $(DEVKITPPC)/wii_rules
 # SOURCES is a list of directories containing source code
 # INCLUDES is a list of directories containing extra header files
 #---------------------------------------------------------------------------------
-TARGET		:=	WiiSX
+TARGET		:=	WiiSX_GX
 BUILD		:=	build
-SOURCES		:=	. ./gc_input/ ./libgui/ ./menu/ ./fileBrowser/ .. ../PeopsGXGPU/opengx/ ../PeopsGXGPU/ ../franspu/ ../ppc/
+SOURCES		:=	. ./gc_input/ ./vm/ ./libgui/ ./menu/ ./fileBrowser/ .. ../PeopsGXGPU/opengx/ ../PeopsGXGPU/ ../dfsound/
 
 DATA		:=	data  
 
@@ -26,11 +26,12 @@ INCLUDES	:=
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
+LTO			 = #-flto # Uncomment to use link-time optimization
 
-CFLAGS	= -g -O3 -Wall $(MACHDEP) $(INCLUDE) -Wno-strict-aliasing -Wno-misleading-indentation \
-		  -D__GAMECUBE__ -DWII -DHW_RVL -D__ppc__ -D__LINUX__ \
-		  -D__GX__ -D_SDL -DEMBEDDED_FONTS -DPRINTGECKO \
-		  -DTHREADED_AUDIO -DRELEASE -DSHOW_DEBUG -DPROFILE #-DDEBUGON #-DPROFILE
+CFLAGS	= -g -O3 $(LTO) -Wall $(MACHDEP) $(INCLUDE) -Wno-stringop-truncation -Wno-strict-aliasing -Wno-misleading-indentation \
+		  -DWII -DHW_RVL -DNO_SOCKET -DHAVE_AESND \
+		  -D__GX__ -DGX_GPU -D_SDL -DRELEASE \
+		  -DSHOW_DEBUG -DPRINTGECKO #-DPROFILE #-DDEBUGON
 		  
 CXXFLAGS	=	$(CFLAGS)
 
@@ -41,7 +42,7 @@ LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-laesnd -ldi -lm -lfat -ldb -lwiiuse -lbte -logc -lz -ltinysmb -liso9660
+LIBS	:=	-laesnd -ldi -lm -lfat -ldb -lwiiuse -lbte -logc -lz -ltinysmb -liso9660 -llightrec -llightning
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
@@ -133,6 +134,10 @@ $(OUTPUT).elf: $(OFILES)
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	$(bin2o)
+
+dsihandler.o:		./vm/dsihandler.s
+		$(CC) -x assembler-with-cpp $(CFLAGS) -D_LANGUAGE_ASSEMBLY -c -o $@ $<
+	
 
 -include $(DEPENDS)
 

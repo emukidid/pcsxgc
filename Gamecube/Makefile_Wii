@@ -29,9 +29,9 @@ INCLUDES	:=
 LTO			 = -flto # Uncomment to use link-time optimization
 
 CFLAGS	= -g -O3 $(LTO) -Wall $(MACHDEP) $(INCLUDE) -Wno-stringop-truncation -Wno-strict-aliasing -Wno-misleading-indentation \
-		  -DWII -DHW_RVL -DHW_DOL -D__ppc__ -DNO_SOCKET -DHAVE_AESND \
-		  -D__GX__ -D_SDL -DEMBEDDED_FONTS \
-		  -DTHREADED_AUDIO -DRELEASE -DSHOW_DEBUG #-DPRINTGECKO #-DPROFILE
+		  -DWII -DHW_RVL -D__ppc__ -DNO_SOCKET -DHAVE_AESND \
+		  -D__GX__ -D_SDL -DRELEASE \
+		  #-DSHOW_DEBUG -DPRINTGECKO #-DPROFILE #-DDEBUGON
 		  
 CXXFLAGS	=	$(CFLAGS)
 

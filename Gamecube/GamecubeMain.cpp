@@ -45,11 +45,12 @@ extern "C" {
 #include "gc_input/controller.h"
 #ifdef HW_DOL
 #include "ARAM.h"
-#include "vm/vm.h"
 #endif
+#include "vm/vm.h"
 }
 
 #ifdef WII
+#include "MEM2.h"
 unsigned int MALLOC_MEM2 = 0;
 extern "C" {
 #include <di/di.h>
@@ -333,7 +334,7 @@ int main(int argc, char *argv[])
 {
 	/* INITIALIZE */
 #ifdef HW_RVL
-	VM_Init(ARAM_SIZE, MRAM_BACKING);
+	VM_Init(1024*1024, 256*1024); // whatever for now, we're not really using this for anything other than mmap on Wii.
 	DI_UseCache(false);
 	if (!__di_check_ahbprot()) {
 		s32 preferred = IOS_GetPreferredVersion();
@@ -360,7 +361,9 @@ int main(int argc, char *argv[])
 	DEBUG_Init(GDBSTUB_DEVICE_USB, 1);
 	_break();
 #else
+#ifdef PRINTGECKO
 	CON_EnableGecko(EXI_CHANNEL_1, TRUE);
+#endif
 #endif
 
 	control_info_init(); //Perform controller auto assignment at least once at startup.

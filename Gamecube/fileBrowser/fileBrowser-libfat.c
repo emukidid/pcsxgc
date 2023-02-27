@@ -201,7 +201,7 @@ int fileBrowser_libfat_init(fileBrowser_file* f){
 
 #ifdef HW_RVL
   	if(f->name[0] == 's') {      //SD
-		if(res = fatMountSimple ("sd", frontsd)) {
+		if((res = fatMountSimple ("sd", frontsd))) {
 				res = 1;
 		}
 		else if(!res && fatMountSimple ("sd", carda)) {
