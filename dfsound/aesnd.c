@@ -47,7 +47,8 @@ static void aesnd_callback(AESNDPB* voice, u32 state){
 
 void SetVolume(void)
 {
-	if (voice) AESND_SetVoiceVolume(voice, 255, 255);
+	u16 aesnd_vol = (u16)(((float)(spu_config.iVolume / 1024.0f)) * 255);
+	if (voice) AESND_SetVoiceVolume(voice, aesnd_vol, aesnd_vol);
 }
 
 static int aesnd_init(void) {

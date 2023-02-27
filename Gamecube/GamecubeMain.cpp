@@ -197,9 +197,9 @@ void loadSettings(int argc, char *argv[])
 	Config.PsxOut = 1;
 	Config.HLE = 1;
 	Config.Xa = 0;  //XA enabled
-	Config.Cdda = 1; //CDDA disabled
-	spu_config.iVolume = 768 - (volume * 192); //Volume="medium" in PEOPSspu
-	//spu_config.iUseThread = 1;
+	Config.Cdda = 0; //CDDA enabled
+	spu_config.iVolume = 1024 - (volume * 192); //Volume="medium" in PEOPSspu
+	spu_config.iUseThread = 0;	// Don't enable, broken on GC/Wii
 	spu_config.iUseFixedUpdates = 1;
 	spu_config.iUseReverb = 0;
 	spu_config.iUseInterpolation = 0;

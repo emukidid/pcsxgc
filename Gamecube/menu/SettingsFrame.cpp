@@ -1174,6 +1174,7 @@ void Func_VolumeToggle()
 	volume--;
 	if (volume<1)
 		volume = 4;
+	spu_config.iVolume = 1024 - (volume * 192);
 	FRAME_BUTTONS[45].buttonString = FRAME_STRINGS[46+volume];
 	SetVolume();
 }
