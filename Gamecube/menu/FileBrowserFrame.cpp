@@ -472,10 +472,12 @@ int ChkString(char * str1, char * str2, int len)
 
 // hack for emulating "gpu busy" in some games
 extern unsigned long dwEmuFixes;
+// For special game correction
+extern unsigned long dwActFixes;
 
 static void CheckGameAutoFix(void)
 {
-    // GPU 'Fake Busy States' hack
+    // GPU 'Fake Busy States' hack autoFix
     int autoFixLen = 2;
     char gpuBusyAutoFixGames[autoFixLen][10] = {
 	// Hot Wheels Turbo Racing
@@ -489,6 +491,24 @@ static void CheckGameAutoFix(void)
     {
         if (ChkString(CdromId, gpuBusyAutoFixGames[i], strlen(gpuBusyAutoFixGames[i]))) {
             dwEmuFixes = 0x0001;
+        }
+    }
+
+    // Special game correction autoFix
+    autoFixLen = 5;
+    char autoFixSpecialGames[autoFixLen][10] = {
+	// Star Wars - Dark Forces
+	 "SLUS00297" // NTSC-U
+	,"SLPS00685" // NTSC-J
+	,"SLES00585" // PAL
+	,"SLES00640" // PAL (Italy)
+	,"SLES00646" // PAL (Spain)
+    };
+    dwActFixes = 0;
+    for (i = 0; i < autoFixLen; i++)
+    {
+        if (ChkString(CdromId, autoFixSpecialGames[i], strlen(autoFixSpecialGames[i]))) {
+            dwActFixes |= 0x100;
         }
     }
 }
@@ -520,6 +540,22 @@ void fileBrowserFrame_LoadFile(int i)
 			CheckGameAutoFix();
 			sprintf(buffer,"CD-ROM ID: %s\n", CdromId);
 			strcat(RomInfo,buffer);
+
+			if (dwEmuFixes)
+			{
+			sprintf(buffer, "GPU 'Fake Busy States' hacked\n");
+			strcat(RomInfo,buffer);
+			}
+			if (dwActFixes)
+			{
+			sprintf(buffer, "Special game auto fixed\n");
+			strcat(RomInfo,buffer);
+			}
+
+			// Switches for painting textured quads as 2 triangles (small glitches, but better shading!)
+			// This function has been automatically started in soft.c and dwActFixes have been determined in gpu code, so need to set it here
+			dwActFixes |= 0x200;
+
 			sprintf(buffer,"ISO Size: %d Mb\n",isoFile.size/1024/1024);
 			strcat(RomInfo,buffer);
 			sprintf(buffer,"Country: %s\n",(!Config.PsxType) ? "NTSC":"PAL");
