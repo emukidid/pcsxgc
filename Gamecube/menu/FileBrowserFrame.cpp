@@ -455,6 +455,44 @@ extern "C" {
 void newCD(fileBrowser_file *file);
 }
 
+// code for check strings (xjsxjs197)
+int ChkString(char * str1, char * str2, int len)
+{
+	int tmpIdx = 0;
+	while (str1[tmpIdx] == str2[tmpIdx])
+	{
+		tmpIdx++;
+		if (tmpIdx >= len)
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+// hack for emulating "gpu busy" in some games
+extern unsigned long dwEmuFixes;
+
+static void CheckGameAutoFix(void)
+{
+    // GPU 'Fake Busy States' hack
+    int autoFixLen = 2;
+    char gpuBusyAutoFixGames[autoFixLen][10] = {
+	// Hot Wheels Turbo Racing
+         "SLUS00964" // NTSC-U
+        ,"SLES02198" // PAL
+	};
+
+    dwEmuFixes = 0; // hack for emulating "gpu busy" in some games
+    int i;
+    for (i = 0; i < autoFixLen; i++)
+    {
+        if (ChkString(CdromId, gpuBusyAutoFixGames[i], strlen(gpuBusyAutoFixGames[i]))) {
+            dwEmuFixes = 0x0001;
+        }
+    }
+}
+
 void fileBrowserFrame_LoadFile(int i)
 {
 	char feedback_string[256] = "Failed to load ISO";
@@ -479,6 +517,7 @@ void fileBrowserFrame_LoadFile(int i)
 			strcat(RomInfo,feedback_string);
 			sprintf(buffer,"\nCD-ROM Label: %s\n",CdromLabel);
 			strcat(RomInfo,buffer);
+			CheckGameAutoFix();
 			sprintf(buffer,"CD-ROM ID: %s\n", CdromId);
 			strcat(RomInfo,buffer);
 			sprintf(buffer,"ISO Size: %d Mb\n",isoFile.size/1024/1024);

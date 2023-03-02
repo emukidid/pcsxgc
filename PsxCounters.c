@@ -148,6 +148,9 @@ u32 _psxRcntRcount( u32 index )
     return count;
 }
 
+// hack for emulating "gpu busy" in some games
+extern unsigned long dwEmuFixes;
+
 static
 void _psxRcntWmode( u32 index, u32 value )
 {

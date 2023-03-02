@@ -29,6 +29,9 @@
 #define PSXGPU_ILACE   (1<<22)
 #define PSXGPU_DHEIGHT (1<<19)
 
+#define GPUSTATUS_READYFORVRAM        0x08000000
+#define GPUSTATUS_IDLE                0x04000000
+
 // both must be set for interlace to work
 #define PSXGPU_ILACE_BITS (PSXGPU_ILACE | PSXGPU_DHEIGHT)
 
