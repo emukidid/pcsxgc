@@ -261,7 +261,6 @@ u32 psxHwRead32(u32 add) {
                     #ifdef SHOW_DEBUG
                     sprintf(txtbuffer, "Read GPU_STATUS Fake Busy \n");
                     DEBUG_print(txtbuffer, DBG_CORE2);
-                    writeLogFile(txtbuffer);
                     #endif // DISP_DEBUG
                     hard &= ~GPUSTATUS_READYFORVRAM;
                 }
