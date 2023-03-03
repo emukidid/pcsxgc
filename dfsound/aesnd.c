@@ -27,20 +27,22 @@ char audioEnabled;
 static AESNDPB* voice = NULL;
 
 #define NUM_BUFFERS 4
-#define BUFFER_SIZE 2*DSP_STREAMBUFFER_SIZE
+#define BUFFER_SIZE 8*DSP_STREAMBUFFER_SIZE
 char buffers[NUM_BUFFERS][BUFFER_SIZE];
 int playBuffer = 0;
 int fillBuffer = 0;
-int fillBufferOffset = 0;
+int fillBufferOffset[NUM_BUFFERS];
 int bytesBuffered = 0;
 
 static void aesnd_callback(AESNDPB* voice, u32 state){
 	if(state == VOICE_STATE_STREAM) {
 		if(playBuffer != fillBuffer) {
-			AESND_SetVoiceBuffer(voice,
-					buffers[playBuffer], BUFFER_SIZE);
-			playBuffer = (playBuffer + 1) % NUM_BUFFERS;
-			bytesBuffered -= BUFFER_SIZE;
+			if(fillBufferOffset[playBuffer] == BUFFER_SIZE) {
+				AESND_SetVoiceBuffer(voice,
+						buffers[playBuffer], BUFFER_SIZE);
+				playBuffer = (playBuffer + 1) % NUM_BUFFERS;
+				bytesBuffered -= BUFFER_SIZE;
+			}
 		}
 	}
 }
@@ -77,22 +79,22 @@ static void aesnd_feed(void *pSound, int lBytes) {
 
     while (bytesRemaining > 0) {
         // Compute how many bytes to copy into the fillBuffer
-        int bytesToCopy = BUFFER_SIZE - fillBufferOffset;
+        int bytesToCopy = BUFFER_SIZE - fillBufferOffset[fillBuffer];
         if (bytesToCopy > bytesRemaining) {
             bytesToCopy = bytesRemaining;
         }
 
         // Copy the sound data into the fillBuffer
-        memcpy(&buffers[fillBuffer][fillBufferOffset], soundData, bytesToCopy);
+        memcpy(&buffers[fillBuffer][fillBufferOffset[fillBuffer]], soundData, bytesToCopy);
         soundData += bytesToCopy;
         bytesRemaining -= bytesToCopy;
-        fillBufferOffset += bytesToCopy;
+        fillBufferOffset[fillBuffer] += bytesToCopy;
         bytesBuffered += bytesToCopy;
 
         // If the fillBuffer is full, advance to the next fillBuffer
-        if (fillBufferOffset == BUFFER_SIZE) {
+        if (fillBufferOffset[fillBuffer] == BUFFER_SIZE) {
             fillBuffer = (fillBuffer + 1) % NUM_BUFFERS;
-            fillBufferOffset = 0;
+            fillBufferOffset[fillBuffer] = 0;
         }
     }
 	

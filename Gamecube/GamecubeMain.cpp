@@ -202,7 +202,7 @@ void loadSettings(int argc, char *argv[])
 	spu_config.iUseThread = 0;	// Don't enable, broken on GC/Wii
 	spu_config.iUseFixedUpdates = 1;
 	spu_config.iUseReverb = 0;
-	spu_config.iUseInterpolation = 0;
+	spu_config.iUseInterpolation = 1;
 	spu_config.iXAPitch = 0;
 	spu_config.iTempo = 0;
 	Config.PsxAuto = 1; //Autodetect
