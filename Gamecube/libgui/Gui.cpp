@@ -128,7 +128,14 @@ void Gui::draw()
 					*(volatile unsigned int*)0xCC003024 = 0;  //reboot
 			  }
 #else
-				rld();
+				#define HBC_STUB 0x53545542
+				#define HBC_HAXX 0x48415858
+				//Load HBC Stub if STUBAXX signature is present
+				if(*(volatile unsigned int*)0x80001804 == HBC_STUB &&
+					*(volatile unsigned int*)0x80001808 == HBC_HAXX)
+					rld();
+				else // Wii channel support
+					SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0); // Return to the Wii System Menu
 #endif
 			}
 		}
