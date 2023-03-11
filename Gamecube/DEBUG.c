@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <fat.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/dir.h>
@@ -35,6 +36,18 @@ static void check_heap_space(void){
 #endif
 }
 #endif
+
+void lightrec_fprintf(FILE *f, const char *format, ...)
+{
+#ifdef SHOW_DEBUG
+	va_list args;
+	va_start(args, format);
+	vsprintf(txtbuffer, format, args);
+	va_end(args);
+
+	DEBUG_print(txtbuffer,DBG_CORE1);
+#endif
+}
 
 void DEBUG_update() {
 #ifdef SHOW_DEBUG
