@@ -183,9 +183,9 @@ void DoClearFrontBuffer(void)                          // CLEAR DX BUFFER
 	GX_DrawDone();
 
 	whichfb ^= 1;
-	GX_CopyDisp(xfb[0], GX_TRUE);
+	GX_CopyDisp(xfb[whichfb], GX_TRUE);
 	GX_DrawDone();
-	VIDEO_SetNextFramebuffer(xfb[0]);
+	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();
 //	VIDEO_WaitVSync();
 }
@@ -374,7 +374,7 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch)
 		GX_InitTexObj(&GXtexobj, GXtexture, width, height, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	}
 
-	f64 *wgPipePtr = MEM_PHYSICAL_TO_K1(GX_RedirectWriteGatherPipe(GXtexture));
+	f64 *wgPipePtr = GX_RedirectWriteGatherPipe(GXtexture);
 	for (h = 0; h < height; h += 4)
 	{
 
@@ -469,10 +469,10 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch)
 	GX_DrawDone();
 
 	whichfb ^= 1;
-	GX_CopyDisp(xfb[0], GX_TRUE);
+	GX_CopyDisp(xfb[whichfb], GX_TRUE);
 	GX_DrawDone();
 //	printf("Prv.Rng.x0,x1,y0 = %d, %d, %d, Prv.Mode.y = %d,DispPos.x,y = %d, %d, RGB24 = %x\n",PreviousPSXDisplay.Range.x0,PreviousPSXDisplay.Range.x1,PreviousPSXDisplay.Range.y0,PreviousPSXDisplay.DisplayMode.y,PSXDisplay.DisplayPosition.x,PSXDisplay.DisplayPosition.y,PSXDisplay.RGB24);
-	VIDEO_SetNextFramebuffer(xfb[0]);
+	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();
 //	VIDEO_WaitVSync();
 }
