@@ -301,9 +301,9 @@ void BlitScreenNS_GX(unsigned char * surf,long x,long y, short dx, short dy)
 
      for(row=0;row<dx;row++)
       {
+		  // RRRRRRRR GGGGGGGG BBBBBBB to RGB555 (with top bit as 1)
        lu=*((unsigned long *)pD);
-       *((unsigned short *)((surf)+(column*lPitch)+(row<<1)))=
-         ((RED(lu)<<8)&0xf800)|((GREEN(lu)<<3)&0x7e0)|(BLUE(lu)>>3);
+       *((unsigned short *)((surf)+(column*lPitch)+(row<<1)))= ((BLUE(lu) << 7) & 0x7C00)|((GREEN(lu) << 2) & 0x3E0) |(RED(lu) >> 3) | 0x8000;
        pD+=3;
       }
     }
@@ -323,15 +323,18 @@ void BlitScreenNS_GX(unsigned char * surf,long x,long y, short dx, short dy)
 
    LineOffset = 512 - dx;
    SurfOffset = (lPitch>>2) - dx;
-
+   u32 alphaMask = 0x80008000;
    for(column=0;column<dy;column++)
     {
      for(row=0;row<dx;row++)
-      {
-       lu=GETLE16D(SRCPtr++);
-
-       *DSTPtr++=
-        ((lu<<11)&0xf800f800)|((lu<<1)&0x7c007c0)|((lu>>10)&0x1f001f);
+      { 
+		// PSX Pixel Data is RGB555, we can lwbrx to swap it then OR it with 0x80008000 to make it RGB5A3 (since when top bit is 1, it's used as RGB555). 
+		// GGGRRRRR 0BBBBBGG
+		//  0-4   Red       (0..31)
+		//  5-9   Green     (0..31)
+		//  10-14 Blue      (0..31)
+		//  15    Mask flag (0=Normal, 1=Do not allow to overwrite this pixel)
+		*DSTPtr++=PIXEL_SWAP(SRCPtr++, alphaMask);
       }
      SRCPtr += LineOffset;
      DSTPtr += SurfOffset;
@@ -371,7 +374,7 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch)
 		oldwidth = width;
 		oldheight = height;
 		memset(GXtexture,0,iResX_Max*iResY_Max*2);
-		GX_InitTexObj(&GXtexobj, GXtexture, width, height, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+		GX_InitTexObj(&GXtexobj, GXtexture, width, height, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	}
 
 	f64 *wgPipePtr = GX_RedirectWriteGatherPipe(GXtexture);
@@ -463,7 +466,7 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch)
 		IplFont_drawString(10,(10*i+60),text[i], 0.5, false);
 		
    //reset swap table from GUI/DEBUG
-	GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+	GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_BLUE, GX_CH_GREEN, GX_CH_RED ,GX_CH_ALPHA);
 	GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
 
 	GX_DrawDone();

@@ -453,6 +453,8 @@ void Graphics::setTEV(int tev_op)
 	GX_SetNumTexGens (1);
 	GX_SetTevOrder (GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 	GX_SetTevOp (GX_TEVSTAGE0, tev_op);
+	GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+	GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
 }
 
 void Graphics::pushTransparency(float f)
