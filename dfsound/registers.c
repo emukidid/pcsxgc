@@ -23,6 +23,14 @@
 #include "registers.h"
 #include "spu_config.h"
 
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define HTOLE16(x) __builtin_bswap16(x)
+#define LE16TOH(x) __builtin_bswap16(x)
+#else
+#define HTOLE16(x) (x)
+#define LE16TOH(x) (x)
+#endif
+
 static void SoundOn(int start,int end,unsigned short val);
 static void SoundOff(int start,int end,unsigned short val);
 static void FModOn(int start,int end,unsigned short val);
@@ -127,7 +135,7 @@ void CALLBACK DFS_SPUwriteRegister(unsigned long reg, unsigned short val,
       break;
     //-------------------------------------------------//
     case H_SPUdata:
-      *(unsigned short *)(spu.spuMemC + spu.spuAddr) = val;
+      *(unsigned short *)(spu.spuMemC + spu.spuAddr) = HTOLE16(val);
       spu.spuAddr += 2;
       spu.spuAddr &= 0x7fffe;
       break;
@@ -334,7 +342,7 @@ unsigned short CALLBACK DFS_SPUreadRegister(unsigned long reg)
 
     case H_SPUdata:
      {
-      unsigned short s = *(unsigned short *)(spu.spuMemC + spu.spuAddr);
+      unsigned short s = LE16TOH(*(unsigned short *)(spu.spuMemC + spu.spuAddr));
       spu.spuAddr += 2;
       spu.spuAddr &= 0x7fffe;
       return s;
