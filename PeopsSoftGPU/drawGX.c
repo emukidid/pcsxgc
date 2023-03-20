@@ -74,7 +74,7 @@ extern char screenMode;
 
 // prototypes
 void BlitScreenNS_GX(unsigned char * surf,long x,long y, short dx, short dy);
-void GX_Flip(short width, short height, u8 * buffer, int pitch);
+void GX_Flip(short width, short height, u8 * buffer, int pitch, u8 fmt);
 
 void DoBufferSwap(void)                                // SWAP BUFFERS
 {                                                      // (we don't swap... we blit only)
@@ -82,15 +82,11 @@ void DoBufferSwap(void)                                // SWAP BUFFERS
 	static int iOldDY=0;
 	long x = PSXDisplay.DisplayPosition.x;
 	long y = PSXDisplay.DisplayPosition.y;
-//	int iDX = PreviousPSXDisplay.Range.x1+PreviousPSXDisplay.Range.x0;
 	short iDX = PreviousPSXDisplay.Range.x1;
 	short iDY = PreviousPSXDisplay.DisplayMode.y;
 
 	if (menuActive) return;
 
-	//Uncomment the following line to render all of vmem on screen.
-	//Note: may break when PSX is in true color mode...
-	//x = 0; y = 0; iDX = 1024; iDY = 512;
 
  // TODO: visual rumble
 
@@ -105,16 +101,17 @@ void DoBufferSwap(void)                                // SWAP BUFFERS
    }
 */
 
-//	For now stretch only using GX
-//	printf("DoBufferSwap\n");
 
 	if(iOldDX!=iDX || iOldDY!=iDY)
 	{
-		memset(Xpixels,0,iResY_Max*iResX_Max*2);
+		memset(GXtexture, 0, RESX_MAX*RESY_MAX*2);
 		iOldDX=iDX;iOldDY=iDY;
 	}
 
-	BlitScreenNS_GX((unsigned char *)Xpixels, x, y, iDX, iDY);
+	if(PSXDisplay.RGB24) {
+		// TODO this is a cop-out and is really doing RGB888->RGB555 in a separate pass, fixme so that it's all done in GX_Flip
+		BlitScreenNS_GX((unsigned char *)Xpixels, x, y, iDX, iDY);
+	}
 
 // TODO: Show Gun cursor
 //	if(usCursorActive) ShowGunCursor(pBackBuffer,PreviousPSXDisplay.Range.x0+PreviousPSXDisplay.Range.x1);
@@ -133,11 +130,13 @@ void DoBufferSwap(void)                                // SWAP BUFFERS
 		}
 	}
 
-//	This isn't implemented, yet.  I'm not sure what it's for.
-//	if(XPimage) DisplayPic();
 
-	GX_Flip(iDX, iDY,(unsigned char *) Xpixels, iResX_Max*2);
-//	GX_Flip(1024, iGPUHeight,(unsigned char *) psxVuw, 1024*2);
+	u8 *imgPtr = (u8*)(psxVuw + (PSXDisplay.RGB24 ? (((1024)*(y))+x) : ((y<<10) + x)));
+	if(PSXDisplay.RGB24) {
+		// TODO this is a cop-out and is really doing RGB888->RGB555 in a separate pass, fixme.
+		imgPtr = Xpixels;
+	}
+	GX_Flip(iDX, iDY, imgPtr, iResX_Max*2, GX_TF_RGB5A3/*PSXDisplay.RGB24 ? GX_TF_RGBA8 : GX_TF_RGB5A3*/);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -146,13 +145,6 @@ void DoClearScreenBuffer(void)                         // CLEAR DX BUFFER
 {
 	// clear the screen, and DON'T flush it
 	DEBUG_print("DoClearScreenBuffer",DBG_GPU1);
-//	printf("DoClearScreenBuffer\n");
-//	whichfb ^= 1;
-//	GX_CopyDisp(xfb[1], GX_TRUE);
-//	GX_Flush();
-//	VIDEO_SetNextFramebuffer(xfb[0]);
-//	VIDEO_Flush();
-//	VIDEO_WaitVSync();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -209,11 +201,7 @@ unsigned long ulInitDisplay(void)
 		BuildDispMenu(0);
 	}
 
-//	iColDepth=16;	//only needed by ShowGunCursor
-
-//	Xpixels = memalign(32,iResX_Max*iResY_Max*2);	//For now these are for 16bit color.
 	memset(Xpixels,0,iResX_Max*iResY_Max*2);
-//	GXtexture = memalign(32,iResX_Max*iResY_Max*2);
 	memset(GXtexture,0,iResX_Max*iResY_Max*2);
 
 	return (unsigned long)Xpixels;		//This isn't right, but didn't want to return 0..
@@ -223,8 +211,6 @@ unsigned long ulInitDisplay(void)
 
 void CloseDisplay(void)
 {
-//	free(Xpixels);
-//	free(GXtexture);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -258,25 +244,11 @@ void ShowTextGpuPic(void)
 }
 
 ///////////////////////////////////////////////////////////////////////
-
+// TODO this is a cop-out and is really doing RGB888->RGB555 in a separate pass, fixme.
 void BlitScreenNS_GX(unsigned char * surf,long x,long y, short dx, short dy)
 {
- unsigned long lu;
  unsigned short row,column;
-// unsigned short dx=PreviousPSXDisplay.Range.x1;
-// unsigned short dy=PreviousPSXDisplay.DisplayMode.y;
- unsigned short LineOffset,SurfOffset;
  long lPitch=iResX_Max<<1;
-// long lPitch=iResX<<1;
-#ifdef USE_DGA2
- int DGA2fix;
- int dga2Fix;
- if (!iWindowMode)
-  {
-   DGA2fix = (char*)surf == Xpixels;
-   dga2Fix = dgaDev->mode.imageWidth - dgaDev->mode.viewportWidth;
-  } else DGA2fix = dga2Fix = 0;
-#endif
 
  if(PreviousPSXDisplay.Range.y0)                       // centering needed?
   {
@@ -289,9 +261,7 @@ void BlitScreenNS_GX(unsigned char * surf,long x,long y, short dx, short dy)
    unsigned char * pD;unsigned int startxy;
 
    surf+=PreviousPSXDisplay.Range.x0<<1;
-#ifdef USE_DGA2
-   if (DGA2fix) lPitch+= dga2Fix*2;
-#endif
+
 
    for(column=0;column<dy;column++)
     {
@@ -302,110 +272,129 @@ void BlitScreenNS_GX(unsigned char * surf,long x,long y, short dx, short dy)
      for(row=0;row<dx;row++)
       {
 		  // RRRRRRRR GGGGGGGG BBBBBBB to RGB555 (with top bit as 1)
-       lu=*((unsigned long *)pD);
+       unsigned long lu=*((unsigned long *)pD);
        *((unsigned short *)((surf)+(column*lPitch)+(row<<1)))= ((BLUE(lu) << 7) & 0x7C00)|((GREEN(lu) << 2) & 0x3E0) |(RED(lu) >> 3) | 0x8000;
        pD+=3;
       }
-    }
-  }
- else
-  {
-   unsigned long * SRCPtr = (unsigned long *)(psxVuw +
-                             (y<<10) + x);
-
-   unsigned long * DSTPtr =
-    ((unsigned long *)surf)+(PreviousPSXDisplay.Range.x0>>1);
-
-#ifdef USE_DGA2
-   dga2Fix/=2;
-#endif
-   dx>>=1;
-
-   LineOffset = 512 - dx;
-   SurfOffset = (lPitch>>2) - dx;
-   u32 alphaMask = 0x80008000;
-   for(column=0;column<dy;column++)
-    {
-     for(row=0;row<dx;row++)
-      { 
-		// PSX Pixel Data is RGB555, we can lwbrx to swap it then OR it with 0x80008000 to make it RGB5A3 (since when top bit is 1, it's used as RGB555). 
-		// GGGRRRRR 0BBBBBGG
-		//  0-4   Red       (0..31)
-		//  5-9   Green     (0..31)
-		//  10-14 Blue      (0..31)
-		//  15    Mask flag (0=Normal, 1=Do not allow to overwrite this pixel)
-		*DSTPtr++=PIXEL_SWAP(SRCPtr++, alphaMask);
-      }
-     SRCPtr += LineOffset;
-     DSTPtr += SurfOffset;
-#ifdef USE_DGA2
-     if (DGA2fix) DSTPtr+= dga2Fix;
-#endif
     }
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
 
-void GX_Flip(short width, short height, u8 * buffer, int pitch)
+void GX_Flip(short width, short height, u8 * buffer, int pitch, u8 fmt)
 {
 	int h, w;
-//	int h, w, hh;
 	static int oldwidth=0;
 	static int oldheight=0;
+	static int oldformat=-1;
 	static GXTexObj GXtexobj;
-//	short *dst1 = (short *) GXtexture;
-//	short *src = (short *) buffer;
 
-	f64 *src1 = (f64 *) buffer;
-	f64 *src2 = (f64 *) (buffer + pitch);
-	f64 *src3 = (f64 *) (buffer + (pitch * 2));
-	f64 *src4 = (f64 *) (buffer + (pitch * 3));
-	int rowpitch = (pitch >> 3) * 4  - (width >> 2);
-	int rowadjust = ( pitch % 8 ) * 4;
-	char *ra = NULL;
-
+	
 
 	if((width == 0) || (height == 0))
 		return;
 
-	if ((oldwidth != width) || (oldheight != height))
+	if ((oldwidth != width) || (oldheight != height) || (oldformat != fmt))
 	{ //adjust texture conversion
 		oldwidth = width;
 		oldheight = height;
+		oldformat = fmt;
 		memset(GXtexture,0,iResX_Max*iResY_Max*2);
-		GX_InitTexObj(&GXtexobj, GXtexture, width, height, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
+		GX_InitTexObj(&GXtexobj, GXtexture, width, height, fmt, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	}
 
-	f64 *wgPipePtr = GX_RedirectWriteGatherPipe(GXtexture);
-	for (h = 0; h < height; h += 4)
-	{
-
-		for (w = 0; w < (width >> 2); w++)
+	if(PSXDisplay.RGB24) {
+		// TODO this is a cop-out and is really doing RGB888->RGB555 in a separate pass, fixme.
+		vf64 *wgPipePtr = GX_RedirectWriteGatherPipe(GXtexture);
+		f64 *src1 = (f64 *) buffer;
+		f64 *src2 = (f64 *) (buffer + pitch);
+		f64 *src3 = (f64 *) (buffer + (pitch * 2));
+		f64 *src4 = (f64 *) (buffer + (pitch * 3));
+		int rowpitch = (pitch >> 3) * 4  - (width >> 2);
+		for (h = 0; h < height; h += 4)
 		{
-			*wgPipePtr = *src1++;
-			*wgPipePtr = *src2++;
-			*wgPipePtr = *src3++;
-			*wgPipePtr = *src4++;
-        }
+			for (w = 0; w < (width >> 2); w++)
+			{
+				*wgPipePtr = *src1++;
+				*wgPipePtr = *src2++;
+				*wgPipePtr = *src3++;
+				*wgPipePtr = *src4++;
+			}
 
-      src1 += rowpitch;
-      src2 += rowpitch;
-      src3 += rowpitch;
-      src4 += rowpitch;
+		  src1 += rowpitch;
+		  src2 += rowpitch;
+		  src3 += rowpitch;
+		  src4 += rowpitch;
+		}
+	}
+	else {
+		vu32 *wgPipePtr = GX_RedirectWriteGatherPipe(GXtexture);
+		u32 *src1 = (u32 *) buffer;
+		u32 *src2 = (u32 *) (buffer + pitch);
+		u32 *src3 = (u32 *) (buffer + (pitch * 2));
+		u32 *src4 = (u32 *) (buffer + (pitch * 3));
+		int rowpitch = (pitch >> 2) * 4  - (width >> 1);
+		u32 alphaMask = 0x00800080;
+		for (h = 0; h < height; h += 4)
+		{
+			for (w = 0; w < (width >> 2); w++)
+			{
+				// Convert from BGR555 LE data to BGR BE, we OR the first bit with "1" to send RGB5A3 mode into RGB555 on the GP (GC/Wii)
+				__asm__ (
+					"lwz 3, 0(%1)\n"
+					"lwz 4, 4(%1)\n"
+					"lwz 5, 0(%2)\n"
+					"lwz 6, 4(%2)\n"
+					
+					"rlwinm 3, 3, 16, 0, 31\n"
+					"rlwinm 4, 4, 16, 0, 31\n"
+					"rlwinm 5, 5, 16, 0, 31\n"
+					"rlwinm 6, 6, 16, 0, 31\n"
+					
+					"or 3, 3, %5\n"
+					"or 4, 4, %5\n"
+					"or 5, 5, %5\n"
+					"or 6, 6, %5\n"				
+					
+					"stwbrx 3, 0, %0\n" 
+					"stwbrx 4, 0, %0\n" 
+					"stwbrx 5, 0, %0\n" 	
+					"stwbrx 6, 0, %0\n" 
+					
+					"lwz 3, 0(%3)\n"
+					"lwz 4, 4(%3)\n"
+					"lwz 5, 0(%4)\n"
+					"lwz 6, 4(%4)\n"
+					
+					"rlwinm 3, 3, 16, 0, 31\n"
+					"rlwinm 4, 4, 16, 0, 31\n"
+					"rlwinm 5, 5, 16, 0, 31\n"
+					"rlwinm 6, 6, 16, 0, 31\n"
+					
+					"or 3, 3, %5\n"
+					"or 4, 4, %5\n"
+					"or 5, 5, %5\n"
+					"or 6, 6, %5\n"
+					
+					"stwbrx 3, 0, %0\n" 
+					"stwbrx 4, 0, %0\n" 					
+					"stwbrx 5, 0, %0\n" 
+					"stwbrx 6, 0, %0" 					
+					: : "r" (wgPipePtr), "r" (src1), "r" (src2), "r" (src3), "r" (src4), "r" (alphaMask) : "memory", "r3", "r4", "r5", "r6");
+					//         %0             %1            %2          %3          %4           %5     
+				src1+=2;
+				src2+=2;
+				src3+=2;
+				src4+=2;
+			}
 
-      if ( rowadjust )
-        {
-          ra = (char *)src1;
-          src1 = (f64 *)(ra + rowadjust);
-          ra = (char *)src2;
-          src2 = (f64 *)(ra + rowadjust);
-          ra = (char *)src3;
-          src3 = (f64 *)(ra + rowadjust);
-          ra = (char *)src4;
-          src4 = (f64 *)(ra + rowadjust);
-        }
-    }
+		  src1 += rowpitch;
+		  src2 += rowpitch;
+		  src3 += rowpitch;
+		  src4 += rowpitch;
+		}
+	}
 	GX_RestoreWriteGatherPipe();
 
 	GX_LoadTexObj(&GXtexobj, GX_TEXMAP0);

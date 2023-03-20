@@ -300,7 +300,7 @@ void ScanPADSandReset(u32 dummy)
 //	PAD_ScanPads();
 	padNeedScan = wpadNeedScan = 1;
 	if(!((*(u32*)0xCC003000)>>16))
-		stop = 1;
+	stop = 1;
 }
 
 #ifdef HW_RVL
@@ -334,6 +334,7 @@ int main(int argc, char *argv[])
 {
 	/* INITIALIZE */
 #ifdef HW_RVL
+	L2Enhance();
 	VM_Init(1024*1024, 256*1024); // whatever for now, we're not really using this for anything other than mmap on Wii.
 	DI_UseCache(false);
 	if (!__di_check_ahbprot()) {

@@ -78,17 +78,6 @@ __inline__ unsigned long GETLE16D(unsigned long *ptr) {
              "rlwinm %0, %0, 16, 0, 31" : "=r" (ret) : "r" (ptr));
     return ret;
 }
-
-// Wii/GC specific
-// takes RGB555 LE data and returns it as RGB555 with a leading 1 for GP to handle it as RGB555 (via RGB5A3)
-__inline__ unsigned long PIXEL_SWAP(unsigned long *ptr, unsigned long mask) {
-    unsigned long ret;
-    __asm__ ("lwbrx %0, 0, %1\n"
-             "rlwinm %0, %0, 16, 0, 31\n"
-			 "or %0, %0, %2" : "=r" (ret) : "r" (ptr), "r" (mask));
-    return ret;
-}
-
 __inline__ void PUTLE16(unsigned short *ptr, unsigned short val) {
     __asm__ ("sthbrx %0, 0, %1" : : "r" (val), "r" (ptr) : "memory");
 }
