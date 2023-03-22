@@ -22,6 +22,7 @@
 */
 
 #include <stddef.h>
+#include <lightrec.h>
 #include "Misc.h"
 #include "CdRom.h"
 #include "Mdec.h"
@@ -562,13 +563,9 @@ fail_io:
 
 // STATES
 extern unsigned char  *psxVub;
-extern unsigned short  spuMem[256*1024];static unsigned int savestates_slot = 0;void savestates_select_slot(unsigned int s)
-{
-   if (s > 9) {
-     return;
-   }
-   savestates_slot = s;
-}
+#define iGPUHeight 512
+#include "dfsound/externals.h"
+
 static void *zlib_open(const char *name, const char *mode)
 {
 	return gzopen(name, mode);
@@ -620,11 +617,11 @@ int SaveState(const char *file) {
 	SaveFuncs.write(f, (void *)&SaveVersion, sizeof(u32));
 	SaveFuncs.write(f, (void *)&Config.HLE, sizeof(boolean));
 
-	pMem = (unsigned char *)malloc(128 * 96 * 3);
-	if (pMem == NULL) return -1;
-	GPU_getScreenPic(pMem);
-	SaveFuncs.write(f, pMem, 128 * 96 * 3);
-	free(pMem);
+	//pMem = (unsigned char *)malloc(128 * 96 * 3);
+	//if (pMem == NULL) return -1;
+	//GPU_getScreenPic(pMem);
+	//SaveFuncs.write(f, pMem, 128 * 96 * 3);
+	//free(pMem);
 
 	if (Config.HLE)
 		psxBiosFreeze(1);
@@ -641,6 +638,8 @@ int SaveState(const char *file) {
 	GPU_freeze(1, gpufP);
 	SaveFuncs.write(f, gpufP, sizeof(GPUFreeze_t));
 	free(gpufP);
+	// gpu VRAM save (save directly to save memory)
+	SaveFuncs.write(f, &psxVub[0], 1024*iGPUHeight*2);
 
 	// spu
 	spufP = (SPUFreeze_t *) malloc(16);
@@ -651,6 +650,8 @@ int SaveState(const char *file) {
 	SPU_freeze(1, spufP, psxCore.cycle);
 	SaveFuncs.write(f, spufP, Size);
 	free(spufP);
+	// spu spuMem save (save directly to save memory)
+	SaveFuncs.write(f, spu.spuMem, 0x80000);
 
 	sioFreeze(f, 1);
 	cdrFreeze(f, 1);
@@ -662,7 +663,6 @@ int SaveState(const char *file) {
 	SaveFuncs.close(f);
 
 	//new_dyna_after_save();
-
 	return 0;
 }
 
@@ -692,7 +692,7 @@ int LoadState(const char *file) {
 		psxBiosInit();
 
 	psxCpu->Reset();
-	SaveFuncs.seek(f, 128 * 96 * 3, SEEK_CUR);
+	//SaveFuncs.seek(f, 128 * 96 * 3, SEEK_CUR);
 
 	SaveFuncs.read(f, psxM, 0x00200000);
 	SaveFuncs.read(f, psxR, 0x00080000);
@@ -708,6 +708,8 @@ int LoadState(const char *file) {
 	SaveFuncs.read(f, gpufP, sizeof(GPUFreeze_t));
 	GPU_freeze(0, gpufP);
 	free(gpufP);
+	// gpu VRAM load (load directly to save memory)
+	SaveFuncs.read(f, &psxVub[0], 1024*iGPUHeight*2);
 	if (HW_GPU_STATUS == 0)
 		HW_GPU_STATUS = SWAP32(GPU_readStatus());
 
@@ -717,6 +719,8 @@ int LoadState(const char *file) {
 	SaveFuncs.read(f, spufP, Size);
 	SPU_freeze(0, spufP, psxCore.cycle);
 	free(spufP);
+	// spu spuMem load (load directly to save memory)
+	SaveFuncs.read(f, spu.spuMem, 0x80000);
 
 	sioFreeze(f, 0);
 	cdrFreeze(f, 0);
@@ -726,7 +730,6 @@ int LoadState(const char *file) {
 	lightrec_plugin_prepare_load_state();
 
 	SaveFuncs.close(f);
-
 	return 0;
 }
 

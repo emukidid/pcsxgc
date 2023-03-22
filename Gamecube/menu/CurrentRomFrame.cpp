@@ -199,9 +199,8 @@ void Func_SwapCD()
 
 extern "C" char mcd1Written;
 extern "C" char mcd2Written;
-extern "C" int LoadState();
-extern "C" int SaveState();
-extern "C" void savestates_select_slot(unsigned int s);
+extern "C" int LoadState(char* filename);
+extern "C" int SaveState(char* filename);
 
 void Func_LoadSave()
 {
@@ -320,31 +319,48 @@ void Func_SaveGame()
 
 }
 
+#define SAVE_PATH "/wiisx/saves/"
+static unsigned int which_slot = 0;
+
 void Func_LoadState()
 {
-  if(LoadState()) {
-    menu::MessageBox::getInstance().setMessage("Save State Loaded Successfully");
-  } else {
-    menu::MessageBox::getInstance().setMessage("Save doesn't exist");
-  }
+	char *filename = (char*)malloc(1024);
+#ifdef HW_RVL
+	sprintf(filename, "%s%s%s.st%d",(saveStateDevice==SAVESTATEDEVICE_USB)?"usb:":"sd:",
+				SAVE_PATH, CdromId, which_slot);
+#else
+	sprintf(filename, "sd:%s%s.st%d", SAVE_PATH, CdromId, which_slot);
+#endif
+	if(LoadState(filename) == 0) {
+		menu::MessageBox::getInstance().setMessage("Save State Loaded Successfully");
+	} else {
+		menu::MessageBox::getInstance().setMessage("Save doesn't exist");
+	}
+	free(filename);
 }
 
 void Func_SaveState()
 {
-  if(SaveState()) {
-    menu::MessageBox::getInstance().setMessage("Save State Saved Successfully");
-  } else {
-    menu::MessageBox::getInstance().setMessage("Error Saving State");
-  }
+	char *filename = (char*)malloc(1024);
+#ifdef HW_RVL
+	sprintf(filename, "%s%s%s.st%d",(saveStateDevice==SAVESTATEDEVICE_USB)?"usb:":"sd:",
+				SAVE_PATH, CdromId, which_slot);
+#else
+	sprintf(filename, "sd:%s%s.st%d", SAVE_PATH, CdromId, which_slot);
+#endif
+	if(SaveState(filename) == 0) {
+		menu::MessageBox::getInstance().setMessage("Save State Saved Successfully");
+	} else {
+		menu::MessageBox::getInstance().setMessage("Error Saving State");
+	}
+  	free(filename);
 }
 
-static unsigned int which_slot = 0;
 
 void Func_StateCycle()
 {
 	
 	which_slot = (which_slot+1) %10;
-	savestates_select_slot(which_slot);
 	FRAME_STRINGS[7][5] = which_slot + '0';
 
 }
