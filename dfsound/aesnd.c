@@ -21,7 +21,7 @@
 #include <string.h>
 #include "out.h"
 #include "spu_config.h"
-#include "../GameCube/wiisxConfig.h"
+#include "../Gamecube/wiiSXconfig.h"
 
 char audioEnabled;
 static AESNDPB* voice = NULL;
