@@ -69,7 +69,7 @@ jobs:
       
     - name: Build WiiSX (soft gfx)
       run: make -f Makefile_Wii
-      working-directory: gamecube
+      working-directory: ../GameCube
 
     - name: Upload artifacts
       uses: actions/upload-artifact@main
