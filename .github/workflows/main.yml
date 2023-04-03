@@ -1,0 +1,54 @@
+name: build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build CubeSX/WiiSX
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitppc:latest
+
+    steps:
+    - name: Checkout pcsxgc
+      uses: actions/checkout@main
+    
+    - name: Checkout libogc2
+      uses: actions/checkout@main
+      with:
+        repository: emukidid/libogc
+        path: libogc
+        
+    - name: Checkout lightrec (e78ab28)
+      uses: actions/checkout@e78ab28449ed165c03d8f1fc00dcdc8f1a626513
+      with:
+        repository: pcercuei/lightrec
+        path: lightrec
+        
+    - name: Get GNU Lightning
+      run: |
+        wget http://ftp.gnu.org/gnu/lightning/lightning-2.2.1.tar.gz \
+        tar -zxf lightning-2.2.1.tar.gz  
+
+    - name: Checkout libfat
+      uses: actions/checkout@main
+      with:
+        repository: extremscorner/libfat
+        path: libfat
+
+    - name: Build libogc2
+      run: make install
+      working-directory: libogc
+
+    - name: Build libfat
+      run: make ogc-install
+      working-directory: libfat
+      
+    - name: Build WiiSX (soft gfx)
+      run: make -f Makefile_Wii
+      working-directory: GameCube
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@main
+      with:
+        name: WiiSX (soft gfx)
+        path: /GameCube/WiiSX.dol
