@@ -30,6 +30,12 @@ jobs:
         wget http://ftp.gnu.org/gnu/lightning/lightning-2.2.1.tar.gz
         tar -zxf lightning-2.2.1.tar.gz 
     
+    - name: add ppc gcc to PATH environment variable
+      uses: myci-actions/export-env-var@1
+      with:
+        name: PATH
+        value: $PATH:/opt/devkitpro/devkitPPC/bin
+    
     - name: Build GNU Lightning
       run: |
         ./configure --host=powerpc-eabi --disable-shared --enable-static --disable-assertions --disable-disassembler
