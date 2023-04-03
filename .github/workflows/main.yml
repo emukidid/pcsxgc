@@ -19,15 +19,22 @@ jobs:
         path: libogc
         
     - name: Checkout lightrec (e78ab28)
-      uses: actions/checkout@e78ab28449ed165c03d8f1fc00dcdc8f1a626513
+      uses: actions/checkout@v2
       with:
         repository: pcercuei/lightrec
         path: lightrec
+        ref: e78ab28449ed165c03d8f1fc00dcdc8f1a626513
         
     - name: Get GNU Lightning
       run: |
         wget http://ftp.gnu.org/gnu/lightning/lightning-2.2.1.tar.gz \
-        tar -zxf lightning-2.2.1.tar.gz  
+        tar -zxf lightning-2.2.1.tar.gz 
+    
+    - name: Build GNU Lightning
+      run: |
+        ./configure --disable-shared --enable-static --disable-assertions --disable-disassembler \
+        make install
+      working-directory: lightning-2.2.1
 
     - name: Checkout libfat
       uses: actions/checkout@main
