@@ -39,7 +39,8 @@ jobs:
     - name: Build GNU Lightning
       run: |
         ./configure --host=powerpc-eabi --disable-shared --enable-static --disable-assertions --disable-disassembler
-        make install
+        make -C lib install
+        make -C include install
       working-directory: lightning-2.2.1
 
     - name: Checkout libfat
