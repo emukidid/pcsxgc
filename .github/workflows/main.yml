@@ -11,6 +11,8 @@ jobs:
     steps:
     - name: Checkout pcsxgc
       uses: actions/checkout@main
+      with:
+        path: wiisx
     
     - name: Checkout libogc2
       uses: actions/checkout@main
@@ -67,10 +69,10 @@ jobs:
       
     - name: Build WiiSX (soft gfx)
       run: make -f Makefile_Wii
-      working-directory: pcsxgc/GameCube
+      working-directory: wiisx/GameCube
 
     - name: Upload artifacts
       uses: actions/upload-artifact@main
       with:
         name: WiiSX (soft gfx)
-        path: /GameCube/WiiSX.dol
+        path: wiisx/GameCube/WiiSX.dol
