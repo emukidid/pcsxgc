@@ -69,10 +69,10 @@ jobs:
       
     - name: Build WiiSX (soft gfx)
       run: make -f Makefile_Wii
-      working-directory: pcsxgc/GameCube
+      working-directory: pcsxgc/Gamecube
 
     - name: Upload artifacts
       uses: actions/upload-artifact@main
       with:
         name: WiiSX (soft gfx)
-        path: pcsxgc/GameCube/WiiSX.dol
+        path: pcsxgc/Gamecube/WiiSX.dol
