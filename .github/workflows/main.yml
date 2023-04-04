@@ -71,7 +71,7 @@ jobs:
       run: |
         make -f Makefile_Wii clean
         make -f Makefile_Wii
-        mv WiiSX.dol release/apps/WiiSX/boot.dol
+        mv WiiSX.dol release/apps/wiiSX/boot.dol
       working-directory: pcsxgc/Gamecube
       
     - name: Build WiiSX (GX gfx)
