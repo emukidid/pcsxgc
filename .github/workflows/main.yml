@@ -86,3 +86,9 @@ jobs:
       with:
         name: WiiSX
         path: pcsxgc/Gamecube/release
+        
+    - name: Upload artifacts (lightrec)
+      uses: actions/upload-artifacts@main
+      with:
+        name: lightrec
+        path: /opt/devkitpro/devkitPPC/powerpc-eabi/lib/liblightrec.a
