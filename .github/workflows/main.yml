@@ -68,11 +68,28 @@ jobs:
       working-directory: libfat
       
     - name: Build WiiSX (soft gfx)
-      run: make -f Makefile_Wii
+      run: |
+        make -f Makefile_Wii clean
+        make -f Makefile_Wii
+        mv WiiSX.dol release/apps/WiiSX/boot.dol
+      working-directory: pcsxgc/Gamecube
+      
+    - name: Build WiiSX (GX gfx)
+      run: |
+        make -f Makefile_Wii_GX clean
+        make -f Makefile_Wii_GX
+        mv WiiSX_GX.dol release/WiiSX_GX.dol
+      working-directory: pcsxgc/Gamecube
+      
+    - name: Build CubeSX (soft gfx)
+      run: |
+        make -f Makefile_Cube clean
+        make -f Makefile_Cube
+        mv CubeSX.dol release/CubeSX.dol
       working-directory: pcsxgc/Gamecube
 
     - name: Upload artifacts
       uses: actions/upload-artifact@main
       with:
-        name: WiiSX (soft gfx)
-        path: pcsxgc/Gamecube/WiiSX.dol
+        name: WiiSX
+        path: pcsxgc/Gamecube/release
