@@ -1,0 +1,88 @@
+name: build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build CubeSX/WiiSX
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitppc:latest
+
+    steps:
+    - name: Checkout pcsxgc
+      uses: actions/checkout@master
+      with:
+        path: pcsxgc
+    
+    - name: Checkout libogc2
+      uses: actions/checkout@main
+      with:
+        repository: emukidid/libogc
+        path: libogc
+        
+    - name: Checkout lightrec (e78ab28)
+      uses: actions/checkout@v2
+      with:
+        repository: pcercuei/lightrec
+        path: lightrec
+        ref: e78ab28449ed165c03d8f1fc00dcdc8f1a626513
+        
+    - name: Get GNU Lightning
+      run: |
+        wget http://ftp.gnu.org/gnu/lightning/lightning-2.2.1.tar.gz
+        tar -zxf lightning-2.2.1.tar.gz 
+    
+    - name: add ppc gcc to PATH environment variable
+      uses: myci-actions/export-env-var@1
+      with:
+        name: PATH
+        value: $PATH:/opt/devkitpro/devkitPPC/bin
+    
+    - name: Build GNU Lightning
+      run: |
+        ./configure --host=powerpc-eabi --disable-shared --enable-static --disable-assertions --disable-disassembler --prefix=/
+        export DESTDIR=/opt/devkitpro/devkitPPC/powerpc-eabi/
+        make -C lib install
+        make -C include install
+      working-directory: lightning-2.2.1
+      
+    - name: Build lightrec
+      run: |
+        cmake -DCMAKE_TOOLCHAIN_FILE=/opt/devkitpro/cmake/GameCube.cmake -DCMAKE_INSTALL_PREFIX="" .
+        export DESTDIR=/opt/devkitpro/devkitPPC/powerpc-eabi/
+        make install
+      working-directory: lightrec
+
+    - name: Checkout libfat
+      uses: actions/checkout@main
+      with:
+        repository: extremscorner/libfat
+        path: libfat
+
+    - name: Build libogc2
+      run: make install
+      working-directory: libogc
+
+    - name: Build libfat
+      run: make ogc-install
+      working-directory: libfat
+      
+    - name: Build WiiSX (soft gfx)
+      run: |
+        make -f Makefile_Wii clean
+        make -f Makefile_Wii
+        mv WiiSX.dol release/apps/wiiSX/boot.dol
+      working-directory: pcsxgc/Gamecube
+            
+    - name: Build CubeSX (soft gfx)
+      run: |
+        make -f Makefile_Cube clean
+        make -f Makefile_Cube
+        mv CubeSX.dol release/CubeSX.dol
+      working-directory: pcsxgc/Gamecube
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@main
+      with:
+        name: WiiSX
+        path: pcsxgc/Gamecube/release
