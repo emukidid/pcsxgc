@@ -12,10 +12,10 @@ LICENSE:
 
 QUICK USAGE:
  * ISOs can be .bin/.cue (Make sure .cue contains _relative_ directory!), .img, or .iso format
- * To install: Extract the contents of wiiSX-beta2.1.zip to the root of your SD card
+ * To install: Extract the contents of wiiSX-<version>.zip to the root of your SD card
  * For SD/USB: Put ISOs (.bin/.cue or other formats) in the directory named /wiisx/isos,
     All save types will automatically be placed in /wiisx/saves
- * For DVD: ISOs may be anywhere on the disc (requires DVDxV2 on Wii)
+ * For DVD: ISOs may be anywhere on the disc
  * For actual BIOS: Put SCPH1001.BIN in the directory on SD/USB named /wiisx/bios
  * Load the executable from the HBC or in the loader of your choice
     Once loaded, select 'Load ISO' and choose the source and select the ISO to load
@@ -27,7 +27,7 @@ QUICK USAGE:
      (Note: this must be done to save your game; it will not be done automatically)
 
 Controls:
- * Controls are now fully configurable so any button on your controller can be mapped
+ * Controls are fully configurable so any button on your controller can be mapped
  * The controller configuration screen presents each PSX button and allows you to toggle through sources
  * There are 4 configuration slots for each type of controller
    * To load a different, previously saved configuration, select the slot, and click 'Load'
@@ -61,8 +61,8 @@ Settings:
    * Copy Saves: Not yet implemented
    * Delete Saves: Not yet implemented
 
-COMPATIBILITY LIST:
- Report any issues to http://code.google.com/p/pcsxgc/issues/list
+COMPATIBILITY:
+ Report any issues to https://github.com/emukidid/pcsxgc/issues
 
 CREDITS:
  * General Coder: emu_kidid
@@ -70,17 +70,25 @@ CREDITS:
  * Audio & Core Coder: tehpola
  * Artwork: drmr
  * pcsx team http://www.pcsx.net/
- * pcsx-df http://pcsx-df.sourceforge.net/
- * pcsx 1.5-test3 mac version by Gil Pederson http://pcsx.gpost.dk/
+ * notaz for pcsx-ReARMed
+ * pcercuei for lightrec
+ * originally based on pcsx 1.5-test3 mac version by Gil Pederson http://pcsx.gpost.dk/
  * P.E.Op.S. PSX Gpu & SPU http://sourceforge.net/projects/peops/ 
- * franspu
- * CDRMooby
  * SSSPSX
- * Compiled using devKitPro r21 and libOGC SVN
+ * Compiled using the latest devKitPro/libOGC
      ( http://sourceforge.net/projects/devkitpro )
- * Visit us on www.emulatemii.com and http://code.google.com/p/pcsxgc
+ * Visit us on IRC. EFNet #gc-forever or www.gc-forever.com or https://github.com/emukidid/pcsxgc/
 
 CHANGE LOG:
+Beta 3.0:
+	* Back nearly 13 years later with a new dynarec thanks to pcercuei's lightrec
+	  * Increases speed and compatibility
+	* Sync'd with upstream pcsx-ReARMed
+	  * Eliminates XA/CDDA slowdown completely on Wii
+	* dfsound audio plugin
+	* speed improvements in the soft graphics plugin thanks to tips from Extrems
+	* SD2SP2 support on GameCube
+	* General UI bugfixes and memory leaks addressed
 Beta 2.1:
    * Compiled with devkitPPC r21 / libOGC SVN
    * Compiled with new libDI / DVDx V2
