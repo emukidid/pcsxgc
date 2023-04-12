@@ -1,5 +1,5 @@
 README : WiiSX / CubeSX
-Beta 2.1
+Beta 3.0
 
 LICENSE:
     This software is licensed under the GNU General Public License v2
@@ -71,7 +71,7 @@ CREDITS:
  * Artwork: drmr
  * pcsx team http://www.pcsx.net/
  * notaz for pcsx-ReARMed
- * pcercuei for lightrec
+ * pcercuei for lightrec https://github.com/pcercuei/lightrec/
  * originally based on pcsx 1.5-test3 mac version by Gil Pederson http://pcsx.gpost.dk/
  * P.E.Op.S. PSX Gpu & SPU http://sourceforge.net/projects/peops/ 
  * SSSPSX
