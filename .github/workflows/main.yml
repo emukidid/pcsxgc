@@ -40,7 +40,7 @@ jobs:
     
     - name: Build GNU Lightning
       run: |
-        ./configure --host=powerpc-eabi --disable-shared --enable-static --disable-assertions --disable-disassembler --prefix=/
+        ./configure --host=powerpc-eabi --disable-shared --enable-static --disable-assertions --disable-disassembler --prefix=/ AR=powerpc-eabi-gcc-ar RANLIB=powerpc-eabi-gcc-ranlib CFLAGS="-O2 -fipa-pta -flto" ac_cv_func_mmap=no ac_cv_func_mremap=no
         export DESTDIR=/opt/devkitpro/devkitPPC/powerpc-eabi/
         make -C lib install
         make -C include install
@@ -48,7 +48,7 @@ jobs:
       
     - name: Build lightrec
       run: |
-        cmake -DCMAKE_TOOLCHAIN_FILE=/opt/devkitpro/cmake/GameCube.cmake -DCMAKE_INSTALL_PREFIX="" .
+        cmake -DCMAKE_TOOLCHAIN_FILE=/opt/devkitpro/cmake/GameCube.cmake -DCMAKE_INSTALL_PREFIX="" -DCMAKE_C_FLAGS="-fipa-pta -flto -Dfprintf=lightrec_fprintf" .
         export DESTDIR=/opt/devkitpro/devkitPPC/powerpc-eabi/
         make install
       working-directory: lightrec
