@@ -206,6 +206,7 @@ void loadSettings(int argc, char *argv[])
 	spu_config.iXAPitch = 0;
 	spu_config.iTempo = 0;
 	Config.PsxAuto = 1; //Autodetect
+	Config.cycle_multiplier = CYCLE_MULT_DEFAULT;
 	LoadCdBios = BOOTTHRUBIOS_NO;
 
 	//config stuff
