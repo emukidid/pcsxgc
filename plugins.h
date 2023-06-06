@@ -71,7 +71,9 @@ typedef struct {
 	uint32_t ulFreezeVersion;
 	uint32_t ulStatus;
 	uint32_t ulControl[256];
-	//unsigned char psxVRam[1024*512*2];
+#ifdef GPU_UNAI
+	unsigned char psxVRam[1024*512*2];
+#endif
 } GPUFreeze_t;
 typedef long (CALLBACK* GPUfreeze)(uint32_t, GPUFreeze_t *);
 typedef long (CALLBACK* GPUgetScreenPic)(unsigned char *);

@@ -37,6 +37,7 @@ typedef struct {
 } PluginTable;
 #define NUM_PLUGINS 6
 
+extern "C" {
 /* PEOPS GPU */
 long PEOPS_GPUopen(unsigned long *, char *, char *); 
 long PEOPS_GPUinit(void);
@@ -52,8 +53,28 @@ long PEOPS_GPUdmaChain(unsigned long *,unsigned long);
 void PEOPS_GPUupdateLace(void);
 void PEOPS_GPUdisplayText(char *);
 long PEOPS_GPUfreeze(unsigned long,GPUFreeze_t *);
+}
+
+/* UNAI GPU */
+#ifdef GPU_UNAI
+long UNAI_GPUinit(void);
+long UNAI_GPUshutdown(void);
+long UNAI_GPUfreeze(u32 bWrite, GPUFreeze_t* p2);
+void UNAI_GPUwriteDataMem(u32* dmaAddress, int dmaCount);
+long UNAI_GPUdmaChain(u32 *rambase, u32 start_addr);
+void UNAI_GPUwriteData(u32 data);
+void UNAI_GPUwriteDataMem(u32* dmaAddress, int dmaCount);
+void UNAI_GPUreadDataMem(u32* dmaAddress, int dmaCount);
+u32 UNAI_GPUreadData(void);
+u32 UNAI_GPUreadStatus(void);
+void UNAI_GPUwriteStatus(u32 data);
+void UNAI_GPUupdateLace(void);
+long UNAI_GPUopen(void **unused);
+long UNAI_GPUclose(void);
+#endif
 
 
+extern "C" {
 /* PAD */
 //typedef long (* PADopen)(unsigned long *);
 extern long PAD__init(long);
@@ -97,6 +118,7 @@ void CALLBACK DFS_SPUwriteRegister(unsigned long reg, unsigned short val, unsign
 long CALLBACK DFS_SPUopen(void);
 long CALLBACK DFS_SPUclose(void);
 long CALLBACK DFS_SPUfreeze(uint32_t ulFreezeMode, SPUFreeze_t * pF, uint32_t cycles);
+}
 
 #define EMPTY_PLUGIN \
 	{ NULL,      \
@@ -219,12 +241,48 @@ long CALLBACK DFS_SPUfreeze(uint32_t ulFreezeMode, SPUFreeze_t * pF, uint32_t cy
 	    { "GPUupdateLace", \
 	      (void*)PEOPS_GPUupdateLace} \
 	       } }
+#ifdef GPU_UNAI
+#define GPU_UNAI_PLUGIN \
+	{ "GPU",      \
+	  13,         \
+	  { { "GPUinit",  \
+	      (void*)UNAI_GPUinit}, \
+	    { "GPUshutdown",	\
+	      (void*)UNAI_GPUshutdown}, \
+	    { "GPUopen", \
+	      (void*)UNAI_GPUopen}, \
+	    { "GPUclose", \
+	      (void*)UNAI_GPUclose}, \
+	    { "GPUwriteStatus", \
+	      (void*)UNAI_GPUwriteStatus}, \
+	    { "GPUwriteData", \
+	      (void*)UNAI_GPUwriteData}, \
+	    { "GPUwriteDataMem", \
+	      (void*)UNAI_GPUwriteDataMem}, \
+	    { "GPUreadStatus", \
+	      (void*)UNAI_GPUreadStatus}, \
+	    { "GPUreadData", \
+	      (void*)UNAI_GPUreadData}, \
+	    { "GPUreadDataMem", \
+	      (void*)UNAI_GPUreadDataMem}, \
+	    { "GPUdmaChain", \
+	      (void*)UNAI_GPUdmaChain}, \
+	    { "GPUfreeze", \
+	      (void*)UNAI_GPUfreeze}, \
+	    { "GPUupdateLace", \
+	      (void*)UNAI_GPUupdateLace} \
+	       } }
+#endif
 
 #define PLUGIN_SLOT_0 EMPTY_PLUGIN
 #define PLUGIN_SLOT_1 SSS_PAD1_PLUGIN
 #define PLUGIN_SLOT_2 SSS_PAD2_PLUGIN
 #define PLUGIN_SLOT_3 DFSOUND_PLUGIN
+#ifdef GPU_UNAI
+#define PLUGIN_SLOT_4 GPU_UNAI_PLUGIN
+#else
 #define PLUGIN_SLOT_4 GPU_PEOPS_PLUGIN
+#endif
 #define PLUGIN_SLOT_5 EMPTY_PLUGIN
 
 #endif

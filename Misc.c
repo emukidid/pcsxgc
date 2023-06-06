@@ -638,8 +638,10 @@ int SaveState(const char *file) {
 	GPU_freeze(1, gpufP);
 	SaveFuncs.write(f, gpufP, sizeof(GPUFreeze_t));
 	free(gpufP);
+#ifndef GPU_UNAI
 	// gpu VRAM save (save directly to save memory)
 	SaveFuncs.write(f, &psxVub[0], 1024*iGPUHeight*2);
+#endif
 
 	// spu
 	spufP = (SPUFreeze_t *) malloc(16);
@@ -708,8 +710,10 @@ int LoadState(const char *file) {
 	SaveFuncs.read(f, gpufP, sizeof(GPUFreeze_t));
 	GPU_freeze(0, gpufP);
 	free(gpufP);
+#ifndef GPU_UNAI
 	// gpu VRAM load (load directly to save memory)
 	SaveFuncs.read(f, &psxVub[0], 1024*iGPUHeight*2);
+#endif
 	if (HW_GPU_STATUS == 0)
 		HW_GPU_STATUS = SWAP32(GPU_readStatus());
 

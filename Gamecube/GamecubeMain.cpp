@@ -58,6 +58,12 @@ extern u32 __di_check_ahbprot(void);
 }
 #endif //WII
 
+#ifdef GPU_UNAI
+extern "C" {
+	void GPUsetframelimit(unsigned long option){}
+}
+#endif
+
 u32* xfb[2] = { NULL, NULL };	/*** Framebuffers ***/
 int whichfb = 0;        /*** Frame buffer toggle ***/
 GXRModeObj *vmode;				/*** Graphics Mode Object ***/
@@ -154,6 +160,10 @@ void handleConfigPair(char* kv);
 void readConfig(FILE* f);
 void writeConfig(FILE* f);
 int checkBiosExists(int testDevice);
+
+#ifdef GPU_UNAI
+int iUseDither=0;	// TODO hook up properly.
+#endif
 
 void loadSettings(int argc, char *argv[])
 {
@@ -320,7 +330,6 @@ void video_mode_init(GXRModeObj *videomode, u32 *fb1, u32 *fb2)
 }
 
 // Plugin structure
-extern "C" {
 #include "GamecubePlugins.h"
 PluginTable plugins[] =
 	{ PLUGIN_SLOT_0,
@@ -329,7 +338,6 @@ PluginTable plugins[] =
 	  PLUGIN_SLOT_3,
 	  PLUGIN_SLOT_4,
 	  PLUGIN_SLOT_5 };
-}
 
 int main(int argc, char *argv[]) 
 {
