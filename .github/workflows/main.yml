@@ -20,7 +20,7 @@ jobs:
         repository: emukidid/libogc
         path: libogc
         
-    - name: Checkout lightrec (e78ab28)
+    - name: Checkout lightrec
       uses: actions/checkout@v2
       with:
         repository: pcercuei/lightrec
