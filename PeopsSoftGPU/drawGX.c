@@ -59,10 +59,7 @@ unsigned short usCursorActive=0;
 //int	iResX_Max=640;	//Max FB Width
 int		iResX_Max=RESX_MAX;
 int		iResY_Max=RESY_MAX;
-//char *	GXtexture;
 static unsigned char	GXtexture[RESX_MAX*RESY_MAX*2] __attribute__((aligned(32)));
-//char *	Xpixels;
-static unsigned char	Xpixels[RESX_MAX*RESY_MAX*2] __attribute__((aligned(32)));
 char *	pCaptionText;
 
 extern u32* xfb[2];	/*** Framebuffers ***/
@@ -108,11 +105,6 @@ void DoBufferSwap(void)                                // SWAP BUFFERS
 		iOldDX=iDX;iOldDY=iDY;
 	}
 
-	if(PSXDisplay.RGB24) {
-		// TODO this is a cop-out and is really doing RGB888->RGB555 in a separate pass, fixme so that it's all done in GX_Flip
-		BlitScreenNS_GX((unsigned char *)Xpixels, x, y, iDX, iDY);
-	}
-
 // TODO: Show Gun cursor
 //	if(usCursorActive) ShowGunCursor(pBackBuffer,PreviousPSXDisplay.Range.x0+PreviousPSXDisplay.Range.x1);
 
@@ -131,12 +123,18 @@ void DoBufferSwap(void)                                // SWAP BUFFERS
 	}
 
 
-	u8 *imgPtr = (u8*)(psxVuw + (PSXDisplay.RGB24 ? (((1024)*(y))+x) : ((y<<10) + x)));
+	u8 *imgPtr = (u8*)(psxVuw + ((y<<10) + x));
 	if(PSXDisplay.RGB24) {
-		// TODO this is a cop-out and is really doing RGB888->RGB555 in a separate pass, fixme.
-		imgPtr = Xpixels;
+		long lPitch=iResX_Max<<1;
+
+		if(PreviousPSXDisplay.Range.y0)                       // centering needed?
+		{
+			imgPtr+=PreviousPSXDisplay.Range.y0*lPitch;
+			iDY-=PreviousPSXDisplay.Range.y0;
+		}
+		imgPtr+=PreviousPSXDisplay.Range.x0<<1;
 	}
-	GX_Flip(iDX, iDY, imgPtr, iResX_Max*2, GX_TF_RGB5A3/*PSXDisplay.RGB24 ? GX_TF_RGBA8 : GX_TF_RGB5A3*/);
+	GX_Flip(iDX, iDY, imgPtr, iResX_Max*2, PSXDisplay.RGB24 ? GX_TF_RGBA8 : GX_TF_RGB5A3);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -201,10 +199,9 @@ unsigned long ulInitDisplay(void)
 		BuildDispMenu(0);
 	}
 
-	memset(Xpixels,0,iResX_Max*iResY_Max*2);
 	memset(GXtexture,0,iResX_Max*iResY_Max*2);
 
-	return (unsigned long)Xpixels;		//This isn't right, but didn't want to return 0..
+	return (unsigned long)GXtexture;		//This isn't right, but didn't want to return 0..
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -243,45 +240,7 @@ void ShowTextGpuPic(void)
 {
 }
 
-///////////////////////////////////////////////////////////////////////
-// TODO this is a cop-out and is really doing RGB888->RGB555 in a separate pass, fixme.
-void BlitScreenNS_GX(unsigned char * surf,long x,long y, short dx, short dy)
-{
- unsigned short row,column;
- long lPitch=iResX_Max<<1;
-
- if(PreviousPSXDisplay.Range.y0)                       // centering needed?
-  {
-   surf+=PreviousPSXDisplay.Range.y0*lPitch;
-   dy-=PreviousPSXDisplay.Range.y0;
-  }
-
- if(PSXDisplay.RGB24)
-  {
-   unsigned char * pD;unsigned int startxy;
-
-   surf+=PreviousPSXDisplay.Range.x0<<1;
-
-
-   for(column=0;column<dy;column++)
-    {
-     startxy=((1024)*(column+y))+x;
-
-     pD=(unsigned char *)&psxVuw[startxy];
-
-     for(row=0;row<dx;row++)
-      {
-		  // RRRRRRRR GGGGGGGG BBBBBBB to RGB555 (with top bit as 1)
-       unsigned long lu=*((unsigned long *)pD);
-       *((unsigned short *)((surf)+(column*lPitch)+(row<<1)))= ((BLUE(lu) << 7) & 0x7C00)|((GREEN(lu) << 2) & 0x3E0) |(RED(lu) >> 3) | 0x8000;
-       pD+=3;
-      }
-    }
-  }
-}
-
 ////////////////////////////////////////////////////////////////////////
-
 void GX_Flip(short width, short height, u8 * buffer, int pitch, u8 fmt)
 {
 	int h, w;
@@ -290,10 +249,9 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch, u8 fmt)
 	static int oldformat=-1;
 	static GXTexObj GXtexobj;
 
-	
-
 	if((width == 0) || (height == 0))
 		return;
+
 
 	if ((oldwidth != width) || (oldheight != height) || (oldformat != fmt))
 	{ //adjust texture conversion
@@ -305,27 +263,36 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch, u8 fmt)
 	}
 
 	if(PSXDisplay.RGB24) {
-		// TODO this is a cop-out and is really doing RGB888->RGB555 in a separate pass, fixme.
-		vf64 *wgPipePtr = GX_RedirectWriteGatherPipe(GXtexture);
-		f64 *src1 = (f64 *) buffer;
-		f64 *src2 = (f64 *) (buffer + pitch);
-		f64 *src3 = (f64 *) (buffer + (pitch * 2));
-		f64 *src4 = (f64 *) (buffer + (pitch * 3));
-		int rowpitch = (pitch >> 3) * 4  - (width >> 2);
-		for (h = 0; h < height; h += 4)
+		vu8 *wgPipePtr = GX_RedirectWriteGatherPipe(GXtexture);
+		u8 *image = (u8 *) buffer;
+		for (h = 0; h < (height >> 2); h++)
 		{
 			for (w = 0; w < (width >> 2); w++)
 			{
-				*wgPipePtr = *src1++;
-				*wgPipePtr = *src2++;
-				*wgPipePtr = *src3++;
-				*wgPipePtr = *src4++;
+				// Convert from RGB888 to GX_TF_RGBA8 texel format
+				for (int texelY = 0; texelY < 4; texelY++)
+				{
+					for (int texelX = 0; texelX < 4; texelX++)
+					{
+						// AR
+						int pixelAddr = (((w*4)+(texelX))*3) + (texelY*pitch);
+						*wgPipePtr = 0xFF;	// A
+						*wgPipePtr = image[pixelAddr+2]; // R (which is B in little endian)
+					}
+				}
+				
+				for (int texelY = 0; texelY < 4; texelY++)
+				{
+					for (int texelX = 0; texelX < 4; texelX++)
+					{
+						// GB
+						int pixelAddr = (((w*4)+(texelX))*3) + (texelY*pitch);
+						*wgPipePtr = image[pixelAddr+1]; // G
+						*wgPipePtr = image[pixelAddr]; // B (which is R in little endian)
+					}
+				}
 			}
-
-		  src1 += rowpitch;
-		  src2 += rowpitch;
-		  src3 += rowpitch;
-		  src4 += rowpitch;
+			image+=pitch*4;
 		}
 	}
 	else {
@@ -334,7 +301,7 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch, u8 fmt)
 		u32 *src2 = (u32 *) (buffer + pitch);
 		u32 *src3 = (u32 *) (buffer + (pitch * 2));
 		u32 *src4 = (u32 *) (buffer + (pitch * 3));
-		int rowpitch = (pitch >> 2) * 4  - (width >> 1);
+		int rowpitch = (pitch) - (width >> 1);
 		u32 alphaMask = 0x00800080;
 		for (h = 0; h < height; h += 4)
 		{

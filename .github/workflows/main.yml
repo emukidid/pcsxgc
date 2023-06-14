@@ -25,7 +25,6 @@ jobs:
       with:
         repository: pcercuei/lightrec
         path: lightrec
-        ref: e78ab28449ed165c03d8f1fc00dcdc8f1a626513
         
     - name: Get GNU Lightning
       run: |
