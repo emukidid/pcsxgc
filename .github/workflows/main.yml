@@ -91,3 +91,9 @@ jobs:
       with:
         name: lightrec
         path: /opt/devkitpro/devkitPPC/powerpc-eabi/lib/liblightrec.a
+        
+    - name: Upload artifacts (liblightning)
+      uses: actions/upload-artifact@main
+      with:
+        name: liblightning
+        path: /opt/devkitpro/devkitPPC/powerpc-eabi/lib/liblightning.a
