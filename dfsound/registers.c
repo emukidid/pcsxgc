@@ -22,14 +22,7 @@
 #include "externals.h"
 #include "registers.h"
 #include "spu_config.h"
-
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#define HTOLE16(x) __builtin_bswap16(x)
-#define LE16TOH(x) __builtin_bswap16(x)
-#else
-#define HTOLE16(x) (x)
-#define LE16TOH(x) (x)
-#endif
+#include "spu.h"
 
 static void SoundOn(int start,int end,unsigned short val);
 static void SoundOff(int start,int end,unsigned short val);
