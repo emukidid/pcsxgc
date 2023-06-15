@@ -59,21 +59,11 @@ long PEOPS_GPUfreeze(unsigned long,GPUFreeze_t *);
 extern long PAD__init(long);
 extern long PAD__shutdown(void);	
 
-/* WiiSX PAD Plugin */
-extern long PAD__open(void);
-extern long PAD__close(void);
-unsigned char PAD__startPoll (int pad);
-unsigned char PAD__poll (const unsigned char value);
-long PAD__readPort1(PadDataS*);
-long PAD__readPort2(PadDataS*);
-
 /* SSSPSX PAD Plugin */
 long SSS_PADopen (void *p);
 long SSS_PADclose (void);
 unsigned char SSS_PADstartPoll (int pad);
 unsigned char SSS_PADpoll (const unsigned char value);
-long SSS_PADreadPort1 (PadDataS* pads);
-long SSS_PADreadPort2 (PadDataS* pads);
 
 /* DFSound Plugin */
 int CALLBACK DFS_SPUplayCDDAchannel(short *pcm, int nbytes, unsigned int cycle, int is_start);
@@ -106,7 +96,7 @@ long CALLBACK DFS_SPUfreeze(uint32_t ulFreezeMode, SPUFreeze_t * pF, uint32_t cy
 
 #define SSS_PAD1_PLUGIN \
 	{ "PAD1",      \
-	  7,         \
+	  6,         \
 	  { { "PADinit",  \
 	      (void*)PAD__init }, \
 	    { "PADshutdown",	\
@@ -118,14 +108,12 @@ long CALLBACK DFS_SPUfreeze(uint32_t ulFreezeMode, SPUFreeze_t * pF, uint32_t cy
 	    { "PADpoll", \
 	      (void*)SSS_PADpoll}, \
 	    { "PADstartPoll", \
-	      (void*)SSS_PADstartPoll}, \
-	    { "PADreadPort1", \
-	      (void*)SSS_PADreadPort1} \
+	      (void*)SSS_PADstartPoll} \
 	       } }
 	    
 #define SSS_PAD2_PLUGIN \
 	{ "PAD2",      \
-	  7,         \
+	  6,         \
 	  { { "PADinit",  \
 	      (void*)PAD__init }, \
 	    { "PADshutdown",	\
@@ -137,9 +125,7 @@ long CALLBACK DFS_SPUfreeze(uint32_t ulFreezeMode, SPUFreeze_t * pF, uint32_t cy
 	    { "PADpoll", \
 	      (void*)SSS_PADpoll}, \
 	    { "PADstartPoll", \
-	      (void*)SSS_PADstartPoll}, \
-	    { "PADreadPort2", \
-	      (void*)SSS_PADreadPort2} \
+	      (void*)SSS_PADstartPoll} \
 	       } }
 
 #define DFSOUND_PLUGIN \

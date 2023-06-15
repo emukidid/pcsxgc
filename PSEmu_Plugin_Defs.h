@@ -138,8 +138,6 @@ typedef struct
 
   unsigned char PADstartPoll(int);
   unsigned char PADpoll(unsigned char);
-  long	PADreadPort1(PadDataS *);
-  long	PADreadPort2(PadDataS *);
 
 */
 
