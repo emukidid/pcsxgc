@@ -50,8 +50,10 @@ int            iUseNoStretchBlt=0;
 int            iFastFwd=0;
 int            iDebugMode=0;
 int            iFVDisplay=0;
+// Lightgun vars
 PSXPoint_t     ptCursorPoint[8];
 unsigned short usCursorActive=0;
+static unsigned long crCursorColor32[8][3]={{0xff,0x00,0x00},{0x00,0xff,0x00},{0x00,0x00,0xff},{0xff,0x00,0xff},{0xff,0xff,0x00},{0x00,0xff,0xff},{0xff,0xff,0xff},{0x7f,0x7f,0x7f}};
 
 //Some GX specific variables
 #define RESX_MAX 1024	//Vmem width
@@ -104,9 +106,6 @@ void DoBufferSwap(void)                                // SWAP BUFFERS
 		memset(GXtexture, 0, RESX_MAX*RESY_MAX*2);
 		iOldDX=iDX;iOldDY=iDY;
 	}
-
-// TODO: Show Gun cursor
-//	if(usCursorActive) ShowGunCursor(pBackBuffer,PreviousPSXDisplay.Range.x0+PreviousPSXDisplay.Range.x1);
 
 // TODO: Show menu text
 	if(ulKeybits&KEY_SHOWFPS) //DisplayText();               // paint menu text
@@ -242,7 +241,7 @@ void ShowTextGpuPic(void)
 
 ////////////////////////////////////////////////////////////////////////
 void GX_Flip(short width, short height, u8 * buffer, int pitch, u8 fmt)
-{
+{	
 	int h, w;
 	static int oldwidth=0;
 	static int oldheight=0;
@@ -409,6 +408,49 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch, u8 fmt)
 	  GX_Position2f32(-xcoord,-ycoord);
 	  GX_TexCoord2f32( 0.0, 1.0);
 	GX_End();
+	
+	// Show lightgun cursors
+	if(usCursorActive) {
+		for(int iPlayer=0;iPlayer<8;iPlayer++)                  // -> loop all possible players
+		{
+			if(usCursorActive&(1<<iPlayer))                   // -> player active?
+			{
+				// show a small semi-transparent square for the gun target
+				int gx = ptCursorPoint[iPlayer].x;
+				int gy = ptCursorPoint[iPlayer].y;
+				float startX = (gx < 255 ? (-1 + ((gx-8)/512.0f)) : ((gx-8)/512.0f));
+				float endX = (gx < 255 ? (-1 + ((gx+8)/512.0f)) : ((gx+8)/512.0f));
+				
+				float startY = (gy > 127 ? (-1 * ((gy-6)/256.0f)) : (1 - ((gy-6)/256.0f)));
+				float endY = (gy > 127 ? (-1 * ((gy+6)/256.0f)) : (1 - ((gy+6)/256.0f)));
+				
+				GX_InvVtxCache();
+				GX_InvalidateTexAll();
+				GX_ClearVtxDesc();
+				GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+				GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+				GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS,	GX_POS_XY,	GX_F32,	0);
+				GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8,	0);
+				// No textures
+				GX_SetNumChans(1);
+				GX_SetNumTexGens(0);
+				GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+				GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+				
+				GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
+				  GX_Position2f32(endX, endY);
+				  GX_Color4u8(crCursorColor32[iPlayer][0], crCursorColor32[iPlayer][1], crCursorColor32[iPlayer][2], 0x80);
+				  GX_Position2f32( startX, endY);
+				  GX_Color4u8(crCursorColor32[iPlayer][0], crCursorColor32[iPlayer][1], crCursorColor32[iPlayer][2], 0x80);
+				  GX_Position2f32( startX,startY);
+				  GX_Color4u8(crCursorColor32[iPlayer][0], crCursorColor32[iPlayer][1], crCursorColor32[iPlayer][2], 0x80);
+				  GX_Position2f32(endX,startY);
+				  GX_Color4u8(crCursorColor32[iPlayer][0], crCursorColor32[iPlayer][1], crCursorColor32[iPlayer][2], 0x80);
+				GX_End();
+
+			}
+		}
+	}
 
 	//Write menu/debug text on screen
 	GXColor fontColor = {150,255,150,255};
@@ -435,72 +477,3 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch, u8 fmt)
 	VIDEO_Flush();
 //	VIDEO_WaitVSync();
 }
-
-////////////////////////////////////////////////////////////////////////
-
-/* TODO - add this function
-void ShowGunCursor(unsigned char * surf,int iPitch)
-{
- unsigned short dx=(unsigned short)PreviousPSXDisplay.Range.x1;
- unsigned short dy=(unsigned short)PreviousPSXDisplay.DisplayMode.y;
- int x,y,iPlayer,sx,ex,sy,ey;
-
- if(iColDepth==32) iPitch=iPitch<<2;
- else              iPitch=iPitch<<1;
-
- if(PreviousPSXDisplay.Range.y0)                       // centering needed?
-  {
-   surf+=PreviousPSXDisplay.Range.y0*iPitch;
-   dy-=PreviousPSXDisplay.Range.y0;
-  }
-
- if(iColDepth==32)                                     // 32 bit color depth
-  {
-   const unsigned long crCursorColor32[8]={0xffff0000,0xff00ff00,0xff0000ff,0xffff00ff,0xffffff00,0xff00ffff,0xffffffff,0xff7f7f7f};
-
-   surf+=PreviousPSXDisplay.Range.x0<<2;               // -> add x left border
-
-   for(iPlayer=0;iPlayer<8;iPlayer++)                  // -> loop all possible players
-    {
-     if(usCursorActive&(1<<iPlayer))                   // -> player active?
-      {
-       const int ty=(ptCursorPoint[iPlayer].y*dy)/256;  // -> calculate the cursor pos in the current display
-       const int tx=(ptCursorPoint[iPlayer].x*dx)/512;
-       sx=tx-5;if(sx<0) {if(sx&1) sx=1; else sx=0;}
-       sy=ty-5;if(sy<0) {if(sy&1) sy=1; else sy=0;}
-       ex=tx+6;if(ex>dx) ex=dx;
-       ey=ty+6;if(ey>dy) ey=dy;
-
-       for(x=tx,y=sy;y<ey;y+=2)                        // -> do dotted y line
-        *((unsigned long *)((surf)+(y*iPitch)+x*4))=crCursorColor32[iPlayer];
-       for(y=ty,x=sx;x<ex;x+=2)                        // -> do dotted x line
-        *((unsigned long *)((surf)+(y*iPitch)+x*4))=crCursorColor32[iPlayer];
-      }
-    }
-  }
- else                                                  // 16 bit color depth
-  {
-   const unsigned short crCursorColor16[8]={0xf800,0x07c0,0x001f,0xf81f,0xffc0,0x07ff,0xffff,0x7bdf};
-
-   surf+=PreviousPSXDisplay.Range.x0<<1;               // -> same stuff as above
-
-   for(iPlayer=0;iPlayer<8;iPlayer++)
-    {
-     if(usCursorActive&(1<<iPlayer))
-      {
-       const int ty=(ptCursorPoint[iPlayer].y*dy)/256;
-       const int tx=(ptCursorPoint[iPlayer].x*dx)/512;
-       sx=tx-5;if(sx<0) {if(sx&1) sx=1; else sx=0;}
-       sy=ty-5;if(sy<0) {if(sy&1) sy=1; else sy=0;}
-       ex=tx+6;if(ex>dx) ex=dx;
-       ey=ty+6;if(ey>dy) ey=dy;
-
-       for(x=tx,y=sy;y<ey;y+=2)
-        *((unsigned short *)((surf)+(y*iPitch)+x*2))=crCursorColor16[iPlayer];
-       for(y=ty,x=sx;x<ex;x+=2)
-        *((unsigned short *)((surf)+(y*iPitch)+x*2))=crCursorColor16[iPlayer];
-      }
-    }
-  }
-}
-*/

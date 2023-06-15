@@ -76,6 +76,7 @@ void Func_ConfigureInput();
 void Func_ConfigureButtons();
 void Func_PsxTypeStandard();
 void Func_PsxTypeAnalog();
+void Func_PsxTypeLightgun();
 void Func_DisableRumbleYes();
 void Func_DisableRumbleNo();
 void Func_SaveButtonsSD();
@@ -118,7 +119,7 @@ void pauseAudio(void);  void pauseInput(void);
 void resumeAudio(void); void resumeInput(void);
 }
 
-#define NUM_FRAME_BUTTONS 56
+#define NUM_FRAME_BUTTONS 57
 #define NUM_TAB_BUTTONS 5
 #define FRAME_BUTTONS settingsFrameButtons
 #define FRAME_STRINGS settingsFrameStrings
@@ -144,7 +145,7 @@ Dithering: None; Game Dependent; Always
 Input Tab:
 Assign Controllers (assign player->pad)
 Configure Button Mappings
-PSX Controller Type: Standard/Analog/Light Gun
+PSX Controller Type: Standard/Analog/Gun
 Number of Multitaps: 0, 1, 2
 
 Audio Tab:
@@ -153,6 +154,7 @@ Disable XA: Yes; No
 Disable CDDA: Yes; No
 Volume Level: ("0: low", "1: medium", "2: loud", "3: loudest")
 	Note: volume=4-ComboBox_GetCurSel(hWC);, so 1 is loudest and 4 is low; default is medium
+Disable Reverb: Yes; No
 
 Saves Tab:
 Memcard Save Device: SD; USB; CardA; CardB
@@ -223,7 +225,7 @@ static char FRAME_STRINGS[57][24] =
 	  "CardA",
 	  "CardB",
 	// New Strings
-	  "Disable Reverb"
+	  "Gun"
 	};
 
 
@@ -280,8 +282,8 @@ struct ButtonInfo
 	//Buttons for Input Tab (starts at button[30])
 	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[34],	 90.0,	100.0,	220.0,	56.0,	 2,	32,	31,	31,	Func_ConfigureInput,	Func_ReturnFromSettingsFrame }, // Configure Input Assignment
 	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[35],	325.0,	100.0,	235.0,	56.0,	 2,	32,	30,	30,	Func_ConfigureButtons,	Func_ReturnFromSettingsFrame }, // Configure Button Mappings
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[38],	285.0,	170.0,	130.0,	56.0,	30,	34,	33,	33,	Func_PsxTypeStandard,	Func_ReturnFromSettingsFrame }, // PSX Controller Type: Standard
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[39],	425.0,	170.0,	110.0,	56.0,	31,	35,	32,	32,	Func_PsxTypeAnalog,		Func_ReturnFromSettingsFrame }, // PSX Controller Type: Analog
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[38],	285.0,	170.0,	130.0,	56.0,	30,	34,	56,	33,	Func_PsxTypeStandard,	Func_ReturnFromSettingsFrame }, // PSX Controller Type: Standard
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[39],	425.0,	170.0,	110.0,	56.0,	31,	35,	32,	56,	Func_PsxTypeAnalog,		Func_ReturnFromSettingsFrame }, // PSX Controller Type: Analog
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	285.0,	240.0,	 75.0,	56.0,	32,	36,	35,	35,	Func_DisableRumbleYes,	Func_ReturnFromSettingsFrame }, // Disable Rumble: Yes
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	380.0,	240.0,	 75.0,	56.0,	33,	37,	34,	34,	Func_DisableRumbleNo,	Func_ReturnFromSettingsFrame }, // Disable Rumble: No
 	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[13],	285.0,	310.0,	 55.0,	56.0,	34,	38,	37,	37,	Func_SaveButtonsSD,		Func_ReturnFromSettingsFrame }, // Save Button Mappings: SD
@@ -307,6 +309,7 @@ struct ButtonInfo
 	// New buttons [54]
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	345.0,	380.0,	 75.0,	56.0,	45,	3,	55,	55,	Func_DisableReverbYes,	Func_ReturnFromSettingsFrame }, // Disable Reverb: Yes
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	440.0,	380.0,	 75.0,	56.0,	45,	3,	54,	54,	Func_DisableReverbNo,	Func_ReturnFromSettingsFrame }, // Disable Reverb: No
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[56],	550.0,	170.0,	 75.0,	56.0,	31,	35,	33,	32,	Func_PsxTypeLightgun,	Func_ReturnFromSettingsFrame }, // PSX Controller Type: Gun
 
 };
 
@@ -333,7 +336,7 @@ struct TextBoxInfo
 	{	NULL,	FRAME_STRINGS[22],	130.0,	408.0,	 1.0,	true }, // Dithering: None/Game Dependent/Always
 	{	NULL,	FRAME_STRINGS[23],	190.0,	478.0,	 1.0,	true }, // Scaling: None/2xSai
 	//TextBoxes for Input Tab (starts at textBox[10])
-	{	NULL,	FRAME_STRINGS[36],	145.0,	198.0,	 1.0,	true }, // PSX Controller Type: Analog/Digital/Light Gun
+	{	NULL,	FRAME_STRINGS[36],	145.0,	198.0,	 1.0,	true }, // PSX Controller Type: Analog/Digital/Gun
 	{	NULL,	FRAME_STRINGS[37],	145.0,	268.0,	 1.0,	true }, // Disable Rumble: Yes/No
 	{	NULL,	FRAME_STRINGS[40],	145.0,	338.0,	 1.0,	true }, // Save Button Configs: SD/USB
 	{	NULL,	FRAME_STRINGS[41],	145.0,	408.0,	 1.0,	true }, // Auto Load Slot: Default/1/2/3/4
@@ -478,13 +481,21 @@ void SettingsFrame::activateSubmenu(int submenu)
 			for (int i = 10; i < 14; i++)
 				FRAME_TEXTBOXES[i].textBox->setVisible(true);
 			FRAME_BUTTONS[2].button->setSelected(true);
-			FRAME_BUTTONS[32+controllerType].button->setSelected(true);
+			if(controllerType == CONTROLLERTYPE_LIGHTGUN) {
+				FRAME_BUTTONS[56].button->setSelected(true);
+			}
+			else {
+				FRAME_BUTTONS[32+controllerType].button->setSelected(true);
+			}
 			FRAME_BUTTONS[34+rumbleEnabled].button->setSelected(true);
 			for (int i = 30; i < 39; i++)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
+			// Enable Lightgun button
+			FRAME_BUTTONS[56].button->setVisible(true);
+			FRAME_BUTTONS[56].button->setActive(true);
 			break;
 		case SUBMENU_AUDIO:
 			setDefaultFocus(FRAME_BUTTONS[3].button);
@@ -512,7 +523,7 @@ void SettingsFrame::activateSubmenu(int submenu)
 				FRAME_BUTTONS[i].button->setVisible(true);
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
-			// Disable Reverb buttons
+			// Enable Reverb buttons
 			FRAME_BUTTONS[54].button->setVisible(true);
 			FRAME_BUTTONS[54].button->setActive(true);
 			FRAME_BUTTONS[55].button->setVisible(true);
@@ -1019,6 +1030,7 @@ void Func_PsxTypeStandard()
 {
 	for (int i = 32; i <= 33; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
+	FRAME_BUTTONS[56].button->setSelected(false);
 	FRAME_BUTTONS[32].button->setSelected(true);
 	controllerType = CONTROLLERTYPE_STANDARD;
 }
@@ -1027,8 +1039,17 @@ void Func_PsxTypeAnalog()
 {
 	for (int i = 32; i <= 33; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
+	FRAME_BUTTONS[56].button->setSelected(false);
 	FRAME_BUTTONS[33].button->setSelected(true);
 	controllerType = CONTROLLERTYPE_ANALOG;
+}
+
+void Func_PsxTypeLightgun()
+{
+	for (int i = 32; i <= 33; i++)
+		FRAME_BUTTONS[i].button->setSelected(false);
+	FRAME_BUTTONS[56].button->setSelected(true);
+	controllerType = CONTROLLERTYPE_LIGHTGUN;
 }
 
 void Func_DisableRumbleYes()
