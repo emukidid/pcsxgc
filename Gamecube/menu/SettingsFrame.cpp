@@ -88,6 +88,8 @@ void Func_DisableXaYes();
 void Func_DisableXaNo();
 void Func_DisableCddaYes();
 void Func_DisableCddaNo();
+void Func_DisableReverbYes();
+void Func_DisableReverbNo();
 void Func_VolumeToggle();
 
 void Func_MemcardSaveSD();
@@ -116,11 +118,11 @@ void pauseAudio(void);  void pauseInput(void);
 void resumeAudio(void); void resumeInput(void);
 }
 
-#define NUM_FRAME_BUTTONS 54
+#define NUM_FRAME_BUTTONS 56
 #define NUM_TAB_BUTTONS 5
 #define FRAME_BUTTONS settingsFrameButtons
 #define FRAME_STRINGS settingsFrameStrings
-#define NUM_FRAME_TEXTBOXES 21
+#define NUM_FRAME_TEXTBOXES 22
 #define FRAME_TEXTBOXES settingsFrameTextBoxes
 
 /*
@@ -158,7 +160,7 @@ Auto Save Memcards: Yes; No
 Save States Device: SD; USB
 */
 
-static char FRAME_STRINGS[56][24] =
+static char FRAME_STRINGS[57][24] =
 	{ "General",
 	  "Video",
 	  "Input",
@@ -219,7 +221,10 @@ static char FRAME_STRINGS[56][24] =
 	  "Auto Save Memcards",
 	  "Save States Device",
 	  "CardA",
-	  "CardB"};
+	  "CardB",
+	// New Strings
+	  "Disable Reverb"
+	};
 
 
 struct ButtonInfo
@@ -289,7 +294,7 @@ struct ButtonInfo
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	440.0,	170.0,	 75.0,	56.0,	40,	44,	41,	41,	Func_DisableXaNo,		Func_ReturnFromSettingsFrame }, // Disable XA: No
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	345.0,	240.0,	 75.0,	56.0,	41,	45,	44,	44,	Func_DisableCddaYes,	Func_ReturnFromSettingsFrame }, // Disable CDDA: Yes
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	440.0,	240.0,	 75.0,	56.0,	42,	45,	43,	43,	Func_DisableCddaNo,		Func_ReturnFromSettingsFrame }, // Disable CDDA: No
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[47],	345.0,	310.0,	170.0,	56.0,	43,	 3,	-1,	-1,	Func_VolumeToggle,		Func_ReturnFromSettingsFrame }, // Volume: low/medium/loud/loudest
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[47],	345.0,	310.0,	170.0,	56.0,	43,	54,	-1,	-1,	Func_VolumeToggle,		Func_ReturnFromSettingsFrame }, // Volume: low/medium/loud/loudest
 	//Buttons for Saves Tab (starts at button[46]) ..was[48]
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[13],	295.0,	100.0,	 55.0,	56.0,	 4,	50,	49,	47,	Func_MemcardSaveSD,		Func_ReturnFromSettingsFrame }, // Memcard Save: SD
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[14],	360.0,	100.0,	 70.0,	56.0,	 4,	51,	46,	48,	Func_MemcardSaveUSB,	Func_ReturnFromSettingsFrame }, // Memcard Save: USB
@@ -299,6 +304,10 @@ struct ButtonInfo
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	380.0,	170.0,	 75.0,	56.0,	47,	53,	50,	50,	Func_AutoSaveNo,		Func_ReturnFromSettingsFrame }, // Auto Save Memcards: No
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[13],	295.0,	240.0,	 55.0,	56.0,	50,	 4,	53,	53,	Func_SaveStateSD,		Func_ReturnFromSettingsFrame }, // Save State: SD
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[14],	360.0,	240.0,	 70.0,	56.0,	51,	 4,	52,	52,	Func_SaveStateUSB,		Func_ReturnFromSettingsFrame }, // Save State: USB
+	// New buttons [54]
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	345.0,	380.0,	 75.0,	56.0,	45,	3,	55,	55,	Func_DisableReverbYes,	Func_ReturnFromSettingsFrame }, // Disable Reverb: Yes
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	440.0,	380.0,	 75.0,	56.0,	45,	3,	54,	54,	Func_DisableReverbNo,	Func_ReturnFromSettingsFrame }, // Disable Reverb: No
+
 };
 
 struct TextBoxInfo
@@ -333,6 +342,7 @@ struct TextBoxInfo
 	{	NULL,	FRAME_STRINGS[44],	210.0,	198.0,	 1.0,	true }, // Disable XA Audio: Yes/No
 	{	NULL,	FRAME_STRINGS[45],	210.0,	268.0,	 1.0,	true }, // Disable CDDA Audio: Yes/No
 	{	NULL,	FRAME_STRINGS[46],	210.0,	338.0,	 1.0,	true }, // Volume: low/medium/loud/loudest
+	{	NULL,	FRAME_STRINGS[56],	210.0,	408.0,	 1.0,	true }, // Disable Reverb: Yes/No
 	//TextBoxes for Saves Tab (starts at textBox[18]) ..was[16]
 	{	NULL,	FRAME_STRINGS[51],	150.0,	128.0,	 1.0,	true }, // Memcard Save Device: SD/USB/CardA/CardB
 	{	NULL,	FRAME_STRINGS[52],	150.0,	198.0,	 1.0,	true }, // Auto Save Memcards: Yes/No
@@ -482,10 +492,10 @@ void SettingsFrame::activateSubmenu(int submenu)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
 				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, FRAME_BUTTONS[39].button);
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[45].button);
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[55].button);
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
-			for (int i = 14; i < 18; i++)
+			for (int i = 14; i < 19; i++)
 				FRAME_TEXTBOXES[i].textBox->setVisible(true);
 			FRAME_BUTTONS[3].button->setSelected(true);
 			if (audioEnabled == AUDIO_DISABLE)	FRAME_BUTTONS[39].button->setSelected(true);
@@ -494,12 +504,19 @@ void SettingsFrame::activateSubmenu(int submenu)
 			else								FRAME_BUTTONS[42].button->setSelected(true);
 			if (Config.Cdda == CDDA_DISABLE)	FRAME_BUTTONS[43].button->setSelected(true);
 			else								FRAME_BUTTONS[44].button->setSelected(true);
+			if (!spu_config.iUseReverb)			FRAME_BUTTONS[54].button->setSelected(true);
+			else								FRAME_BUTTONS[55].button->setSelected(true);
 			FRAME_BUTTONS[45].buttonString = FRAME_STRINGS[46+volume];
 			for (int i = 39; i < 46; i++)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
+			// Disable Reverb buttons
+			FRAME_BUTTONS[54].button->setVisible(true);
+			FRAME_BUTTONS[54].button->setActive(true);
+			FRAME_BUTTONS[55].button->setVisible(true);
+			FRAME_BUTTONS[55].button->setActive(true);
 			break;
 		case SUBMENU_SAVES:
 			setDefaultFocus(FRAME_BUTTONS[4].button);
@@ -510,7 +527,7 @@ void SettingsFrame::activateSubmenu(int submenu)
 				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[52].button);
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
-			for (int i = 18; i < 21; i++)
+			for (int i = 19; i < 22; i++)
 				FRAME_TEXTBOXES[i].textBox->setVisible(true);
 			FRAME_BUTTONS[4].button->setSelected(true);
 			FRAME_BUTTONS[46+nativeSaveDevice].button->setSelected(true);
@@ -1165,6 +1182,20 @@ void Func_DisableCddaNo()
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[44].button->setSelected(true);
 	Config.Cdda = CDDA_ENABLE;
+}
+
+void Func_DisableReverbYes()
+{
+	FRAME_BUTTONS[55].button->setSelected(false);
+	FRAME_BUTTONS[54].button->setSelected(true);
+	spu_config.iUseReverb = 0;
+}
+
+void Func_DisableReverbNo()
+{
+	FRAME_BUTTONS[54].button->setSelected(false);
+	FRAME_BUTTONS[55].button->setSelected(true);
+	spu_config.iUseReverb = 1;
 }
 
 extern "C" void SetVolume(void);
