@@ -26,7 +26,8 @@
 #include "../libgui/CursorManager.h"
 #include "../libgui/MessageBox.h"
 #include "../wiiSXconfig.h"
-#include "../../PsxCommon.h"
+
+#include <libpcsxcore/psxcommon.h>
 
 extern "C" {
 /*#include "../gc_memory/memory.h"
@@ -158,7 +159,7 @@ void Func_ShowRomInfo()
   strcat(RomInfo,buffer);
   sprintf(buffer,"Country: %s\n",(!Config.PsxType) ? "NTSC":"PAL");
   strcat(RomInfo,buffer);
-  sprintf(buffer,"BIOS: %s\n",(Config.HLE==BIOS_USER_DEFINED) ? "USER DEFINED":"HLE");
+  sprintf(buffer,"BIOS: %s\n",(Config.HLE) ? "HLE":"USER DEFINED");
   strcat(RomInfo,buffer);
   /*unsigned char tracks[2];
   CDR_getTN(&tracks[0]);
