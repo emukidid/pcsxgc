@@ -207,6 +207,11 @@ void go(void);
 
 //void control_info_init();
 
+extern "C" {
+char mcd1Written;
+char mcd2Written;
+}
+
 extern char menuActive;
 extern char autoSave;
 extern "C" char mcd1Written;
