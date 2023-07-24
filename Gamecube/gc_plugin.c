@@ -20,11 +20,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
-#include "../PsxCommon.h"
+#include <libpcsxcore/psxcommon.h>
 #include "fileBrowser/fileBrowser.h"
 
-#include "../plugins.h"
-#include "../Spu.h"
+#include <libpcsxcore/plugins.h>
+#include <libpcsxcore/spu.h>
 #ifndef __GX__
 #include "NoPic.h"
 #endif //!__GX__
@@ -171,8 +171,6 @@ int _OpenPlugins() {
 
 /*	signal(SIGINT, SignalExit);
 	signal(SIGPIPE, SignalExit);*/
-
-	GPU_clearDynarec(clearDynarec);
 
 	ret = CDR_open();
 	if (ret < 0) { SysPrintf("Error Opening CDR Plugin\n"); return -1; }

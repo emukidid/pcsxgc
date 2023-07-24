@@ -16,7 +16,9 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
+#include <libpcsxcore/system.h>
+
 #include <gccore.h>
 #include <malloc.h>
 #include <stdio.h>
@@ -28,14 +30,14 @@
 #include <time.h>
 #include <fat.h>
 #include <aesndlib.h>
-
 #ifdef DEBUGON
 # include <debug.h>
 #endif
-#include "../PsxCommon.h"
+#include <libpcsxcore/psxcommon.h>
 #include "wiiSXconfig.h"
 #include "menu/MenuContext.h"
 extern "C" {
+#include <libpcsxcore/lightrec/mem.h>
 #include "../dfsound/spu_config.h"
 #include "DEBUG.h"
 #include "fileBrowser/fileBrowser.h"
@@ -73,7 +75,8 @@ fileBrowser_file *biosFile = NULL;  //BIOS file
 FILE *emuLog;
 #endif
 
-PcsxConfig Config;
+extern "C" PcsxConfig Config;
+
 char dynacore;
 char biosDevice;
 char LoadCdBios=0;
@@ -111,7 +114,7 @@ char smbPassWord[CONFIG_STRING_SIZE];
 char smbShareName[CONFIG_STRING_SIZE];
 char smbIpAddr[CONFIG_STRING_SIZE];
 
-int stop = 0;
+extern "C" int stop;
 
 static struct {
 	const char* key;
@@ -434,7 +437,8 @@ int loadISO(fileBrowser_file* file)
 	
 	char *tempStr = &file->name[0];
 	if((strstr(tempStr,".EXE")!=NULL) || (strstr(tempStr,".exe")!=NULL)) {
-		Load(file);
+		//TODO
+		//Load(file);
 	}
 	else {
 		CheckCdrom();
@@ -465,8 +469,11 @@ int loadISO(fileBrowser_file* file)
 		}
 		// Try loading everything
 		saveFile_init(saveFile_dir);
+		/*
+		 * TODO: Implement LoadMcd properly using VFS
 		LoadMcd(1,saveFile_dir);
 		LoadMcd(2,saveFile_dir);
+		*/
 		saveFile_deinit(saveFile_dir);
 		
 		switch (nativeSaveDevice)
@@ -574,9 +581,9 @@ int SysInit() {
 		memcpy(biosFile,biosFile_dir,sizeof(fileBrowser_file));
 		strcat(biosFile->name, "/SCPH1001.BIN");
 		biosFile_init(biosFile);  //initialize the bios device (it might not be the same as ISO device)
-		Config.HLE = BIOS_USER_DEFINED;
+		Config.HLE = 0;
 	} else {
-		Config.HLE = BIOS_HLE;
+		Config.HLE = 1;
 	}
 
 	return 0;
@@ -663,5 +670,59 @@ void SysRunGui() {}
 void SysMessage(const char *fmt, ...) {}
 void SysCloseLibrary(void *lib) {}
 const char *SysLibError() {	return NULL; }
+
+void pl_frame_limit(void)
+{
+}
+
+void plat_trigger_vibrate(int pad, int low, int high)
+{
+}
+
+/* TODO: Should be populated properly */
+int in_type[8] = {
+   PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE,
+   PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE,
+   PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE,
+   PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE
+};
+
+static s8 psxM_buf[0x220000] __attribute__((aligned(4096)));
+static s8 psxR_buf[0x80000] __attribute__((aligned(4096)));
+
+static s8 code_buf [0x400000] __attribute__((aligned(32))); // 4 MiB code buffer for Lightrec
+void * code_buffer = code_buf;
+
+int lightrec_init_mmap(void)
+{
+	psxM = psxM_buf;
+	psxR = psxR_buf;
+	psxP = &psxM[0x200000];
+	psxH = &psxM[0x210000];
+
+	if (lightrec_mmap(psxM, 0x0, 0x200000)
+	    || lightrec_mmap(psxM, 0x200000, 0x200000)
+	    || lightrec_mmap(psxM, 0x400000, 0x200000)
+	    || lightrec_mmap(psxM, 0x600000, 0x200000)) {
+		SysMessage(_("Error mapping RAM"));
+		return -1;
+	}
+
+	if (lightrec_mmap(psxR, 0x1fc00000, 0x80000)) {
+		SysMessage(_("Error mapping BIOS"));
+		return -1;
+	}
+
+	if (lightrec_mmap(psxM + 0x210000, 0x1f800000, 0x3000)) {
+		SysMessage(_("Error mapping I/O"));
+		return -1;
+	}
+
+	return 0;
+}
+
+void lightrec_free_mmap(void)
+{
+}
 
 } //extern "C"
