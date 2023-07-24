@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/libretro/pcsx_rearmed.git
+	branch = master
+	commit = 3569821141fcc25a47b5d6942d219b659aba5547
+	parent = 8cbb0a2e3101f053b64d6fe26e02215bfb58b165
+	method = merge
+	cmdver = 0.4.3
