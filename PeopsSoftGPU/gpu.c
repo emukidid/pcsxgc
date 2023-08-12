@@ -917,7 +917,7 @@ void ChangeWindowMode(void)                            // TOGGLE FULLSCREEN - WI
 #endif
 
 ////////////////////////////////////////////////////////////////////////
-// gun cursor func: player=0-7, x=0-511, y=0-255
+// gun cursor func: player=0-7
 ////////////////////////////////////////////////////////////////////////
 #ifndef __GX__
 void CALLBACK GPUcursor(int iPlayer,int x,int y)
@@ -929,11 +929,6 @@ void GPUcursor(int iPlayer,int x,int y)
  if(iPlayer>7) return;
 
  usCursorActive|=(1<<iPlayer);
-
- if(x<0)       x=0;
- if(x>511)     x=511;
- if(y<0)       y=0;
- if(y>255)     y=255;
 
  ptCursorPoint[iPlayer].x=x;
  ptCursorPoint[iPlayer].y=y;

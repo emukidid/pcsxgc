@@ -29,6 +29,7 @@
 #include <ogc/pad.h>
 #include "controller.h"
 #include "../wiiSXconfig.h"
+extern char controllerType;
 
 enum {
 	ANALOG_AS_ANALOG = 1, C_STICK_AS_ANALOG = 2,
@@ -118,6 +119,11 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
 {
 	if(padNeedScan){ gc_connected = PAD_ScanPads(); padNeedScan = 0; }
 	BUTTONS* c = Keys;
+	u8 lastRawX = c->lastRawX;
+	u8 lastRawY = c->lastRawY;
+	u16 gunX = c->gunX;
+	u16 gunY = c->gunY;
+	
 	memset(c, 0, sizeof(BUTTONS));
 	//Reset buttons & sticks
 	c->btns.All = 0xFFFF;
@@ -151,27 +157,39 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
 	c->btns.L3_BUTTON    = isHeld(config->L3);
 	c->btns.SELECT_BUTTON = isHeld(config->SELECT);
 
-	//adjust values by 128 cause PSX sticks range 0-255 with a 128 center pos
-	int stickX = 0, stickY = 0;
-	if(config->analogL->mask == ANALOG_AS_ANALOG){
-		stickX = PAD_StickX(Control);
-		stickY = PAD_StickY(Control);
-	} else if(config->analogL->mask == C_STICK_AS_ANALOG){
-		stickX = PAD_SubStickX(Control);
-		stickY = PAD_SubStickY(Control);
+	if(controllerType = CONTROLLERTYPE_LIGHTGUN) {
+		c->lastRawX = PAD_StickX(Control);
+		c->lastRawY = PAD_StickY(Control);
+		
+		// Keep it within 0 to 1023
+		c->gunX += gunX + ((PAD_StickX(Control)) / 6);
+		c->gunY += gunY - ((PAD_StickY(Control)) / 6);
+		c->gunX = c->gunX > 1023 ? 1023 : (c->gunX < 0 ? 0 : c->gunX);
+		c->gunY = c->gunY > 1023 ? 1023 : (c->gunY < 0 ? 0 : c->gunY);
 	}
-	c->leftStickX = GCtoPSXAnalog(stickX);
-	c->leftStickY = GCtoPSXAnalog(config->invertedYL ? stickY : -stickY);
+	else {
+		//adjust values by 128 cause PSX sticks range 0-255 with a 128 center pos
+		int stickX = 0, stickY = 0;
+		if(config->analogL->mask == ANALOG_AS_ANALOG){
+			stickX = PAD_StickX(Control);
+			stickY = PAD_StickY(Control);
+		} else if(config->analogL->mask == C_STICK_AS_ANALOG){
+			stickX = PAD_SubStickX(Control);
+			stickY = PAD_SubStickY(Control);
+		}
+		c->leftStickX = GCtoPSXAnalog(stickX);
+		c->leftStickY = GCtoPSXAnalog(config->invertedYL ? stickY : -stickY);
 
-	if(config->analogR->mask == ANALOG_AS_ANALOG){
-		stickX = PAD_StickX(Control);
-		stickY = PAD_StickY(Control);
-	} else if(config->analogR->mask == C_STICK_AS_ANALOG){
-		stickX = PAD_SubStickX(Control);
-		stickY = PAD_SubStickY(Control);
+		if(config->analogR->mask == ANALOG_AS_ANALOG){
+			stickX = PAD_StickX(Control);
+			stickY = PAD_StickY(Control);
+		} else if(config->analogR->mask == C_STICK_AS_ANALOG){
+			stickX = PAD_SubStickX(Control);
+			stickY = PAD_SubStickY(Control);
+		}
+		c->rightStickX = GCtoPSXAnalog(stickX);
+		c->rightStickY = GCtoPSXAnalog(config->invertedYR ? stickY : -stickY);
 	}
-	c->rightStickX = GCtoPSXAnalog(stickX);
-	c->rightStickY = GCtoPSXAnalog(config->invertedYR ? stickY : -stickY);
 
 	// Return 1 if whether the exit button(s) are pressed
 	return isHeld(config->exit) ? 0 : 1;

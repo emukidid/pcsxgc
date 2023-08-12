@@ -191,8 +191,14 @@ typedef struct
 
 typedef struct
 {
-	// controler type - fill it withe predefined values above
+	// controller type - fill it withe predefined values above
 	unsigned char controllerType;
+
+	//0 : no multitap between psx and pad
+	//1 : multitap between psx and pad on port 1
+	//2 : multitap between psx and pad on port 2
+	int portMultitap;
+	int requestPadIndex;
 
 	// status of buttons - every controller fills this field
 	unsigned short buttonStatus;
@@ -205,7 +211,15 @@ typedef struct
 	// values are in range -128 - 127
 	unsigned char moveX, moveY;
 
-	unsigned char reserved[91];
+	unsigned char Vib[2];
+	unsigned char VibF[2];
+	
+	//configuration mode Request 0x43
+	int configMode;
+	unsigned char reserved[87];
+	
+	//Lightgun values 
+	int absoluteX,absoluteY;
 
 } PadDataS;
 
