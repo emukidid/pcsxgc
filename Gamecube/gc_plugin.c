@@ -150,6 +150,112 @@ long PAD2__open(void) {
 	return PAD2_open(&gpuDisp);
 }
 
+#include "gc_input/controller.h"
+#include "wiiSXconfig.h"
+extern int stop;
+extern void GPUcursor(int iPlayer,int x,int y);
+extern virtualControllers_t virtualControllers[2];
+// Use to invoke func on the mapped controller with args
+#define DO_CONTROL(Control,func,args...) \
+	virtualControllers[Control].control->func( \
+		virtualControllers[Control].number, ## args)
+
+void plat_trigger_vibrate(int pad, int low, int high) {
+	DO_CONTROL(pad, rumble, low);	// TODO vary this based on small/large motor.
+}
+
+long PAD1__readPort1(PadDataS *pad) {
+	int pad_index = pad->requestPadIndex;
+
+	static BUTTONS PAD_Data;
+	if(DO_CONTROL(pad_index, GetKeys, (BUTTONS*)&PAD_Data, virtualControllers[pad_index].config))
+		stop = 1;
+	switch(controllerType) {
+		case CONTROLLERTYPE_LIGHTGUN:
+			pad->controllerType = PSE_PAD_TYPE_GUNCON;
+			break;
+		case CONTROLLERTYPE_ANALOG:
+			pad->controllerType = PSE_PAD_TYPE_ANALOGPAD;
+			break;
+		default:
+			pad->controllerType = PSE_PAD_TYPE_STANDARD;
+			break;
+	}
+	pad->buttonStatus = PAD_Data.btns.All;
+
+	//if (multitap1 == 1)
+	//	pad->portMultitap = 1;
+	//else
+	//	pad->portMultitap = 0;
+
+	if (controllerType == CONTROLLERTYPE_ANALOG || controllerType == CONTROLLERTYPE_LIGHTGUN)
+	{
+		pad->leftJoyX = PAD_Data.leftStickX;
+		pad->leftJoyY = PAD_Data.leftStickY;
+		pad->rightJoyX = PAD_Data.rightStickX;
+		pad->rightJoyY = PAD_Data.rightStickY;
+
+		pad->absoluteX = PAD_Data.gunX;
+		pad->absoluteY = PAD_Data.gunY;
+		
+		int absX = (pad->absoluteX / 64) + 512;
+		int absY = (pad->absoluteY / 64) + 512;
+		GPUcursor(pad_index, absX, absY);
+	}
+	/*
+	if (in_type[pad_index] == PSE_PAD_TYPE_MOUSE)
+	{
+		pad->moveX = in_mouse[pad_index][0];
+		pad->moveY = in_mouse[pad_index][1];
+	}*/
+
+	return 0;
+}
+
+long PAD2__readPort2(PadDataS *pad) {
+	int pad_index = pad->requestPadIndex;
+
+	static BUTTONS PAD_Data;
+	if(DO_CONTROL(pad_index, GetKeys, (BUTTONS*)&PAD_Data, virtualControllers[pad_index].config))
+		stop = 1;
+
+	switch(controllerType) {
+		case CONTROLLERTYPE_LIGHTGUN:
+			pad->controllerType = PSE_PAD_TYPE_GUNCON;
+			break;
+		case CONTROLLERTYPE_ANALOG:
+			pad->controllerType = PSE_PAD_TYPE_ANALOGPAD;
+			break;
+		default:
+			pad->controllerType = PSE_PAD_TYPE_STANDARD;
+			break;
+	}
+	pad->buttonStatus = PAD_Data.btns.All;
+
+	//if (multitap2 == 1)
+	//	pad->portMultitap = 2;
+	//else
+	//	pad->portMultitap = 0;
+
+	if (controllerType == CONTROLLERTYPE_ANALOG || controllerType == CONTROLLERTYPE_LIGHTGUN)
+	{
+		/*pad->leftJoyX = in_analog_left[pad_index][0];
+		pad->leftJoyY = in_analog_left[pad_index][1];
+		pad->rightJoyX = in_analog_right[pad_index][0];
+		pad->rightJoyY = in_analog_right[pad_index][1];
+		pad->absoluteX = in_analog_left[pad_index][0];
+		pad->absoluteY = in_analog_left[pad_index][1];*/
+	}
+
+	/*if (in_type[pad_index] == PSE_PAD_TYPE_MOUSE)
+	{
+		pad->moveX = in_mouse[pad_index][0];
+		pad->moveY = in_mouse[pad_index][1];
+	}*/
+
+	return 0;
+}
+
 void OnFile_Exit();
 
 void SignalExit(int sig) {
@@ -171,7 +277,6 @@ int _OpenPlugins() {
 
 /*	signal(SIGINT, SignalExit);
 	signal(SIGPIPE, SignalExit);*/
-
 	ret = CDR_open();
 	if (ret < 0) { SysPrintf("Error Opening CDR Plugin\n"); return -1; }
 	ret = SPU_open();

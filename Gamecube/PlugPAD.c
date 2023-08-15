@@ -40,12 +40,8 @@
 #include <psemu_plugin_defs.h>
 #include "gc_input/controller.h"
 #include "wiiSXconfig.h"
-#include "PadSSSPSX.h"
 
-PadDataS lastport1;
-PadDataS lastport2;
 
-extern int stop;
 
 /* Controller type, later do this by a Variable in the GUI */
 //extern char controllerType = 0; // 0 = standard, 1 = analog (analog fails on old games)
@@ -273,3 +269,4 @@ long PAD__open(void)
 long PAD__close(void) {
 	return PSE_PAD_ERR_SUCCESS;
 }
+

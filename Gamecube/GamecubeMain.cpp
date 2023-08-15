@@ -211,6 +211,14 @@ void loadSettings(int argc, char *argv[])
 	Config.PsxAuto = 1; //Autodetect
 	Config.cycle_multiplier = CYCLE_MULT_DEFAULT;
 	LoadCdBios = BOOTTHRUBIOS_NO;
+	
+	strcpy(Config.PluginsDir, "plugins");
+	strcpy(Config.Gpu, "builtin_gpu");
+	strcpy(Config.Spu, "builtin_spu");
+	strcpy(Config.Cdr, "builtin_cdr");
+	strcpy(Config.Pad1, "builtin_pad");
+	strcpy(Config.Pad2, "builtin_pad2");
+	strcpy(Config.Net, "Disabled");
 
 	//config stuff
 	fileBrowser_file* configFile_file;
@@ -563,9 +571,13 @@ int SysInit() {
 #endif
 	Config.Cpu = dynacore;  //cpu may have changed  
 	psxInit();
-	LoadPlugins();
-	if(OpenPlugins() < 0)
+	if(LoadPlugins() < 0) {
+		SysPrintf("LoadPlugins() failed!\r\n");
+	}
+	if(OpenPlugins() < 0){
+		SysPrintf("LoadPlugins() failed!\r\n");
 		return -1;
+	}
   
 	//Init biosFile pointers and stuff
 	if(biosDevice != BIOSDEVICE_HLE) {
@@ -647,6 +659,7 @@ void *SysLoadLibrary(const char *lib)
 	for(i=0; i<NUM_PLUGINS; i++)
 		if((plugins[i].lib != NULL) && (!strcmp(lib, plugins[i].lib)))
 			return (void*)i;
+	SysPrintf("SysLoadLibrary(%s) couldn't be found!\r\n", lib);
 	return NULL;
 }
 
@@ -657,6 +670,7 @@ void *SysLoadSym(void *lib, const char *sym)
 	for(i=0; i<plugin->numSyms; i++)
 		if(plugin->syms[i].sym && !strcmp(sym, plugin->syms[i].sym))
 			return plugin->syms[i].pntr;
+	SysPrintf("SysLoadSym(%s, %s) couldn't be found!\r\n", lib, sym);
 	return NULL;
 }
 
@@ -675,9 +689,6 @@ void pl_frame_limit(void)
 {
 }
 
-void plat_trigger_vibrate(int pad, int low, int high)
-{
-}
 
 /* TODO: Should be populated properly */
 int in_type[8] = {

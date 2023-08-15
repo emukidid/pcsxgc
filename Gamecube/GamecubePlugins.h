@@ -58,12 +58,15 @@ long PEOPS_GPUfreeze(unsigned long,GPUFreeze_t *);
 //typedef long (* PADopen)(unsigned long *);
 extern long PAD__init(long);
 extern long PAD__shutdown(void);	
+extern long PAD__open(void);
+extern long PAD__close(void);
+extern long PAD1__readPort1(PadDataS *pad);
+extern long PAD2__readPort2(PadDataS *pad);
+unsigned char CALLBACK PAD1__poll(unsigned char value);
+unsigned char CALLBACK PAD2__poll(unsigned char value);
+unsigned char CALLBACK PAD1__startPoll(int pad);
+unsigned char CALLBACK PAD2__startPoll(int pad);
 
-/* SSSPSX PAD Plugin */
-long SSS_PADopen (void *p);
-long SSS_PADclose (void);
-unsigned char SSS_PADstartPoll (int pad);
-unsigned char SSS_PADpoll (const unsigned char value);
 
 /* DFSound Plugin */
 int CALLBACK DFS_SPUplayCDDAchannel(short *pcm, int nbytes, unsigned int cycle, int is_start);
@@ -94,42 +97,46 @@ long CALLBACK DFS_SPUfreeze(uint32_t ulFreezeMode, SPUFreeze_t * pF, uint32_t cy
 	  { { NULL,  \
 	      NULL }, } }
 
-#define SSS_PAD1_PLUGIN \
-	{ "PAD1",      \
-	  6,         \
+#define PAD1_PLUGIN \
+	{ "plugins/builtin_pad",      \
+	  7,         \
 	  { { "PADinit",  \
 	      (void*)PAD__init }, \
 	    { "PADshutdown",	\
 	      (void*)PAD__shutdown}, \
 	    { "PADopen", \
-	      (void*)SSS_PADopen}, \
+	      (void*)PAD__open}, \
 	    { "PADclose", \
-	      (void*)SSS_PADclose}, \
-	    { "PADpoll", \
-	      (void*)SSS_PADpoll}, \
+	      (void*)PAD__close}, \
+	    { "PADreadPort1", \
+	      (void*)PAD1__readPort1}, \
 	    { "PADstartPoll", \
-	      (void*)SSS_PADstartPoll} \
+	      (void*)PAD1__startPoll}, \
+	    { "PADpoll", \
+	      (void*)PAD1__poll} \
 	       } }
 	    
-#define SSS_PAD2_PLUGIN \
-	{ "PAD2",      \
-	  6,         \
+#define PAD2_PLUGIN \
+	{ "plugins/builtin_pad2",      \
+	  7,         \
 	  { { "PADinit",  \
 	      (void*)PAD__init }, \
 	    { "PADshutdown",	\
 	      (void*)PAD__shutdown}, \
 	    { "PADopen", \
-	      (void*)SSS_PADopen}, \
+	      (void*)PAD__open}, \
 	    { "PADclose", \
-	      (void*)SSS_PADclose}, \
-	    { "PADpoll", \
-	      (void*)SSS_PADpoll}, \
+	      (void*)PAD__close}, \
+	    { "PADreadPort2", \
+	      (void*)PAD2__readPort2}, \
 	    { "PADstartPoll", \
-	      (void*)SSS_PADstartPoll} \
+	      (void*)PAD2__startPoll}, \
+	    { "PADpoll", \
+	      (void*)PAD2__poll} \
 	       } }
 
 #define DFSOUND_PLUGIN \
-	{ "SPU",      \
+	{ "plugins/builtin_spu",      \
 	  20,         \
 	  { { "SPUinit",  \
 	      (void*)DFS_SPUinit }, \
@@ -174,7 +181,7 @@ long CALLBACK DFS_SPUfreeze(uint32_t ulFreezeMode, SPUFreeze_t * pF, uint32_t cy
 	       } }
 
 #define GPU_PEOPS_PLUGIN \
-	{ "GPU",      \
+	{ "plugins/builtin_gpu",      \
 	  14,         \
 	  { { "GPUinit",  \
 	      (void*)PEOPS_GPUinit }, \
@@ -207,8 +214,8 @@ long CALLBACK DFS_SPUfreeze(uint32_t ulFreezeMode, SPUFreeze_t * pF, uint32_t cy
 	       } }
 
 #define PLUGIN_SLOT_0 EMPTY_PLUGIN
-#define PLUGIN_SLOT_1 SSS_PAD1_PLUGIN
-#define PLUGIN_SLOT_2 SSS_PAD2_PLUGIN
+#define PLUGIN_SLOT_1 PAD1_PLUGIN
+#define PLUGIN_SLOT_2 PAD2_PLUGIN
 #define PLUGIN_SLOT_3 DFSOUND_PLUGIN
 #define PLUGIN_SLOT_4 GPU_PEOPS_PLUGIN
 #define PLUGIN_SLOT_5 EMPTY_PLUGIN

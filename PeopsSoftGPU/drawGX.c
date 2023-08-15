@@ -418,12 +418,13 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch, u8 fmt)
 				// show a small semi-transparent square for the gun target
 				int gx = ptCursorPoint[iPlayer].x;
 				int gy = ptCursorPoint[iPlayer].y;
-				float startX = (gx < 255 ? (-1 + ((gx-8)/512.0f)) : ((gx-8)/512.0f));
-				float endX = (gx < 255 ? (-1 + ((gx+8)/512.0f)) : ((gx+8)/512.0f));
+				// Take 0 to 1024 and scale it between -1 to 1.
+				float startX = (gx < 512 ? (-1 + ((gx)/511.5f)) : ((gx-512)/511.5f));
+				float endX = (gx < 512 ? (-1 + ((gx+8)/511.5f)) : (((gx-504))/511.5f));
 				
-				float startY = (gy > 127 ? (-1 * ((gy-6)/256.0f)) : (1 - ((gy-6)/256.0f)));
-				float endY = (gy > 127 ? (-1 * ((gy+6)/256.0f)) : (1 - ((gy+6)/256.0f)));
-				
+				float startY = (gy > 512 ? (-1 * ((gy-512)/511.5f)) : (1 - ((gy)/511.5f)));
+				float endY = (gy > 512 ? (-1 * ((gy-506)/511.5f)) : (1 - ((gy+6)/511.5f)));
+				//print_gecko("startX, endX (%.2f, %.2f) startY, endY (%.2f, %.2f)\r\n", startX, endX, startY, endY);
 				GX_InvVtxCache();
 				GX_InvalidateTexAll();
 				GX_ClearVtxDesc();

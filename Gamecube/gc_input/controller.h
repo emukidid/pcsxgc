@@ -65,6 +65,12 @@ typedef struct {
 	u8 leftStickY;
 	u8 rightStickX;
 	u8 rightStickY;
+	u8 mouseX;	// Min -0x80, Max 0x7F
+	u8 mouseY;	// Min -0x80, Max 0x7F
+	u8 lastRawX;
+	u8 lastRawY;
+	int gunX;	// Min 0, Max 1023
+	int gunY;	// Min 0, Max 1023
 } BUTTONS;
   
 
