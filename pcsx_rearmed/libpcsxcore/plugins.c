@@ -1128,20 +1128,20 @@ int LoadPlugins() {
 		LoadCDRplugin(NULL);
 	} else {
 		sprintf(Plugin, "%s/%s", Config.PluginsDir, Config.Cdr);
-		if (LoadCDRplugin(Plugin) == -1) {SysPrintf("LoadCDRplugin failed!\r\n"); return -1; }
+		if (LoadCDRplugin(Plugin) == -1) return -1;
 	}
 
 	sprintf(Plugin, "%s/%s", Config.PluginsDir, Config.Gpu);
-	if (LoadGPUplugin(Plugin) == -1) {SysPrintf("LoadGPUplugin failed!\r\n"); return -1; }
+	if (LoadGPUplugin(Plugin) == -1) return -1;
 
 	sprintf(Plugin, "%s/%s", Config.PluginsDir, Config.Spu);
-	if (LoadSPUplugin(Plugin) == -1) {SysPrintf("LoadSPUplugin failed!\r\n"); return -1; }
+	if (LoadSPUplugin(Plugin) == -1) return -1;
 
 	sprintf(Plugin, "%s/%s", Config.PluginsDir, Config.Pad1);
-	if (LoadPAD1plugin(Plugin) == -1) {SysPrintf("LoadPAD1plugin failed!\r\n"); return -1; }
+	if (LoadPAD1plugin(Plugin) == -1) return -1;
 
 	sprintf(Plugin, "%s/%s", Config.PluginsDir, Config.Pad2);
-	if (LoadPAD2plugin(Plugin) == -1) {SysPrintf("LoadPAD2plugin failed!\r\n"); return -1; }
+	if (LoadPAD2plugin(Plugin) == -1) return -1;
 
 	if (strcmp("Disabled", Config.Net) == 0 || strcmp("", Config.Net) == 0)
 		Config.UseNet = FALSE;

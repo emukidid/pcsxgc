@@ -161,15 +161,16 @@ extern virtualControllers_t virtualControllers[2];
 		virtualControllers[Control].number, ## args)
 
 void plat_trigger_vibrate(int pad, int low, int high) {
-	DO_CONTROL(pad, rumble, low);	// TODO vary this based on small/large motor.
+	if(virtualControllers[pad].inUse)
+		DO_CONTROL(pad, rumble, low);	// TODO vary this based on small/large motor.
 }
 
 long PAD1__readPort1(PadDataS *pad) {
 	int pad_index = pad->requestPadIndex;
 
 	static BUTTONS PAD_Data;
-	if(DO_CONTROL(pad_index, GetKeys, (BUTTONS*)&PAD_Data, virtualControllers[pad_index].config))
-		stop = 1;
+	if(virtualControllers[pad_index].inUse && DO_CONTROL(pad_index, GetKeys, (BUTTONS*)&PAD_Data, virtualControllers[pad_index].config))
+			stop = 1;
 	switch(controllerType) {
 		case CONTROLLERTYPE_LIGHTGUN:
 			pad->controllerType = PSE_PAD_TYPE_GUNCON;
@@ -186,7 +187,7 @@ long PAD1__readPort1(PadDataS *pad) {
 	//if (multitap1 == 1)
 	//	pad->portMultitap = 1;
 	//else
-	//	pad->portMultitap = 0;
+		pad->portMultitap = 0;
 
 	if (controllerType == CONTROLLERTYPE_ANALOG || controllerType == CONTROLLERTYPE_LIGHTGUN)
 	{
@@ -216,7 +217,7 @@ long PAD2__readPort2(PadDataS *pad) {
 	int pad_index = pad->requestPadIndex;
 
 	static BUTTONS PAD_Data;
-	if(DO_CONTROL(pad_index, GetKeys, (BUTTONS*)&PAD_Data, virtualControllers[pad_index].config))
+	if(virtualControllers[pad_index].inUse && DO_CONTROL(pad_index, GetKeys, (BUTTONS*)&PAD_Data, virtualControllers[pad_index].config))
 		stop = 1;
 
 	switch(controllerType) {
@@ -235,7 +236,7 @@ long PAD2__readPort2(PadDataS *pad) {
 	//if (multitap2 == 1)
 	//	pad->portMultitap = 2;
 	//else
-	//	pad->portMultitap = 0;
+		pad->portMultitap = 0;
 
 	if (controllerType == CONTROLLERTYPE_ANALOG || controllerType == CONTROLLERTYPE_LIGHTGUN)
 	{

@@ -299,9 +299,15 @@ void loadSettings(int argc, char *argv[])
 #endif
 
 	//Test for Bios file
-	if(biosDevice != BIOSDEVICE_HLE)
-		if(checkBiosExists((int)biosDevice) == FILE_BROWSER_ERROR_NO_FILE)
+	if(biosDevice != BIOSDEVICE_HLE) {
+		if(checkBiosExists((int)biosDevice) == FILE_BROWSER_ERROR_NO_FILE) {
 			biosDevice = BIOSDEVICE_HLE;
+		}
+		else {
+			strcpy(Config.BiosDir, &((biosDevice == BIOSDEVICE_SD) ? &biosDir_libfat_Default : &biosDir_libfat_USB)->name[0]);
+			strcpy(Config.Bios, "/SCPH1001.BIN");
+		}
+	}
 
 	//Synch settings with Config
 	Config.Cpu=dynacore;
@@ -706,28 +712,31 @@ void * code_buffer = code_buf;
 
 int lightrec_init_mmap(void)
 {
-	psxM = psxM_buf;
-	psxR = psxR_buf;
-	psxP = &psxM[0x200000];
-	psxH = &psxM[0x210000];
+	psxP = &psxM_buf[0x200000];
 
-	if (lightrec_mmap(psxM, 0x0, 0x200000)
-	    || lightrec_mmap(psxM, 0x200000, 0x200000)
-	    || lightrec_mmap(psxM, 0x400000, 0x200000)
-	    || lightrec_mmap(psxM, 0x600000, 0x200000)) {
+	if (lightrec_mmap(psxM_buf, 0x0, 0x200000)
+	    || lightrec_mmap(psxM_buf, 0x200000, 0x200000)
+	    || lightrec_mmap(psxM_buf, 0x400000, 0x200000)
+	    || lightrec_mmap(psxM_buf, 0x600000, 0x200000)) {
 		SysMessage(_("Error mapping RAM"));
 		return -1;
 	}
 
-	if (lightrec_mmap(psxR, 0x1fc00000, 0x80000)) {
+	psxM = (s8 *) 0x0;
+
+	if (lightrec_mmap(psxR_buf, 0x1fc00000, 0x80000)) {
 		SysMessage(_("Error mapping BIOS"));
 		return -1;
 	}
 
-	if (lightrec_mmap(psxM + 0x210000, 0x1f800000, 0x3000)) {
+	psxR = (s8 *) 0x1fc00000;
+
+	if (lightrec_mmap(psxM_buf + 0x210000, 0x1f800000, 0x10000)) {
 		SysMessage(_("Error mapping I/O"));
 		return -1;
 	}
+
+	psxH = (s8 *) 0x1f800000;
 
 	return 0;
 }
