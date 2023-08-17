@@ -476,11 +476,15 @@ void fileBrowserFrame_LoadFile(int i)
 			strncat(feedback_string, filenameFromAbsPath(dir_entries[i].name), 36-7);
 
 			char RomInfo[512] = "";
-			char buffer [50];
+			char buffer [128];
 			strcat(RomInfo,feedback_string);
-			sprintf(buffer,"\nCD-ROM Label: %s\n",CdromLabel);
-			strcat(RomInfo,buffer);
-			sprintf(buffer,"CD-ROM ID: %s\n", CdromId);
+			strcat(RomInfo,"\nCD-ROM Label: ");
+			int x = sizeof(CdromLabel)-1;
+			for(; x > 0; x--)
+				if(CdromLabel[x] && !isspace(CdromLabel[x]))
+					break;
+			strncat(RomInfo, CdromLabel, x < sizeof(CdromLabel) ? x+1 : sizeof(CdromLabel));
+			sprintf(buffer,"\nCD-ROM ID: %s\n", CdromId);
 			strcat(RomInfo,buffer);
 			sprintf(buffer,"ISO Size: %d Mb\n",isoFile.size/1024/1024);
 			strcat(RomInfo,buffer);

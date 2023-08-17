@@ -471,23 +471,24 @@ int loadISO(fileBrowser_file* file)
 			saveFile_init      = fileBrowser_libfat_init;
 			saveFile_deinit    = fileBrowser_libfat_deinit;
 			break;
-		case NATIVESAVEDEVICE_CARDA:
-		case NATIVESAVEDEVICE_CARDB:
-			// Adjust saveFile pointers
-			saveFile_dir       = (nativeSaveDevice==NATIVESAVEDEVICE_CARDA) ? &saveDir_CARD_SlotA:&saveDir_CARD_SlotB;
-			saveFile_readFile  = fileBrowser_CARD_readFile;
-			saveFile_writeFile = fileBrowser_CARD_writeFile;
-			saveFile_init      = fileBrowser_CARD_init;
-			saveFile_deinit    = fileBrowser_CARD_deinit;
-			break;
+		//case NATIVESAVEDEVICE_CARDA:
+		//case NATIVESAVEDEVICE_CARDB:
+		//	// Adjust saveFile pointers
+		//	saveFile_dir       = (nativeSaveDevice==NATIVESAVEDEVICE_CARDA) ? &saveDir_CARD_SlotA:&saveDir_CARD_SlotB;
+		//	saveFile_readFile  = fileBrowser_CARD_readFile;
+		//	saveFile_writeFile = fileBrowser_CARD_writeFile;
+		//	saveFile_init      = fileBrowser_CARD_init;
+		//	saveFile_deinit    = fileBrowser_CARD_deinit;
+		//	break;
 		}
 		// Try loading everything
 		saveFile_init(saveFile_dir);
-		/*
-		 * TODO: Implement LoadMcd properly using VFS
-		LoadMcd(1,saveFile_dir);
-		LoadMcd(2,saveFile_dir);
-		*/
+		
+		sprintf(Config.Mcd1,"%s/%s.mcd",saveFile_dir,CdromId);
+		sprintf(Config.Mcd2,"%s/%s-2.mcd",saveFile_dir,CdromId);
+		SysPrintf("Memory cards:\r\nMcd1 [%s]\r\nMcd2 [%s]\r\n", Config.Mcd1, Config.Mcd2);
+		LoadMcds(Config.Mcd1, Config.Mcd2);
+		
 		saveFile_deinit(saveFile_dir);
 		
 		switch (nativeSaveDevice)
@@ -498,12 +499,12 @@ int loadISO(fileBrowser_file* file)
 		case NATIVESAVEDEVICE_USB:
 			autoSaveLoaded = NATIVESAVEDEVICE_USB;
 			break;
-		case NATIVESAVEDEVICE_CARDA:
-			autoSaveLoaded = NATIVESAVEDEVICE_CARDA;
-			break;
-		case NATIVESAVEDEVICE_CARDB:
-			autoSaveLoaded = NATIVESAVEDEVICE_CARDB;
-			break;
+		//case NATIVESAVEDEVICE_CARDA:
+		//	autoSaveLoaded = NATIVESAVEDEVICE_CARDA;
+		//	break;
+		//case NATIVESAVEDEVICE_CARDB:
+		//	autoSaveLoaded = NATIVESAVEDEVICE_CARDB;
+		//	break;
 		}
 	}	
 	

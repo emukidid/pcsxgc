@@ -33,7 +33,7 @@ CFLAGS	= -fipa-pta -g -O3 $(LTO) -Wall $(MACHDEP) $(INCLUDE) -Wno-stringop-trunc
 		  -D__GX__ -DGX_GPU -D_SDL -DRELEASE \
 		  #-DSHOW_DEBUG -DPRINTGECKO #-DPROFILE #-DDEBUGON
 		  
-CXXFLAGS	=	$(CFLAGS)
+CXXFLAGS	=	$(CFLAGS) -Wno-register
 
 ASFLAGS := -DHW_RVL
 

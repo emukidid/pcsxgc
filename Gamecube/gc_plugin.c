@@ -199,9 +199,11 @@ long PAD1__readPort1(PadDataS *pad) {
 		pad->absoluteX = PAD_Data.gunX;
 		pad->absoluteY = PAD_Data.gunY;
 		
-		int absX = (pad->absoluteX / 64) + 512;
-		int absY = (pad->absoluteY / 64) + 512;
-		GPUcursor(pad_index, absX, absY);
+		if(controllerType == CONTROLLERTYPE_LIGHTGUN) {
+			int absX = (pad->absoluteX / 64) + 512;
+			int absY = (pad->absoluteY / 64) + 512;
+			GPUcursor(pad_index, absX, absY);
+		}
 	}
 	/*
 	if (in_type[pad_index] == PSE_PAD_TYPE_MOUSE)

@@ -205,17 +205,7 @@ void resumeAudio(void); void resumeInput(void);
 void go(void); 
 }
 
-//void control_info_init();
-
-extern "C" {
-char mcd1Written;
-char mcd2Written;
-}
-
 extern char menuActive;
-extern char autoSave;
-extern "C" char mcd1Written;
-extern "C" char mcd2Written;
 extern "C" unsigned int usleep(unsigned int us);
 
 void Func_PlayGame()
@@ -264,60 +254,6 @@ void Func_PlayGame()
 	pauseInput();
 	pauseAudio();
 
-  if(autoSave==AUTOSAVE_ENABLE) {
-    if(mcd1Written || mcd2Written) {  //something needs saving
-      switch (nativeSaveDevice)
-    	{
-    		case NATIVESAVEDEVICE_SD:
-    		case NATIVESAVEDEVICE_USB:
-    			// Adjust saveFile pointers
-    			saveFile_dir = (nativeSaveDevice==NATIVESAVEDEVICE_SD) ? &saveDir_libfat_Default:&saveDir_libfat_USB;
-    			saveFile_readFile  = fileBrowser_libfat_readFile;
-    			saveFile_writeFile = fileBrowser_libfat_writeFile;
-    			saveFile_init      = fileBrowser_libfat_init;
-    			saveFile_deinit    = fileBrowser_libfat_deinit;
-    			break;
-    		case NATIVESAVEDEVICE_CARDA:
-    		case NATIVESAVEDEVICE_CARDB:
-    			// Adjust saveFile pointers
-    			saveFile_dir       = (nativeSaveDevice==NATIVESAVEDEVICE_CARDA) ? &saveDir_CARD_SlotA:&saveDir_CARD_SlotB;
-    			saveFile_readFile  = fileBrowser_CARD_readFile;
-    			saveFile_writeFile = fileBrowser_CARD_writeFile;
-    			saveFile_init      = fileBrowser_CARD_init;
-    			saveFile_deinit    = fileBrowser_CARD_deinit;
-    			break;
-    	}
-      // Try saving everything
-    	int amountSaves = mcd1Written + mcd2Written;
-    	int result = 0;
-      saveFile_init(saveFile_dir);
-      result += SaveMcd(1,saveFile_dir);
-      result += SaveMcd(2,saveFile_dir);
-      saveFile_deinit(saveFile_dir);
-    	if (result>=amountSaves) {  //saved all of them ok	
-    		switch (nativeSaveDevice)
-    		{
-    			case NATIVESAVEDEVICE_SD:
-    				menu::MessageBox::getInstance().fadeMessage("Automatically saved to SD card");
-    				break;
-    			case NATIVESAVEDEVICE_USB:
-    				menu::MessageBox::getInstance().fadeMessage("Automatically saved to USB device");
-    				break;
-    			case NATIVESAVEDEVICE_CARDA:
-    				menu::MessageBox::getInstance().fadeMessage("Automatically saved to memcard in Slot A");
-    				break;
-    			case NATIVESAVEDEVICE_CARDB:
-    				menu::MessageBox::getInstance().fadeMessage("Automatically saved to memcard in Slot B");
-    				break;
-    		}
-    		mcd1Written = mcd2Written = 0;  //nothing new written since save
-  		}
-  	  else		{
-  	    menu::MessageBox::getInstance().setMessage("Failed to save game"); //one or more failed to save
-	    }
-      
-    }
-  }
 #ifdef HW_RVL
   resume_netinit_thread();
 #endif

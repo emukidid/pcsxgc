@@ -198,126 +198,17 @@ void Func_SwapCD()
 	pMenuContext->setActiveFrame(MenuContext::FRAME_LOADROM,FileBrowserFrame::FILEBROWSER_SWAPCD);
 }
 
-extern "C" char mcd1Written;
-extern "C" char mcd2Written;
 extern "C" int LoadState(char* filename);
 extern "C" int SaveState(char* filename);
 
 void Func_LoadSave()
 {
-	if(!hasLoadedISO)
-	{
-		menu::MessageBox::getInstance().setMessage("Please load a ISO first");
-		return;
-	}
-
-	switch (nativeSaveDevice)
-  {
-  	case NATIVESAVEDEVICE_SD:
-  	case NATIVESAVEDEVICE_USB:
-  		// Adjust saveFile pointers
-  		saveFile_dir = (nativeSaveDevice==NATIVESAVEDEVICE_SD) ? &saveDir_libfat_Default:&saveDir_libfat_USB;
-  		saveFile_readFile  = fileBrowser_libfat_readFile;
-  		saveFile_writeFile = fileBrowser_libfat_writeFile;
-  		saveFile_init      = fileBrowser_libfat_init;
-  		saveFile_deinit    = fileBrowser_libfat_deinit;
-  		break;
-  	case NATIVESAVEDEVICE_CARDA:
-  	case NATIVESAVEDEVICE_CARDB:
-  		// Adjust saveFile pointers
-  		saveFile_dir       = (nativeSaveDevice==NATIVESAVEDEVICE_CARDA) ? &saveDir_CARD_SlotA:&saveDir_CARD_SlotB;
-  		saveFile_readFile  = fileBrowser_CARD_readFile;
-  		saveFile_writeFile = fileBrowser_CARD_writeFile;
-  		saveFile_init      = fileBrowser_CARD_init;
-  		saveFile_deinit    = fileBrowser_CARD_deinit;
-  		break;
-  }
-
-  // Try loading everything
-  int result = 0;
-  saveFile_init(saveFile_dir);
-  result += LoadMcd(1,saveFile_dir);
-  result += LoadMcd(2,saveFile_dir);
-  saveFile_deinit(saveFile_dir);
-
-	switch (nativeSaveDevice)
-	{
-		case NATIVESAVEDEVICE_SD:
-			if (result) menu::MessageBox::getInstance().setMessage("Loaded save from SD card");
-			else		menu::MessageBox::getInstance().setMessage("No saves found on SD card");
-			break;
-		case NATIVESAVEDEVICE_USB:
-			if (result) menu::MessageBox::getInstance().setMessage("Loaded save from USB device");
-			else		menu::MessageBox::getInstance().setMessage("No saves found on USB device");
-			break;
-		case NATIVESAVEDEVICE_CARDA:
-			if (result) menu::MessageBox::getInstance().setMessage("Loaded save from memcard in slot A");
-			else		menu::MessageBox::getInstance().setMessage("No saves found on memcard A");
-			break;
-		case NATIVESAVEDEVICE_CARDB:
-			if (result) menu::MessageBox::getInstance().setMessage("Loaded save from memcard in slot A");
-			else		menu::MessageBox::getInstance().setMessage("No saves found on memcard B");
-			break;
-	}
-	mcd1Written = mcd2Written = false;
+	// TODO: No longer necessary, remove this?
 }
 
 void Func_SaveGame()
 {
-  if(!mcd1Written && !mcd2Written) {
-    menu::MessageBox::getInstance().setMessage("Nothing to save");
-    return;
-  }
-	switch (nativeSaveDevice)
-  {
-  	case NATIVESAVEDEVICE_SD:
-  	case NATIVESAVEDEVICE_USB:
-  		// Adjust saveFile pointers
-  		saveFile_dir = (nativeSaveDevice==NATIVESAVEDEVICE_SD) ? &saveDir_libfat_Default:&saveDir_libfat_USB;
-  		saveFile_readFile  = fileBrowser_libfat_readFile;
-  		saveFile_writeFile = fileBrowser_libfat_writeFile;
-  		saveFile_init      = fileBrowser_libfat_init;
-  		saveFile_deinit    = fileBrowser_libfat_deinit;
-  		break;
-  	case NATIVESAVEDEVICE_CARDA:
-  	case NATIVESAVEDEVICE_CARDB:
-  		// Adjust saveFile pointers
-  		saveFile_dir       = (nativeSaveDevice==NATIVESAVEDEVICE_CARDA) ? &saveDir_CARD_SlotA:&saveDir_CARD_SlotB;
-  		saveFile_readFile  = fileBrowser_CARD_readFile;
-  		saveFile_writeFile = fileBrowser_CARD_writeFile;
-  		saveFile_init      = fileBrowser_CARD_init;
-  		saveFile_deinit    = fileBrowser_CARD_deinit;
-  		break;
-  }
-
-	// Try saving everything
-	int amountSaves = mcd1Written + mcd2Written;
-	int result = 0;
-  saveFile_init(saveFile_dir);
-  result += SaveMcd(1,saveFile_dir);
-  result += SaveMcd(2,saveFile_dir);
-  saveFile_deinit(saveFile_dir);
-
-	if (result>=amountSaves) {	
-		switch (nativeSaveDevice)
-		{
-			case NATIVESAVEDEVICE_SD:
-				menu::MessageBox::getInstance().setMessage("Saved game to SD card");
-				break;
-			case NATIVESAVEDEVICE_USB:
-				menu::MessageBox::getInstance().setMessage("Saved game to USB device");
-				break;
-			case NATIVESAVEDEVICE_CARDA:
-				menu::MessageBox::getInstance().setMessage("Saved game to memcard in Slot A");
-				break;
-			case NATIVESAVEDEVICE_CARDB:
-				menu::MessageBox::getInstance().setMessage("Saved game to memcard in Slot B");
-				break;
-		}
-		mcd1Written = mcd2Written = false;
-	}
-	else		menu::MessageBox::getInstance().setMessage("Failed to Save");
-
+	// TODO: No longer necessary, remove this?
 }
 
 #define SAVE_PATH "/wiisx/saves/"
