@@ -1875,7 +1875,7 @@ typedef struct GPUFREEZETAG
  unsigned long ulFreezeVersion;      // should be always 1 for now (set by main emu)
  unsigned long ulStatus;             // current gpu status
  unsigned long ulControl[256];       // latest control register values
- //unsigned char psxVRam[1024*1024*2]; // current VRam image (full 2 MB for ZN)
+ unsigned char psxVRam[1024*1024*2]; // current VRam image (full 2 MB for ZN)
 } GPUFreeze_t;
 
 ////////////////////////////////////////////////////////////////////////
@@ -1904,7 +1904,7 @@ long PEOPS_GPUfreeze(unsigned long ulGetFreezeData,GPUFreeze_t * pF)
   {
    pF->ulStatus=lGPUstatusRet;
    memcpy(pF->ulControl,ulStatusControl,256*sizeof(unsigned long));
-   //memcpy(pF->psxVRam,  psxVub,         1024*iGPUHeight*2); //done in Misc.c
+   memcpy(pF->psxVRam,  psxVub,         1024*iGPUHeight*2);
 
    return 1;
   }
@@ -1913,7 +1913,7 @@ long PEOPS_GPUfreeze(unsigned long ulGetFreezeData,GPUFreeze_t * pF)
 
  lGPUstatusRet=pF->ulStatus;
  memcpy(ulStatusControl,pF->ulControl,256*sizeof(unsigned long));
- //memcpy(psxVub,         pF->psxVRam,  1024*iGPUHeight*2); //done in Misc.c
+ memcpy(psxVub,         pF->psxVRam,  1024*iGPUHeight*2); 
 
 // RESET TEXTURE STORE HERE, IF YOU USE SOMETHING LIKE THAT
 

@@ -746,4 +746,12 @@ void lightrec_free_mmap(void)
 {
 }
 
+void PreSaveState() {
+	psxM = (s8 *) &psxM_buf[0];
+}
+
+void PostSaveState() {
+	psxM = (s8 *) 0x0;
+}
+
 } //extern "C"

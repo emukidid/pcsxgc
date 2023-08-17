@@ -30,17 +30,9 @@
 #include <libpcsxcore/psxcommon.h>
 
 extern "C" {
-/*#include "../gc_memory/memory.h"
-#include "../gc_memory/Saves.h"
-#include "../main/rom.h"
-#include "../main/plugin.h"
-#include "../main/savestates.h"*/
 #include "../fileBrowser/fileBrowser.h"
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
-extern int LoadMcd(int mcd, fileBrowser_file *savepath);
-extern int SaveMcd(int mcd, fileBrowser_file *savepath);
-extern long CDR_getTN(unsigned char *buffer);
 }
 
 void Func_ShowRomInfo();
@@ -148,23 +140,23 @@ long MoobyCDRgetTN(unsigned char *buffer);
 
 void Func_ShowRomInfo()
 {
-	char RomInfo[256] = "";
-	char buffer [50];
+	char RomInfo[512] = "";
+	char buffer [128];
 	
-	sprintf(buffer,"CD-ROM Label: %s\n",CdromLabel);
-  strcat(RomInfo,buffer);
-  sprintf(buffer,"CD-ROM ID: %s\n", CdromId);
-  strcat(RomInfo,buffer);
-  sprintf(buffer,"ISO Size: %d Mb\n",isoFile.size/1024/1024);
-  strcat(RomInfo,buffer);
-  sprintf(buffer,"Country: %s\n",(!Config.PsxType) ? "NTSC":"PAL");
-  strcat(RomInfo,buffer);
-  sprintf(buffer,"BIOS: %s\n",(Config.HLE) ? "HLE":"USER DEFINED");
-  strcat(RomInfo,buffer);
-  /*unsigned char tracks[2];
-  CDR_getTN(&tracks[0]);
-  sprintf(buffer,"Number of tracks %i\n", tracks[1]);
-  strcat(RomInfo,buffer);*/
+	strcat(RomInfo,"\nCD-ROM Label: ");
+	int x = sizeof(CdromLabel)-1;
+	for(; x > 0; x--)
+		if(CdromLabel[x] && !isspace(CdromLabel[x]))
+			break;
+	strncat(RomInfo, CdromLabel, x < sizeof(CdromLabel) ? x+1 : sizeof(CdromLabel));
+	sprintf(buffer,"\nCD-ROM ID: %s\n", CdromId);
+	strcat(RomInfo,buffer);
+	sprintf(buffer,"ISO Size: %d Mb\n",isoFile.size/1024/1024);
+	strcat(RomInfo,buffer);
+	sprintf(buffer,"Country: %s\n",(!Config.PsxType) ? "NTSC":"PAL");
+	strcat(RomInfo,buffer);
+	sprintf(buffer,"BIOS: %s\n",(Config.HLE) ? "HLE":"USER DEFINED");
+	strcat(RomInfo,buffer);
 
 	menu::MessageBox::getInstance().setMessage(RomInfo);
 }
@@ -177,6 +169,8 @@ int SysInit();
 void SysClose();
 void CheckCdrom();
 void LoadCdrom();
+void PreSaveState();
+void PostSaveState();
 }
 
 void Func_SetPlayGame();
@@ -223,11 +217,13 @@ void Func_LoadState()
 #else
 	sprintf(filename, "sd:%s%s.st%d", SAVE_PATH, CdromId, which_slot);
 #endif
+	PreSaveState();
 	if(LoadState(filename) == 0) {
 		menu::MessageBox::getInstance().setMessage("Save State Loaded Successfully");
 	} else {
 		menu::MessageBox::getInstance().setMessage("Save doesn't exist");
 	}
+	PostSaveState();
 	free(filename);
 }
 
@@ -240,11 +236,13 @@ void Func_SaveState()
 #else
 	sprintf(filename, "sd:%s%s.st%d", SAVE_PATH, CdromId, which_slot);
 #endif
+	PreSaveState();
 	if(SaveState(filename) == 0) {
 		menu::MessageBox::getInstance().setMessage("Save State Saved Successfully");
 	} else {
 		menu::MessageBox::getInstance().setMessage("Error Saving State");
 	}
+	PostSaveState();
   	free(filename);
 }
 
