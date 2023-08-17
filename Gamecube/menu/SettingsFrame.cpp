@@ -27,7 +27,8 @@
 #include "../libgui/CursorManager.h"
 #include "../libgui/MessageBox.h"
 #include "../wiiSXconfig.h"
-#include "../../PsxCommon.h"
+
+#include <libpcsxcore/psxcommon.h>
 
 extern "C" {
 #include "../../dfsound/spu_config.h"
@@ -162,7 +163,7 @@ Auto Save Memcards: Yes; No
 Save States Device: SD; USB
 */
 
-static char FRAME_STRINGS[57][24] =
+static char FRAME_STRINGS[58][24] =
 	{ "General",
 	  "Video",
 	  "Input",
@@ -225,6 +226,7 @@ static char FRAME_STRINGS[57][24] =
 	  "CardA",
 	  "CardB",
 	// New Strings
+	  "Disable Reverb",
 	  "Gun"
 	};
 
@@ -309,7 +311,7 @@ struct ButtonInfo
 	// New buttons [54]
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	345.0,	380.0,	 75.0,	56.0,	45,	3,	55,	55,	Func_DisableReverbYes,	Func_ReturnFromSettingsFrame }, // Disable Reverb: Yes
 	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	440.0,	380.0,	 75.0,	56.0,	45,	3,	54,	54,	Func_DisableReverbNo,	Func_ReturnFromSettingsFrame }, // Disable Reverb: No
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[56],	550.0,	170.0,	 75.0,	56.0,	31,	35,	33,	32,	Func_PsxTypeLightgun,	Func_ReturnFromSettingsFrame }, // PSX Controller Type: Gun
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[57],	550.0,	170.0,	 75.0,	56.0,	31,	35,	33,	32,	Func_PsxTypeLightgun,	Func_ReturnFromSettingsFrame }, // PSX Controller Type: Gun
 
 };
 
@@ -546,7 +548,7 @@ void SettingsFrame::activateSubmenu(int submenu)
 			else								FRAME_BUTTONS[51].button->setSelected(true);
 			if (saveStateDevice == SAVESTATEDEVICE_SD)	FRAME_BUTTONS[52].button->setSelected(true);
 			else										FRAME_BUTTONS[53].button->setSelected(true);
-			for (int i = 46; i < NUM_FRAME_BUTTONS; i++)
+			for (int i = 46; i < NUM_FRAME_BUTTONS-3; i++)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
 				FRAME_BUTTONS[i].button->setActive(true);
@@ -1249,18 +1251,20 @@ void Func_MemcardSaveUSB()
 
 void Func_MemcardSaveCardA()
 {
-	for (int i = 46; i <= 49; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[48].button->setSelected(true);
-	nativeSaveDevice = NATIVESAVEDEVICE_CARDA;
+	//for (int i = 46; i <= 49; i++)
+	//	FRAME_BUTTONS[i].button->setSelected(false);
+	//FRAME_BUTTONS[48].button->setSelected(true);
+	//nativeSaveDevice = NATIVESAVEDEVICE_CARDA;
+	menu::MessageBox::getInstance().setMessage("Not currently supported.");
 }
 
 void Func_MemcardSaveCardB()
 {
-	for (int i = 46; i <= 49; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[49].button->setSelected(true);
-	nativeSaveDevice = NATIVESAVEDEVICE_CARDB;
+	//for (int i = 46; i <= 49; i++)
+	//	FRAME_BUTTONS[i].button->setSelected(false);
+	//FRAME_BUTTONS[49].button->setSelected(true);
+	//nativeSaveDevice = NATIVESAVEDEVICE_CARDB;
+	menu::MessageBox::getInstance().setMessage("Not currently supported.");
 }
 
 void Func_AutoSaveYes()
@@ -1273,10 +1277,11 @@ void Func_AutoSaveYes()
 
 void Func_AutoSaveNo()
 {
-	for (int i = 50; i <= 51; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[51].button->setSelected(true);
-	autoSave = AUTOSAVE_DISABLE;
+	//for (int i = 50; i <= 51; i++)
+	//	FRAME_BUTTONS[i].button->setSelected(false);
+	//FRAME_BUTTONS[51].button->setSelected(true);
+	//autoSave = AUTOSAVE_DISABLE;
+	menu::MessageBox::getInstance().setMessage("Not currently supported.");
 }
 
 void Func_SaveStateSD()

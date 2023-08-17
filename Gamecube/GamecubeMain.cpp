@@ -16,7 +16,9 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
+#include <libpcsxcore/system.h>
+
 #include <gccore.h>
 #include <malloc.h>
 #include <stdio.h>
@@ -28,14 +30,14 @@
 #include <time.h>
 #include <fat.h>
 #include <aesndlib.h>
-
 #ifdef DEBUGON
 # include <debug.h>
 #endif
-#include "../PsxCommon.h"
+#include <libpcsxcore/psxcommon.h>
 #include "wiiSXconfig.h"
 #include "menu/MenuContext.h"
 extern "C" {
+#include <libpcsxcore/lightrec/mem.h>
 #include "../dfsound/spu_config.h"
 #include "DEBUG.h"
 #include "fileBrowser/fileBrowser.h"
@@ -73,7 +75,8 @@ fileBrowser_file *biosFile = NULL;  //BIOS file
 FILE *emuLog;
 #endif
 
-PcsxConfig Config;
+extern "C" PcsxConfig Config;
+
 char dynacore;
 char biosDevice;
 char LoadCdBios=0;
@@ -111,7 +114,7 @@ char smbPassWord[CONFIG_STRING_SIZE];
 char smbShareName[CONFIG_STRING_SIZE];
 char smbIpAddr[CONFIG_STRING_SIZE];
 
-int stop = 0;
+extern "C" int stop;
 
 static struct {
 	const char* key;
@@ -208,6 +211,14 @@ void loadSettings(int argc, char *argv[])
 	Config.PsxAuto = 1; //Autodetect
 	Config.cycle_multiplier = CYCLE_MULT_DEFAULT;
 	LoadCdBios = BOOTTHRUBIOS_NO;
+	
+	strcpy(Config.PluginsDir, "plugins");
+	strcpy(Config.Gpu, "builtin_gpu");
+	strcpy(Config.Spu, "builtin_spu");
+	strcpy(Config.Cdr, "builtin_cdr");
+	strcpy(Config.Pad1, "builtin_pad");
+	strcpy(Config.Pad2, "builtin_pad2");
+	strcpy(Config.Net, "Disabled");
 
 	//config stuff
 	fileBrowser_file* configFile_file;
@@ -288,9 +299,15 @@ void loadSettings(int argc, char *argv[])
 #endif
 
 	//Test for Bios file
-	if(biosDevice != BIOSDEVICE_HLE)
-		if(checkBiosExists((int)biosDevice) == FILE_BROWSER_ERROR_NO_FILE)
+	if(biosDevice != BIOSDEVICE_HLE) {
+		if(checkBiosExists((int)biosDevice) == FILE_BROWSER_ERROR_NO_FILE) {
 			biosDevice = BIOSDEVICE_HLE;
+		}
+		else {
+			strcpy(Config.BiosDir, &((biosDevice == BIOSDEVICE_SD) ? &biosDir_libfat_Default : &biosDir_libfat_USB)->name[0]);
+			strcpy(Config.Bios, "/SCPH1001.BIN");
+		}
+	}
 
 	//Synch settings with Config
 	Config.Cpu=dynacore;
@@ -434,7 +451,8 @@ int loadISO(fileBrowser_file* file)
 	
 	char *tempStr = &file->name[0];
 	if((strstr(tempStr,".EXE")!=NULL) || (strstr(tempStr,".exe")!=NULL)) {
-		Load(file);
+		//TODO
+		//Load(file);
 	}
 	else {
 		CheckCdrom();
@@ -453,20 +471,24 @@ int loadISO(fileBrowser_file* file)
 			saveFile_init      = fileBrowser_libfat_init;
 			saveFile_deinit    = fileBrowser_libfat_deinit;
 			break;
-		case NATIVESAVEDEVICE_CARDA:
-		case NATIVESAVEDEVICE_CARDB:
-			// Adjust saveFile pointers
-			saveFile_dir       = (nativeSaveDevice==NATIVESAVEDEVICE_CARDA) ? &saveDir_CARD_SlotA:&saveDir_CARD_SlotB;
-			saveFile_readFile  = fileBrowser_CARD_readFile;
-			saveFile_writeFile = fileBrowser_CARD_writeFile;
-			saveFile_init      = fileBrowser_CARD_init;
-			saveFile_deinit    = fileBrowser_CARD_deinit;
-			break;
+		//case NATIVESAVEDEVICE_CARDA:
+		//case NATIVESAVEDEVICE_CARDB:
+		//	// Adjust saveFile pointers
+		//	saveFile_dir       = (nativeSaveDevice==NATIVESAVEDEVICE_CARDA) ? &saveDir_CARD_SlotA:&saveDir_CARD_SlotB;
+		//	saveFile_readFile  = fileBrowser_CARD_readFile;
+		//	saveFile_writeFile = fileBrowser_CARD_writeFile;
+		//	saveFile_init      = fileBrowser_CARD_init;
+		//	saveFile_deinit    = fileBrowser_CARD_deinit;
+		//	break;
 		}
 		// Try loading everything
 		saveFile_init(saveFile_dir);
-		LoadMcd(1,saveFile_dir);
-		LoadMcd(2,saveFile_dir);
+		
+		sprintf(Config.Mcd1,"%s/%s.mcd",saveFile_dir,CdromId);
+		sprintf(Config.Mcd2,"%s/%s-2.mcd",saveFile_dir,CdromId);
+		SysPrintf("Memory cards:\r\nMcd1 [%s]\r\nMcd2 [%s]\r\n", Config.Mcd1, Config.Mcd2);
+		LoadMcds(Config.Mcd1, Config.Mcd2);
+		
 		saveFile_deinit(saveFile_dir);
 		
 		switch (nativeSaveDevice)
@@ -477,12 +499,12 @@ int loadISO(fileBrowser_file* file)
 		case NATIVESAVEDEVICE_USB:
 			autoSaveLoaded = NATIVESAVEDEVICE_USB;
 			break;
-		case NATIVESAVEDEVICE_CARDA:
-			autoSaveLoaded = NATIVESAVEDEVICE_CARDA;
-			break;
-		case NATIVESAVEDEVICE_CARDB:
-			autoSaveLoaded = NATIVESAVEDEVICE_CARDB;
-			break;
+		//case NATIVESAVEDEVICE_CARDA:
+		//	autoSaveLoaded = NATIVESAVEDEVICE_CARDA;
+		//	break;
+		//case NATIVESAVEDEVICE_CARDB:
+		//	autoSaveLoaded = NATIVESAVEDEVICE_CARDB;
+		//	break;
 		}
 	}	
 	
@@ -556,9 +578,13 @@ int SysInit() {
 #endif
 	Config.Cpu = dynacore;  //cpu may have changed  
 	psxInit();
-	LoadPlugins();
-	if(OpenPlugins() < 0)
+	if(LoadPlugins() < 0) {
+		SysPrintf("LoadPlugins() failed!\r\n");
+	}
+	if(OpenPlugins() < 0){
+		SysPrintf("LoadPlugins() failed!\r\n");
 		return -1;
+	}
   
 	//Init biosFile pointers and stuff
 	if(biosDevice != BIOSDEVICE_HLE) {
@@ -574,9 +600,9 @@ int SysInit() {
 		memcpy(biosFile,biosFile_dir,sizeof(fileBrowser_file));
 		strcat(biosFile->name, "/SCPH1001.BIN");
 		biosFile_init(biosFile);  //initialize the bios device (it might not be the same as ISO device)
-		Config.HLE = BIOS_USER_DEFINED;
+		Config.HLE = 0;
 	} else {
-		Config.HLE = BIOS_HLE;
+		Config.HLE = 1;
 	}
 
 	return 0;
@@ -640,6 +666,7 @@ void *SysLoadLibrary(const char *lib)
 	for(i=0; i<NUM_PLUGINS; i++)
 		if((plugins[i].lib != NULL) && (!strcmp(lib, plugins[i].lib)))
 			return (void*)i;
+	SysPrintf("SysLoadLibrary(%s) couldn't be found!\r\n", lib);
 	return NULL;
 }
 
@@ -650,6 +677,7 @@ void *SysLoadSym(void *lib, const char *sym)
 	for(i=0; i<plugin->numSyms; i++)
 		if(plugin->syms[i].sym && !strcmp(sym, plugin->syms[i].sym))
 			return plugin->syms[i].pntr;
+	SysPrintf("SysLoadSym(%s, %s) couldn't be found!\r\n", lib, sym);
 	return NULL;
 }
 
@@ -663,5 +691,67 @@ void SysRunGui() {}
 void SysMessage(const char *fmt, ...) {}
 void SysCloseLibrary(void *lib) {}
 const char *SysLibError() {	return NULL; }
+
+void pl_frame_limit(void)
+{
+}
+
+
+/* TODO: Should be populated properly */
+int in_type[8] = {
+   PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE,
+   PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE,
+   PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE,
+   PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE
+};
+
+static s8 psxM_buf[0x220000] __attribute__((aligned(4096)));
+static s8 psxR_buf[0x80000] __attribute__((aligned(4096)));
+
+static s8 code_buf [0x400000] __attribute__((aligned(32))); // 4 MiB code buffer for Lightrec
+void * code_buffer = code_buf;
+
+int lightrec_init_mmap(void)
+{
+	psxP = &psxM_buf[0x200000];
+
+	if (lightrec_mmap(psxM_buf, 0x0, 0x200000)
+	    || lightrec_mmap(psxM_buf, 0x200000, 0x200000)
+	    || lightrec_mmap(psxM_buf, 0x400000, 0x200000)
+	    || lightrec_mmap(psxM_buf, 0x600000, 0x200000)) {
+		SysMessage(_("Error mapping RAM"));
+		return -1;
+	}
+
+	psxM = (s8 *) 0x0;
+
+	if (lightrec_mmap(psxR_buf, 0x1fc00000, 0x80000)) {
+		SysMessage(_("Error mapping BIOS"));
+		return -1;
+	}
+
+	psxR = (s8 *) 0x1fc00000;
+
+	if (lightrec_mmap(psxM_buf + 0x210000, 0x1f800000, 0x10000)) {
+		SysMessage(_("Error mapping I/O"));
+		return -1;
+	}
+
+	psxH = (s8 *) 0x1f800000;
+
+	return 0;
+}
+
+void lightrec_free_mmap(void)
+{
+}
+
+void PreSaveState() {
+	psxM = (s8 *) &psxM_buf[0];
+}
+
+void PostSaveState() {
+	psxM = (s8 *) 0x0;
+}
 
 } //extern "C"

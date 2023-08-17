@@ -22,9 +22,9 @@
 #ifndef NULL
 #define NULL ((void*)0)
 #endif
-#include "../Decode_XA.h"
-#include "../PSEmu_Plugin_Defs.h"
-#include "../plugins.h"
+#include <libpcsxcore/decode_xa.h>
+#include <libpcsxcore/plugins.h>
+#include <psemu_plugin_defs.h>
 
 #define SYMS_PER_LIB 22
 typedef struct {
@@ -98,7 +98,7 @@ long CALLBACK DFS_SPUfreeze(uint32_t ulFreezeMode, SPUFreeze_t * pF, uint32_t cy
 	      NULL }, } }
 
 #define PAD1_PLUGIN \
-	{ "PAD1",      \
+	{ "plugins/builtin_pad",      \
 	  7,         \
 	  { { "PADinit",  \
 	      (void*)PAD__init }, \
@@ -117,7 +117,7 @@ long CALLBACK DFS_SPUfreeze(uint32_t ulFreezeMode, SPUFreeze_t * pF, uint32_t cy
 	       } }
 	    
 #define PAD2_PLUGIN \
-	{ "PAD2",      \
+	{ "plugins/builtin_pad2",      \
 	  7,         \
 	  { { "PADinit",  \
 	      (void*)PAD__init }, \
@@ -136,7 +136,7 @@ long CALLBACK DFS_SPUfreeze(uint32_t ulFreezeMode, SPUFreeze_t * pF, uint32_t cy
 	       } }
 
 #define DFSOUND_PLUGIN \
-	{ "SPU",      \
+	{ "plugins/builtin_spu",      \
 	  20,         \
 	  { { "SPUinit",  \
 	      (void*)DFS_SPUinit }, \
@@ -181,7 +181,7 @@ long CALLBACK DFS_SPUfreeze(uint32_t ulFreezeMode, SPUFreeze_t * pF, uint32_t cy
 	       } }
 
 #define GPU_PEOPS_PLUGIN \
-	{ "GPU",      \
+	{ "plugins/builtin_gpu",      \
 	  14,         \
 	  { { "GPUinit",  \
 	      (void*)PEOPS_GPUinit }, \

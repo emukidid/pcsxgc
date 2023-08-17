@@ -21,7 +21,7 @@ SOURCES		:=	. ./gc_input/ ./vm/ ./libgui/ ./menu/ ./fileBrowser/ .. ../PeopsSoft
 
 DATA		:=	data  
 
-INCLUDES	:=	
+INCLUDES	:=	../pcsx_rearmed ../pcsx_rearmed/include .
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -30,12 +30,12 @@ LTO			 = -flto # Uncomment to use link-time optimization
 
 CFLAGS	= -fipa-pta -g -O3 $(LTO) -Wall $(MACHDEP) $(INCLUDE) -Wno-stringop-truncation -Wno-strict-aliasing -Wno-misleading-indentation \
 		  -DWII -DHW_RVL -D__ppc__ -DNO_SOCKET -DHAVE_AESND \
-		  -D__GX__ -D_SDL -DRELEASE \
+		  -D__GX__ -D_SDL -DRELEASE -DLIGHTREC=1 -DLIGHTREC_CUSTOM_MAP=1 \
 		  #-DSHOW_DEBUG -DPRINTGECKO #-DPROFILE #-DDEBUGON
 		  
-CXXFLAGS	=	$(CFLAGS)
+CXXFLAGS	=	$(CFLAGS) -Wno-register
 
-ASFLAGS := -DHW_RVL
+ASFLAGS := $(INCLUDE) -DHW_RVL
 
 LDFLAGS	=	-g $(MACHDEP) $(CFLAGS) -mrvl -Wl,-Map,$(notdir $@).map
 
@@ -60,7 +60,10 @@ ifneq ($(BUILD),$(notdir $(CURDIR)))
 export OUTPUT	:=	$(CURDIR)/$(TARGET)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
-					$(foreach dir,$(DATA),$(CURDIR)/$(dir))
+					$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
+					$(CURDIR)/../pcsx_rearmed/libpcsxcore \
+					$(CURDIR)/../pcsx_rearmed/libpcsxcore/lightrec \
+					$(CURDIR)/../pcsx_rearmed/libpcsxcore/new_dynarec
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
@@ -72,6 +75,36 @@ CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 sFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.S)))
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
+
+PCSX_SOURCES += cdriso.c \
+		cdrom.c \
+		cheat.c \
+		database.c \
+		decode_xa.c \
+		disr3000a.c \
+		gte.c \
+		gte_divider.c \
+		mdec.c \
+		misc.c \
+		plugins.c \
+		ppf.c \
+		psxbios.c \
+		psxcommon.c \
+		psxcounters.c \
+		psxdma.c \
+		psxhle.c \
+		psxhw.c \
+		psxinterpreter.c \
+		psxmem.c \
+		r3000a.c \
+		sio.c \
+		socket.c \
+		spu.c \
+		plugin.c \
+		emu_if.c \
+		events.c
+
+CFILES += $(PCSX_SOURCES)
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -135,7 +168,7 @@ $(OUTPUT).elf: $(OFILES)
 	@echo $(notdir $<)
 	$(bin2o)
 
-dsihandler.o:		./vm/dsihandler.s
+vm/dsihandler.o:		./vm/dsihandler.s
 		$(CC) -x assembler-with-cpp $(CFLAGS) -D_LANGUAGE_ASSEMBLY -c -o $@ $<
 	
 -include $(DEPENDS)
