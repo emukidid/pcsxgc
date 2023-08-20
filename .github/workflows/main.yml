@@ -13,44 +13,18 @@ jobs:
       uses: actions/checkout@master
       with:
         path: pcsxgc
-    
+
     - name: Checkout libogc2
       uses: actions/checkout@main
       with:
         repository: emukidid/libogc
         path: libogc
-        
-    - name: Checkout lightrec
-      uses: actions/checkout@v2
-      with:
-        repository: pcercuei/lightrec
-        path: lightrec
-        
-    - name: Get GNU Lightning
-      run: |
-        wget http://ftp.gnu.org/gnu/lightning/lightning-2.2.1.tar.gz
-        tar -zxf lightning-2.2.1.tar.gz 
-    
+
     - name: add ppc gcc to PATH environment variable
       uses: myci-actions/export-env-var@1
       with:
         name: PATH
         value: $PATH:/opt/devkitpro/devkitPPC/bin
-    
-    - name: Build GNU Lightning
-      run: |
-        ./configure --host=powerpc-eabi --disable-shared --enable-static --disable-assertions --disable-disassembler --prefix=/ AR=powerpc-eabi-gcc-ar RANLIB=powerpc-eabi-gcc-ranlib CFLAGS="-O2 -fipa-pta -flto" ac_cv_func_mmap=no ac_cv_func_mremap=no
-        export DESTDIR=/opt/devkitpro/devkitPPC/powerpc-eabi/
-        make -C lib install
-        make -C include install
-      working-directory: lightning-2.2.1
-      
-    - name: Build lightrec
-      run: |
-        cmake -DCMAKE_TOOLCHAIN_FILE=/opt/devkitpro/cmake/GameCube.cmake -DCMAKE_INSTALL_PREFIX="" -DCMAKE_C_FLAGS="-fipa-pta -flto -Dfprintf=lightrec_fprintf" .
-        export DESTDIR=/opt/devkitpro/devkitPPC/powerpc-eabi/
-        make install
-      working-directory: lightrec
 
     - name: Checkout libfat
       uses: actions/checkout@main
@@ -65,35 +39,53 @@ jobs:
     - name: Build libfat
       run: make ogc-install
       working-directory: libfat
-      
+
+    - name: Copy release files
+      run: |
+        cp -r Gamecube/release release
+        cp -r Gamecube/release release_gx
+      working-directory: pcsxgc
+
     - name: Build WiiSX (soft gfx)
       run: |
-        make -f Makefile_Wii clean
-        make -f Makefile_Wii
-        mv WiiSX.dol release/apps/wiiSX/boot.dol
-      working-directory: pcsxgc/Gamecube
-            
+        mkdir build_wii
+        cmake -B build_wii -DWIISX_TARGET=NintendoWii
+        cmake --build build_wii
+        mv build_wii/WiiSX.dol release/apps/wiiSX/boot.dol
+      working-directory: pcsxgc
+
+    - name: Build WiiSX (gx gpu)
+      run: |
+        mkdir build_wii_gx
+        cmake -B build_wii_gx -DWIISX_TARGET=NintendoWii -DGX_GPU=ON
+        cmake --build build_wii_gx
+        mv build_wii_gx/WiiSX_GX.dol release_gx/apps/wiiSX/boot.dol
+      working-directory: pcsxgc
+
     - name: Build CubeSX (soft gfx)
       run: |
-        make -f Makefile_Cube clean
-        make -f Makefile_Cube
-        mv CubeSX.dol release/CubeSX.dol
-      working-directory: pcsxgc/Gamecube
+        mkdir build_cube
+        cmake -B build_cube -DWIISX_TARGET=NintendoGameCube
+        cmake --build build_cube
+        mv build_cube/CubeSX.dol release/CubeSX.dol
+      working-directory: pcsxgc
 
-    - name: Upload artifacts
+    - name: Build CubeSX (gx gpu)
+      run: |
+        mkdir build_cube_gx
+        cmake -B build_cube_gx -DWIISX_TARGET=NintendoGameCube -DGX_GPU=ON
+        cmake --build build_cube_gx
+        mv build_cube_gx/CubeSX_GX.dol release_gx/CubeSX.dol
+      working-directory: pcsxgc
+
+    - name: Upload soft CubeSX/WiiSX
       uses: actions/upload-artifact@main
       with:
         name: WiiSX
-        path: pcsxgc/Gamecube/release
-        
-    - name: Upload artifacts (lightrec)
+        path: pcsxgc/release
+
+    - name: Upload GX CubeSX/WiiSX
       uses: actions/upload-artifact@main
       with:
-        name: lightrec
-        path: /opt/devkitpro/devkitPPC/powerpc-eabi/lib/liblightrec.a
-        
-    - name: Upload artifacts (liblightning)
-      uses: actions/upload-artifact@main
-      with:
-        name: liblightning
-        path: /opt/devkitpro/devkitPPC/powerpc-eabi/lib/liblightning.a
+        name: WiiSX_GX
+        path: pcsxgc/release_gx
