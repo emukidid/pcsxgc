@@ -118,6 +118,40 @@ else()
 	target_compile_definitions(lightrec PRIVATE LIGHTREC_ENABLE_THREADED_COMPILER=0)
 endif()
 
+add_library(lzma OBJECT
+	pcsx_rearmed/deps/libchdr/deps/lzma-19.00/src/Alloc.c
+	pcsx_rearmed/deps/libchdr/deps/lzma-19.00/src/Bra86.c
+	pcsx_rearmed/deps/libchdr/deps/lzma-19.00/src/BraIA64.c
+	pcsx_rearmed/deps/libchdr/deps/lzma-19.00/src/CpuArch.c
+	pcsx_rearmed/deps/libchdr/deps/lzma-19.00/src/Delta.c
+	pcsx_rearmed/deps/libchdr/deps/lzma-19.00/src/LzFind.c
+	pcsx_rearmed/deps/libchdr/deps/lzma-19.00/src/Lzma86Dec.c
+	pcsx_rearmed/deps/libchdr/deps/lzma-19.00/src/LzmaDec.c
+	pcsx_rearmed/deps/libchdr/deps/lzma-19.00/src/LzmaEnc.c
+	pcsx_rearmed/deps/libchdr/deps/lzma-19.00/src/Sort.c
+)
+set_target_properties(lzma PROPERTIES LINKER_LANGUAGE C)
+target_compile_definitions(lzma PRIVATE _7ZIP_ST)
+target_include_directories(lzma PUBLIC
+	pcsx_rearmed/deps/libchdr/deps/lzma-19.00/include
+)
+
+add_library(libchdr OBJECT
+	pcsx_rearmed/deps/libchdr/src/libchdr_bitstream.c
+	pcsx_rearmed/deps/libchdr/src/libchdr_cdrom.c
+	pcsx_rearmed/deps/libchdr/src/libchdr_chd.c
+	pcsx_rearmed/deps/libchdr/src/libchdr_flac.c
+	pcsx_rearmed/deps/libchdr/src/libchdr_huffman.c
+)
+set_target_properties(libchdr PROPERTIES LINKER_LANGUAGE C)
+target_include_directories(libchdr PUBLIC
+	pcsx_rearmed/deps/libchdr/include
+	pcsx_rearmed/deps/libchdr/include/libchdr
+)
+target_include_directories(libchdr PRIVATE ${ZLIB_INCLUDE_DIR})
+target_compile_definitions(libchdr INTERFACE HAVE_CHD)
+target_link_libraries(libchdr PUBLIC lzma)
+
 add_library(libpcsxcore OBJECT
 	pcsx_rearmed/libpcsxcore/cdriso.c
 	pcsx_rearmed/libpcsxcore/cdrom.c
@@ -158,7 +192,7 @@ target_compile_definitions(libpcsxcore PUBLIC LIGHTREC LIGHTREC_CUSTOM_MAP NO_SO
 	$<IF:$<PLATFORM_ID:NintendoWii>,HW_RVL,HW_DOL>
 )
 set_target_properties(libpcsxcore PROPERTIES LINKER_LANGUAGE C)
-target_link_libraries(libpcsxcore PUBLIC ${ZLIB_LIBRARIES})
+target_link_libraries(libpcsxcore PUBLIC ${ZLIB_LIBRARIES} libchdr)
 
 get_filename_component(LIBGUI_RESOURCES_PATH Gamecube/libgui/resources ABSOLUTE)
 configure_file(Gamecube/libgui/resources.s.cmakein libgui_resources.s @ONLY)
@@ -300,7 +334,7 @@ set_target_properties(wiisx PROPERTIES
 )
 
 target_link_libraries(wiisx PRIVATE
-	menu libgui filebrowser dfsound libpcsxcore lightrec lightning gpu
+	menu libgui filebrowser dfsound libpcsxcore libchdr lzma lightrec lightning gpu
 	${AESND_LIBRARIES} ${FAT_LIBRARIES} ${ISO9660_LIBRARIES}
 	${TINYSMB_LIBRARIES} ${LIBDI_LIBRARIES} ${LIBWIIUSE_LIBRARIES} ${LIBBTE_LIBRARIES}
 )
