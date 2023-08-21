@@ -39,7 +39,7 @@
 #include "menu/MenuContext.h"
 extern "C" {
 #include <libpcsxcore/lightrec/mem.h>
-#include "../dfsound/spu_config.h"
+#include "../pcsx_rearmed/plugins/dfsound/spu_config.h"
 #include "DEBUG.h"
 #include "fileBrowser/fileBrowser.h"
 #include "fileBrowser/fileBrowser-libfat.h"

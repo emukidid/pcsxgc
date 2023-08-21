@@ -31,7 +31,7 @@
 #include <libpcsxcore/psxcommon.h>
 
 extern "C" {
-#include "../../dfsound/spu_config.h"
+#include "../../pcsx_rearmed/plugins/dfsound/spu_config.h"
 #include "../gc_input/controller.h"
 #include "../fileBrowser/fileBrowser.h"
 #include "../fileBrowser/fileBrowser-libfat.h"

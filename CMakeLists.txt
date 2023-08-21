@@ -245,26 +245,19 @@ set_target_properties(filebrowser PROPERTIES LINKER_LANGUAGE C)
 target_link_libraries(filebrowser PUBLIC libgui ogc)
 
 add_library(dfsound OBJECT
-	dfsound/adsr.c
-	dfsound/aesnd.c
-	dfsound/alsa.c
-	dfsound/dma.c
-	dfsound/freeze.c
-	dfsound/nullsnd.c
-	dfsound/oss.c
-	dfsound/out.c
-	dfsound/pulseaudio.c
-	dfsound/registers.c
-	dfsound/reverb.c
-	dfsound/sdl.c
-	dfsound/spu_c64x.c
-	dfsound/spu_c64x_dspcode.c
-	dfsound/spu_dfsound.c
-	dfsound/xa.c
+	pcsx_rearmed/plugins/dfsound/adsr.c
+	pcsx_rearmed/plugins/dfsound/dma.c
+	pcsx_rearmed/plugins/dfsound/freeze.c
+	pcsx_rearmed/plugins/dfsound/nullsnd.c
+	pcsx_rearmed/plugins/dfsound/out.c
+	pcsx_rearmed/plugins/dfsound/registers.c
+	pcsx_rearmed/plugins/dfsound/reverb.c
+	pcsx_rearmed/plugins/dfsound/spu.c
+	pcsx_rearmed/plugins/dfsound/xa.c
 )
 set_target_properties(dfsound PROPERTIES LINKER_LANGUAGE C)
 target_link_libraries(dfsound PUBLIC ogc)
-target_compile_definitions(dfsound PRIVATE HAVE_AESND)
+target_compile_definitions(dfsound PRIVATE HAVE_OSS)
 
 option(GX_GPU "GX accelerated GPU plugin" OFF)
 
@@ -306,6 +299,7 @@ target_link_libraries(gpu PUBLIC ogc libgui)
 target_compile_definitions(gpu PRIVATE __GX__ _SDL)
 
 add_executable(wiisx
+	Gamecube/aesnd.c
 	Gamecube/DEBUG.c
 	Gamecube/PlugGPU.c
 	Gamecube/PlugPAD.c
