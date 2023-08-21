@@ -23,7 +23,6 @@
 #include <libpcsxcore/psxcommon.h>
 #include "fileBrowser/fileBrowser.h"
 
-#include <libpcsxcore/plugins.h>
 #include <libpcsxcore/spu.h>
 #ifndef __GX__
 #include "NoPic.h"
@@ -406,4 +405,3 @@ void ResetPlugins() {
 
 	NetOpened = 0;
 }
-
