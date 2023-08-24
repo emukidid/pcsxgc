@@ -709,10 +709,13 @@ static s8 psxM_buf[0x220000] __attribute__((aligned(4096)));
 static s8 psxR_buf[0x80000] __attribute__((aligned(4096)));
 
 static s8 code_buf [0x400000] __attribute__((aligned(32))); // 4 MiB code buffer for Lightrec
-void * code_buffer = code_buf;
+
+extern void * code_buffer;
 
 int lightrec_init_mmap(void)
 {
+	code_buffer = code_buf;
+
 	psxP = &psxM_buf[0x200000];
 
 	if (lightrec_mmap(psxM_buf, 0x0, 0x200000)
