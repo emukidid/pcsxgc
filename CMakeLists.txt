@@ -334,6 +334,9 @@ target_link_libraries(wiisx PRIVATE
 	${TINYSMB_LIBRARIES} ${LIBDI_LIBRARIES} ${LIBWIIUSE_LIBRARIES} ${LIBBTE_LIBRARIES}
 )
 target_compile_definitions(wiisx PRIVATE GEKKO)
+if (${CMAKE_BUILD_TYPE} STREQUAL Debug)
+	target_compile_definitions(wiisx PRIVATE MAP_OFFSET=0x10000000)
+endif()
 
 find_program(ELF2DOL_EXE NAMES elf2dol HINTS "${DEVKITPRO}/tools/bin")
 if (NOT ELF2DOL_EXE)

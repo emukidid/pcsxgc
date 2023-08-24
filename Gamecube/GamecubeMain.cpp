@@ -682,33 +682,37 @@ static s8 psxR_buf[0x80000] __attribute__((aligned(4096)));
 static s8 code_buf [0x400000] __attribute__((aligned(32))); // 4 MiB code buffer for Lightrec
 void * code_buffer = code_buf;
 
+#ifndef MAP_OFFSET
+#define MAP_OFFSET 0x0
+#endif
+
 int lightrec_init_mmap(void)
 {
 	psxP = &psxM_buf[0x200000];
 
-	if (lightrec_mmap(psxM_buf, 0x0, 0x200000)
-	    || lightrec_mmap(psxM_buf, 0x200000, 0x200000)
-	    || lightrec_mmap(psxM_buf, 0x400000, 0x200000)
-	    || lightrec_mmap(psxM_buf, 0x600000, 0x200000)) {
+	if (lightrec_mmap(psxM_buf, MAP_OFFSET, 0x200000)
+	    || lightrec_mmap(psxM_buf, MAP_OFFSET + 0x200000, 0x200000)
+	    || lightrec_mmap(psxM_buf, MAP_OFFSET + 0x400000, 0x200000)
+	    || lightrec_mmap(psxM_buf, MAP_OFFSET + 0x600000, 0x200000)) {
 		SysMessage(_("Error mapping RAM"));
 		return -1;
 	}
 
-	psxM = (s8 *) 0x0;
+	psxM = (s8 *) MAP_OFFSET;
 
-	if (lightrec_mmap(psxR_buf, 0x1fc00000, 0x80000)) {
+	if (lightrec_mmap(psxR_buf, MAP_OFFSET + 0x1fc00000, 0x80000)) {
 		SysMessage(_("Error mapping BIOS"));
 		return -1;
 	}
 
-	psxR = (s8 *) 0x1fc00000;
+	psxR = (s8 *) (MAP_OFFSET + 0x1fc00000);
 
-	if (lightrec_mmap(psxM_buf + 0x210000, 0x1f800000, 0x10000)) {
+	if (lightrec_mmap(psxM_buf + 0x210000, MAP_OFFSET + 0x1f800000, 0x10000)) {
 		SysMessage(_("Error mapping I/O"));
 		return -1;
 	}
 
-	psxH = (s8 *) 0x1f800000;
+	psxH = (s8 *) (MAP_OFFSET + 0x1f800000);
 
 	return 0;
 }
@@ -722,7 +726,7 @@ void PreSaveState() {
 }
 
 void PostSaveState() {
-	psxM = (s8 *) 0x0;
+	psxM = (s8 *) MAP_OFFSET;
 }
 
 } //extern "C"
