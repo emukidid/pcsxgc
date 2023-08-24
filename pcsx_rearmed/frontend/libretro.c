@@ -80,7 +80,7 @@ static unsigned msg_interface_version = 0;
 static void *vout_buf;
 static void *vout_buf_ptr;
 static int vout_width, vout_height;
-static int vout_doffs_old, vout_fb_dirty;
+static int vout_fb_dirty;
 static bool vout_can_dupe;
 static bool duping_enable;
 static bool found_bios;
@@ -267,29 +267,22 @@ static void convert(void *buf, size_t bytes)
 }
 #endif
 
-static void vout_flip(const void *vram, int stride, int bgr24, int w, int h)
+static void vout_flip(const void *vram, int stride, int bgr24,
+      int x, int y, int w, int h, int dims_changed)
 {
    unsigned short *dest = vout_buf_ptr;
    const unsigned short *src = vram;
    int dstride = vout_width, h1 = h;
-   int doffs;
 
-   if (vram == NULL)
+   if (vram == NULL || dims_changed)
    {
+      memset(vout_buf_ptr, 0, dstride * vout_height * 2);
       // blanking
-      memset(vout_buf_ptr, 0, dstride * h * 2);
-      goto out;
+      if (vram == NULL)
+         goto out;
    }
 
-   doffs = (vout_height - h) * dstride;
-   doffs += (dstride - w) / 2 & ~1;
-   if (doffs != vout_doffs_old)
-   {
-      // clear borders
-      memset(vout_buf_ptr, 0, dstride * h * 2);
-      vout_doffs_old = doffs;
-   }
-   dest += doffs;
+   dest += x + y * dstride;
 
    if (bgr24)
    {
@@ -870,7 +863,7 @@ void retro_get_system_info(struct retro_system_info *info)
    memset(info, 0, sizeof(*info));
    info->library_name     = "PCSX-ReARMed";
    info->library_version  = "r23l" GIT_VERSION;
-   info->valid_extensions = "bin|cue|img|mdf|pbp|toc|cbn|m3u|chd";
+   info->valid_extensions = "bin|cue|img|mdf|pbp|toc|cbn|m3u|chd|iso|exe";
    info->need_fullpath    = true;
 }
 
@@ -1471,6 +1464,8 @@ bool retro_load_game(const struct retro_game_info *info)
    size_t i;
    unsigned int cd_index = 0;
    bool is_m3u = (strcasestr(info->path, ".m3u") != NULL);
+   bool is_exe = (strcasestr(info->path, ".exe") != NULL);
+   int ret;
 
    struct retro_input_descriptor desc[] = {
 #define JOYP(port)                                                                                                \
@@ -1664,7 +1659,7 @@ bool retro_load_game(const struct retro_game_info *info)
    plugin_call_rearmed_cbs();
    /* dfinput_activate(); */
 
-   if (CheckCdrom() == -1)
+   if (!is_exe && CheckCdrom() == -1)
    {
       log_cb(RETRO_LOG_INFO, "unsupported/invalid CD image: %s\n", info->path);
       return false;
@@ -1672,9 +1667,13 @@ bool retro_load_game(const struct retro_game_info *info)
 
    SysReset();
 
-   if (LoadCdrom() == -1)
+   if (is_exe)
+      ret = Load(info->path);
+   else
+      ret = LoadCdrom();
+   if (ret != 0)
    {
-      log_cb(RETRO_LOG_INFO, "could not load CD\n");
+      log_cb(RETRO_LOG_INFO, "could not load %s (%d)\n", is_exe ? "exe" : "CD", ret);
       return false;
    }
    emu_on_new_cd(0);
@@ -2098,7 +2097,7 @@ static void update_variables(bool in_flight)
          spu_config.iUseThread = 0;
    }
 
-   if (HAVE_PTHREAD) {
+   if (P_HAVE_PTHREAD) {
 	   var.value = NULL;
 	   var.key = "pcsx_rearmed_async_cd";
 	   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -2146,11 +2145,37 @@ static void update_variables(bool in_flight)
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       if (strcmp(var.value, "disabled") == 0)
-	 Config.GpuListWalking = 0;
+         Config.GpuListWalking = 0;
       else if (strcmp(var.value, "enabled") == 0)
-	 Config.GpuListWalking = 1;
+         Config.GpuListWalking = 1;
       else // auto
-	 Config.GpuListWalking = -1;
+         Config.GpuListWalking = -1;
+   }
+
+   var.value = NULL;
+   var.key = "pcsx_rearmed_screen_centering";
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "game") == 0)
+         pl_rearmed_cbs.screen_centering_type = 1;
+      else if (strcmp(var.value, "manual") == 0)
+         pl_rearmed_cbs.screen_centering_type = 2;
+      else // auto
+         pl_rearmed_cbs.screen_centering_type = 0;
+   }
+
+   var.value = NULL;
+   var.key = "pcsx_rearmed_screen_centering_x";
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      pl_rearmed_cbs.screen_centering_x = atoi(var.value);
+   }
+
+   var.value = NULL;
+   var.key = "pcsx_rearmed_screen_centering_y";
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      pl_rearmed_cbs.screen_centering_y = atoi(var.value);
    }
 
 #ifdef THREAD_RENDERING
@@ -2722,6 +2747,8 @@ void retro_run(void)
    {
       rebootemu = 0;
       SysReset();
+      if (Config.HLE)
+         LoadCdrom();
    }
 
    print_internal_fps();
@@ -2791,7 +2818,7 @@ void retro_run(void)
    set_vout_fb();
 }
 
-static bool try_use_bios(const char *path)
+static bool try_use_bios(const char *path, bool preferred_only)
 {
    long size;
    const char *name;
@@ -2803,12 +2830,20 @@ static bool try_use_bios(const char *path)
    size = ftell(fp);
    fclose(fp);
 
-   if (size != 512 * 1024)
-      return false;
-
    name = strrchr(path, SLASH);
    if (name++ == NULL)
       name = path;
+
+   if (preferred_only && size != 512 * 1024)
+      return false;
+   if (size != 512 * 1024 && size != 4 * 1024 * 1024)
+      return false;
+   if (strstr(name, "unirom"))
+      return false;
+   // jp bios have an addidional region check
+   if (preferred_only && (strcasestr(name, "00.") || strcasestr(name, "j.bin")))
+      return false;
+
    snprintf(Config.Bios, sizeof(Config.Bios), "%s", name);
    return true;
 }
@@ -2819,7 +2854,8 @@ static bool try_use_bios(const char *path)
 
 static bool find_any_bios(const char *dirpath, char *path, size_t path_size)
 {
-   static const char *substrings[] = { "scph", "psx", "openbios" };
+   static const char *substr_pref[] = { "scph", "ps" };
+   static const char *substr_alt[] = { "scph", "ps", "openbios" };
    DIR *dir;
    struct dirent *ent;
    bool ret = false;
@@ -2829,27 +2865,39 @@ static bool find_any_bios(const char *dirpath, char *path, size_t path_size)
    if (dir == NULL)
       return false;
 
-   for (i = 0; i < (sizeof(substrings) / sizeof(substrings[0])); i++)
+   // try to find a "better" bios
+   while ((ent = readdir(dir)))
    {
-      const char *substr = substrings[i];
-      size_t len = strlen(substr);
-      rewinddir(dir);
-      while ((ent = readdir(dir)))
+      for (i = 0; i < sizeof(substr_pref) / sizeof(substr_pref[0]); i++)
       {
-         if ((strncasecmp(ent->d_name, substr, len) != 0))
+         const char *substr = substr_pref[i];
+         if ((strncasecmp(ent->d_name, substr, strlen(substr)) != 0))
             continue;
-         if (strstr(ent->d_name, "unirom"))
-            continue;
-
          snprintf(path, path_size, "%s%c%s", dirpath, SLASH, ent->d_name);
-         ret = try_use_bios(path);
+         ret = try_use_bios(path, true);
          if (ret)
-         {
-            closedir(dir);
-            return ret;
-         }
+            goto finish;
       }
    }
+
+   // another pass to look for anything fitting, even ps2 bios
+   rewinddir(dir);
+   while ((ent = readdir(dir)))
+   {
+      for (i = 0; i < sizeof(substr_alt) / sizeof(substr_alt[0]); i++)
+      {
+         const char *substr = substr_alt[i];
+         if ((strncasecmp(ent->d_name, substr, strlen(substr)) != 0))
+            continue;
+         snprintf(path, path_size, "%s%c%s", dirpath, SLASH, ent->d_name);
+         ret = try_use_bios(path, false);
+         if (ret)
+            goto finish;
+      }
+   }
+
+
+finish:
    closedir(dir);
    return ret;
 }
@@ -2946,7 +2994,7 @@ static void loadPSXBios(void)
          for (i = 0; i < sizeof(bios) / sizeof(bios[0]); i++)
          {
             snprintf(path, sizeof(path), "%s%c%s.bin", dir, SLASH, bios[i]);
-            found_bios = try_use_bios(path);
+            found_bios = try_use_bios(path, true);
             if (found_bios)
                break;
          }
@@ -3039,7 +3087,7 @@ void retro_init(void)
 
 #ifdef _3DS
    vout_buf = linearMemAlign(VOUT_MAX_WIDTH * VOUT_MAX_HEIGHT * 2, 0x80);
-#elif defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200112L) && HAVE_POSIX_MEMALIGN
+#elif defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200112L) && P_HAVE_POSIX_MEMALIGN
    if (posix_memalign(&vout_buf, 16, VOUT_MAX_WIDTH * VOUT_MAX_HEIGHT * 2) != 0)
       vout_buf = (void *) 0;
 #else

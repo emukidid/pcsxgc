@@ -23,9 +23,6 @@
 #include "pcnt.h"
 #include "arm_features.h"
 
-void do_memhandler_pre();
-void do_memhandler_post();
-
 /* Linker */
 static void set_jump_target(void *addr, void *target)
 {
@@ -104,9 +101,17 @@ static void alloc_arm_reg(struct regstat *cur,int i,signed char reg,int hr)
 }
 
 // Alloc cycle count into dedicated register
-static void alloc_cc(struct regstat *cur,int i)
+static void alloc_cc(struct regstat *cur, int i)
 {
-  alloc_arm_reg(cur,i,CCREG,HOST_CCREG);
+  alloc_arm_reg(cur, i, CCREG, HOST_CCREG);
+}
+
+static void alloc_cc_optional(struct regstat *cur, int i)
+{
+  if (cur->regmap[HOST_CCREG] < 0) {
+    alloc_arm_reg(cur, i, CCREG, HOST_CCREG);
+    cur->noevict &= ~(1u << HOST_CCREG);
+  }
 }
 
 /* Special alloc */
@@ -302,6 +307,12 @@ static void emit_add(u_int rs1, u_int rs2, u_int rt)
   output_w32(0x0b000000 | rm_rn_rd(rs2, rs1, rt));
 }
 
+static void emit_adds(u_int rs1, u_int rs2, u_int rt)
+{
+  assem_debug("adds %s,%s,%s\n", regname[rt], regname[rs1], regname[rs2]);
+  output_w32(0x2b000000 | rm_rn_rd(rs2, rs1, rt));
+}
+
 static void emit_add64(u_int rs1, u_int rs2, u_int rt)
 {
   assem_debug("add %s,%s,%s\n", regname64[rt], regname64[rs1], regname64[rs2]);
@@ -315,10 +326,22 @@ static void emit_adds64(u_int rs1, u_int rs2, u_int rt)
 }
 #define emit_adds_ptr emit_adds64
 
+static void emit_add_lsrimm(u_int rs1, u_int rs2, u_int shift, u_int rt)
+{
+  assem_debug("add %s,%s,%s,lsr #%u\n",regname[rt],regname[rs1],regname[rs2],shift);
+  output_w32(0x0b400000 | rm_imm6_rn_rd(rs2, shift, rs1, rt));
+}
+
 static void emit_neg(u_int rs, u_int rt)
 {
   assem_debug("neg %s,%s\n",regname[rt],regname[rs]);
   output_w32(0x4b000000 | rm_rn_rd(rs, WZR, rt));
+}
+
+static void emit_negs(u_int rs, u_int rt)
+{
+  assem_debug("negs %s,%s\n",regname[rt],regname[rs]);
+  output_w32(0x6b000000 | rm_rn_rd(rs, WZR, rt));
 }
 
 static void emit_sub(u_int rs1, u_int rs2, u_int rt)
@@ -327,7 +350,13 @@ static void emit_sub(u_int rs1, u_int rs2, u_int rt)
   output_w32(0x4b000000 | rm_imm6_rn_rd(rs2, 0, rs1, rt));
 }
 
-static void emit_sub_asrimm(u_int rs1, u_int rs2, u_int shift, u_int rt)
+static void emit_subs(u_int rs1, u_int rs2, u_int rt)
+{
+  assem_debug("subs %s,%s,%s\n", regname[rt], regname[rs1], regname[rs2]);
+  output_w32(0x6b000000 | rm_imm6_rn_rd(rs2, 0, rs1, rt));
+}
+
+static unused void emit_sub_asrimm(u_int rs1, u_int rs2, u_int shift, u_int rt)
 {
   assem_debug("sub %s,%s,%s,asr #%u\n",regname[rt],regname[rs1],regname[rs2],shift);
   output_w32(0x4b800000 | rm_imm6_rn_rd(rs2, shift, rs1, rt));
@@ -422,7 +451,7 @@ static void emit_readword(void *addr, u_int rt)
 {
   uintptr_t offset = (u_char *)addr - (u_char *)&dynarec_local;
   if (!(offset & 3) && offset <= 16380) {
-    assem_debug("ldr %s,[x%d+%#lx]\n", regname[rt], FP, offset);
+    assem_debug("ldr %s,[x%d+%#lx]%s\n", regname[rt], FP, offset, fpofs_name(offset));
     output_w32(0xb9400000 | imm12_rn_rd(offset >> 2, FP, rt));
   }
   else
@@ -433,7 +462,7 @@ static void emit_readdword(void *addr, u_int rt)
 {
   uintptr_t offset = (u_char *)addr - (u_char *)&dynarec_local;
   if (!(offset & 7) && offset <= 32760) {
-    assem_debug("ldr %s,[x%d+%#lx]\n", regname64[rt], FP, offset);
+    assem_debug("ldr %s,[x%d+%#lx]%s\n", regname64[rt], FP, offset, fpofs_name(offset));
     output_w32(0xf9400000 | imm12_rn_rd(offset >> 3, FP, rt));
   }
   else
@@ -463,7 +492,6 @@ static void emit_loadreg(u_int r, u_int hr)
     //case HIREG: addr = &hi; break;
     //case LOREG: addr = &lo; break;
     case CCREG: addr = &cycle_count; break;
-    case CSREG: addr = &psxRegs.CP0.n.SR; break;
     case INVCP: addr = &invc_ptr; is64 = 1; break;
     case ROREG: addr = &ram_offset; is64 = 1; break;
     default:
@@ -482,7 +510,7 @@ static void emit_writeword(u_int rt, void *addr)
 {
   uintptr_t offset = (u_char *)addr - (u_char *)&dynarec_local;
   if (!(offset & 3) && offset <= 16380) {
-    assem_debug("str %s,[x%d+%#lx]\n", regname[rt], FP, offset);
+    assem_debug("str %s,[x%d+%#lx]%s\n", regname[rt], FP, offset, fpofs_name(offset));
     output_w32(0xb9000000 | imm12_rn_rd(offset >> 2, FP, rt));
   }
   else
@@ -493,7 +521,7 @@ static void emit_writedword(u_int rt, void *addr)
 {
   uintptr_t offset = (u_char *)addr - (u_char *)&dynarec_local;
   if (!(offset & 7) && offset <= 32760) {
-    assem_debug("str %s,[x%d+%#lx]\n", regname64[rt], FP, offset);
+    assem_debug("str %s,[x%d+%#lx]%s\n", regname64[rt], FP, offset, fpofs_name(offset));
     output_w32(0xf9000000 | imm12_rn_rd(offset >> 3, FP, rt));
   }
   else
@@ -564,6 +592,12 @@ static void emit_orrshr_imm(u_int rs,u_int imm,u_int rt)
   output_w32(0x2a400000 | rm_imm6_rn_rd(rs, imm, rt, rt));
 }
 
+static void emit_orn_asrimm(u_int rs1, u_int rs2, u_int shift, u_int rt)
+{
+  assem_debug("orn %s,%s,%s,asr #%u\n",regname[rt],regname[rs1],regname[rs2],shift);
+  output_w32(0x2aa00000 | rm_imm6_rn_rd(rs2, shift, rs1, rt));
+}
+
 static void emit_bicsar_imm(u_int rs,u_int imm,u_int rt)
 {
   assem_debug("bic %s,%s,%s,asr #%d\n",regname[rt],regname[rt],regname[rs],imm);
@@ -595,24 +629,35 @@ static void emit_addimm_s(u_int s, u_int is64, u_int rs, uintptr_t imm, u_int rt
     assem_debug("sub%s %s,%s,%#lx\n", st, regname[rt], regname[rs], -imm);
     output_w32(0x51000000 | is64 | s | imm12_rn_rd(-imm, rs, rt));
   }
-  else if (imm < 16777216) {
-    assem_debug("add %s,%s,#%#lx\n",regname[rt],regname[rt],imm&0xfff000);
-    output_w32(0x11400000 | is64 | imm12_rn_rd(imm >> 12, rs, rt));
-    if ((imm & 0xfff) || s) {
-      assem_debug("add%s %s,%s,#%#lx\n",st,regname[rt],regname[rs],imm&0xfff);
-      output_w32(0x11000000 | is64 | s | imm12_rn_rd(imm & 0xfff, rt, rt));
+  else if (imm < 16777216 && (!(imm & 0xfff) || !s)) {
+    assem_debug("add%s %s,%s,#%#lx\n", st, regname[rt], regname[rs], imm&0xfff000);
+    output_w32(0x11400000 | is64 | s | imm12_rn_rd(imm >> 12, rs, rt));
+    if (imm & 0xfff) {
+      assem_debug("add %s,%s,#%#lx\n", regname[rt], regname[rt], imm&0xfff);
+      output_w32(0x11000000 | is64 | imm12_rn_rd(imm & 0xfff, rt, rt));
     }
   }
-  else if (-imm < 16777216) {
-    assem_debug("sub %s,%s,#%#lx\n",regname[rt],regname[rt],-imm&0xfff000);
-    output_w32(0x51400000 | is64 | imm12_rn_rd(-imm >> 12, rs, rt));
-    if ((imm & 0xfff) || s) {
-      assem_debug("sub%s %s,%s,#%#lx\n",st,regname[rt],regname[rs],-imm&0xfff);
-      output_w32(0x51000000 | is64 | s | imm12_rn_rd(-imm & 0xfff, rt, rt));
+  else if (-imm < 16777216 && (!(-imm & 0xfff) || !s)) {
+    assem_debug("sub%s %s,%s,#%#lx\n", st, regname[rt], regname[rs], -imm&0xfff000);
+    output_w32(0x51400000 | is64 | s | imm12_rn_rd(-imm >> 12, rs, rt));
+    if (-imm & 0xfff) {
+      assem_debug("sub %s,%s,#%#lx\n", regname[rt], regname[rt], -imm&0xfff);
+      output_w32(0x51000000 | is64 | imm12_rn_rd(-imm & 0xfff, rt, rt));
     }
   }
-  else
-    abort();
+  else {
+    u_int tmp = rt;
+    assert(!is64);
+    if (rs == rt) {
+      host_tempreg_acquire();
+      tmp = HOST_TEMPREG;
+    }
+    emit_movimm(imm, tmp);
+    assem_debug("add%s %s,%s,%s\n", st, regname[rt], regname[rs], regname[tmp]);
+    output_w32(0x0b000000 | s | rm_rn_rd(rs, tmp, rt));
+    if (tmp == HOST_TEMPREG)
+      host_tempreg_release();
+  }
 }
 
 static void emit_addimm(u_int rs, uintptr_t imm, u_int rt)
@@ -637,6 +682,11 @@ static void emit_addimm_ptr(u_int rs, uintptr_t imm, u_int rt)
 static void emit_addimm_and_set_flags(int imm, u_int rt)
 {
   emit_addimm_s(1, 0, rt, imm, rt);
+}
+
+static void emit_addimm_and_set_flags3(u_int rs, int imm, u_int rt)
+{
+  emit_addimm_s(1, 0, rs, imm, rt);
 }
 
 static void emit_logicop_imm(u_int op, u_int rs, u_int imm, u_int rt)
@@ -844,6 +894,12 @@ static void emit_csinvle_reg(u_int rs1,u_int rs2,u_int rt)
   output_w32(0x5a800000 | (COND_LE << 12) | rm_rn_rd(rs2, rs1, rt));
 }
 
+static void emit_csinvne_reg(u_int rs1,u_int rs2,u_int rt)
+{
+  assem_debug("csinv %s,%s,%s,ne\n",regname[rt],regname[rs1],regname[rs2]);
+  output_w32(0x5a800000 | (COND_NE << 12) | rm_rn_rd(rs2, rs1, rt));
+}
+
 static void emit_slti32(u_int rs,int imm,u_int rt)
 {
   if(rs!=rt) emit_zeroreg(rt);
@@ -970,6 +1026,13 @@ static void emit_jge(const void *a)
   assem_debug("bge %p\n", a);
   u_int offset = genjmpcc(a);
   output_w32(0x54000000 | (offset << 5) | COND_GE);
+}
+
+static void emit_jo(const void *a)
+{
+  assem_debug("bvs %p\n", a);
+  u_int offset = genjmpcc(a);
+  output_w32(0x54000000 | (offset << 5) | COND_VS);
 }
 
 static void emit_jno(const void *a)
@@ -1405,7 +1468,7 @@ static void do_readstub(int n)
   u_int reglist = stubs[n].e;
   const signed char *i_regmap = i_regs->regmap;
   int rt;
-  if(dops[i].itype==C1LS||dops[i].itype==C2LS||dops[i].itype==LOADLR) {
+  if(dops[i].itype==C2LS||dops[i].itype==LOADLR) {
     rt=get_reg(i_regmap,FTEMP);
   }else{
     rt=get_reg(i_regmap,dops[i].rt1);
@@ -1435,7 +1498,7 @@ static void do_readstub(int n)
   emit_adds64(temp2,temp2,temp2);
   handler_jump=out;
   emit_jc(0);
-  if(dops[i].itype==C1LS||dops[i].itype==C2LS||(rt>=0&&dops[i].rt1!=0)) {
+  if(dops[i].itype==C2LS||(rt>=0&&dops[i].rt1!=0)) {
     switch(type) {
       case LOADB_STUB:  emit_ldrsb_dualindexed(temp2,rs,rt); break;
       case LOADBU_STUB: emit_ldrb_dualindexed(temp2,rs,rt); break;
@@ -1470,7 +1533,7 @@ static void do_readstub(int n)
   emit_addimm(cc<0?2:cc,(int)stubs[n].d,2);
   emit_far_call(handler);
   // (no cycle reload after read)
-  if(dops[i].itype==C1LS||dops[i].itype==C2LS||(rt>=0&&dops[i].rt1!=0)) {
+  if(dops[i].itype==C2LS||(rt>=0&&dops[i].rt1!=0)) {
     loadstore_extend(type,0,rt);
   }
   if(restore_jump)
@@ -1482,28 +1545,27 @@ static void do_readstub(int n)
 static void inline_readstub(enum stub_type type, int i, u_int addr,
   const signed char regmap[], int target, int adj, u_int reglist)
 {
-  int rs=get_reg(regmap,target);
-  int rt=get_reg(regmap,target);
-  if(rs<0) rs=get_reg_temp(regmap);
-  assert(rs>=0);
+  int ra = cinfo[i].addr;
+  int rt = get_reg(regmap, target);
+  assert(ra >= 0);
   u_int is_dynamic=0;
   uintptr_t host_addr = 0;
   void *handler;
   int cc=get_reg(regmap,CCREG);
-  //if(pcsx_direct_read(type,addr,adj,cc,target?rs:-1,rt))
+  //if(pcsx_direct_read(type,addr,adj,cc,target?ra:-1,rt))
   //  return;
   handler = get_direct_memhandler(mem_rtab, addr, type, &host_addr);
   if (handler == NULL) {
     if(rt<0||dops[i].rt1==0)
       return;
     if (addr != host_addr)
-      emit_movimm_from64(addr, rs, host_addr, rs);
+      emit_movimm_from64(addr, ra, host_addr, ra);
     switch(type) {
-      case LOADB_STUB:  emit_movsbl_indexed(0,rs,rt); break;
-      case LOADBU_STUB: emit_movzbl_indexed(0,rs,rt); break;
-      case LOADH_STUB:  emit_movswl_indexed(0,rs,rt); break;
-      case LOADHU_STUB: emit_movzwl_indexed(0,rs,rt); break;
-      case LOADW_STUB:  emit_readword_indexed(0,rs,rt); break;
+      case LOADB_STUB:  emit_movsbl_indexed(0,ra,rt); break;
+      case LOADBU_STUB: emit_movzbl_indexed(0,ra,rt); break;
+      case LOADH_STUB:  emit_movswl_indexed(0,ra,rt); break;
+      case LOADHU_STUB: emit_movzwl_indexed(0,ra,rt); break;
+      case LOADW_STUB:  emit_readword_indexed(0,ra,rt); break;
       default:          assert(0);
     }
     return;
@@ -1524,8 +1586,8 @@ static void inline_readstub(enum stub_type type, int i, u_int addr,
   save_regs(reglist);
   if(target==0)
     emit_movimm(addr,0);
-  else if(rs!=0)
-    emit_mov(rs,0);
+  else if(ra!=0)
+    emit_mov(ra,0);
   if(cc<0)
     emit_loadreg(CCREG,2);
   emit_addimm(cc<0?2:cc,adj,2);
@@ -1561,7 +1623,7 @@ static void do_writestub(int n)
   u_int reglist=stubs[n].e;
   signed char *i_regmap=i_regs->regmap;
   int rt,r;
-  if(dops[i].itype==C1LS||dops[i].itype==C2LS) {
+  if(dops[i].itype==C2LS) {
     rt=get_reg(i_regmap,r=FTEMP);
   }else{
     rt=get_reg(i_regmap,r=dops[i].rs2);
@@ -1643,19 +1705,19 @@ static void do_writestub(int n)
 static void inline_writestub(enum stub_type type, int i, u_int addr,
   const signed char regmap[], int target, int adj, u_int reglist)
 {
-  int rs = get_reg_temp(regmap);
+  int ra = cinfo[i].addr;
   int rt = get_reg(regmap,target);
-  assert(rs >= 0);
+  assert(ra >= 0);
   assert(rt >= 0);
   uintptr_t host_addr = 0;
   void *handler = get_direct_memhandler(mem_wtab, addr, type, &host_addr);
   if (handler == NULL) {
     if (addr != host_addr)
-      emit_movimm_from64(addr, rs, host_addr, rs);
+      emit_movimm_from64(addr, ra, host_addr, ra);
     switch (type) {
-      case STOREB_STUB: emit_writebyte_indexed(rt, 0, rs); break;
-      case STOREH_STUB: emit_writehword_indexed(rt, 0, rs); break;
-      case STOREW_STUB: emit_writeword_indexed(rt, 0, rs); break;
+      case STOREB_STUB: emit_writebyte_indexed(rt, 0, ra); break;
+      case STOREH_STUB: emit_writehword_indexed(rt, 0, ra); break;
+      case STOREW_STUB: emit_writeword_indexed(rt, 0, ra); break;
       default:          assert(0);
     }
     return;
@@ -1663,7 +1725,7 @@ static void inline_writestub(enum stub_type type, int i, u_int addr,
 
   // call a memhandler
   save_regs(reglist);
-  emit_writeword(rs, &address); // some handlers still need it
+  emit_writeword(ra, &address); // some handlers still need it
   loadstore_extend(type, rt, 0);
   int cc, cc_use;
   cc = cc_use = get_reg(regmap, CCREG);
@@ -1827,8 +1889,10 @@ static void multdiv_assemble_arm64(int i, const struct regstat *i_regs)
 
         // div 0 quotient (remainder is already correct)
         host_tempreg_acquire();
-        if (dops[i].opcode2 == 0x1A) // DIV
-          emit_sub_asrimm(0,numerator,31,HOST_TEMPREG);
+        if (dops[i].opcode2 == 0x1A) { // DIV
+          emit_add_lsrimm(WZR,numerator,31,HOST_TEMPREG);
+          emit_orn_asrimm(HOST_TEMPREG,numerator,31,HOST_TEMPREG);
+        }
         else
           emit_movimm(~0,HOST_TEMPREG);
         emit_test(denominator,denominator);
@@ -1852,8 +1916,10 @@ static void multdiv_assemble_arm64(int i, const struct regstat *i_regs)
         if (hr >= 0)
           emit_mov(numerator,hr);
         if (lr >= 0) {
-          if (dops[i].opcode2 == 0x1A) // DIV
-            emit_sub_asrimm(0,numerator,31,lr);
+          if (dops[i].opcode2 == 0x1A) { // DIV
+            emit_add_lsrimm(WZR,numerator,31,lr);
+            emit_orn_asrimm(lr,numerator,31,lr);
+          }
           else
             emit_movimm(~0,lr);
         }
@@ -1861,6 +1927,17 @@ static void multdiv_assemble_arm64(int i, const struct regstat *i_regs)
       else {
         if (hr >= 0) emit_zeroreg(hr);
         if (lr >= 0) emit_movimm(~0,lr);
+      }
+    }
+    else if ((dops[i].opcode2==0x1A || dops[i].opcode2==0x1B) && dops[i].rs1==0)
+    {
+      signed char denominator = get_reg(i_regs->regmap, dops[i].rs2);
+      assert(denominator >= 0);
+      if (hr >= 0) emit_zeroreg(hr);
+      if (lr >= 0) {
+        emit_zeroreg(lr);
+        emit_test(denominator, denominator);
+        emit_csinvne_reg(lr, lr, lr);
       }
     }
     else
@@ -1872,6 +1949,65 @@ static void multdiv_assemble_arm64(int i, const struct regstat *i_regs)
   }
 }
 #define multdiv_assemble multdiv_assemble_arm64
+
+// wb_dirtys making use of stp when possible
+static void wb_dirtys(const signed char i_regmap[], u_int i_dirty)
+{
+  signed char mregs[34+1];
+  int r, hr;
+  memset(mregs, -1, sizeof(mregs));
+  for (hr = 0; hr < HOST_REGS; hr++) {
+    r = i_regmap[hr];
+    if (hr == EXCLUDE_REG || r <= 0 || r == CCREG)
+      continue;
+    if (!((i_dirty >> hr) & 1))
+      continue;
+    assert(r < 34u);
+    mregs[r] = hr;
+  }
+  for (r = 1; r < 34; r++) {
+    if (mregs[r] < 0)
+      continue;
+    if (mregs[r+1] >= 0) {
+      uintptr_t offset = (u_char *)&psxRegs.GPR.r[r] - (u_char *)&dynarec_local;
+      emit_ldstp(1, 0, mregs[r], mregs[r+1], FP, offset);
+      r++;
+    }
+    else
+      emit_storereg(r, mregs[r]);
+  }
+}
+#define wb_dirtys wb_dirtys
+
+static void load_all_regs(const signed char i_regmap[])
+{
+  signed char mregs[34+1];
+  int r, hr;
+  memset(mregs, -1, sizeof(mregs));
+  for (hr = 0; hr < HOST_REGS; hr++) {
+    r = i_regmap[hr];
+    if (hr == EXCLUDE_REG || r < 0 || r == CCREG)
+      continue;
+    if ((u_int)r < 34u)
+      mregs[r] = hr;
+    else if (r < TEMPREG)
+      emit_loadreg(r, hr);
+  }
+  if (mregs[0] >= 0)
+    emit_zeroreg(mregs[0]); // we could use arm64's ZR instead of reg alloc
+  for (r = 1; r < 34; r++) {
+    if (mregs[r] < 0)
+      continue;
+    if (mregs[r+1] >= 0) {
+      uintptr_t offset = (u_char *)&psxRegs.GPR.r[r] - (u_char *)&dynarec_local;
+      emit_ldstp(0, 0, mregs[r], mregs[r+1], FP, offset);
+      r++;
+    }
+    else
+      emit_loadreg(r, mregs[r]);
+  }
+}
+#define load_all_regs load_all_regs
 
 static void do_jump_vaddr(u_int rs)
 {

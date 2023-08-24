@@ -97,10 +97,9 @@ FUNCTION(cc_interrupt):
 	add	rCC, w0, rCC
 	str	wzr, [rFP, #LO_pending_exception]
 	str	rCC, [rFP, #LO_cycle]		/* PCSX cycles */
-#	str	rCC, [rFP, #LO_reg_cop0+36]	/* Count */
 	mov	x21, lr
 1:
-	add	x0, rFP, #(LO_psxRegs + 34*4)   /* CP0 */
+	add	x0, rFP, #LO_reg_cop0           /* CP0 */
 	bl	gen_interupt
 	mov	lr, x21
 	ldr	rCC, [rFP, #LO_cycle]
@@ -119,41 +118,36 @@ FUNCTION(cc_interrupt):
 	.size	cc_interrupt, .-cc_interrupt
 
 	.align	2
-FUNCTION(fp_exception):
-	mov	w2, #0x10000000
-0:
-	ldr	w1, [rFP, #LO_reg_cop0+48] /* Status */
-	mov	w3, #0x80000000
-	str	w0, [rFP, #LO_reg_cop0+56] /* EPC */
-	orr	w1, w1, #2
-	add	w2, w2, #0x2c
-	str	w1, [rFP, #LO_reg_cop0+48] /* Status */
-	str	w2, [rFP, #LO_reg_cop0+52] /* Cause */
-	add	w0, w3, #0x80
-	bl	ndrc_get_addr_ht
-	br	x0
-	.size	fp_exception, .-fp_exception
-	.align	2
-FUNCTION(fp_exception_ds):
-	mov	w2, #0x90000000 /* Set high bit if delay slot */
-	b	0b
-	.size	fp_exception_ds, .-fp_exception_ds
-
-	.align	2
+FUNCTION(jump_addrerror_ds): /* R3000E_AdEL / R3000E_AdES in w0 */
+	str	w1, [rFP, #(LO_psxRegs + (34+8)*4)]  /* BadVaddr */
+	mov	w1, #1
+	b	call_psxException
+FUNCTION(jump_addrerror):
+	str	w1, [rFP, #(LO_psxRegs + (34+8)*4)]  /* BadVaddr */
+	mov	w1, #0
+	b	call_psxException
+FUNCTION(jump_overflow_ds):
+	mov	w0, #(12<<2)  /* R3000E_Ov */
+	mov	w1, #1
+	b	call_psxException
+FUNCTION(jump_overflow):
+	mov	w0, #(12<<2)
+	mov	w1, #0
+	b	call_psxException
 FUNCTION(jump_break_ds):
-	mov	w0, #0x24
+	mov	w0, #(9<<2)  /* R3000E_Bp */
 	mov	w1, #1
 	b	call_psxException
 FUNCTION(jump_break):
-	mov	w0, #0x24
+	mov	w0, #(9<<2)
 	mov	w1, #0
 	b	call_psxException
 FUNCTION(jump_syscall_ds):
-	mov	w0, #0x20
+	mov	w0, #(8<<2)  /* R3000E_Syscall */
 	mov	w1, #2
 	b	call_psxException
 FUNCTION(jump_syscall):
-	mov	w0, #0x20
+	mov	w0, #(8<<2)
 	mov	w1, #0
 
 call_psxException:
@@ -161,17 +155,19 @@ call_psxException:
 	str	w2, [rFP, #LO_pcaddr]
 	add	rCC, w3, rCC
 	str	rCC, [rFP, #LO_cycle]           /* PCSX cycles */
-	add	x2, rFP, #(LO_psxRegs + 34*4)   /* CP0 */
+	add	x2, rFP, #LO_reg_cop0           /* CP0 */
 	bl	psxException
 
 	/* note: psxException might do recursive recompiler call from it's HLE code,
 	 * so be ready for this */
 FUNCTION(jump_to_new_pc):
+	ldr	w2, [rFP, #LO_stop]
 	ldr	w1, [rFP, #LO_next_interupt]
 	ldr	rCC, [rFP, #LO_cycle]
 	ldr	w0, [rFP, #LO_pcaddr]
 	sub	rCC, rCC, w1
 	str	w1, [rFP, #LO_last_count]
+	cbnz	w2, new_dyna_leave
 	bl	ndrc_get_addr_ht
 	br	x0
 	.size	jump_to_new_pc, .-jump_to_new_pc
@@ -307,7 +303,7 @@ FUNCTION(jump_handle_swl):
 	orr	w4, wzr, w0, lsr #12
 	ldr	x3, [x3, w4, uxtw #3]
 	adds	x3, x3, x3
-	bcs	4f
+	bcs	jump_handle_swx_interp
 	add	x3, x0, x3
 	mov	w0, w2
 	tbz	x3, #1, 10f	// & 2
@@ -331,10 +327,6 @@ FUNCTION(jump_handle_swl):
 	lsr	w2, w1, #24
 	strb	w2, [x3]
 	ret
-4:
-	mov	w0, w2		// todo
-	bl	abort
-	ret
 
 FUNCTION(jump_handle_swr):
 	/* w0 = address, w1 = data, w2 = cycles */
@@ -342,7 +334,7 @@ FUNCTION(jump_handle_swr):
 	orr	w4, wzr, w0, lsr #12
 	ldr	x3, [x3, w4, uxtw #3]
 	adds	x3, x3, x3
-	bcs	4f
+	bcs	jump_handle_swx_interp
 	add	x3, x0, x3
 	mov	w0, w2
 	tbz	x3, #1, 10f	// & 2
@@ -363,10 +355,14 @@ FUNCTION(jump_handle_swr):
 0:
 	str	w1, [x3]
 	ret
-4:
-	mov	w0, w2		// todo
-	bl	abort
-	ret
+
+jump_handle_swx_interp: /* almost never happens */
+	ldr	w3, [rFP, #LO_last_count]
+	add	x0, rFP, #LO_psxRegs
+	add	w2, w3, w2
+	str	w2, [rFP, #LO_cycle]           /* PCSX cycles */
+	bl	execI
+	b	jump_to_new_pc
 
 FUNCTION(call_gteStall):
 	/* w0 = op_cycles, w1 = cycles */
@@ -380,3 +376,27 @@ FUNCTION(call_gteStall):
 	add	rCC, rCC, w0
 	ret
 
+#ifdef DRC_DBG
+#undef do_insn_cmp
+FUNCTION(do_insn_cmp_arm64):
+	stp	x2,  x3,  [sp, #(SSP_CALLEE_REGS + 2*8)]
+	stp	x4,  x5,  [sp, #(SSP_CALLEE_REGS + 4*8)]
+	stp	x6,  x7,  [sp, #(SSP_CALLEE_REGS + 6*8)]
+	stp	x8,  x9,  [sp, #(SSP_CALLEE_REGS + 8*8)]
+	stp	x10, x11, [sp, #(SSP_CALLEE_REGS + 10*8)]
+	stp	x12, x13, [sp, #(SSP_CALLEE_REGS + 12*8)]
+	stp	x14, x15, [sp, #(SSP_CALLEE_REGS + 14*8)]
+	stp	x16, x17, [sp, #(SSP_CALLEE_REGS + 16*8)]
+	stp	x18, x30, [sp, #(SSP_CALLEE_REGS + 18*8)]
+	bl	do_insn_cmp
+	ldp	x2,  x3,  [sp, #(SSP_CALLEE_REGS + 2*8)]
+	ldp	x4,  x5,  [sp, #(SSP_CALLEE_REGS + 4*8)]
+	ldp	x6,  x7,  [sp, #(SSP_CALLEE_REGS + 6*8)]
+	ldp	x8,  x9,  [sp, #(SSP_CALLEE_REGS + 8*8)]
+	ldp	x10, x11, [sp, #(SSP_CALLEE_REGS + 10*8)]
+	ldp	x12, x13, [sp, #(SSP_CALLEE_REGS + 12*8)]
+	ldp	x14, x15, [sp, #(SSP_CALLEE_REGS + 14*8)]
+	ldp	x16, x17, [sp, #(SSP_CALLEE_REGS + 16*8)]
+	ldp	x18, x30, [sp, #(SSP_CALLEE_REGS + 18*8)]
+	ret
+#endif

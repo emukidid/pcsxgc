@@ -144,30 +144,6 @@ int GetCdromFile(u8 *mdir, u8 *time, char *filename) {
 	return retval;
 }
 
-static const unsigned int gpu_ctl_def[] = {
-	0x00000000, 0x01000000, 0x03000000, 0x04000000,
-	0x05000800, 0x06c60260, 0x0703fc10, 0x08000027,
-};
-
-static const unsigned int gpu_data_def[] = {
-	0xe100360b, 0xe2000000, 0xe3000800, 0xe4077e7f,
-	0xe5001000, 0xe6000000,
-	0x02000000, 0x00000000, 0x01ff03ff,
-};
-
-void BiosLikeGPUSetup()
-{
-	int i;
-
-	for (i = 0; i < sizeof(gpu_ctl_def) / sizeof(gpu_ctl_def[0]); i++)
-		GPU_writeStatus(gpu_ctl_def[i]);
-
-	for (i = 0; i < sizeof(gpu_data_def) / sizeof(gpu_data_def[0]); i++)
-		GPU_writeData(gpu_data_def[i]);
-
-	HW_GPU_STATUS |= SWAP32(PSXGPU_nBUSY);
-}
-
 static void SetBootRegs(u32 pc, u32 gp, u32 sp)
 {
 	//printf("%s %08x %08x %08x\n", __func__, pc, gp, sp);
@@ -176,6 +152,10 @@ static void SetBootRegs(u32 pc, u32 gp, u32 sp)
 	psxRegs.pc = pc;
 	psxRegs.GPR.n.gp = gp;
 	psxRegs.GPR.n.sp = sp ? sp : 0x801fff00;
+	psxRegs.GPR.n.fp = psxRegs.GPR.n.sp;
+
+	psxRegs.GPR.n.t0 = psxRegs.GPR.n.sp; // mimic A(43)
+	psxRegs.GPR.n.t3 = pc;
 
 	psxCpu->Notify(R3000ACPU_NOTIFY_AFTER_LOAD, NULL);
 }
@@ -188,12 +168,26 @@ void BiosBootBypass() {
 	psxRegs.pc = psxRegs.GPR.n.ra;
 }
 
+static void getFromCnf(char *buf, const char *key, u32 *val)
+{
+	buf = strstr(buf, key);
+	if (buf)
+		buf = strchr(buf, '=');
+	if (buf)
+		*val = strtol(buf + 1, NULL, 16);
+}
+
 int LoadCdrom() {
 	EXE_HEADER tmpHead;
 	struct iso_directory_record *dir;
 	u8 time[4], *buf;
 	u8 mdir[4096];
 	char exename[256];
+	u32 cnf_tcb = 4;
+	u32 cnf_event = 16;
+	u32 cnf_stack = 0;
+	u32 sp = 0;
+	int ret;
 
 	if (!Config.HLE) {
 		if (psxRegs.pc != 0x80030000) // BiosBootBypass'ed or custom BIOS?
@@ -224,11 +218,12 @@ int LoadCdrom() {
 	else {
 		// read the SYSTEM.CNF
 		READTRACK();
+		buf[1023] = 0;
 
-		sscanf((char *)buf + 12, "BOOT = cdrom:\\%255s", exename);
-		if (GetCdromFile(mdir, time, exename) == -1) {
-			sscanf((char *)buf + 12, "BOOT = cdrom:%255s", exename);
-			if (GetCdromFile(mdir, time, exename) == -1) {
+		ret = sscanf((char *)buf + 12, "BOOT = cdrom:\\%255s", exename);
+		if (ret < 1 || GetCdromFile(mdir, time, exename) == -1) {
+			ret = sscanf((char *)buf + 12, "BOOT = cdrom:%255s", exename);
+			if (ret < 1 || GetCdromFile(mdir, time, exename) == -1) {
 				char *ptr = strstr((char *)buf + 12, "cdrom:");
 				if (ptr != NULL) {
 					ptr += 6;
@@ -244,6 +239,11 @@ int LoadCdrom() {
 					return -1;
 			}
 		}
+		getFromCnf((char *)buf + 12, "TCB", &cnf_tcb);
+		getFromCnf((char *)buf + 12, "EVENT", &cnf_event);
+		getFromCnf((char *)buf + 12, "STACK", &cnf_stack);
+		if (Config.HLE)
+			psxBiosCnfLoaded(cnf_tcb, cnf_event);
 
 		// Read the EXE-Header
 		READTRACK();
@@ -251,8 +251,11 @@ int LoadCdrom() {
 
 	memcpy(&tmpHead, buf + 12, sizeof(EXE_HEADER));
 
-	SysPrintf("manual booting '%s'\n", exename);
-	SetBootRegs(SWAP32(tmpHead.pc0), SWAP32(tmpHead.gp0), SWAP32(tmpHead.s_addr));
+	SysPrintf("manual booting '%s' pc=%x\n", exename, SWAP32(tmpHead.pc0));
+	sp = SWAP32(tmpHead.s_addr);
+	if (cnf_stack)
+		sp = cnf_stack;
+	SetBootRegs(SWAP32(tmpHead.pc0), SWAP32(tmpHead.gp0), sp);
 
 	tmpHead.t_size = SWAP32(tmpHead.t_size);
 	tmpHead.t_addr = SWAP32(tmpHead.t_addr);
@@ -281,10 +284,16 @@ int LoadCdromFile(const char *filename, EXE_HEADER *head) {
 	u8 time[4],*buf;
 	u8 mdir[4096];
 	char exename[256];
+	const char *p1, *p2;
 	u32 size, addr;
 	void *mem;
 
-	sscanf(filename, "cdrom:\\%255s", exename);
+	p1 = filename;
+	if ((p2 = strchr(p1, ':')))
+		p1 = p2 + 1;
+	while (*p1 == '\\')
+		p1++;
+	snprintf(exename, sizeof(exename), "%s", p1);
 
 	time[0] = itob(0); time[1] = itob(2); time[2] = itob(0x10);
 
@@ -793,8 +802,6 @@ int RecvPcsxInfo() {
 	NET_recvData(&SpuIrq_old, sizeof(SpuIrq_old), PSE_NET_BLOCKING);
 	NET_recvData(&RCntFix_old, sizeof(RCntFix_old), PSE_NET_BLOCKING);
 	NET_recvData(&Config.PsxType, sizeof(Config.PsxType), PSE_NET_BLOCKING);
-
-	SysUpdate();
 
 	tmp = Config.Cpu;
 	NET_recvData(&Config.Cpu, sizeof(Config.Cpu), PSE_NET_BLOCKING);

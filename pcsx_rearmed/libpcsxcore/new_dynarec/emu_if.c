@@ -28,7 +28,9 @@ void pcsx_mtc0(u32 reg, u32 val)
 	evprintf("MTC0 %d #%x @%08x %u\n", reg, val, psxRegs.pc, psxRegs.cycle);
 	MTC0(&psxRegs, reg, val);
 	gen_interupt(&psxRegs.CP0);
-	if (psxRegs.CP0.n.Cause & psxRegs.CP0.n.SR & 0x0300) // possible sw irq
+
+	//if (psxRegs.CP0.n.Cause & psxRegs.CP0.n.SR & 0x0300) // possible sw irq
+	if ((psxRegs.pc & 0x803ffeff) == 0x80000080)
 		pending_exception = 1;
 }
 
@@ -246,8 +248,6 @@ static void ari64_reset()
 // (HLE softcall exit and BIOS fastboot end)
 static void ari64_execute_until()
 {
-	schedule_timeslice();
-
 	evprintf("ari64_execute %08x, %u->%u (%d)\n", psxRegs.pc,
 		psxRegs.cycle, next_interupt, next_interupt - psxRegs.cycle);
 
@@ -260,6 +260,7 @@ static void ari64_execute_until()
 static void ari64_execute()
 {
 	while (!stop) {
+		schedule_timeslice();
 		ari64_execute_until();
 		evprintf("drc left @%08x\n", psxRegs.pc);
 	}
@@ -270,6 +271,7 @@ static void ari64_execute_block(enum blockExecCaller caller)
 	if (caller == EXEC_CALLER_BOOT)
 		stop++;
 
+	next_interupt = psxRegs.cycle + 1;
 	ari64_execute_until();
 
 	if (caller == EXEC_CALLER_BOOT)
@@ -296,6 +298,7 @@ static void ari64_notify(enum R3000Anote note, void *data) {
 		break;
 	case R3000ACPU_NOTIFY_AFTER_LOAD:
 		ari64_reset();
+		psxInt.Notify(note, data);
 		break;
 	}
 }
@@ -511,7 +514,9 @@ void do_insn_cmp(void)
 	static u32 handler_cycle_intr;
 	u32 *allregs_p = (void *)&psxRegs;
 	u32 *allregs_e = (void *)&rregs;
+	u32 badregs_mask = 0;
 	static u32 ppc, failcount;
+	static u32 badregs_mask_prev;
 	int i, ret, bad = 0, fatal = 0, which_event = -1;
 	u32 ev_cycles = 0;
 	u8 code;
@@ -591,18 +596,24 @@ void do_insn_cmp(void)
 		if (allregs_p[i] != allregs_e[i]) {
 			miss_log_add(i, allregs_p[i], allregs_e[i], psxRegs.pc, psxRegs.cycle);
 			bad++;
-			if (i > 32+2)
+			if (i >= 32)
 				fatal = 1;
+			else
+				badregs_mask |= 1u << i;
 		}
 	}
 
-	if (!fatal && psxRegs.pc == rregs.pc && bad < 6 && failcount < 32) {
+	if (badregs_mask_prev & badregs_mask)
+		failcount++;
+	else
+		failcount = 0;
+
+	if (!fatal && psxRegs.pc == rregs.pc && bad < 6 && failcount < 24) {
 		static int last_mcycle;
 		if (last_mcycle != psxRegs.cycle >> 20) {
 			printf("%u\n", psxRegs.cycle);
 			last_mcycle = psxRegs.cycle >> 20;
 		}
-		failcount++;
 		goto ok;
 	}
 
@@ -621,6 +632,7 @@ void do_insn_cmp(void)
 ok:
 	//psxRegs.cycle = rregs.cycle + 2; // sync timing
 	ppc = psxRegs.pc;
+	badregs_mask_prev = badregs_mask;
 }
 
 #endif

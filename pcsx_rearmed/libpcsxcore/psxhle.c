@@ -30,7 +30,10 @@
 #endif
 
 static void hleDummy() {
+	log_unhandled("hleDummy called @%08x ra=%08x\n",
+		psxRegs.pc - 4, psxRegs.GPR.n.ra);
 	psxRegs.pc = psxRegs.GPR.n.ra;
+	psxRegs.cycle += 1000;
 
 	psxBranchTest();
 }
@@ -85,18 +88,25 @@ static void hleExecRet() {
 
 	PSXHLE_LOG("ExecRet %x: %x\n", psxRegs.GPR.n.s0, header->ret);
 
-	psxRegs.GPR.n.ra = header->ret;
-	psxRegs.GPR.n.sp = header->_sp;
-	psxRegs.GPR.n.s8 = header->_fp;
-	psxRegs.GPR.n.gp = header->_gp;
-	psxRegs.GPR.n.s0 = header->base;
+	psxRegs.GPR.n.ra = SWAP32(header->ret);
+	psxRegs.GPR.n.sp = SWAP32(header->_sp);
+	psxRegs.GPR.n.fp = SWAP32(header->_fp);
+	psxRegs.GPR.n.gp = SWAP32(header->_gp);
+	psxRegs.GPR.n.s0 = SWAP32(header->base);
 
 	psxRegs.GPR.n.v0 = 1;
 	psxRegs.pc = psxRegs.GPR.n.ra;
 }
 
-void (* const psxHLEt[8])() = {
+void (* const psxHLEt[24])() = {
 	hleDummy, hleA0, hleB0, hleC0,
-	hleBootstrap, hleExecRet,
-	hleDummy, hleDummy
+	hleBootstrap, hleExecRet, psxBiosException, hleDummy,
+	hleExc0_0_1, hleExc0_0_2,
+	hleExc0_1_1, hleExc0_1_2, hleExc0_2_2_syscall,
+	hleExc1_0_1, hleExc1_0_2,
+	hleExc1_1_1, hleExc1_1_2,
+	hleExc1_2_1, hleExc1_2_2,
+	hleExc1_3_1, hleExc1_3_2,
+	hleExc3_0_2_defint,
+	hleExcPadCard1, hleExcPadCard2,
 };

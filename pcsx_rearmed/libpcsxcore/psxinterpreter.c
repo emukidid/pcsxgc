@@ -112,7 +112,8 @@ static void intException(psxRegisters *regs, u32 pc, u32 cause)
 	if (cause != 0x20) {
 		//FILE *f = fopen("/tmp/psx_ram.bin", "wb");
 		//fwrite(psxM, 1, 0x200000, f); fclose(f);
-		log_unhandled("exception %08x @%08x\n", cause, pc);
+		log_unhandled("exception %08x @%08x ra=%08x\n",
+			cause, pc, regs->GPR.n.ra);
 	}
 	dloadFlush(regs);
 	regs->pc = pc;
@@ -453,14 +454,6 @@ static void doBranchRegE(psxRegisters *regs, u32 tar) {
 	}
 	doBranch(regs, tar, R3000A_BRANCH_TAKEN);
 }
-
-#if __has_builtin(__builtin_add_overflow) || (defined(__GNUC__) && __GNUC__ >= 5)
-#define add_overflow(a, b, r) __builtin_add_overflow(a, b, &(r))
-#define sub_overflow(a, b, r) __builtin_sub_overflow(a, b, &(r))
-#else
-#define add_overflow(a, b, r) ({r = (u32)a + (u32)b; (a ^ ~b) & (a ^ r) & (1u<<31);})
-#define sub_overflow(a, b, r) ({r = (u32)a - (u32)b; (a ^  b) & (a ^ r) & (1u<<31);})
-#endif
 
 static void addExc(psxRegisters *regs, u32 rt, s32 a1, s32 a2) {
 	s32 val;
@@ -1126,6 +1119,7 @@ OP(psxHLE) {
 		return;
 	}
 	psxHLEt[hleCode]();
+	branchSeen = 1;
 }
 
 static void (INT_ATTR *psxBSC[64])(psxRegisters *regs_, u32 code) = {
@@ -1344,12 +1338,15 @@ void intApplyConfig() {
 }
 
 static void intShutdown() {
+	dloadClear(&psxRegs);
 }
 
-// single step (may do several ops in case of a branch)
+// single step (may do several ops in case of a branch or load delay)
+// called by asm/dynarec
 void execI(psxRegisters *regs) {
-	execI_(psxMemRLUT, regs);
-	dloadFlush(regs);
+	do {
+		execIbp(psxMemRLUT, regs);
+	} while (regs->dloadReg[0] || regs->dloadReg[1]);
 }
 
 R3000Acpu psxInt = {
