@@ -19,9 +19,10 @@
 #include <stdlib.h>
 #include <aesndlib.h>
 #include <string.h>
-#include "out.h"
-#include "spu_config.h"
-#include "../Gamecube/wiiSXconfig.h"
+
+#include "../pcsx_rearmed/plugins/dfsound/out.h"
+#include "../pcsx_rearmed/plugins/dfsound/spu_config.h"
+#include "wiiSXconfig.h"
 
 char audioEnabled;
 static AESNDPB* voice = NULL;
@@ -101,7 +102,7 @@ static void aesnd_feed(void *pSound, int lBytes) {
 	AESND_SetVoiceStop(voice, false);
 }
 
-void out_register_aesnd(struct out_driver *drv)
+void out_register_oss(struct out_driver *drv)
 {
 	drv->name = "aesnd";
 	drv->init = aesnd_init;

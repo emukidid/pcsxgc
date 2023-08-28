@@ -34,11 +34,12 @@
 # include <debug.h>
 #endif
 #include <libpcsxcore/psxcommon.h>
+#include <libpcsxcore/r3000a.h>
 #include "wiiSXconfig.h"
 #include "menu/MenuContext.h"
 extern "C" {
 #include <libpcsxcore/lightrec/mem.h>
-#include "../dfsound/spu_config.h"
+#include "../pcsx_rearmed/plugins/dfsound/spu_config.h"
 #include "DEBUG.h"
 #include "fileBrowser/fileBrowser.h"
 #include "fileBrowser/fileBrowser-libfat.h"
@@ -50,6 +51,8 @@ extern "C" {
 #endif
 #include "vm/vm.h"
 }
+
+#include <psemu_plugin_defs.h>
 
 #ifdef WII
 #include "MEM2.h"
@@ -336,18 +339,6 @@ void video_mode_init(GXRModeObj *videomode, u32 *fb1, u32 *fb2)
 	xfb[1] = fb2;
 }
 
-// Plugin structure
-extern "C" {
-#include "GamecubePlugins.h"
-PluginTable plugins[] =
-	{ PLUGIN_SLOT_0,
-	  PLUGIN_SLOT_1,
-	  PLUGIN_SLOT_2,
-	  PLUGIN_SLOT_3,
-	  PLUGIN_SLOT_4,
-	  PLUGIN_SLOT_5 };
-}
-
 int main(int argc, char *argv[]) 
 {
 	/* INITIALIZE */
@@ -618,6 +609,9 @@ void SysStartCPU() {
 	psxCpu->Execute();
 }
 
+extern "C" void ClosePlugins();
+extern "C" void ReleasePlugins();
+
 void SysClose() 
 {
 	psxShutdown();
@@ -660,27 +654,6 @@ void SysPrintf(const char *fmt, ...)
 #endif
 }
 
-void *SysLoadLibrary(const char *lib) 
-{
-	int i;
-	for(i=0; i<NUM_PLUGINS; i++)
-		if((plugins[i].lib != NULL) && (!strcmp(lib, plugins[i].lib)))
-			return (void*)i;
-	SysPrintf("SysLoadLibrary(%s) couldn't be found!\r\n", lib);
-	return NULL;
-}
-
-void *SysLoadSym(void *lib, const char *sym) 
-{
-	PluginTable* plugin = plugins + (int)lib;
-	int i;
-	for(i=0; i<plugin->numSyms; i++)
-		if(plugin->syms[i].sym && !strcmp(sym, plugin->syms[i].sym))
-			return plugin->syms[i].pntr;
-	SysPrintf("SysLoadSym(%s, %s) couldn't be found!\r\n", lib, sym);
-	return NULL;
-}
-
 int framesdone = 0;
 void SysUpdate() 
 {
@@ -689,8 +662,6 @@ void SysUpdate()
 
 void SysRunGui() {}
 void SysMessage(const char *fmt, ...) {}
-void SysCloseLibrary(void *lib) {}
-const char *SysLibError() {	return NULL; }
 
 void pl_frame_limit(void)
 {
@@ -711,33 +682,37 @@ static s8 psxR_buf[0x80000] __attribute__((aligned(4096)));
 static s8 code_buf [0x400000] __attribute__((aligned(32))); // 4 MiB code buffer for Lightrec
 void * code_buffer = code_buf;
 
+#ifndef MAP_OFFSET
+#define MAP_OFFSET 0x0
+#endif
+
 int lightrec_init_mmap(void)
 {
 	psxP = &psxM_buf[0x200000];
 
-	if (lightrec_mmap(psxM_buf, 0x0, 0x200000)
-	    || lightrec_mmap(psxM_buf, 0x200000, 0x200000)
-	    || lightrec_mmap(psxM_buf, 0x400000, 0x200000)
-	    || lightrec_mmap(psxM_buf, 0x600000, 0x200000)) {
+	if (lightrec_mmap(psxM_buf, MAP_OFFSET, 0x200000)
+	    || lightrec_mmap(psxM_buf, MAP_OFFSET + 0x200000, 0x200000)
+	    || lightrec_mmap(psxM_buf, MAP_OFFSET + 0x400000, 0x200000)
+	    || lightrec_mmap(psxM_buf, MAP_OFFSET + 0x600000, 0x200000)) {
 		SysMessage(_("Error mapping RAM"));
 		return -1;
 	}
 
-	psxM = (s8 *) 0x0;
+	psxM = (s8 *) MAP_OFFSET;
 
-	if (lightrec_mmap(psxR_buf, 0x1fc00000, 0x80000)) {
+	if (lightrec_mmap(psxR_buf, MAP_OFFSET + 0x1fc00000, 0x80000)) {
 		SysMessage(_("Error mapping BIOS"));
 		return -1;
 	}
 
-	psxR = (s8 *) 0x1fc00000;
+	psxR = (s8 *) (MAP_OFFSET + 0x1fc00000);
 
-	if (lightrec_mmap(psxM_buf + 0x210000, 0x1f800000, 0x10000)) {
+	if (lightrec_mmap(psxM_buf + 0x210000, MAP_OFFSET + 0x1f800000, 0x10000)) {
 		SysMessage(_("Error mapping I/O"));
 		return -1;
 	}
 
-	psxH = (s8 *) 0x1f800000;
+	psxH = (s8 *) (MAP_OFFSET + 0x1f800000);
 
 	return 0;
 }
@@ -751,7 +726,7 @@ void PreSaveState() {
 }
 
 void PostSaveState() {
-	psxM = (s8 *) 0x0;
+	psxM = (s8 *) MAP_OFFSET;
 }
 
 } //extern "C"

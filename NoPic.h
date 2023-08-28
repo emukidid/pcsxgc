@@ -8,7 +8,7 @@
 // 10 = red
 // 11 = transparent
 
-unsigned char cFont[10][120]=
+static inline unsigned char cFont[10][120]=
 {
 // 0
 {0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,
@@ -234,7 +234,7 @@ unsigned char cFont[10][120]=
 
 ////////////////////////////////////////////////////////////////////////
 
-void PaintPicDot(unsigned char * p,unsigned char c)
+static inline void PaintPicDot(unsigned char * p,unsigned char c)
 {
 
  if(c==0) {*p++=0x00;*p++=0x00;*p=0x00;return;}        // black
