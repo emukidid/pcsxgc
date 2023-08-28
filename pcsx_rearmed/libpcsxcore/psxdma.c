@@ -24,6 +24,13 @@
 #include "psxdma.h"
 #include "gpu.h"
 
+#ifndef min
+#define min(a, b) ((b) < (a) ? (b) : (a))
+#endif
+#ifndef PSXDMA_LOG
+#define PSXDMA_LOG(...)
+#endif
+
 // Dma0/1 in Mdec.c
 // Dma3   in CdRom.c
 
@@ -36,43 +43,38 @@ void spuInterrupt() {
 }
 
 void psxDma4(u32 madr, u32 bcr, u32 chcr) { // SPU
+	u32 words, words_max = 0, words_copy;
 	u16 *ptr;
-	u32 words;
+
+	madr &= ~3;
+	ptr = getDmaRam(madr, &words_max);
+	if (ptr == INVALID_PTR)
+		log_unhandled("bad dma4 madr %x\n", madr);
+
+	words = words_copy = (bcr >> 16) * (bcr & 0xffff);
+	if (words_copy > words_max) {
+		log_unhandled("bad dma4 madr %x bcr %x\n", madr, bcr);
+		words_copy = words_max;
+	}
 
 	switch (chcr) {
 		case 0x01000201: //cpu to spu transfer
-#ifdef PSXDMA_LOG
 			PSXDMA_LOG("*** DMA4 SPU - mem2spu *** %x addr = %x size = %x\n", chcr, madr, bcr);
-#endif
-			ptr = (u16 *)PSXM(madr);
-			if (ptr == INVALID_PTR) {
-#ifdef CPU_LOG
-				CPU_LOG("*** DMA4 SPU - mem2spu *** NULL Pointer!!!\n");
-#endif
+			if (ptr == INVALID_PTR)
 				break;
-			}
-			words = (bcr >> 16) * (bcr & 0xffff);
-			SPU_writeDMAMem(ptr, words * 2, psxRegs.cycle);
-			HW_DMA4_MADR = SWAPu32(madr + words * 4);
+			SPU_writeDMAMem(ptr, words_copy * 2, psxRegs.cycle);
+			HW_DMA4_MADR = SWAPu32(madr + words_copy * 2);
 			SPUDMA_INT(words * 4);
 			return;
 
 		case 0x01000200: //spu to cpu transfer
-#ifdef PSXDMA_LOG
 			PSXDMA_LOG("*** DMA4 SPU - spu2mem *** %x addr = %x size = %x\n", chcr, madr, bcr);
-#endif
-			ptr = (u16 *)PSXM(madr);
-			if (ptr == INVALID_PTR) {
-#ifdef CPU_LOG
-				CPU_LOG("*** DMA4 SPU - spu2mem *** NULL Pointer!!!\n");
-#endif
+			if (ptr == INVALID_PTR)
 				break;
-			}
-			words = (bcr >> 16) * (bcr & 0xffff);
-			SPU_readDMAMem(ptr, words * 2, psxRegs.cycle);
-			psxCpu->Clear(madr, words);
+			SPU_readDMAMem(ptr, words_copy * 2, psxRegs.cycle);
+			psxCpu->Clear(madr, words_copy);
 
-			HW_DMA4_MADR = SWAPu32(madr + words * 4);
+			HW_DMA4_MADR = SWAPu32(madr + words_copy * 4);
 			SPUDMA_INT(words * 4);
 			return;
 
@@ -127,59 +129,57 @@ static u32 gpuDmaChainSize(u32 addr) {
 }
 
 void psxDma2(u32 madr, u32 bcr, u32 chcr) { // GPU
-	u32 *ptr, madr_next, *madr_next_p;
+	u32 *ptr, madr_next, *madr_next_p, size;
+	u32 words, words_left, words_max, words_copy;
 	int do_walking;
-	u32 words;
-	u32 size;
 
+	madr &= ~3;
 	switch (chcr) {
 		case 0x01000200: // vram2mem
-#ifdef PSXDMA_LOG
 			PSXDMA_LOG("*** DMA2 GPU - vram2mem *** %lx addr = %lx size = %lx\n", chcr, madr, bcr);
-#endif
-			ptr = (u32 *)PSXM(madr);
+			ptr = getDmaRam(madr, &words_max);
 			if (ptr == INVALID_PTR) {
-#ifdef CPU_LOG
-				CPU_LOG("*** DMA2 GPU - vram2mem *** NULL Pointer!!!\n");
-#endif
+				log_unhandled("bad dma2 madr %x\n", madr);
 				break;
 			}
 			// BA blocks * BS words (word = 32-bits)
-			words = (bcr >> 16) * (bcr & 0xffff);
-			GPU_readDataMem(ptr, words);
-			psxCpu->Clear(madr, words);
+			words = words_copy = (bcr >> 16) * (bcr & 0xffff);
+			if (words > words_max) {
+				log_unhandled("bad dma2 madr %x bcr %x\n", madr, bcr);
+				words_copy = words_max;
+			}
+			GPU_readDataMem(ptr, words_copy);
+			psxCpu->Clear(madr, words_copy);
 
-			HW_DMA2_MADR = SWAPu32(madr + words * 4);
+			HW_DMA2_MADR = SWAPu32(madr + words_copy * 4);
 
 			// already 32-bit word size ((size * 4) / 4)
 			GPUDMA_INT(words / 4);
 			return;
 
 		case 0x01000201: // mem2vram
-#ifdef PSXDMA_LOG
 			PSXDMA_LOG("*** DMA 2 - GPU mem2vram *** %lx addr = %lx size = %lx\n", chcr, madr, bcr);
-#endif
-			ptr = (u32 *)PSXM(madr);
-			if (ptr == INVALID_PTR) {
-#ifdef CPU_LOG
-				CPU_LOG("*** DMA2 GPU - mem2vram *** NULL Pointer!!!\n");
-#endif
-				break;
+			words = words_left = (bcr >> 16) * (bcr & 0xffff);
+			while (words_left > 0) {
+				ptr = getDmaRam(madr, &words_max);
+				if (ptr == INVALID_PTR) {
+					log_unhandled("bad2 dma madr %x\n", madr);
+					break;
+				}
+				words_copy = min(words_left, words_max);
+				GPU_writeDataMem(ptr, words_copy);
+				words_left -= words_copy;
+				madr += words_copy * 4;
 			}
-			// BA blocks * BS words (word = 32-bits)
-			words = (bcr >> 16) * (bcr & 0xffff);
-			GPU_writeDataMem(ptr, words);
 
-			HW_DMA2_MADR = SWAPu32(madr + words * 4);
+			HW_DMA2_MADR = SWAPu32(madr);
 
 			// already 32-bit word size ((size * 4) / 4)
 			GPUDMA_INT(words / 4);
 			return;
 
 		case 0x01000401: // dma chain
-#ifdef PSXDMA_LOG
 			PSXDMA_LOG("*** DMA 2 - GPU dma chain *** %lx addr = %lx size = %lx\n", chcr, madr, bcr);
-#endif
 			// when not emulating walking progress, end immediately
 			madr_next = 0xffffff;
 
@@ -229,19 +229,16 @@ void gpuInterrupt() {
 }
 
 void psxDma6(u32 madr, u32 bcr, u32 chcr) {
-	u32 words;
-	u32 *mem = (u32 *)PSXM(madr);
+	u32 words, words_max;
+	u32 *mem;
 
-#ifdef PSXDMA_LOG
 	PSXDMA_LOG("*** DMA6 OT *** %x addr = %x size = %x\n", chcr, madr, bcr);
-#endif
 
 	if (chcr == 0x11000002) {
+		mem = getDmaRam(madr, &words_max);
 		if (mem == INVALID_PTR) {
-#ifdef CPU_LOG
-			CPU_LOG("*** DMA6 OT *** NULL Pointer!!!\n");
-#endif
-			HW_DMA6_CHCR &= SWAP32(~0x01000000);
+			log_unhandled("bad6 dma madr %x\n", madr);
+			HW_DMA6_CHCR &= SWAP32(~0x11000000);
 			DMA_INTERRUPT(6);
 			return;
 		}
@@ -249,7 +246,7 @@ void psxDma6(u32 madr, u32 bcr, u32 chcr) {
 		// already 32-bit size
 		words = bcr;
 
-		while (bcr--) {
+		while (bcr-- && mem > (u32 *)psxM) {
 			*mem-- = SWAP32((madr - 4) & 0xffffff);
 			madr -= 4;
 		}
@@ -266,7 +263,7 @@ void psxDma6(u32 madr, u32 bcr, u32 chcr) {
 		log_unhandled("*** DMA6 OT - unknown *** %x addr = %x size = %x\n", chcr, madr, bcr);
 	}
 
-	HW_DMA6_CHCR &= SWAP32(~0x01000000);
+	HW_DMA6_CHCR &= SWAP32(~0x11000000);
 	DMA_INTERRUPT(6);
 }
 
@@ -274,7 +271,7 @@ void gpuotcInterrupt()
 {
 	if (HW_DMA6_CHCR & SWAP32(0x01000000))
 	{
-		HW_DMA6_CHCR &= SWAP32(~0x01000000);
+		HW_DMA6_CHCR &= SWAP32(~0x11000000);
 		DMA_INTERRUPT(6);
 	}
 }

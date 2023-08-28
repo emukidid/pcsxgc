@@ -1,9 +1,14 @@
 #include <lightrec.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <signal.h>
 #include <assert.h>
+
+#if P_HAVE_MMAP
+#include <sys/mman.h>
+#endif
 
 #include "../cdrom.h"
 #include "../gpu.h"
@@ -49,6 +54,8 @@
 
 psxRegisters psxRegs;
 Rcnt rcnts[4];
+
+void* code_buffer;
 
 static struct lightrec_state *lightrec_state;
 
@@ -284,7 +291,7 @@ static struct lightrec_mem_map lightrec_map[] = {
 	[PSX_MAP_HW_REGISTERS] = {
 		/* Hardware registers */
 		.pc = 0x1f801000,
-		.length = 0x2000,
+		.length = 0x8000,
 		.ops = &hw_regs_ops,
 	},
 	[PSX_MAP_CACHE_CONTROL] = {
@@ -310,6 +317,15 @@ static struct lightrec_mem_map lightrec_map[] = {
 		.length = 0x200000,
 		.mirror_of = &lightrec_map[PSX_MAP_KERNEL_USER_RAM],
 	},
+
+	/* Mirror of the parallel port. Only used by the PS2/PS3 BIOS */
+	[PSX_MAP_PPORT_MIRROR] = {
+		.pc = 0x1fa00000,
+		.length = 0x10000,
+		.mirror_of = &lightrec_map[PSX_MAP_PARALLEL_PORT],
+	},
+
+	/* Code buffer */
 	[PSX_MAP_CODE_BUFFER] = {
 		.length = CODE_BUFFER_SIZE,
 	},
@@ -432,12 +448,27 @@ static int lightrec_plugin_init(void)
 	lightrec_map[PSX_MAP_HW_REGISTERS].address = psxH + 0x1000;
 	lightrec_map[PSX_MAP_PARALLEL_PORT].address = psxP;
 
+	if (!LIGHTREC_CUSTOM_MAP) {
+#if P_HAVE_MMAP
+		code_buffer = mmap(0, CODE_BUFFER_SIZE,
+				   PROT_EXEC | PROT_READ | PROT_WRITE,
+				   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+		if (code_buffer == MAP_FAILED)
+			return -ENOMEM;
+#else
+		code_buffer = malloc(CODE_BUFFER_SIZE);
+		if (!code_buffer)
+			return -ENOMEM;
+#endif
+	}
+
 	if (LIGHTREC_CUSTOM_MAP) {
 		lightrec_map[PSX_MAP_MIRROR1].address = psxM + 0x200000;
 		lightrec_map[PSX_MAP_MIRROR2].address = psxM + 0x400000;
 		lightrec_map[PSX_MAP_MIRROR3].address = psxM + 0x600000;
-		lightrec_map[PSX_MAP_CODE_BUFFER].address = code_buffer;
 	}
+
+	lightrec_map[PSX_MAP_CODE_BUFFER].address = code_buffer;
 
 	use_lightrec_interpreter = !!getenv("LIGHTREC_INTERPRETER");
 
@@ -560,6 +591,14 @@ static void lightrec_plugin_apply_config()
 static void lightrec_plugin_shutdown(void)
 {
 	lightrec_destroy(lightrec_state);
+
+	if (!LIGHTREC_CUSTOM_MAP) {
+#if P_HAVE_MMAP
+		munmap(code_buffer, CODE_BUFFER_SIZE);
+#else
+		free(code_buffer);
+#endif
+	}
 }
 
 static void lightrec_plugin_reset(void)

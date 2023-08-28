@@ -53,6 +53,7 @@ int psxInit() {
 }
 
 void psxReset() {
+	boolean introBypassed = FALSE;
 	psxMemReset();
 
 	memset(&psxRegs, 0, sizeof(psxRegs));
@@ -61,8 +62,10 @@ void psxReset() {
 
 	psxRegs.CP0.n.SR   = 0x10600000; // COP0 enabled | BEV = 1 | TS = 1
 	psxRegs.CP0.n.PRid = 0x00000002; // PRevID = Revision ID, same as R3000A
-	if (Config.HLE)
-		psxRegs.CP0.n.SR |= 1u << 30; // COP2 enabled
+	if (Config.HLE) {
+		psxRegs.CP0.n.SR |= 1u << 30;    // COP2 enabled
+		psxRegs.CP0.n.SR &= ~(1u << 22); // RAM exception vector
+	}
 
 	psxCpu->ApplyConfig();
 	psxCpu->Reset();
@@ -70,13 +73,15 @@ void psxReset() {
 	psxHwReset();
 	psxBiosInit();
 
-	BiosLikeGPUSetup(); // a bit of a hack but whatever
-
 	if (!Config.HLE) {
 		psxExecuteBios();
-		if (psxRegs.pc == 0x80030000 && !Config.SlowBoot)
+		if (psxRegs.pc == 0x80030000 && !Config.SlowBoot) {
 			BiosBootBypass();
+			introBypassed = TRUE;
+		}
 	}
+	if (Config.HLE || introBypassed)
+		psxBiosSetupBootState();
 
 #ifdef EMU_LOG
 	EMU_LOG("*BIOS END*\n");
@@ -107,7 +112,7 @@ void psxException(u32 cause, enum R3000Abdt bdt, psxCP0Regs *cp0) {
 	}
 
 	// Set the Cause
-	cp0->n.Cause = (bdt << 30) | (cp0->n.Cause & 0x300) | cause;
+	cp0->n.Cause = (bdt << 30) | (cp0->n.Cause & 0x700) | cause;
 
 	// Set the EPC & PC
 	cp0->n.EPC = bdt ? psxRegs.pc - 4 : psxRegs.pc;
@@ -119,8 +124,6 @@ void psxException(u32 cause, enum R3000Abdt bdt, psxCP0Regs *cp0) {
 
 	// Set the SR
 	cp0->n.SR = (cp0->n.SR & ~0x3f) | ((cp0->n.SR & 0x0f) << 2);
-
-	if (Config.HLE) psxBiosException();
 }
 
 void psxBranchTest() {
@@ -196,15 +199,11 @@ void psxBranchTest() {
 		}
 	}
 
-	if (psxHu32(0x1070) & psxHu32(0x1074)) {
-		if ((psxRegs.CP0.n.SR & 0x401) == 0x401) {
-#ifdef PSXCPU_LOG
-			PSXCPU_LOG("Interrupt: %x %x\n", psxHu32(0x1070), psxHu32(0x1074));
-#endif
-//			SysPrintf("Interrupt (%x): %x %x\n", psxRegs.cycle, psxHu32(0x1070), psxHu32(0x1074));
-			psxException(0x400, 0, &psxRegs.CP0);
-		}
-	}
+	psxRegs.CP0.n.Cause &= ~0x400;
+	if (psxHu32(0x1070) & psxHu32(0x1074))
+		psxRegs.CP0.n.Cause |= 0x400;
+	if (((psxRegs.CP0.n.Cause | 1) & psxRegs.CP0.n.SR & 0x401) == 0x401)
+		psxException(0, 0, &psxRegs.CP0);
 }
 
 void psxJumpTest() {

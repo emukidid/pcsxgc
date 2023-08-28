@@ -493,6 +493,8 @@ static void scan_for_irq(int ch, unsigned int *upd_samples)
  pos = s_chan->spos;
  sinc = s_chan->sinc;
  end = pos + *upd_samples * sinc;
+ if (s_chan->prevflags & 1)                 // 1: stop/loop
+  block = s_chan->pLoop;
 
  pos += (28 - s_chan->iSBPos) << 16;
  while (pos < end)
@@ -814,6 +816,8 @@ static void do_channels(int ns_to)
     mix_chan(spu.SSumLR, ns_to, s_chan->iLeftVolume, s_chan->iRightVolume);
   }
 
+  MixXA(spu.SSumLR, RVB, ns_to, spu.decode_pos);
+
   if (spu.rvb->StartAddr) {
    if (do_rvb)
     REVERBDo(spu.SSumLR, RVB, ns_to, spu.rvb->CurrAddr);
@@ -829,7 +833,7 @@ static void do_samples_finish(int *SSumLR, int ns_to,
 
 // optional worker thread handling
 
-#if HAVE_PTHREAD || defined(WANT_THREAD_CODE)
+#if P_HAVE_PTHREAD || defined(WANT_THREAD_CODE)
 
 // worker thread state
 static struct spu_worker {
@@ -1066,6 +1070,7 @@ static void sync_worker_thread(int force)
   work = &worker->i[worker->i_reaped & WORK_I_MASK];
   thread_work_wait_sync(work, force);
 
+  MixXA(work->SSumLR, RVB, work->ns_to, work->decode_pos);
   do_samples_finish(work->SSumLR, work->ns_to,
    work->channels_silent, work->decode_pos);
 
@@ -1084,7 +1089,7 @@ static void sync_worker_thread(int force) {}
 
 static const void * const worker = NULL;
 
-#endif // HAVE_PTHREAD || defined(WANT_THREAD_CODE)
+#endif // P_HAVE_PTHREAD || defined(WANT_THREAD_CODE)
 
 ////////////////////////////////////////////////////////////////////////
 // MAIN SPU FUNCTION
@@ -1192,12 +1197,10 @@ static void do_samples_finish(int *SSumLR, int ns_to,
     spu.decode_dirty_ch &= ~(1<<3);
    }
 
-  MixXA(SSumLR, ns_to, decode_pos);
-
   vol_l = vol_l * spu_config.iVolume >> 10;
   vol_r = vol_r * spu_config.iVolume >> 10;
 
-  if (!(spu.spuCtrl & 0x4000) || !(vol_l | vol_r))
+  if (!(spu.spuCtrl & CTRL_MUTE) || !(vol_l | vol_r))
    {
     // muted? (rare)
     memset(spu.pS, 0, ns_to * 2 * sizeof(spu.pS[0]));
@@ -1365,7 +1368,7 @@ static void RemoveStreams(void)
 /* special code for TI C64x DSP */
 #include "spu_c64x.c"
 
-#elif HAVE_PTHREAD
+#elif P_HAVE_PTHREAD
 
 #include <pthread.h>
 #include <semaphore.h>
@@ -1464,7 +1467,7 @@ static void exit_spu_thread(void)
  worker = NULL;
 }
 
-#else // if !HAVE_PTHREAD
+#else // if !P_HAVE_PTHREAD
 
 static void init_spu_thread(void)
 {
@@ -1481,6 +1484,7 @@ long CALLBACK SPUinit(void)
 {
  int i;
 
+ memset(&spu, 0, sizeof(spu));
  spu.spuMemC = calloc(1, 512 * 1024);
  InitADSR();
 
