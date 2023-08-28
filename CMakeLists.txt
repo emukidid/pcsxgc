@@ -194,7 +194,10 @@ target_compile_definitions(libpcsxcore PUBLIC LIGHTREC LIGHTREC_CUSTOM_MAP NO_SO
 set_target_properties(libpcsxcore PROPERTIES LINKER_LANGUAGE C)
 target_link_libraries(libpcsxcore PUBLIC ${ZLIB_LIBRARIES} libchdr)
 
-get_filename_component(LIBGUI_RESOURCES_PATH Gamecube/libgui/resources ABSOLUTE)
+file(RELATIVE_PATH LIBGUI_RESOURCES_PATH
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/Gamecube/libgui/resources
+)
 configure_file(Gamecube/libgui/resources.s.cmakein libgui_resources.s @ONLY)
 add_library(libgui OBJECT
 	Gamecube/libgui/Button.cpp
@@ -219,7 +222,10 @@ target_include_directories(libgui PRIVATE Gamecube/libgui)
 set_target_properties(libgui PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(libgui PUBLIC libpcsxcore ogc ${LIBDI_LIBRARIES})
 
-get_filename_component(MENU_RESOURCES_PATH Gamecube/menu/resources ABSOLUTE)
+file(RELATIVE_PATH MENU_RESOURCES_PATH
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/Gamecube/menu/resources
+)
 configure_file(Gamecube/menu/MenuResources.s.cmakein menu_resources.s @ONLY)
 add_library(menu OBJECT
 	Gamecube/menu/ConfigureButtonsFrame.cpp
@@ -282,16 +288,9 @@ if (GX_GPU)
 	target_compile_definitions(gpu PRIVATE GX_GPU)
 else()
 	add_library(gpu OBJECT
-		PeopsSoftGPU/DrawString.c
-		PeopsSoftGPU/cfg.c
-		PeopsSoftGPU/drawGX.c
-		PeopsSoftGPU/fps.c
-		PeopsSoftGPU/gpu.c
-		PeopsSoftGPU/gpupeopssoft.c
-		PeopsSoftGPU/key.c
-		PeopsSoftGPU/menu.c
-		PeopsSoftGPU/prim.c
-		PeopsSoftGPU/soft.c
+		pcsx_rearmed/plugins/dfxvideo/gpulib_if.c
+		pcsx_rearmed/plugins/gpulib/gpu.c
+		pcsx_rearmed/plugins/gpulib/vout_pl.c
 	)
 endif()
 set_target_properties(gpu PROPERTIES LINKER_LANGUAGE C)
