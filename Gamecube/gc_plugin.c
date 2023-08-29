@@ -370,7 +370,7 @@ extern char screenMode;
 //static unsigned long crCursorColor32[8][3]={{0xff,0x00,0x00},{0x00,0xff,0x00},{0x00,0x00,0xff},{0xff,0x00,0xff},{0xff,0xff,0x00},{0x00,0xff,0xff},{0xff,0xff,0xff},{0x7f,0x7f,0x7f}};
 
 
-void GX_Flip(short width, short height, u8 * buffer, int pitch, u8 fmt)
+void GX_Flip(int width, int height, const void* buffer, int pitch, u8 fmt)
 {	
 	int h, w;
 	static int oldwidth=0;
@@ -611,13 +611,13 @@ void GX_Flip(short width, short height, u8 * buffer, int pitch, u8 fmt)
 
 static int gc_vout_open(void) { 
 	memset(GXtexture,0,RESX_MAX*RESY_MAX*2);
-	SysPrintf("gc_vout_open\r\n"); 
 	return 0; 
 }
 
 static void gc_vout_close(void) {}
 
-static void gc_vout_flip(const void *vram, int stride, int bgr24, int w, int h) {
+static void gc_vout_flip(const void *vram, int stride, int bgr24,
+			      int x, int y, int w, int h, int dims_changed) {
 	if(vram == NULL) {
 		memset(GXtexture,0,RESX_MAX*RESY_MAX*2);
 		if (menuActive) return;
@@ -650,7 +650,6 @@ static void gc_vout_flip(const void *vram, int stride, int bgr24, int w, int h) 
 		return;
 	}
 	if (menuActive) return;
-	SysPrintf("gc_vout_flip\r\n");
 	GX_Flip(w, h, vram, stride*2, bgr24 ? GX_TF_RGBA8 : GX_TF_RGB5A3);
 }
 static void gc_vout_set_mode(int w, int h, int raw_w, int raw_h, int bpp) {SysPrintf("gc_vout_set_mode\r\n");}
@@ -662,7 +661,7 @@ struct rearmed_cbs {
 	int   (*pl_vout_open)(void);
 	void  (*pl_vout_set_mode)(int w, int h, int raw_w, int raw_h, int bpp);
 	void  (*pl_vout_flip)(const void *vram, int stride, int bgr24,
-			      int w, int h);
+			      int x, int y, int w, int h, int dims_changed);
 	void  (*pl_vout_close)(void);
 	void *(*mmap)(unsigned int size);
 	void  (*munmap)(void *ptr, unsigned int size);
