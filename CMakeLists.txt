@@ -190,6 +190,7 @@ target_include_directories(libpcsxcore PRIVATE pcsx_rearmed/deps/lightrec)
 target_include_directories(libpcsxcore PUBLIC ${ZLIB_INCLUDE_DIR})
 target_compile_definitions(libpcsxcore PUBLIC LIGHTREC LIGHTREC_CUSTOM_MAP NO_SOCKET
 	$<IF:$<PLATFORM_ID:NintendoWii>,HW_RVL,HW_DOL>
+	CODE_BUFFER_SIZE=0x400000
 )
 set_target_properties(libpcsxcore PROPERTIES LINKER_LANGUAGE C)
 target_link_libraries(libpcsxcore PUBLIC ${ZLIB_LIBRARIES} libchdr)
