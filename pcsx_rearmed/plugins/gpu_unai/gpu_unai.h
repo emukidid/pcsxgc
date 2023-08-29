@@ -54,25 +54,67 @@
 #define s32 int32_t
 #define s64 int64_t
 
+typedef struct {
+        u32 v;
+} le32_t;
+
+typedef struct {
+        u16 v;
+} le16_t;
+
+static inline u32 le32_to_u32(le32_t le)
+{
+        return LE32TOH(le.v);
+}
+
+static inline s32 le32_to_s32(le32_t le)
+{
+        return (int32_t) LE32TOH(le.v);
+}
+
+static inline u32 le32_raw(le32_t le)
+{
+	return le.v;
+}
+
+static inline le32_t u32_to_le32(u32 u)
+{
+	return (le32_t){ .v = HTOLE32(u) };
+}
+
+static inline u16 le16_to_u16(le16_t le)
+{
+        return LE16TOH(le.v);
+}
+
+static inline s16 le16_to_s16(le16_t le)
+{
+        return (int16_t) LE16TOH(le.v);
+}
+
+static inline u16 le16_raw(le16_t le)
+{
+	return le.v;
+}
+
+static inline le16_t u16_to_le16(u16 u)
+{
+	return (le16_t){ .v = HTOLE16(u) };
+}
+
 union PtrUnion
 {
-	u32  *U4;
-	s32  *S4;
-	u16  *U2;
-	s16  *S2;
+	le32_t  *U4;
+	le16_t  *U2;
 	u8   *U1;
-	s8   *S1;
 	void *ptr;
 };
 
 union GPUPacket
 {
-	u32 U4[16];
-	s32 S4[16];
-	u16 U2[32];
-	s16 S2[32];
+	le32_t U4[16];
+	le16_t U2[32];
 	u8  U1[64];
-	s8  S1[64];
 };
 
 template<class T> static inline void SwapValues(T &x, T &y)

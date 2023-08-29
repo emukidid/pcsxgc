@@ -388,11 +388,12 @@ static void gpuGP0Cmd_0xEx(gpu_unai_t &gpu_unai, u32 cmd_word)
 
 extern const unsigned char cmd_lengths[256];
 
-int do_cmd_list(u32 *list, int list_len, int *last_cmd)
+int do_cmd_list(u32 *_list, int list_len, int *last_cmd)
 {
   u32 cmd = 0, len, i;
-  u32 *list_start = list;
-  u32 *list_end = list + list_len;
+  le32_t *list = (le32_t *)_list;
+  le32_t *list_start = list;
+  le32_t *list_end = list + list_len;
 
   //TODO: set ilace_mask when resolution changes instead of every time,
   // eliminate #ifdef below.
@@ -407,7 +408,7 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
 
   for (; list < list_end; list += 1 + len)
   {
-    cmd = LE32TOH(*list) >> 24;
+    cmd = le32_to_u32(*list) >> 24;
     len = cmd_lengths[cmd];
     if (list + 1 + len > list_end) {
       cmd = -1;
@@ -415,9 +416,9 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
     }
 
     #define PRIM cmd
-    gpu_unai.PacketBuffer.U4[0] = LE32TOH(list[0]);
+    gpu_unai.PacketBuffer.U4[0] = list[0];
     for (i = 1; i <= len; i++)
-      gpu_unai.PacketBuffer.U4[i] = LE32TOH(list[i]);
+      gpu_unai.PacketBuffer.U4[i] = list[i];
 
     PtrUnion packet = { .ptr = (void*)&gpu_unai.PacketBuffer };
 
@@ -443,8 +444,8 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
       case 0x25:
       case 0x26:
       case 0x27: {          // Textured 3-pt poly
-        gpuSetCLUT   (gpu_unai.PacketBuffer.U4[2] >> 16);
-        gpuSetTexture(gpu_unai.PacketBuffer.U4[4] >> 16);
+        gpuSetCLUT   (le32_to_u32(gpu_unai.PacketBuffer.U4[2]) >> 16);
+        gpuSetTexture(le32_to_u32(gpu_unai.PacketBuffer.U4[4]) >> 16);
 
         u32 driver_idx =
           (gpu_unai.blit_mask?1024:0) |
@@ -479,8 +480,8 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
       case 0x2D:
       case 0x2E:
       case 0x2F: {          // Textured 4-pt poly
-        gpuSetCLUT   (gpu_unai.PacketBuffer.U4[2] >> 16);
-        gpuSetTexture(gpu_unai.PacketBuffer.U4[4] >> 16);
+        gpuSetCLUT   (le32_to_u32(gpu_unai.PacketBuffer.U4[2]) >> 16);
+        gpuSetTexture(le32_to_u32(gpu_unai.PacketBuffer.U4[4]) >> 16);
 
         u32 driver_idx =
           (gpu_unai.blit_mask?1024:0) |
@@ -520,8 +521,8 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
       case 0x35:
       case 0x36:
       case 0x37: {          // Gouraud-shaded, textured 3-pt poly
-        gpuSetCLUT    (gpu_unai.PacketBuffer.U4[2] >> 16);
-        gpuSetTexture (gpu_unai.PacketBuffer.U4[5] >> 16);
+        gpuSetCLUT    (le32_to_u32(gpu_unai.PacketBuffer.U4[2]) >> 16);
+        gpuSetTexture (le32_to_u32(gpu_unai.PacketBuffer.U4[5]) >> 16);
         PP driver = gpuPolySpanDrivers[
           (gpu_unai.blit_mask?1024:0) |
           Dithering |
@@ -549,8 +550,8 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
       case 0x3D:
       case 0x3E:
       case 0x3F: {          // Gouraud-shaded, textured 4-pt poly
-        gpuSetCLUT    (gpu_unai.PacketBuffer.U4[2] >> 16);
-        gpuSetTexture (gpu_unai.PacketBuffer.U4[5] >> 16);
+        gpuSetCLUT    (le32_to_u32(gpu_unai.PacketBuffer.U4[2]) >> 16);
+        gpuSetTexture (le32_to_u32(gpu_unai.PacketBuffer.U4[5]) >> 16);
         PP driver = gpuPolySpanDrivers[
           (gpu_unai.blit_mask?1024:0) |
           Dithering |
@@ -572,7 +573,7 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
 
       case 0x48 ... 0x4F: { // Monochrome line strip
         u32 num_vertexes = 1;
-        u32 *list_position = &(list[2]);
+        le32_t *list_position = &(list[2]);
 
         // Shift index right by one, as untextured prims don't use lighting
         u32 driver_idx = (Blending_Mode | gpu_unai.Masking | Blending | (gpu_unai.PixelMSB>>3)) >> 1;
@@ -590,7 +591,7 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
             cmd = -1;
             goto breakloop;
           }
-          if((*list_position & HTOLE32(0xf000f000)) == HTOLE32(0x50005000))
+          if((le32_raw(*list_position) & HTOLE32(0xf000f000)) == HTOLE32(0x50005000))
             break;
         }
 
@@ -611,7 +612,7 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
 
       case 0x58 ... 0x5F: { // Gouraud-shaded line strip
         u32 num_vertexes = 1;
-        u32 *list_position = &(list[2]);
+        le32_t *list_position = &(list[2]);
 
         // Shift index right by one, as untextured prims don't use lighting
         u32 driver_idx = (Blending_Mode | gpu_unai.Masking | Blending | (gpu_unai.PixelMSB>>3)) >> 1;
@@ -633,7 +634,7 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
             cmd = -1;
             goto breakloop;
           }
-          if((*list_position & HTOLE32(0xf000f000)) == HTOLE32(0x50005000))
+          if((le32_raw(*list_position) & HTOLE32(0xf000f000)) == HTOLE32(0x50005000))
             break;
         }
 
@@ -652,7 +653,7 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
       case 0x65:
       case 0x66:
       case 0x67: {          // Textured rectangle (variable size)
-        gpuSetCLUT    (gpu_unai.PacketBuffer.U4[2] >> 16);
+        gpuSetCLUT    (le32_to_u32(gpu_unai.PacketBuffer.U4[2]) >> 16);
         u32 driver_idx = Blending_Mode | gpu_unai.TEXT_MODE | gpu_unai.Masking | Blending | (gpu_unai.PixelMSB>>1);
 
         //senquack - Only color 808080h-878787h allows skipping lighting calculation:
@@ -669,7 +670,7 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
         //  alone, I don't want to slow rendering down too much. (TODO)
         //if ((gpu_unai.PacketBuffer.U1[0]>0x5F) && (gpu_unai.PacketBuffer.U1[1]>0x5F) && (gpu_unai.PacketBuffer.U1[2]>0x5F))
         // Strip lower 3 bits of each color and determine if lighting should be used:
-        if ((gpu_unai.PacketBuffer.U4[0] & 0xF8F8F8) != 0x808080)
+        if ((le32_raw(gpu_unai.PacketBuffer.U4[0]) & HTOLE32(0xF8F8F8)) != HTOLE32(0x808080))
           driver_idx |= Lighting;
         PS driver = gpuSpriteSpanDrivers[driver_idx];
         gpuDrawS(packet, driver);
@@ -679,7 +680,7 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
       case 0x69:
       case 0x6A:
       case 0x6B: {          // Monochrome rectangle (1x1 dot)
-        gpu_unai.PacketBuffer.U4[2] = 0x00010001;
+        gpu_unai.PacketBuffer.U4[2] = u32_to_le32(0x00010001);
         PT driver = gpuTileSpanDrivers[(Blending_Mode | gpu_unai.Masking | Blending | (gpu_unai.PixelMSB>>3)) >> 1];
         gpuDrawT(packet, driver);
       } break;
@@ -688,7 +689,7 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
       case 0x71:
       case 0x72:
       case 0x73: {          // Monochrome rectangle (8x8)
-        gpu_unai.PacketBuffer.U4[2] = 0x00080008;
+        gpu_unai.PacketBuffer.U4[2] = u32_to_le32(0x00080008);
         PT driver = gpuTileSpanDrivers[(Blending_Mode | gpu_unai.Masking | Blending | (gpu_unai.PixelMSB>>3)) >> 1];
         gpuDrawT(packet, driver);
       } break;
@@ -697,14 +698,14 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
       case 0x75:
       case 0x76:
       case 0x77: {          // Textured rectangle (8x8)
-        gpu_unai.PacketBuffer.U4[3] = 0x00080008;
-        gpuSetCLUT    (gpu_unai.PacketBuffer.U4[2] >> 16);
+        gpu_unai.PacketBuffer.U4[3] = u32_to_le32(0x00080008);
+        gpuSetCLUT    (le32_to_u32(gpu_unai.PacketBuffer.U4[2]) >> 16);
         u32 driver_idx = Blending_Mode | gpu_unai.TEXT_MODE | gpu_unai.Masking | Blending | (gpu_unai.PixelMSB>>1);
 
         //senquack - Only color 808080h-878787h allows skipping lighting calculation:
         //if ((gpu_unai.PacketBuffer.U1[0]>0x5F) && (gpu_unai.PacketBuffer.U1[1]>0x5F) && (gpu_unai.PacketBuffer.U1[2]>0x5F))
         // Strip lower 3 bits of each color and determine if lighting should be used:
-        if ((gpu_unai.PacketBuffer.U4[0] & 0xF8F8F8) != 0x808080)
+        if ((le32_raw(gpu_unai.PacketBuffer.U4[0]) & HTOLE32(0xF8F8F8)) != HTOLE32(0x808080))
           driver_idx |= Lighting;
         PS driver = gpuSpriteSpanDrivers[driver_idx];
         gpuDrawS(packet, driver);
@@ -714,7 +715,7 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
       case 0x79:
       case 0x7A:
       case 0x7B: {          // Monochrome rectangle (16x16)
-        gpu_unai.PacketBuffer.U4[2] = 0x00100010;
+        gpu_unai.PacketBuffer.U4[2] = u32_to_le32(0x00100010);
         PT driver = gpuTileSpanDrivers[(Blending_Mode | gpu_unai.Masking | Blending | (gpu_unai.PixelMSB>>3)) >> 1];
         gpuDrawT(packet, driver);
       } break;
@@ -724,7 +725,7 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
 #ifdef __arm__
         if ((gpu_unai.GPU_GP1 & 0x180) == 0 && (gpu_unai.Masking | gpu_unai.PixelMSB) == 0)
         {
-          gpuSetCLUT    (gpu_unai.PacketBuffer.U4[2] >> 16);
+          gpuSetCLUT    (le32_to_u32(gpu_unai.PacketBuffer.U4[2]) >> 16);
           gpuDrawS16(packet);
           break;
         }
@@ -732,13 +733,13 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
 #endif
       case 0x7E:
       case 0x7F: {          // Textured rectangle (16x16)
-        gpu_unai.PacketBuffer.U4[3] = 0x00100010;
-        gpuSetCLUT    (gpu_unai.PacketBuffer.U4[2] >> 16);
+        gpu_unai.PacketBuffer.U4[3] = u32_to_le32(0x00100010);
+        gpuSetCLUT    (le32_to_u32(gpu_unai.PacketBuffer.U4[2]) >> 16);
         u32 driver_idx = Blending_Mode | gpu_unai.TEXT_MODE | gpu_unai.Masking | Blending | (gpu_unai.PixelMSB>>1);
         //senquack - Only color 808080h-878787h allows skipping lighting calculation:
         //if ((gpu_unai.PacketBuffer.U1[0]>0x5F) && (gpu_unai.PacketBuffer.U1[1]>0x5F) && (gpu_unai.PacketBuffer.U1[2]>0x5F))
         // Strip lower 3 bits of each color and determine if lighting should be used:
-        if ((gpu_unai.PacketBuffer.U4[0] & 0xF8F8F8) != 0x808080)
+        if ((le32_raw(gpu_unai.PacketBuffer.U4[0]) & HTOLE32(0xF8F8F8)) != HTOLE32(0x808080))
           driver_idx |= Lighting;
         PS driver = gpuSpriteSpanDrivers[driver_idx];
         gpuDrawS(packet, driver);
@@ -767,7 +768,7 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
         goto breakloop;
 #endif
       case 0xE1 ... 0xE6: { // Draw settings
-        gpuGP0Cmd_0xEx(gpu_unai, gpu_unai.PacketBuffer.U4[0]);
+        gpuGP0Cmd_0xEx(gpu_unai, le32_to_u32(gpu_unai.PacketBuffer.U4[0]));
       } break;
     }
   }
@@ -780,7 +781,7 @@ breakloop:
   return list - list_start;
 }
 
-void renderer_sync_ecmds(uint32_t *ecmds)
+void renderer_sync_ecmds(u32 *ecmds)
 {
   int dummy;
   do_cmd_list(&ecmds[1], 6, &dummy);

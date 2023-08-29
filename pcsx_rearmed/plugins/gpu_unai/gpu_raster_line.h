@@ -74,10 +74,10 @@ void gpuDrawLineF(PtrUnion packet, const PSD gpuPixelSpanDriver)
 	const int xmax = gpu_unai.DrawingArea[2] - 1;
 	const int ymax = gpu_unai.DrawingArea[3] - 1;
 
-	x0 = GPU_EXPANDSIGN(packet.S2[2]) + gpu_unai.DrawingOffset[0];
-	y0 = GPU_EXPANDSIGN(packet.S2[3]) + gpu_unai.DrawingOffset[1];
-	x1 = GPU_EXPANDSIGN(packet.S2[4]) + gpu_unai.DrawingOffset[0];
-	y1 = GPU_EXPANDSIGN(packet.S2[5]) + gpu_unai.DrawingOffset[1];
+	x0 = GPU_EXPANDSIGN(le16_to_s16(packet.U2[2])) + gpu_unai.DrawingOffset[0];
+	y0 = GPU_EXPANDSIGN(le16_to_s16(packet.U2[3])) + gpu_unai.DrawingOffset[1];
+	x1 = GPU_EXPANDSIGN(le16_to_s16(packet.U2[4])) + gpu_unai.DrawingOffset[0];
+	y1 = GPU_EXPANDSIGN(le16_to_s16(packet.U2[5])) + gpu_unai.DrawingOffset[1];
 
 	// Always draw top to bottom, so ensure y0 <= y1
 	if (y0 > y1) {
@@ -177,7 +177,7 @@ void gpuDrawLineF(PtrUnion packet, const PSD gpuPixelSpanDriver)
 	    err_adjdown;   // Subract this from err_term after drawing longer run
 
 	// Color to draw with (16 bits, highest of which is unset mask bit)
-	uintptr_t col16 = GPU_RGB16(packet.U4[0]);
+	uintptr_t col16 = GPU_RGB16(le32_to_u32(packet.U4[0]));
 
 	// We use u8 pointers even though PS1 has u16 framebuffer.
 	//  This allows pixel-drawing functions to increment dst pointer
@@ -321,13 +321,13 @@ void gpuDrawLineG(PtrUnion packet, const PSD gpuPixelSpanDriver)
 	const int xmax = gpu_unai.DrawingArea[2] - 1;
 	const int ymax = gpu_unai.DrawingArea[3] - 1;
 
-	x0 = GPU_EXPANDSIGN(packet.S2[2]) + gpu_unai.DrawingOffset[0];
-	y0 = GPU_EXPANDSIGN(packet.S2[3]) + gpu_unai.DrawingOffset[1];
-	x1 = GPU_EXPANDSIGN(packet.S2[6]) + gpu_unai.DrawingOffset[0];
-	y1 = GPU_EXPANDSIGN(packet.S2[7]) + gpu_unai.DrawingOffset[1];
+	x0 = GPU_EXPANDSIGN(le16_to_s16(packet.U2[2])) + gpu_unai.DrawingOffset[0];
+	y0 = GPU_EXPANDSIGN(le16_to_s16(packet.U2[3])) + gpu_unai.DrawingOffset[1];
+	x1 = GPU_EXPANDSIGN(le16_to_s16(packet.U2[6])) + gpu_unai.DrawingOffset[0];
+	y1 = GPU_EXPANDSIGN(le16_to_s16(packet.U2[7])) + gpu_unai.DrawingOffset[1];
 
-	u32 col0 = packet.U4[0];
-	u32 col1 = packet.U4[2];
+	u32 col0 = le32_to_u32(packet.U4[0]);
+	u32 col1 = le32_to_u32(packet.U4[2]);
 
 	// Always draw top to bottom, so ensure y0 <= y1
 	if (y0 > y1) {

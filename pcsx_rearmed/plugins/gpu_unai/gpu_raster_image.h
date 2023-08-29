@@ -78,12 +78,12 @@ void gpuMoveImage(PtrUnion packet)
 {
 	u32 x0, y0, x1, y1;
 	s32 w0, h0;
-	x0 = packet.U2[2] & 1023;
-	y0 = packet.U2[3] & 511;
-	x1 = packet.U2[4] & 1023;
-	y1 = packet.U2[5] & 511;
-	w0 = packet.U2[6];
-	h0 = packet.U2[7];
+	x0 = le16_to_u16(packet.U2[2]) & 1023;
+	y0 = le16_to_u16(packet.U2[3]) & 511;
+	x1 = le16_to_u16(packet.U2[4]) & 1023;
+	y1 = le16_to_u16(packet.U2[5]) & 511;
+	w0 = le16_to_u16(packet.U2[6]);
+	h0 = le16_to_u16(packet.U2[7]);
 
 	if( (x0==x1) && (y0==y1) ) return;
 	if ((w0<=0) || (h0<=0)) return;
@@ -157,10 +157,10 @@ void gpuMoveImage(PtrUnion packet)
 void gpuClearImage(PtrUnion packet)
 {
 	s32   x0, y0, w0, h0;
-	x0 = packet.S2[2];
-	y0 = packet.S2[3];
-	w0 = packet.S2[4] & 0x3ff;
-	h0 = packet.S2[5] & 0x3ff;
+	x0 = le16_to_s16(packet.U2[2]);
+	y0 = le16_to_s16(packet.U2[3]);
+	w0 = le16_to_s16(packet.U2[4]) & 0x3ff;
+	h0 = le16_to_s16(packet.U2[5]) & 0x3ff;
 	 
 	w0 += x0;
 	if (x0 < 0) x0 = 0;
@@ -180,7 +180,7 @@ void gpuClearImage(PtrUnion packet)
 	if (x0&1)
 	{
 		u16* pixel = (u16*)gpu_unai.vram + FRAME_OFFSET(x0, y0);
-		u16 rgb = GPU_RGB16(packet.U4[0]);
+		u16 rgb = GPU_RGB16(le32_to_u32(packet.U4[0]));
 		y0 = FRAME_WIDTH - w0;
 		do {
 			x0=w0;
@@ -191,7 +191,7 @@ void gpuClearImage(PtrUnion packet)
 	else
 	{
 		u32* pixel = (u32*)gpu_unai.vram + ((FRAME_OFFSET(x0, y0))>>1);
-		u32 rgb = GPU_RGB16(packet.U4[0]);
+		u32 rgb = GPU_RGB16(le32_to_u32(packet.U4[0]));
 		rgb |= (rgb<<16);
 		if (w0&1)
 		{
