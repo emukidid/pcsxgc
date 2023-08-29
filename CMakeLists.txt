@@ -265,9 +265,14 @@ set_target_properties(dfsound PROPERTIES LINKER_LANGUAGE C)
 target_link_libraries(dfsound PUBLIC ogc)
 target_compile_definitions(dfsound PRIVATE HAVE_OSS)
 
-option(GX_GPU "GX accelerated GPU plugin" OFF)
+if (NOT GPU_PLUGIN)
+	set(GPU_PLUGIN Peops CACHE STRING "GPU plugin" FORCE)
+	set_property(CACHE GPU_PLUGIN PROPERTY
+		STRINGS Peops PeopsGX Unai
+	)
+endif()
 
-if (GX_GPU)
+if (GPU_PLUGIN STREQUAL PeopsGX)
 	add_library(gpu OBJECT
 		PeopsGXGPU/about.c
 		PeopsGXGPU/cfg.c
@@ -286,16 +291,24 @@ if (GX_GPU)
 		PeopsGXGPU/opengx/image_DXT.c
 	)
 	target_compile_definitions(gpu PRIVATE GX_GPU)
+	set_target_properties(gpu PROPERTIES LINKER_LANGUAGE C)
+elseif (GPU_PLUGIN STREQUAL Peops)
+	add_library(gpu OBJECT
+		pcsx_rearmed/plugins/dfxvideo/gpulib_if.c
+		pcsx_rearmed/plugins/gpulib/gpu.c
+		pcsx_rearmed/plugins/gpulib/vout_pl.c
+	)
+	set_target_properties(gpu PROPERTIES LINKER_LANGUAGE C)
 else()
 	add_library(gpu OBJECT
 		pcsx_rearmed/plugins/gpu_unai/gpulib_if.cpp
 		pcsx_rearmed/plugins/gpulib/gpu.c
 		pcsx_rearmed/plugins/gpulib/vout_pl.c
 	)
+	set_target_properties(gpu PROPERTIES LINKER_LANGUAGE CXX)
 endif()
-set_target_properties(gpu PROPERTIES LINKER_LANGUAGE C)
 target_link_libraries(gpu PUBLIC ogc libgui)
-target_compile_definitions(gpu PRIVATE __GX__ _SDL)
+target_compile_definitions(gpu PRIVATE __GX__ _SDL USE_GPULIB)
 
 add_executable(wiisx
 	Gamecube/aesnd.c
@@ -324,7 +337,7 @@ target_include_directories(wiisx PRIVATE
 	${CMAKE_SOURCE_DIR}
 )
 set_target_properties(wiisx PROPERTIES
-	OUTPUT_NAME $<IF:$<PLATFORM_ID:NintendoWii>,WiiSX,CubeSX>$<$<BOOL:${GX_GPU}>:_GX>
+	OUTPUT_NAME $<IF:$<PLATFORM_ID:NintendoWii>,WiiSX,CubeSX>
 )
 
 target_link_libraries(wiisx PRIVATE
