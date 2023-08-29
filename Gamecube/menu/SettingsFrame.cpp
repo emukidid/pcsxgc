@@ -464,7 +464,7 @@ void SettingsFrame::activateSubmenu(int submenu)
 			if (screenMode == SCREENMODE_4x3)		FRAME_BUTTONS[22].button->setSelected(true);
 			else if (screenMode == SCREENMODE_16x9)	FRAME_BUTTONS[23].button->setSelected(true);
 			else									FRAME_BUTTONS[24].button->setSelected(true);
-			FRAME_BUTTONS[25+iUseDither].button->setSelected(true);
+			//FRAME_BUTTONS[25+iUseDither].button->setSelected(true);
 			for (int i = 16; i < 28; i++)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
@@ -984,7 +984,7 @@ void Func_DitheringNone()
 	for (int i = 25; i <= 27; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[25].button->setSelected(true);
-	iUseDither = USEDITHER_NONE;
+	//iUseDither = USEDITHER_NONE;
 	//GPUsetframelimit(0);
 }
 
@@ -993,7 +993,7 @@ void Func_DitheringDefault()
 	for (int i = 25; i <= 27; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[26].button->setSelected(true);
-	iUseDither = USEDITHER_DEFAULT;
+	//iUseDither = USEDITHER_DEFAULT;
 	//GPUsetframelimit(0);
 }
 
@@ -1002,7 +1002,7 @@ void Func_DitheringAlways()
 	for (int i = 25; i <= 27; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[27].button->setSelected(true);
-	iUseDither = USEDITHER_ALWAYS;
+	//iUseDither = USEDITHER_ALWAYS;
 	//GPUsetframelimit(0);
 }
 

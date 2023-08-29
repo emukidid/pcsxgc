@@ -288,7 +288,7 @@ if (GX_GPU)
 	target_compile_definitions(gpu PRIVATE GX_GPU)
 else()
 	add_library(gpu OBJECT
-		pcsx_rearmed/plugins/dfxvideo/gpulib_if.c
+		pcsx_rearmed/plugins/gpu_unai/gpulib_if.cpp
 		pcsx_rearmed/plugins/gpulib/gpu.c
 		pcsx_rearmed/plugins/gpulib/vout_pl.c
 	)

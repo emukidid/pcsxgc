@@ -407,7 +407,7 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
 
   for (; list < list_end; list += 1 + len)
   {
-    cmd = *list >> 24;
+    cmd = LE32TOH(*list) >> 24;
     len = cmd_lengths[cmd];
     if (list + 1 + len > list_end) {
       cmd = -1;
@@ -415,9 +415,9 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
     }
 
     #define PRIM cmd
-    gpu_unai.PacketBuffer.U4[0] = list[0];
+    gpu_unai.PacketBuffer.U4[0] = LE32TOH(list[0]);
     for (i = 1; i <= len; i++)
-      gpu_unai.PacketBuffer.U4[i] = list[i];
+      gpu_unai.PacketBuffer.U4[i] = LE32TOH(list[i]);
 
     PtrUnion packet = { .ptr = (void*)&gpu_unai.PacketBuffer };
 
@@ -590,7 +590,7 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
             cmd = -1;
             goto breakloop;
           }
-          if((*list_position & 0xf000f000) == 0x50005000)
+          if((*list_position & HTOLE32(0xf000f000)) == HTOLE32(0x50005000))
             break;
         }
 
@@ -633,7 +633,7 @@ int do_cmd_list(u32 *list, int list_len, int *last_cmd)
             cmd = -1;
             goto breakloop;
           }
-          if((*list_position & 0xf000f000) == 0x50005000)
+          if((*list_position & HTOLE32(0xf000f000)) == HTOLE32(0x50005000))
             break;
         }
 
