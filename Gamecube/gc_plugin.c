@@ -27,6 +27,8 @@
 #include "libgui/IPLFontC.h"
 #include "wiiSXconfig.h"
 
+#include <pcsx_rearmed/frontend/plugin_lib.h>
+
 #include <libpcsxcore/spu.h>
 #ifndef __GX__
 #include "NoPic.h"
@@ -655,71 +657,6 @@ static void gc_vout_flip(const void *vram, int stride, int bgr24,
 static void gc_vout_set_mode(int w, int h, int raw_w, int raw_h, int bpp) {SysPrintf("gc_vout_set_mode\r\n");}
 //static void *gc_mmap(unsigned int size) {}
 //static void gc_munmap(void *ptr, unsigned int size) {}
-
-struct rearmed_cbs {
-	void  (*pl_get_layer_pos)(int *x, int *y, int *w, int *h);
-	int   (*pl_vout_open)(void);
-	void  (*pl_vout_set_mode)(int w, int h, int raw_w, int raw_h, int bpp);
-	void  (*pl_vout_flip)(const void *vram, int stride, int bgr24,
-			      int x, int y, int w, int h, int dims_changed);
-	void  (*pl_vout_close)(void);
-	void *(*mmap)(unsigned int size);
-	void  (*munmap)(void *ptr, unsigned int size);
-	// only used by some frontends
-	void  (*pl_vout_set_raw_vram)(void *vram);
-	void  (*pl_set_gpu_caps)(int caps);
-	// some stats, for display by some plugins
-	int flips_per_sec, cpu_usage;
-	float vsps_cur; // currect vsync/s
-	// these are for gles plugin
-	unsigned int screen_w, screen_h;
-	void *gles_display, *gles_surface;
-	// gpu options
-	int   frameskip;
-	int   fskip_advice;
-	int   fskip_force;
-	int   fskip_dirty;
-	unsigned int *gpu_frame_count;
-	unsigned int *gpu_hcnt;
-	unsigned int flip_cnt; // increment manually if not using pl_vout_flip
-	unsigned int only_16bpp; // platform is 16bpp-only
-	unsigned int thread_rendering;
-	struct {
-		int   allow_interlace; // 0 off, 1 on, 2 guess
-		int   enhancement_enable;
-		int   enhancement_no_main;
-		int   allow_dithering;
-	} gpu_neon;
-	struct {
-		int   iUseDither;
-		int   dwActFixes;
-		float fFrameRateHz;
-		int   dwFrameRateTicks;
-	} gpu_peops;
-	struct {
-		int ilace_force;
-		int pixel_skip;
-		int lighting;
-		int fast_lighting;
-		int blending;
-		int dithering;
-		// old gpu_unai config for compatibility
-		int   abe_hack;
-		int   no_light, no_blend;
-		int   lineskip;
-		int   scale_hires;
-	} gpu_unai;
-	struct {
-		int   dwActFixes;
-		int   bDrawDither, iFilterType, iFrameTexType;
-		int   iUseMask, bOpaquePass, bAdvancedBlend, bUseFastMdec;
-		int   iVRamSize, iTexGarbageCollection;
-	} gpu_peopsgl;
-	// misc
-	int gpu_caps;
-};
-
-extern struct rearmed_cbs pl_rearmed_cbs;
 
 static struct rearmed_cbs gc_rearmed_cbs = {
    .pl_vout_open     = gc_vout_open,
