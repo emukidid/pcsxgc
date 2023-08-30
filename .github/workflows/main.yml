@@ -99,7 +99,7 @@ jobs:
         mv build_cube_gx/CubeSX.dol release_gx/CubeSX.dol
       working-directory: pcsxgc
 
-    - name: Build CubeSX (gx gpu)
+    - name: Build CubeSX (unai gpu)
       run: |
         mkdir build_cube_unai
         cmake -B build_cube_unai -DCMAKE_BUILD_TYPE=None -DWIISX_TARGET=NintendoGameCube -DGPU_PLUGIN=Unai
