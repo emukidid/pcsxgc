@@ -668,6 +668,11 @@ static struct rearmed_cbs gc_rearmed_cbs = {
    /* from psxcounters */
    .gpu_hcnt         = &hSyncCount,
    .gpu_frame_count  = &frame_counter,
+
+   .gpu_unai = {
+	   .lighting = 1,
+	   .blending = 1,
+   },
 };
 
 void plugin_call_rearmed_cbs(void)
