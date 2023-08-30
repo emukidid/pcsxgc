@@ -157,7 +157,7 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
 	c->btns.L3_BUTTON    = isHeld(config->L3);
 	c->btns.SELECT_BUTTON = isHeld(config->SELECT);
 
-	if(controllerType = CONTROLLERTYPE_LIGHTGUN) {
+	if(controllerType == CONTROLLERTYPE_LIGHTGUN) {
 		c->lastRawX = PAD_StickX(Control);
 		c->lastRawY = PAD_StickY(Control);
 		
