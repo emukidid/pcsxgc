@@ -36,7 +36,6 @@
 #include "../libpcsxcore/cdriso.h"
 #include "../libpcsxcore/cheat.h"
 #include "../libpcsxcore/new_dynarec/new_dynarec.h"
-#include "../plugins/dfinput/externals.h"
 #include "../plugins/dfsound/spu_config.h"
 #include "psemu_plugin_defs.h"
 #include "arm_features.h"
@@ -91,7 +90,8 @@ typedef enum
 } menu_id;
 
 static int last_vout_w, last_vout_h, last_vout_bpp;
-static int cpu_clock, cpu_clock_st, volume_boost, frameskip;
+static int cpu_clock, cpu_clock_st, volume_boost;
+static int frameskip = 1; // 0 - auto, 1 - off
 static char last_selected_fname[MAXPATHLEN];
 static int config_save_counter, region, in_type_sel1, in_type_sel2;
 static int psx_clock;
@@ -337,7 +337,7 @@ static void menu_set_defconfig(void)
 	g_scaler = SCALE_4_3;
 	g_gamma = 100;
 	volume_boost = 0;
-	frameskip = 0;
+	frameskip = 1; // 1 - off
 	analog_deadzone = 50;
 	soft_scaling = 1;
 	soft_filter = 0;
@@ -424,7 +424,7 @@ static const struct {
 	CE_INTVAL(g_autostateld_opt),
 	CE_INTVAL_N("adev0_is_nublike", in_adev_is_nublike[0]),
 	CE_INTVAL_N("adev1_is_nublike", in_adev_is_nublike[1]),
-	CE_INTVAL_V(frameskip, 3),
+	CE_INTVAL_V(frameskip, 4),
 	CE_INTVAL_P(gpu_peops.iUseDither),
 	CE_INTVAL_P(gpu_peops.dwActFixes),
 	CE_INTVAL_P(gpu_unai.lineskip),
@@ -2699,8 +2699,6 @@ void menu_prepare_emu(void)
 		if (ret)
 			fprintf(stderr, "Warning: GPU_open returned %d\n", ret);
 	}
-
-	dfinput_activate();
 }
 
 void menu_update_msg(const char *msg)

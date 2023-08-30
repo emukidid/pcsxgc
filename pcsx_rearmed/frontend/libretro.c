@@ -29,7 +29,6 @@
 #include "../libpcsxcore/r3000a.h"
 #include "../plugins/dfsound/out.h"
 #include "../plugins/dfsound/spu_config.h"
-#include "../plugins/dfinput/externals.h"
 #include "cspace.h"
 #include "main.h"
 #include "menu.h"
@@ -81,6 +80,7 @@ static void *vout_buf;
 static void *vout_buf_ptr;
 static int vout_width, vout_height;
 static int vout_fb_dirty;
+static int psx_w, psx_h;
 static bool vout_can_dupe;
 static bool duping_enable;
 static bool found_bios;
@@ -240,6 +240,8 @@ static void vout_set_mode(int w, int h, int raw_w, int raw_h, int bpp)
 {
    vout_width = w;
    vout_height = h;
+   psx_w = raw_w;
+   psx_h = raw_h;
 
    if (previous_width != vout_width || previous_height != vout_height)
    {
@@ -514,7 +516,7 @@ void plat_trigger_vibrate(int pad, int low, int high)
    }
 }
 
-void pl_update_gun(int *xn, int *yn, int *xres, int *yres, int *in)
+void pl_gun_byte2(int port, unsigned char byte)
 {
 }
 
@@ -991,12 +993,13 @@ void retro_cheat_reset(void)
 
 void retro_cheat_set(unsigned index, bool enabled, const char *code)
 {
-   char buf[256];
-   int ret;
+   int ret = -1;
+   char *buf;
 
-   // cheat funcs are destructive, need a copy..
-   strncpy(buf, code, sizeof(buf));
-   buf[sizeof(buf) - 1] = 0;
+   // cheat funcs are destructive, need a copy...
+   buf = strdup(code);
+   if (buf == NULL)
+      goto finish;
 
    //Prepare buffered cheat for PCSX's AddCheat fucntion.
    int cursor = 0;
@@ -1022,10 +1025,12 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
    else
       ret = AddCheat("", buf);
 
+finish:
    if (ret != 0)
       SysPrintf("Failed to set cheat %#u\n", index);
    else if (index < NumCheats)
       Cheats[index].Enabled = enabled;
+   free(buf);
 }
 
 // just in case, maybe a win-rt port in the future?
@@ -1948,18 +1953,13 @@ static void update_variables(bool in_flight)
 
    {
       R3000Acpu *prev_cpu = psxCpu;
-#if defined(LIGHTREC)
-      bool can_use_dynarec = found_bios;
-#else
-      bool can_use_dynarec = 1;
-#endif
 
 #ifdef _3DS
       if (!__ctr_svchax)
          Config.Cpu = CPU_INTERPRETER;
       else
 #endif
-      if (strcmp(var.value, "disabled") == 0 || !can_use_dynarec)
+      if (strcmp(var.value, "disabled") == 0)
          Config.Cpu = CPU_INTERPRETER;
       else if (strcmp(var.value, "enabled") == 0)
          Config.Cpu = CPU_DYNAREC;
@@ -2478,13 +2478,13 @@ static void update_input_guncon(int port, int ret)
    //Offscreen value is chosen to be well out of range of any possible scaling done via core options
    if (input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN) || input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_RELOAD))
    {
-      in_analog_left[port][0] = (65536 - 512) * 64;
-      in_analog_left[port][1] = (65536 - 512) * 64;
+      in_analog_left[port][0] = 65536;
+      in_analog_left[port][1] = 65536;
    }
    else
    {
-      in_analog_left[port][0] = (gunx * GunconAdjustRatioX) + (GunconAdjustX * 655);
-      in_analog_left[port][1] = (guny * GunconAdjustRatioY) + (GunconAdjustY * 655);
+      in_analog_left[port][0] = ((gunx * GunconAdjustRatioX) + (GunconAdjustX * 655)) / 64 + 512;
+      in_analog_left[port][1] = ((guny * GunconAdjustRatioY) + (GunconAdjustY * 655)) / 64 + 512;
    }
 	
    //GUNCON has 3 controls, Trigger,A,B which equal Circle,Start,Cross

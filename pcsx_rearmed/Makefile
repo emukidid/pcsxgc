@@ -54,7 +54,7 @@ endif
 OBJS += libpcsxcore/cdriso.o libpcsxcore/cdrom.o libpcsxcore/cheat.o libpcsxcore/database.o \
 	libpcsxcore/decode_xa.o libpcsxcore/mdec.o \
 	libpcsxcore/misc.o libpcsxcore/plugins.o libpcsxcore/ppf.o libpcsxcore/psxbios.o \
-	libpcsxcore/psxcommon.o libpcsxcore/psxcounters.o libpcsxcore/psxdma.o libpcsxcore/psxhle.o \
+	libpcsxcore/psxcommon.o libpcsxcore/psxcounters.o libpcsxcore/psxdma.o \
 	libpcsxcore/psxhw.o libpcsxcore/psxinterpreter.o libpcsxcore/psxmem.o libpcsxcore/r3000a.o \
 	libpcsxcore/sio.o libpcsxcore/spu.o
 OBJS += libpcsxcore/gte.o libpcsxcore/gte_nf.o libpcsxcore/gte_divider.o
@@ -129,6 +129,8 @@ OBJS += deps/lightning/lib/jit_disasm.o \
 		deps/lightrec/optimizer.o \
 		deps/lightrec/regcache.o
 deps/lightning/%.o: CFLAGS += -DHAVE_MMAP=P_HAVE_MMAP
+deps/lightning/%: CFLAGS += -w
+deps/lightrec/%: CFLAGS += -w
 libpcsxcore/lightrec/mem.o: CFLAGS += -D_GNU_SOURCE
 ifeq ($(MMAP_WIN32),1)
 CFLAGS += -Iinclude/mman -I deps/mman
@@ -263,11 +265,6 @@ OBJS += deps/libchdr/src/libchdr_huffman.o
 CFLAGS += -Ideps/libchdr/deps/lzma-19.00/include
 CFLAGS += -DHAVE_CHD -D_7ZIP_ST
 LDFLAGS += -lm
-endif
-
-# dfinput
-ifneq "$(PLATFORM)" "libretro"
-OBJS += plugins/dfinput/main.o plugins/dfinput/pad.o plugins/dfinput/guncon.o
 endif
 
 # frontend/gui

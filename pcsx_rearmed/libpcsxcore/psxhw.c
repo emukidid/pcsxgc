@@ -41,6 +41,43 @@ void psxHwReset() {
 	HW_GPU_STATUS = SWAP32(0x14802000);
 }
 
+void psxHwWriteIstat(u32 value)
+{
+	u32 stat = psxHu16(0x1070) & value;
+	psxHu16ref(0x1070) = SWAPu16(stat);
+
+	psxRegs.CP0.n.Cause &= ~0x400;
+	if (stat & psxHu16(0x1074))
+		psxRegs.CP0.n.Cause |= 0x400;
+}
+
+void psxHwWriteImask(u32 value)
+{
+	u32 stat = psxHu16(0x1070);
+	psxHu16ref(0x1074) = SWAPu16(value);
+	if (stat & value) {
+		//if ((psxRegs.CP0.n.SR & 0x401) == 0x401)
+		//	log_unhandled("irq on unmask @%08x\n", psxRegs.pc);
+		new_dyna_set_event(PSXINT_NEWDRC_CHECK, 1);
+	}
+	psxRegs.CP0.n.Cause &= ~0x400;
+	if (stat & value)
+		psxRegs.CP0.n.Cause |= 0x400;
+}
+
+void psxHwWriteDmaIcr32(u32 value)
+{
+	u32 tmp = value & 0x00ff803f;
+	tmp |= (SWAPu32(HW_DMA_ICR) & ~value) & 0x7f000000;
+	if ((tmp & HW_DMA_ICR_GLOBAL_ENABLE && tmp & 0x7f000000)
+	    || tmp & HW_DMA_ICR_BUS_ERROR) {
+		if (!(SWAPu32(HW_DMA_ICR) & HW_DMA_ICR_IRQ_SENT))
+			psxHu32ref(0x1070) |= SWAP32(8);
+		tmp |= HW_DMA_ICR_IRQ_SENT;
+	}
+	HW_DMA_ICR = SWAPu32(tmp);
+}
+
 u8 psxHwRead8(u32 add) {
 	unsigned char hard;
 
@@ -138,7 +175,7 @@ u16 psxHwRead16(u32 add) {
 			return 0x80;
 
 		case 0x1f801100:
-			hard = psxRcntRcount(0);
+			hard = psxRcntRcount0();
 #ifdef PSXHW_LOG
 			PSXHW_LOG("T0 count read16: %x\n", hard);
 #endif
@@ -156,7 +193,7 @@ u16 psxHwRead16(u32 add) {
 #endif
 			return hard;
 		case 0x1f801110:
-			hard = psxRcntRcount(1);
+			hard = psxRcntRcount1();
 #ifdef PSXHW_LOG
 			PSXHW_LOG("T1 count read16: %x\n", hard);
 #endif
@@ -174,7 +211,7 @@ u16 psxHwRead16(u32 add) {
 #endif
 			return hard;
 		case 0x1f801120:
-			hard = psxRcntRcount(2);
+			hard = psxRcntRcount2();
 #ifdef PSXHW_LOG
 			PSXHW_LOG("T2 count read16: %x\n", hard);
 #endif
@@ -309,7 +346,7 @@ u32 psxHwRead32(u32 add) {
 
 		// time for rootcounters :)
 		case 0x1f801100:
-			hard = psxRcntRcount(0);
+			hard = psxRcntRcount0();
 #ifdef PSXHW_LOG
 			PSXHW_LOG("T0 count read32: %x\n", hard);
 #endif
@@ -327,7 +364,7 @@ u32 psxHwRead32(u32 add) {
 #endif
 			return hard;
 		case 0x1f801110:
-			hard = psxRcntRcount(1);
+			hard = psxRcntRcount1();
 #ifdef PSXHW_LOG
 			PSXHW_LOG("T1 count read32: %x\n", hard);
 #endif
@@ -345,7 +382,7 @@ u32 psxHwRead32(u32 add) {
 #endif
 			return hard;
 		case 0x1f801120:
-			hard = psxRcntRcount(2);
+			hard = psxRcntRcount2();
 #ifdef PSXHW_LOG
 			PSXHW_LOG("T2 count read32: %x\n", hard);
 #endif
@@ -476,19 +513,14 @@ void psxHwWrite16(u32 add, u16 value) {
 #ifdef PSXHW_LOG
 			PSXHW_LOG("IREG 16bit write %x\n", value);
 #endif
-			psxHu16ref(0x1070) &= SWAPu16(value);
+			psxHwWriteIstat(value);
 			return;
 
 		case 0x1f801074:
 #ifdef PSXHW_LOG
 			PSXHW_LOG("IMASK 16bit write %x\n", value);
 #endif
-			psxHu16ref(0x1074) = SWAPu16(value);
-			if (psxHu16ref(0x1070) & SWAPu16(value)) {
-				//if ((psxRegs.CP0.n.SR & 0x401) == 0x401)
-				//	log_unhandled("irq on unmask @%08x\n", psxRegs.pc);
-				new_dyna_set_event(PSXINT_NEWDRC_CHECK, 1);
-			}
+			psxHwWriteImask(value);
 			return;
 
 		case 0x1f801100:
@@ -607,18 +639,13 @@ void psxHwWrite32(u32 add, u32 value) {
 #ifdef PSXHW_LOG
 			PSXHW_LOG("IREG 32bit write %x\n", value);
 #endif
-			psxHu32ref(0x1070) &= SWAPu32(value);
+			psxHwWriteIstat(value);
 			return;
 		case 0x1f801074:
 #ifdef PSXHW_LOG
 			PSXHW_LOG("IMASK 32bit write %x\n", value);
 #endif
-			psxHu32ref(0x1074) = SWAPu32(value);
-			if (psxHu32ref(0x1070) & SWAPu32(value)) {
-				if ((psxRegs.CP0.n.SR & 0x401) == 0x401)
-					log_unhandled("irq on unmask @%08x\n", psxRegs.pc);
-				new_dyna_set_event(PSXINT_NEWDRC_CHECK, 1);
-			}
+			psxHwWriteImask(value);
 			return;
 
 #ifdef PSXHW_LOG
@@ -729,18 +756,8 @@ void psxHwWrite32(u32 add, u32 value) {
 #ifdef PSXHW_LOG
 			PSXHW_LOG("DMA ICR 32bit write %x\n", value);
 #endif
-		{
-			u32 tmp = value & 0x00ff803f;
-			tmp |= (SWAPu32(HW_DMA_ICR) & ~value) & 0x7f000000;
-			if ((tmp & HW_DMA_ICR_GLOBAL_ENABLE && tmp & 0x7f000000)
-			    || tmp & HW_DMA_ICR_BUS_ERROR) {
-				if (!(SWAPu32(HW_DMA_ICR) & HW_DMA_ICR_IRQ_SENT))
-					psxHu32ref(0x1070) |= SWAP32(8);
-				tmp |= HW_DMA_ICR_IRQ_SENT;
-			}
-			HW_DMA_ICR = SWAPu32(tmp);
+			psxHwWriteDmaIcr32(value);
 			return;
-		}
 
 		case 0x1f801810:
 #ifdef PSXHW_LOG

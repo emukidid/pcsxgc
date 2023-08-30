@@ -13,6 +13,14 @@
 
 #include <stdint.h>
 
+//#define RAW_FB_DISPLAY
+
+#define gpu_log(fmt, ...) \
+  printf("%d:%03d: " fmt, *gpu.state.frame_count, *gpu.state.hcnt, ##__VA_ARGS__)
+
+//#define log_anomaly gpu_log
+#define log_anomaly(...)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -69,6 +77,7 @@ struct psx_gpu {
     uint32_t blanked:1;
     uint32_t enhancement_enable:1;
     uint32_t enhancement_active:1;
+    uint32_t enhancement_was_active:1;
     uint32_t downscale_enable:1;
     uint32_t downscale_active:1;
     uint32_t dims_changed:1;
@@ -118,13 +127,14 @@ struct rearmed_cbs;
 int  renderer_init(void);
 void renderer_finish(void);
 void renderer_sync_ecmds(uint32_t * ecmds);
-void renderer_update_caches(int x, int y, int w, int h);
+void renderer_update_caches(int x, int y, int w, int h, int state_changed);
 void renderer_flush_queues(void);
 void renderer_set_interlace(int enable, int is_odd);
 void renderer_set_config(const struct rearmed_cbs *config);
 void renderer_notify_res_change(void);
 void renderer_notify_update_lace(int updated);
 void renderer_sync(void);
+void renderer_notify_scanout_x_change(int x, int w);
 
 int  vout_init(void);
 int  vout_finish(void);
@@ -146,9 +156,10 @@ uint32_t GPUreadStatus(void);
 void GPUwriteStatus(uint32_t data);
 long GPUfreeze(uint32_t type, struct GPUFreeze *freeze);
 void GPUupdateLace(void);
-long GPUopen(void **dpy);
+long GPUopen(unsigned long *disp, char *cap, char *cfg);
 long GPUclose(void);
 void GPUvBlank(int is_vblank, int lcf);
+void GPUgetScreenInfo(int *y, int *base_hres);
 void GPUrearmedCallbacks(const struct rearmed_cbs *cbs_);
 
 #ifdef __cplusplus

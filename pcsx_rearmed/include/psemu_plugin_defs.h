@@ -141,7 +141,7 @@ typedef struct
   long	PADquery(void);
 
   unsigned char PADstartPoll(int);
-  unsigned char PADpoll(unsigned char);
+  unsigned char PADpoll(unsigned char, int *);
 
 */
 
@@ -200,9 +200,6 @@ typedef struct
 	// controller type - fill it withe predefined values above
 	unsigned char controllerType;
 
-	//0 : no multitap between psx and pad
-	//1 : multitap between psx and pad on port 1
-	//2 : multitap between psx and pad on port 2
 	int portMultitap;
 	int requestPadIndex;
 
@@ -222,7 +219,12 @@ typedef struct
 	
 	//configuration mode Request 0x43
 	int configMode;
-	unsigned char reserved[87];
+
+	unsigned char txData[34];
+
+	unsigned char multitapLongModeEnabled;
+	unsigned char PadMode; // 0 : digital 1: analog
+	unsigned char reserved[52];
 	
 	//Lightgun values 
 	int absoluteX,absoluteY;

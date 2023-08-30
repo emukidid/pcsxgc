@@ -112,7 +112,7 @@ int GetCdromFile(u8 *mdir, u8 *time, char *filename) {
 	int i;
 
 	// only try to scan if a filename is given
-	if (!strlen(filename)) return -1;
+	if (filename == INVALID_PTR || !strlen(filename)) return -1;
 
 	i = 0;
 	while (i < 4096) {
@@ -243,7 +243,7 @@ int LoadCdrom() {
 		getFromCnf((char *)buf + 12, "EVENT", &cnf_event);
 		getFromCnf((char *)buf + 12, "STACK", &cnf_stack);
 		if (Config.HLE)
-			psxBiosCnfLoaded(cnf_tcb, cnf_event);
+			psxBiosCnfLoaded(cnf_tcb, cnf_event, cnf_stack);
 
 		// Read the EXE-Header
 		READTRACK();
@@ -261,7 +261,7 @@ int LoadCdrom() {
 	tmpHead.t_addr = SWAP32(tmpHead.t_addr);
 
 	psxCpu->Clear(tmpHead.t_addr, tmpHead.t_size / 4);
-	psxCpu->Reset();
+	//psxCpu->Reset();
 
 	// Read the rest of the main executable
 	while (tmpHead.t_size & ~2047) {
@@ -288,6 +288,9 @@ int LoadCdromFile(const char *filename, EXE_HEADER *head) {
 	u32 size, addr;
 	void *mem;
 
+	if (filename == INVALID_PTR)
+		return -1;
+
 	p1 = filename;
 	if ((p2 = strchr(p1, ':')))
 		p1 = p2 + 1;
@@ -311,11 +314,11 @@ int LoadCdromFile(const char *filename, EXE_HEADER *head) {
 	READTRACK();
 
 	memcpy(head, buf + 12, sizeof(EXE_HEADER));
-	size = head->t_size;
-	addr = head->t_addr;
+	size = SWAP32(head->t_size);
+	addr = SWAP32(head->t_addr);
 
 	psxCpu->Clear(addr, size / 4);
-	psxCpu->Reset();
+	//psxCpu->Reset();
 
 	while (size & ~2047) {
 		incTime();
@@ -625,11 +628,12 @@ static const u32 SaveVersion = 0x8b410006;
 
 int SaveState(const char *file) {
 	void *f;
-	GPUFreeze_t *gpufP;
-	SPUFreezeHdr_t *spufH;
-	SPUFreeze_t *spufP;
+	GPUFreeze_t *gpufP = NULL;
+	SPUFreezeHdr_t spufH;
+	SPUFreeze_t *spufP = NULL;
+	unsigned char *pMem = NULL;
+	int result = -1;
 	int Size;
-	unsigned char *pMem;
 
 	f = SaveFuncs.open(file, "wb");
 	if (f == NULL) return -1;
@@ -641,7 +645,7 @@ int SaveState(const char *file) {
 	SaveFuncs.write(f, (void *)&Config.HLE, sizeof(boolean));
 
 	pMem = (unsigned char *)malloc(128 * 96 * 3);
-	if (pMem == NULL) return -1;
+	if (pMem == NULL) goto cleanup;
 	GPU_getScreenPic(pMem);
 	SaveFuncs.write(f, pMem, 128 * 96 * 3);
 	free(pMem);
@@ -657,20 +661,20 @@ int SaveState(const char *file) {
 
 	// gpu
 	gpufP = (GPUFreeze_t *)malloc(sizeof(GPUFreeze_t));
+	if (gpufP == NULL) goto cleanup;
 	gpufP->ulFreezeVersion = 1;
 	GPU_freeze(1, gpufP);
 	SaveFuncs.write(f, gpufP, sizeof(GPUFreeze_t));
-	free(gpufP);
+	free(gpufP); gpufP = NULL;
 
 	// spu
-	spufH = malloc(sizeof(*spufH));
-	SPU_freeze(2, (SPUFreeze_t *)spufH, psxRegs.cycle);
-	Size = spufH->Size; SaveFuncs.write(f, &Size, 4);
-	free(spufH);
+	SPU_freeze(2, (SPUFreeze_t *)&spufH, psxRegs.cycle);
+	Size = spufH.Size; SaveFuncs.write(f, &Size, 4);
 	spufP = (SPUFreeze_t *) malloc(Size);
+	if (spufP == NULL) goto cleanup;
 	SPU_freeze(1, spufP, psxRegs.cycle);
 	SaveFuncs.write(f, spufP, Size);
-	free(spufP);
+	free(spufP); spufP = NULL;
 
 	sioFreeze(f, 1);
 	cdrFreeze(f, 1);
@@ -679,19 +683,21 @@ int SaveState(const char *file) {
 	mdecFreeze(f, 1);
 	new_dyna_freeze(f, 1);
 
+	result = 0;
+cleanup:
 	SaveFuncs.close(f);
-
-	return 0;
+	return result;
 }
 
 int LoadState(const char *file) {
 	void *f;
-	GPUFreeze_t *gpufP;
-	SPUFreeze_t *spufP;
+	GPUFreeze_t *gpufP = NULL;
+	SPUFreeze_t *spufP = NULL;
 	int Size;
 	char header[32];
 	u32 version;
 	boolean hle;
+	int result = -1;
 
 	f = SaveFuncs.open(file, "rb");
 	if (f == NULL) return -1;
@@ -701,8 +707,8 @@ int LoadState(const char *file) {
 	SaveFuncs.read(f, &hle, sizeof(boolean));
 
 	if (strncmp("STv4 PCSX", header, 9) != 0 || version != SaveVersion) {
-		SaveFuncs.close(f);
-		return -1;
+		SysPrintf("incompatible savestate version %x\n", version);
+		goto cleanup;
 	}
 	Config.HLE = hle;
 
@@ -723,6 +729,7 @@ int LoadState(const char *file) {
 
 	// gpu
 	gpufP = (GPUFreeze_t *)malloc(sizeof(GPUFreeze_t));
+	if (gpufP == NULL) goto cleanup;
 	SaveFuncs.read(f, gpufP, sizeof(GPUFreeze_t));
 	GPU_freeze(0, gpufP);
 	free(gpufP);
@@ -732,6 +739,7 @@ int LoadState(const char *file) {
 	// spu
 	SaveFuncs.read(f, &Size, 4);
 	spufP = (SPUFreeze_t *)malloc(Size);
+	if (spufP == NULL) goto cleanup;
 	SaveFuncs.read(f, spufP, Size);
 	SPU_freeze(0, spufP, psxRegs.cycle);
 	free(spufP);
@@ -743,9 +751,10 @@ int LoadState(const char *file) {
 	mdecFreeze(f, 0);
 	new_dyna_freeze(f, 0);
 
+	result = 0;
+cleanup:
 	SaveFuncs.close(f);
-
-	return 0;
+	return result;
 }
 
 int CheckState(const char *file) {

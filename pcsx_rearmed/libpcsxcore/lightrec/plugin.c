@@ -19,6 +19,7 @@
 #include "../psxmem.h"
 #include "../r3000a.h"
 #include "../psxinterpreter.h"
+#include "../psxhle.h"
 #include "../new_dynarec/events.h"
 
 #include "../frontend/main.h"
@@ -64,8 +65,8 @@ static char *name = "retroarch.exe";
 static bool use_lightrec_interpreter;
 static bool use_pcsx_interpreter;
 static bool block_stepping;
-static u32 cycle_mult_to_pcsx; // 22.10 fractional
-static u32 cycle_mult_from_pcsx;
+
+extern u32 lightrec_hacks;
 
 enum my_cp2_opcodes {
 	OP_CP2_RTPS		= 0x01,
@@ -144,15 +145,9 @@ static bool has_interrupt(void)
 		(regs->cp0[12] & regs->cp0[13] & 0x0300);
 }
 
-static u32 cycles_pcsx_to_lightrec(u32 c)
-{
-	assert((u64)c * cycle_mult_from_pcsx <= (u32)-1);
-	return c * cycle_mult_from_pcsx >> 10;
-}
-
 static void lightrec_tansition_to_pcsx(struct lightrec_state *state)
 {
-	psxRegs.cycle += lightrec_current_cycle_count(state) * cycle_mult_to_pcsx >> 10;
+	psxRegs.cycle += lightrec_current_cycle_count(state) / 1024;
 	lightrec_reset_cycle_count(state, 0);
 }
 
@@ -163,8 +158,7 @@ static void lightrec_tansition_from_pcsx(struct lightrec_state *state)
 	if (block_stepping || cycles_left <= 0 || has_interrupt())
 		lightrec_set_exit_flags(state, LIGHTREC_EXIT_CHECK_INTERRUPT);
 	else {
-		lightrec_set_target_cycle_count(state,
-			cycles_pcsx_to_lightrec(cycles_left));
+		lightrec_set_target_cycle_count(state, cycles_left * 1024);
 	}
 }
 
@@ -488,6 +482,9 @@ static int lightrec_plugin_init(void)
 	return 0;
 }
 
+static void lightrec_plugin_sync_regs_to_pcsx(bool need_cp2);
+static void lightrec_plugin_sync_regs_from_pcsx(bool need_cp2);
+
 static void lightrec_plugin_execute_internal(bool block_only)
 {
 	struct lightrec_registers *regs;
@@ -506,7 +503,7 @@ static void lightrec_plugin_execute_internal(bool block_only)
 	if (use_pcsx_interpreter) {
 		intExecuteBlock(0);
 	} else {
-		u32 cycles_lightrec = cycles_pcsx_to_lightrec(cycles_pcsx);
+		u32 cycles_lightrec = cycles_pcsx * 1024;
 		if (unlikely(use_lightrec_interpreter)) {
 			psxRegs.pc = lightrec_run_interpreter(lightrec_state,
 							      psxRegs.pc,
@@ -527,7 +524,20 @@ static void lightrec_plugin_execute_internal(bool block_only)
 		}
 
 		if (flags & LIGHTREC_EXIT_SYSCALL)
-			psxException(0x20, 0, (psxCP0Regs *)regs->cp0);
+			psxException(R3000E_Syscall << 2, 0, (psxCP0Regs *)regs->cp0);
+		if (flags & LIGHTREC_EXIT_BREAK)
+			psxException(R3000E_Bp << 2, 0, (psxCP0Regs *)regs->cp0);
+		else if (flags & LIGHTREC_EXIT_UNKNOWN_OP) {
+			u32 op = intFakeFetch(psxRegs.pc);
+			u32 hlec = op & 0x03ffffff;
+			if ((op >> 26) == 0x3b && hlec < ARRAY_SIZE(psxHLEt) && Config.HLE) {
+				lightrec_plugin_sync_regs_to_pcsx(0);
+				psxHLEt[hlec]();
+				lightrec_plugin_sync_regs_from_pcsx(0);
+			}
+			else
+				psxException(R3000E_RI << 2, 0, (psxCP0Regs *)regs->cp0);
+		}
 	}
 
 	if ((regs->cp0[13] & regs->cp0[12] & 0x300) && (regs->cp0[12] & 0x1)) {
@@ -559,9 +569,6 @@ static void lightrec_plugin_clear(u32 addr, u32 size)
 		lightrec_invalidate(lightrec_state, addr, size * 4);
 }
 
-static void lightrec_plugin_sync_regs_to_pcsx(void);
-static void lightrec_plugin_sync_regs_from_pcsx(void);
-
 static void lightrec_plugin_notify(enum R3000Anote note, void *data)
 {
 	switch (note)
@@ -571,10 +578,13 @@ static void lightrec_plugin_notify(enum R3000Anote note, void *data)
 		/* not used, lightrec calls lightrec_enable_ram() instead */
 		break;
 	case R3000ACPU_NOTIFY_BEFORE_SAVE:
-		lightrec_plugin_sync_regs_to_pcsx();
+		/* non-null 'data' means this is HLE related sync */
+		lightrec_plugin_sync_regs_to_pcsx(data == NULL);
 		break;
 	case R3000ACPU_NOTIFY_AFTER_LOAD:
-		lightrec_plugin_sync_regs_from_pcsx();
+		lightrec_plugin_sync_regs_from_pcsx(data == NULL);
+		if (data == NULL)
+			lightrec_invalidate_all(lightrec_state);
 		break;
 	}
 }
@@ -584,8 +594,8 @@ static void lightrec_plugin_apply_config()
 	u32 cycle_mult = Config.cycle_multiplier_override && Config.cycle_multiplier == CYCLE_MULT_DEFAULT
 		? Config.cycle_multiplier_override : Config.cycle_multiplier;
 	assert(cycle_mult);
-	cycle_mult_to_pcsx = (cycle_mult * 1024 + 199) / 200;
-	cycle_mult_from_pcsx = (200 * 1024 + cycle_mult/2) / cycle_mult;
+
+	lightrec_set_cycles_per_opcode(lightrec_state, cycle_mult * 1024 / 100);
 }
 
 static void lightrec_plugin_shutdown(void)
@@ -615,28 +625,30 @@ static void lightrec_plugin_reset(void)
 
 	regs->cp0[12] = 0x10900000; // COP0 enabled | BEV = 1 | TS = 1
 	regs->cp0[15] = 0x00000002; // PRevID = Revision ID, same as R3000A
+
+	lightrec_set_unsafe_opt_flags(lightrec_state, lightrec_hacks);
 }
 
-static void lightrec_plugin_sync_regs_from_pcsx(void)
+static void lightrec_plugin_sync_regs_from_pcsx(bool need_cp2)
 {
 	struct lightrec_registers *regs;
 
 	regs = lightrec_get_registers(lightrec_state);
-	memcpy(regs->cp2d, &psxRegs.CP2, sizeof(regs->cp2d) + sizeof(regs->cp2c));
-	memcpy(regs->cp0, &psxRegs.CP0, sizeof(regs->cp0));
 	memcpy(regs->gpr, &psxRegs.GPR, sizeof(regs->gpr));
-
-	lightrec_invalidate_all(lightrec_state);
+	memcpy(regs->cp0, &psxRegs.CP0, sizeof(regs->cp0));
+	if (need_cp2)
+		memcpy(regs->cp2d, &psxRegs.CP2, sizeof(regs->cp2d) + sizeof(regs->cp2c));
 }
 
-static void lightrec_plugin_sync_regs_to_pcsx(void)
+static void lightrec_plugin_sync_regs_to_pcsx(bool need_cp2)
 {
 	struct lightrec_registers *regs;
 
 	regs = lightrec_get_registers(lightrec_state);
-	memcpy(&psxRegs.CP2, regs->cp2d, sizeof(regs->cp2d) + sizeof(regs->cp2c));
-	memcpy(&psxRegs.CP0, regs->cp0, sizeof(regs->cp0));
 	memcpy(&psxRegs.GPR, regs->gpr, sizeof(regs->gpr));
+	memcpy(&psxRegs.CP0, regs->cp0, sizeof(regs->cp0));
+	if (need_cp2)
+		memcpy(&psxRegs.CP2, regs->cp2d, sizeof(regs->cp2d) + sizeof(regs->cp2c));
 }
 
 R3000Acpu psxRec =

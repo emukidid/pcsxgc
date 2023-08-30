@@ -12,7 +12,6 @@ CORE_DIR     := $(ROOT_DIR)/libpcsxcore
 SPU_DIR      := $(ROOT_DIR)/plugins/dfsound
 GPU_DIR      := $(ROOT_DIR)/plugins/gpulib
 CDR_DIR      := $(ROOT_DIR)/plugins/cdrcimg
-INPUT_DIR    := $(ROOT_DIR)/plugins/dfinput
 FRONTEND_DIR := $(ROOT_DIR)/frontend
 NEON_DIR     := $(ROOT_DIR)/plugins/gpu_neon
 UNAI_DIR     := $(ROOT_DIR)/plugins/gpu_unai
@@ -36,7 +35,6 @@ SOURCES_C := $(CORE_DIR)/cdriso.c \
              $(CORE_DIR)/psxcommon.c \
              $(CORE_DIR)/psxcounters.c \
              $(CORE_DIR)/psxdma.c \
-             $(CORE_DIR)/psxhle.c \
              $(CORE_DIR)/psxhw.c \
              $(CORE_DIR)/psxinterpreter.c \
              $(CORE_DIR)/psxmem.c \
@@ -61,11 +59,6 @@ SOURCES_C += $(GPU_DIR)/gpu.c \
 
 # cdrcimg
 SOURCES_C += $(CDR_DIR)/cdrcimg.c
-
-# dfinput
-SOURCES_C += $(INPUT_DIR)/main.c \
-             $(INPUT_DIR)/pad.c \
-             $(INPUT_DIR)/guncon.c
 
 # frontend
 SOURCES_C += $(FRONTEND_DIR)/main.c \
