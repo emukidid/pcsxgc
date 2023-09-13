@@ -3580,3 +3580,7 @@ void CALLBACK GPUdisplayFlags(unsigned long dwFlags)
 {
  dwCoreFlags=dwFlags;
 }
+
+void CALLBACK GPUrearmedCallbacks(const struct rearmed_cbs *cbs)
+{
+}

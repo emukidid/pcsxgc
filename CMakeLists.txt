@@ -169,7 +169,6 @@ add_library(libpcsxcore OBJECT
 	pcsx_rearmed/libpcsxcore/psxcommon.c
 	pcsx_rearmed/libpcsxcore/psxcounters.c
 	pcsx_rearmed/libpcsxcore/psxdma.c
-	pcsx_rearmed/libpcsxcore/psxhle.c
 	pcsx_rearmed/libpcsxcore/psxhw.c
 	pcsx_rearmed/libpcsxcore/psxinterpreter.c
 	pcsx_rearmed/libpcsxcore/psxmem.c

@@ -667,6 +667,10 @@ void pl_frame_limit(void)
 {
 }
 
+void pl_gun_byte2(int port, unsigned char byte)
+{
+}
+
 
 /* TODO: Should be populated properly */
 int in_type[8] = {
