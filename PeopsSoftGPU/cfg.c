@@ -891,7 +891,7 @@ void ReadConfig(void)
  iUseGammaVal=2048;
  iUseScanLines=0;
  iUseNoStretchBlt=0;
- iUseDither=0;
+ iUseDither = useDithering;
  iShowFPS=0;
  iSysMemory=0;
  iStopSaver=0;

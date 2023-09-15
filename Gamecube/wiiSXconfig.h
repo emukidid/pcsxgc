@@ -89,6 +89,7 @@ enum frameSkip
 };
 
 extern int iUseDither;
+extern char useDithering;
 enum iUseDither
 {
 	USEDITHER_NONE=0,
