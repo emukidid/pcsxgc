@@ -514,6 +514,10 @@ void renderer_notify_res_change(void)
 {
 }
 
+void renderer_notify_scanout_x_change(int x, int w)
+{
+}
+
 extern const unsigned char cmd_lengths[256];
 
 // XXX: mostly dupe code from soft peops
@@ -622,7 +626,7 @@ void renderer_sync_ecmds(uint32_t *ecmds)
   cmdSTP((unsigned char *)&ecmds[6]);
 }
 
-void renderer_update_caches(int x, int y, int w, int h)
+void renderer_update_caches(int x, int y, int w, int h, int state_changed)
 {
  VRAMWrite.x = x;
  VRAMWrite.y = y;
@@ -675,7 +679,7 @@ void vout_set_config(const struct rearmed_cbs *cbs)
 
 static struct rearmed_cbs *cbs;
 
-long GPUopen(void **dpy)
+long GPUopen(unsigned long *disp, char *cap, char *cfg)
 {
  int ret;
 
@@ -734,7 +738,7 @@ void renderer_set_config(const struct rearmed_cbs *cbs_)
  if (is_opened && cbs->gles_display != NULL && cbs->gles_surface != NULL) {
   // HACK..
   GPUclose();
-  GPUopen(NULL);
+  GPUopen(NULL, NULL, NULL);
  }
 
  set_vram(gpu.vram);

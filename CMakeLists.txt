@@ -169,7 +169,6 @@ add_library(libpcsxcore OBJECT
 	pcsx_rearmed/libpcsxcore/psxcommon.c
 	pcsx_rearmed/libpcsxcore/psxcounters.c
 	pcsx_rearmed/libpcsxcore/psxdma.c
-	pcsx_rearmed/libpcsxcore/psxhle.c
 	pcsx_rearmed/libpcsxcore/psxhw.c
 	pcsx_rearmed/libpcsxcore/psxinterpreter.c
 	pcsx_rearmed/libpcsxcore/psxmem.c
@@ -190,11 +189,15 @@ target_include_directories(libpcsxcore PRIVATE pcsx_rearmed/deps/lightrec)
 target_include_directories(libpcsxcore PUBLIC ${ZLIB_INCLUDE_DIR})
 target_compile_definitions(libpcsxcore PUBLIC LIGHTREC LIGHTREC_CUSTOM_MAP NO_SOCKET
 	$<IF:$<PLATFORM_ID:NintendoWii>,HW_RVL,HW_DOL>
+	CODE_BUFFER_SIZE=0x400000
 )
 set_target_properties(libpcsxcore PROPERTIES LINKER_LANGUAGE C)
 target_link_libraries(libpcsxcore PUBLIC ${ZLIB_LIBRARIES} libchdr)
 
-get_filename_component(LIBGUI_RESOURCES_PATH Gamecube/libgui/resources ABSOLUTE)
+file(RELATIVE_PATH LIBGUI_RESOURCES_PATH
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/Gamecube/libgui/resources
+)
 configure_file(Gamecube/libgui/resources.s.cmakein libgui_resources.s @ONLY)
 add_library(libgui OBJECT
 	Gamecube/libgui/Button.cpp
@@ -219,7 +222,10 @@ target_include_directories(libgui PRIVATE Gamecube/libgui)
 set_target_properties(libgui PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(libgui PUBLIC libpcsxcore ogc ${LIBDI_LIBRARIES})
 
-get_filename_component(MENU_RESOURCES_PATH Gamecube/menu/resources ABSOLUTE)
+file(RELATIVE_PATH MENU_RESOURCES_PATH
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/Gamecube/menu/resources
+)
 configure_file(Gamecube/menu/MenuResources.s.cmakein menu_resources.s @ONLY)
 add_library(menu OBJECT
 	Gamecube/menu/ConfigureButtonsFrame.cpp
@@ -259,9 +265,14 @@ set_target_properties(dfsound PROPERTIES LINKER_LANGUAGE C)
 target_link_libraries(dfsound PUBLIC ogc)
 target_compile_definitions(dfsound PRIVATE HAVE_OSS)
 
-option(GX_GPU "GX accelerated GPU plugin" OFF)
+if (NOT GPU_PLUGIN)
+	set(GPU_PLUGIN Peops CACHE STRING "GPU plugin" FORCE)
+	set_property(CACHE GPU_PLUGIN PROPERTY
+		STRINGS Peops PeopsGX Unai
+	)
+endif()
 
-if (GX_GPU)
+if (GPU_PLUGIN STREQUAL PeopsGX)
 	add_library(gpu OBJECT
 		PeopsGXGPU/about.c
 		PeopsGXGPU/cfg.c
@@ -280,23 +291,24 @@ if (GX_GPU)
 		PeopsGXGPU/opengx/image_DXT.c
 	)
 	target_compile_definitions(gpu PRIVATE GX_GPU)
+	set_target_properties(gpu PROPERTIES LINKER_LANGUAGE C)
+elseif (GPU_PLUGIN STREQUAL Peops)
+	add_library(gpu OBJECT
+		pcsx_rearmed/plugins/dfxvideo/gpulib_if.c
+		pcsx_rearmed/plugins/gpulib/gpu.c
+		pcsx_rearmed/plugins/gpulib/vout_pl.c
+	)
+	set_target_properties(gpu PROPERTIES LINKER_LANGUAGE C)
 else()
 	add_library(gpu OBJECT
-		PeopsSoftGPU/DrawString.c
-		PeopsSoftGPU/cfg.c
-		PeopsSoftGPU/drawGX.c
-		PeopsSoftGPU/fps.c
-		PeopsSoftGPU/gpu.c
-		PeopsSoftGPU/gpupeopssoft.c
-		PeopsSoftGPU/key.c
-		PeopsSoftGPU/menu.c
-		PeopsSoftGPU/prim.c
-		PeopsSoftGPU/soft.c
+		pcsx_rearmed/plugins/gpu_unai/gpulib_if.cpp
+		pcsx_rearmed/plugins/gpulib/gpu.c
+		pcsx_rearmed/plugins/gpulib/vout_pl.c
 	)
+	set_target_properties(gpu PROPERTIES LINKER_LANGUAGE CXX)
 endif()
-set_target_properties(gpu PROPERTIES LINKER_LANGUAGE C)
 target_link_libraries(gpu PUBLIC ogc libgui)
-target_compile_definitions(gpu PRIVATE __GX__ _SDL)
+target_compile_definitions(gpu PRIVATE __GX__ _SDL USE_GPULIB)
 
 add_executable(wiisx
 	Gamecube/aesnd.c
@@ -325,7 +337,7 @@ target_include_directories(wiisx PRIVATE
 	${CMAKE_SOURCE_DIR}
 )
 set_target_properties(wiisx PROPERTIES
-	OUTPUT_NAME $<IF:$<PLATFORM_ID:NintendoWii>,WiiSX,CubeSX>$<$<BOOL:${GX_GPU}>:_GX>
+	OUTPUT_NAME $<IF:$<PLATFORM_ID:NintendoWii>,WiiSX,CubeSX>
 )
 
 target_link_libraries(wiisx PRIVATE

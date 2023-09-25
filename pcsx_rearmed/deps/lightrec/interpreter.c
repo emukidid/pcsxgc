@@ -74,7 +74,7 @@ static inline u32 jump_skip(struct interpreter *inter)
 
 static inline u32 jump_next(struct interpreter *inter)
 {
-	inter->cycles += lightrec_cycles_of_opcode(inter->op->c);
+	inter->cycles += lightrec_cycles_of_opcode(inter->state, inter->op->c);
 
 	if (unlikely(inter->delay_slot))
 		return 0;
@@ -84,7 +84,7 @@ static inline u32 jump_next(struct interpreter *inter)
 
 static inline u32 jump_after_branch(struct interpreter *inter)
 {
-	inter->cycles += lightrec_cycles_of_opcode(inter->op->c);
+	inter->cycles += lightrec_cycles_of_opcode(inter->state, inter->op->c);
 
 	if (unlikely(inter->delay_slot))
 		return 0;
@@ -100,11 +100,11 @@ static void update_cycles_before_branch(struct interpreter *inter)
 	u32 cycles;
 
 	if (!inter->delay_slot) {
-		cycles = lightrec_cycles_of_opcode(inter->op->c);
+		cycles = lightrec_cycles_of_opcode(inter->state, inter->op->c);
 
 		if (!op_flag_no_ds(inter->op->flags) &&
 		    has_delay_slot(inter->op->c))
-			cycles += lightrec_cycles_of_opcode(next_op(inter)->c);
+			cycles += lightrec_cycles_of_opcode(inter->state, next_op(inter)->c);
 
 		inter->cycles += cycles;
 		inter->state->current_cycle += inter->cycles;
@@ -155,7 +155,7 @@ static u32 int_delay_slot(struct interpreter *inter, u32 pc, bool branch)
 	bool run_first_op = false, dummy_ld = false, save_rs = false,
 	     load_in_ds, branch_in_ds = false, branch_at_addr = false,
 	     branch_taken;
-	u32 old_rs, new_rs, new_rt;
+	u32 new_rt, old_rs = 0, new_rs = 0;
 	u32 next_pc, ds_next_pc;
 	u32 cause, epc;
 
@@ -236,7 +236,7 @@ static u32 int_delay_slot(struct interpreter *inter, u32 pc, bool branch)
 			branch_taken = is_branch_taken(reg_cache, op_next);
 			pr_debug("Target of impossible branch is a branch, "
 				 "%staken.\n", branch_taken ? "" : "not ");
-			inter->cycles += lightrec_cycles_of_opcode(op_next);
+			inter->cycles += lightrec_cycles_of_opcode(inter->state, op_next);
 			old_rs = reg_cache[op_next.r.rs];
 		} else {
 			new_op.c = op_next;
@@ -252,7 +252,7 @@ static u32 int_delay_slot(struct interpreter *inter, u32 pc, bool branch)
 				reg_cache[op->r.rs] = old_rs;
 			}
 
-			inter->cycles += lightrec_cycles_of_opcode(op_next);
+			inter->cycles += lightrec_cycles_of_opcode(inter->state, op_next);
 		}
 	} else {
 		next_pc = int_get_ds_pc(inter, 2);
@@ -293,7 +293,7 @@ static u32 int_delay_slot(struct interpreter *inter, u32 pc, bool branch)
 	if (dummy_ld)
 		reg_cache[op->r.rt] = new_rt;
 
-	inter->cycles += lightrec_cycles_of_opcode(op->c);
+	inter->cycles += lightrec_cycles_of_opcode(inter->state, op->c);
 
 	if (branch_at_addr && branch_taken) {
 		/* If the branch at the target of the branch opcode is taken,
@@ -306,7 +306,7 @@ static u32 int_delay_slot(struct interpreter *inter, u32 pc, bool branch)
 		inter2.op = &new_op;
 		inter2.block = NULL;
 
-		inter->cycles += lightrec_cycles_of_opcode(op_next);
+		inter->cycles += lightrec_cycles_of_opcode(inter->state, op_next);
 
 		pr_debug("Running delay slot of branch at target of impossible "
 			 "branch\n");
@@ -318,9 +318,9 @@ static u32 int_delay_slot(struct interpreter *inter, u32 pc, bool branch)
 
 static u32 int_unimplemented(struct interpreter *inter)
 {
-	pr_warn("Unimplemented opcode 0x%08x\n", inter->op->opcode);
+	lightrec_set_exit_flags(inter->state, LIGHTREC_EXIT_UNKNOWN_OP);
 
-	return jump_next(inter);
+	return inter->block->pc + (inter->offset << 2);
 }
 
 static u32 int_jump(struct interpreter *inter, bool link)
@@ -997,12 +997,20 @@ static u32 int_META_MULT2(struct interpreter *inter)
 	}
 
 	if (!op_flag_no_hi(inter->op->flags)) {
-		if (c.r.op >= 32)
+		if (c.r.op >= 32) {
 			reg_cache[reg_hi] = rs << (c.r.op - 32);
-		else if (c.i.op == OP_META_MULT2)
-			reg_cache[reg_hi] = (s32) rs >> (32 - c.r.op);
-		else
-			reg_cache[reg_hi] = rs >> (32 - c.r.op);
+		}
+		else if (c.i.op == OP_META_MULT2) {
+			if (c.r.op)
+				reg_cache[reg_hi] = (s32) rs >> (32 - c.r.op);
+			else
+				reg_cache[reg_hi] = (s32) rs >> 31;
+		} else {
+			if (c.r.op)
+				reg_cache[reg_hi] = rs >> (32 - c.r.op);
+			else
+				reg_cache[reg_hi] = 0;
+		}
 	}
 
 	return jump_next(inter);
@@ -1191,7 +1199,7 @@ static u32 lightrec_emulate_block_list(struct lightrec_state *state,
 	pc = lightrec_int_op(&inter);
 
 	/* Add the cycles of the last branch */
-	inter.cycles += lightrec_cycles_of_opcode(inter.op->c);
+	inter.cycles += lightrec_cycles_of_opcode(inter.state, inter.op->c);
 
 	state->current_cycle += inter.cycles;
 
@@ -1205,7 +1213,7 @@ u32 lightrec_emulate_block(struct lightrec_state *state, struct block *block, u3
 	if (offset < block->nb_ops)
 		return lightrec_emulate_block_list(state, block, offset);
 
-	pr_err("PC 0x%x is outside block at PC 0x%x\n", pc, block->pc);
+	pr_err(PC_FMT" is outside block at "PC_FMT"\n", pc, block->pc);
 
 	lightrec_set_exit_flags(state, LIGHTREC_EXIT_SEGFAULT);
 

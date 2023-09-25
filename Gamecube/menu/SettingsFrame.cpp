@@ -464,7 +464,7 @@ void SettingsFrame::activateSubmenu(int submenu)
 			if (screenMode == SCREENMODE_4x3)		FRAME_BUTTONS[22].button->setSelected(true);
 			else if (screenMode == SCREENMODE_16x9)	FRAME_BUTTONS[23].button->setSelected(true);
 			else									FRAME_BUTTONS[24].button->setSelected(true);
-			FRAME_BUTTONS[25+iUseDither].button->setSelected(true);
+			//FRAME_BUTTONS[25+iUseDither].button->setSelected(true);
 			for (int i = 16; i < 28; i++)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
@@ -917,7 +917,7 @@ void Func_ShowFpsOff()
 	showFPSonScreen = FPS_HIDE;
 }
 
-extern "C" void GPUsetframelimit(unsigned long option);
+//extern "C" void GPUsetframelimit(unsigned long option);
 
 void Func_FpsLimitAuto()
 {
@@ -925,7 +925,7 @@ void Func_FpsLimitAuto()
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[18].button->setSelected(true);
 	frameLimit = FRAMELIMIT_AUTO;
-	GPUsetframelimit(0);
+	//GPUsetframelimit(0);
 }
 
 void Func_FpsLimitOff()
@@ -934,7 +934,7 @@ void Func_FpsLimitOff()
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[19].button->setSelected(true);
 	frameLimit = FRAMELIMIT_NONE;
-	GPUsetframelimit(0);
+	//GPUsetframelimit(0);
 }
 
 void Func_FrameSkipOn()
@@ -943,7 +943,7 @@ void Func_FrameSkipOn()
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[20].button->setSelected(true);
 	frameSkip = FRAMESKIP_ENABLE;
-	GPUsetframelimit(0);
+	//GPUsetframelimit(0);
 }
 
 void Func_FrameSkipOff()
@@ -952,7 +952,7 @@ void Func_FrameSkipOff()
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[21].button->setSelected(true);
 	frameSkip = FRAMESKIP_DISABLE;
-	GPUsetframelimit(0);
+	//GPUsetframelimit(0);
 }
 
 void Func_ScreenMode4_3()
@@ -984,8 +984,8 @@ void Func_DitheringNone()
 	for (int i = 25; i <= 27; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[25].button->setSelected(true);
-	iUseDither = USEDITHER_NONE;
-	GPUsetframelimit(0);
+	//iUseDither = USEDITHER_NONE;
+	//GPUsetframelimit(0);
 }
 
 void Func_DitheringDefault()
@@ -993,8 +993,8 @@ void Func_DitheringDefault()
 	for (int i = 25; i <= 27; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[26].button->setSelected(true);
-	iUseDither = USEDITHER_DEFAULT;
-	GPUsetframelimit(0);
+	//iUseDither = USEDITHER_DEFAULT;
+	//GPUsetframelimit(0);
 }
 
 void Func_DitheringAlways()
@@ -1002,8 +1002,8 @@ void Func_DitheringAlways()
 	for (int i = 25; i <= 27; i++)
 		FRAME_BUTTONS[i].button->setSelected(false);
 	FRAME_BUTTONS[27].button->setSelected(true);
-	iUseDither = USEDITHER_ALWAYS;
-	GPUsetframelimit(0);
+	//iUseDither = USEDITHER_ALWAYS;
+	//GPUsetframelimit(0);
 }
 
 void Func_ScalingNone()

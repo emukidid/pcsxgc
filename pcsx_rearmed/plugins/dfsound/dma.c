@@ -22,18 +22,13 @@
 #include "externals.h"
 #include "registers.h"
 
-////////////////////////////////////////////////////////////////////////
-// READ DMA (one value)
-////////////////////////////////////////////////////////////////////////
-
-unsigned short CALLBACK SPUreadDMA(void)
+static void set_dma_end(int iSize, unsigned int cycles)
 {
- unsigned short s = *(unsigned short *)(spu.spuMemC + spu.spuAddr);
- check_irq_io(spu.spuAddr);
- spu.spuAddr += 2;
- spu.spuAddr &= 0x7fffe;
-
- return s;
+ // this must be > psxdma.c dma irq
+ // Road Rash also wants a considerable delay, maybe because of fifo?
+ cycles += iSize * 20;  // maybe
+ cycles |= 1;           // indicates dma is active
+ spu.cycles_dma_end = cycles;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -58,24 +53,7 @@ void CALLBACK SPUreadDMAMem(unsigned short *pusPSXMem, int iSize,
  if (irq && (spu.spuCtrl & CTRL_IRQ))
   log_unhandled("rdma spu irq: %x/%x+%x\n", irq_addr, spu.spuAddr, iSize * 2);
  spu.spuAddr = addr;
-}
-
-////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////////////////////////
-// WRITE DMA (one value)
-////////////////////////////////////////////////////////////////////////
-  
-void CALLBACK SPUwriteDMA(unsigned short val)
-{
- *(unsigned short *)(spu.spuMemC + spu.spuAddr) = val;
-
- check_irq_io(spu.spuAddr);
- spu.spuAddr += 2;
- spu.spuAddr &= 0x7fffe;
- spu.bMemDirty = 1;
+ set_dma_end(iSize, cycles);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -110,6 +88,7 @@ void CALLBACK SPUwriteDMAMem(unsigned short *pusPSXMem, int iSize,
  if (irq && (spu.spuCtrl & CTRL_IRQ)) // unhandled because need to implement delay
   log_unhandled("wdma spu irq: %x/%x+%x\n", irq_addr, spu.spuAddr, iSize * 2);
  spu.spuAddr = addr;
+ set_dma_end(iSize, cycles);
 }
 
 ////////////////////////////////////////////////////////////////////////

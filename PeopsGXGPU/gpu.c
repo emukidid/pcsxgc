@@ -494,11 +494,7 @@ void CALLBACK GPUmakeSnapshot(void)
 // GPU INIT... here starts it all (first func called by emu)
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
 long CALLBACK GPUinit()                                // GPU INIT
-#else //!__GX__
-long PEOPS_GPUinit()                                // GPU INIT
-#endif // __GX__
 {
  memset(ulStatusControl,0,256*sizeof(unsigned long));
 
@@ -1013,11 +1009,7 @@ void sysdep_create_display(void)                       // create display
 #endif
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
 long GPUopen(unsigned long * disp,char * CapText,char * CfgFile)
-#else //!__GX__
-long PEOPS_GPUopen(unsigned long * disp,char * CapText,char * CfgFile)
-#endif // __GX__
 {
  pCaptionText=CapText;
  pConfigFile=CfgFile;
@@ -1078,11 +1070,7 @@ long CALLBACK GPUclose()                               // WINDOWS CLOSE
 
 #else
 
-#ifndef __GX__
 long CALLBACK GPUclose()                               // GPU CLOSE
-#else //!__GX__
-long PEOPS_GPUclose()
-#endif // __GX__
 {
  GLcleanup();                                          // close OGL / GX
 #ifndef __GX__
@@ -1102,11 +1090,7 @@ long PEOPS_GPUclose()
 // I shot the sheriff... last function called from emu 
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
 long CALLBACK GPUshutdown()                            // GPU SHUTDOWN
-#else //!__GX__
-long PEOPS_GPUshutdown()
-#endif // __GX__
 {
  if(psxVSecure) free(psxVSecure);                      // kill emulated vram memory
  psxVSecure=0;
@@ -2000,11 +1984,7 @@ void CALLBACK GPUcursor(int iPlayer,int x,int y)
 
 static unsigned short usFirstPos=2;
 
-#ifndef __GX__
 void CALLBACK GPUupdateLace(void)                      // VSYNC
-#else //!__GX__
-void PEOPS_GPUupdateLace(void)
-#endif //__GX__
 {
  if(!(dwActFixes&0x1000))                               
   STATUSREG^=0x80000000;                               // interlaced bit toggle, if the CC game fix is not active (see gpuReadStatus)
@@ -2042,11 +2022,7 @@ void PEOPS_GPUupdateLace(void)
 // process read request from GPU status register
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
 unsigned long CALLBACK GPUreadStatus(void)             // READ STATUS
-#else //!__GX__
-unsigned long PEOPS_GPUreadStatus(void)
-#endif // __GX__
 {
  if(dwActFixes&0x1000)                                 // CC game fix
   {
@@ -2082,11 +2058,7 @@ unsigned long PEOPS_GPUreadStatus(void)
 // these are always single packet commands.
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
 void CALLBACK GPUwriteStatus(unsigned long gdata)      // WRITE STATUS
-#else //!__GX__
-void PEOPS_GPUwriteStatus(unsigned long gdata)
-#endif // __GX__
 {
  unsigned long lCommand=(gdata>>24)&0xff;
 
@@ -2702,11 +2674,7 @@ void CheckVRamRead(int x, int y, int dx, int dy,BOOL bFront)
 // core read from vram
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
 void CALLBACK GPUreadDataMem(unsigned long * pMem, int iSize)
-#else //!__GX__
-void PEOPS_GPUreadDataMem(unsigned long * pMem, int iSize)
-#endif //__GX__
 {
  int i;
 
@@ -2778,14 +2746,10 @@ ENDREAD:
  GPUIsIdle;
 }
 
-#ifndef __GX__
 unsigned long CALLBACK GPUreadData(void)
-#else //!__GX__
-unsigned long PEOPS_GPUreadData(void)
-#endif //__GX__
 {
  unsigned long l;
- PEOPS_GPUreadDataMem(&l,1);
+ GPUreadDataMem(&l,1);
  return GPUdataRet;
 }
 
@@ -2867,11 +2831,7 @@ const unsigned char primTableCX[256] =
 // processes data send to GPU data register
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
 void CALLBACK GPUwriteDataMem(unsigned long * pMem, int iSize)
-#else //!__GX__
-void PEOPS_GPUwriteDataMem(unsigned long * pMem, int iSize)
-#endif // __GX__
 {
  unsigned char command;
  unsigned long gdata=0;
@@ -2991,14 +2951,10 @@ ENDVRAM:
 
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
 void CALLBACK GPUwriteData(unsigned long gdata)
-#else //!__GX__
-void PEOPS_GPUwriteData(unsigned long gdata)
-#endif // __GX__
 {
 	PUTLE32(&gdata, gdata);
-	PEOPS_GPUwriteDataMem(&gdata,1);
+	GPUwriteDataMem(&gdata,1);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -3132,11 +3088,7 @@ __inline BOOL CheckForEndlessLoop(unsigned long laddr)
 // core gives a dma chain to gpu: same as the gpuwrite interface funcs
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
 long CALLBACK GPUdmaChain(unsigned long * baseAddrL, unsigned long addr)
-#else //!__GX__
-long PEOPS_GPUdmaChain(unsigned long * baseAddrL, unsigned long addr)
-#endif // __GX__
 {
  unsigned long dmaMem;
  unsigned char * baseAddrB;
@@ -3161,7 +3113,7 @@ long PEOPS_GPUdmaChain(unsigned long * baseAddrL, unsigned long addr)
 
    dmaMem=addr+4;
 
-   if(count>0) PEOPS_GPUwriteDataMem(&baseAddrL[dmaMem>>2],count);
+   if(count>0) GPUwriteDataMem(&baseAddrL[dmaMem>>2],count);
 
    addr = GETLE32(&baseAddrL[addr>>2])&0xffffff;
   }
@@ -3215,11 +3167,7 @@ typedef struct
 
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef __GX__
 long CALLBACK GPUfreeze(unsigned long ulGetFreezeData,GPUFreeze_t * pF)
-#else //!__GX__
-long PEOPS_GPUfreeze(unsigned long ulGetFreezeData,GPUFreeze_t * pF)
-#endif //__GX__
 {
  if(ulGetFreezeData==2) 
   {
@@ -3251,7 +3199,6 @@ long PEOPS_GPUfreeze(unsigned long ulGetFreezeData,GPUFreeze_t * pF)
  ResetTextureArea(TRUE);
 
 
-#ifndef __GX__
  GPUwriteStatus(ulStatusControl[0]);
  GPUwriteStatus(ulStatusControl[1]);
  GPUwriteStatus(ulStatusControl[2]);
@@ -3261,17 +3208,6 @@ long PEOPS_GPUfreeze(unsigned long ulGetFreezeData,GPUFreeze_t * pF)
  GPUwriteStatus(ulStatusControl[7]);
  GPUwriteStatus(ulStatusControl[5]);
  GPUwriteStatus(ulStatusControl[4]);
-#else //!__GX__
- PEOPS_GPUwriteStatus(ulStatusControl[0]);
- PEOPS_GPUwriteStatus(ulStatusControl[1]);
- PEOPS_GPUwriteStatus(ulStatusControl[2]);
- PEOPS_GPUwriteStatus(ulStatusControl[3]);
- PEOPS_GPUwriteStatus(ulStatusControl[8]);                   // try to repair things
- PEOPS_GPUwriteStatus(ulStatusControl[6]);
- PEOPS_GPUwriteStatus(ulStatusControl[7]);
- PEOPS_GPUwriteStatus(ulStatusControl[5]);
- PEOPS_GPUwriteStatus(ulStatusControl[4]);
-#endif //__GX__
 
  return 1;
 }
@@ -3632,7 +3568,7 @@ void CALLBACK GPUvisualVibration(unsigned long iSmall, unsigned long iBig)
  iRumbleTime=15;                                       // let the rumble last 16 buffer swaps
 }
 
-void PEOPS_GPUdisplayText(char * pText)
+void GPUdisplayText(char * pText)
 {
 }
                                                        
@@ -3643,4 +3579,8 @@ void PEOPS_GPUdisplayText(char * pText)
 void CALLBACK GPUdisplayFlags(unsigned long dwFlags)
 {
  dwCoreFlags=dwFlags;
+}
+
+void CALLBACK GPUrearmedCallbacks(const struct rearmed_cbs *cbs)
+{
 }

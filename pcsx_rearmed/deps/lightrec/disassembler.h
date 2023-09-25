@@ -20,6 +20,9 @@
 #define LIGHTREC_NO_DS		BIT(0)
 #define LIGHTREC_SYNC		BIT(1)
 
+/* Flags for LUI, ORI, ADDIU */
+#define LIGHTREC_MOVI		BIT(2)
+
 /* Flags for load/store opcodes */
 #define LIGHTREC_SMC		BIT(2)
 #define LIGHTREC_NO_INVALIDATE	BIT(3)
@@ -108,7 +111,7 @@ enum standard_opcodes {
 	OP_LWC2			= 0x32,
 	OP_SWC2			= 0x3a,
 
-	OP_META			= 0x3b,
+	OP_META			= 0x3c,
 
 	OP_META_MULT2		= 0x19,
 	OP_META_MULTU2		= 0x1a,

@@ -16,12 +16,18 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <gccore.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
 #include <libpcsxcore/psxcommon.h>
 #include "fileBrowser/fileBrowser.h"
+#include "DEBUG.h"
+#include "libgui/IPLFontC.h"
+#include "wiiSXconfig.h"
+
+#include <pcsx_rearmed/frontend/plugin_lib.h>
 
 #include <libpcsxcore/spu.h>
 #ifndef __GX__
@@ -152,7 +158,7 @@ long PAD2__open(void) {
 #include "gc_input/controller.h"
 #include "wiiSXconfig.h"
 extern int stop;
-extern void GPUcursor(int iPlayer,int x,int y);
+//extern void GPUcursor(int iPlayer,int x,int y);
 extern virtualControllers_t virtualControllers[2];
 // Use to invoke func on the mapped controller with args
 #define DO_CONTROL(Control,func,args...) \
@@ -201,7 +207,7 @@ long PAD1__readPort1(PadDataS *pad) {
 		if(controllerType == CONTROLLERTYPE_LIGHTGUN) {
 			int absX = (pad->absoluteX / 64) + 512;
 			int absY = (pad->absoluteY / 64) + 512;
-			GPUcursor(pad_index, absX, absY);
+			//GPUcursor(pad_index, absX, absY);
 		}
 	}
 	/*
@@ -349,9 +355,341 @@ int _OpenPlugins() {
 	return 0;
 }
 
+///
+// GX stuff
+///
+#define RESX_MAX 1024	//Vmem width
+#define RESY_MAX 512	//Vmem height
+static unsigned char	GXtexture[RESX_MAX*RESY_MAX*2] __attribute__((aligned(32)));
+extern u32* xfb[2];	/*** Framebuffers ***/
+extern int whichfb;        /*** Frame buffer toggle ***/
+extern char text[DEBUG_TEXT_HEIGHT][DEBUG_TEXT_WIDTH]; /*** DEBUG textbuffer ***/
+extern char menuActive;
+extern char screenMode;
+// Lightgun vars
+//PSXPoint_t     ptCursorPoint[8];
+//unsigned short usCursorActive=0;
+//static unsigned long crCursorColor32[8][3]={{0xff,0x00,0x00},{0x00,0xff,0x00},{0x00,0x00,0xff},{0xff,0x00,0xff},{0xff,0xff,0x00},{0x00,0xff,0xff},{0xff,0xff,0xff},{0x7f,0x7f,0x7f}};
+
+
+void GX_Flip(int width, int height, const void* buffer, int pitch, u8 fmt)
+{	
+	int h, w;
+	static int oldwidth=0;
+	static int oldheight=0;
+	static int oldformat=-1;
+	static GXTexObj GXtexobj;
+
+	if((width == 0) || (height == 0))
+		return;
+
+
+	if ((oldwidth != width) || (oldheight != height) || (oldformat != fmt))
+	{ //adjust texture conversion
+		oldwidth = width;
+		oldheight = height;
+		oldformat = fmt;
+		memset(GXtexture,0,RESX_MAX*RESY_MAX*2);
+		GX_InitTexObj(&GXtexobj, GXtexture, width, height, fmt, GX_CLAMP, GX_CLAMP, GX_FALSE);
+	}
+
+	if(fmt==GX_TF_RGBA8) {
+		vu8 *wgPipePtr = GX_RedirectWriteGatherPipe(GXtexture);
+		u8 *image = (u8 *) buffer;
+		for (h = 0; h < (height >> 2); h++)
+		{
+			for (w = 0; w < (width >> 2); w++)
+			{
+				// Convert from RGB888 to GX_TF_RGBA8 texel format
+				for (int texelY = 0; texelY < 4; texelY++)
+				{
+					for (int texelX = 0; texelX < 4; texelX++)
+					{
+						// AR
+						int pixelAddr = (((w*4)+(texelX))*3) + (texelY*pitch);
+						*wgPipePtr = 0xFF;	// A
+						*wgPipePtr = image[pixelAddr+2]; // R (which is B in little endian)
+					}
+				}
+				
+				for (int texelY = 0; texelY < 4; texelY++)
+				{
+					for (int texelX = 0; texelX < 4; texelX++)
+					{
+						// GB
+						int pixelAddr = (((w*4)+(texelX))*3) + (texelY*pitch);
+						*wgPipePtr = image[pixelAddr+1]; // G
+						*wgPipePtr = image[pixelAddr]; // B (which is R in little endian)
+					}
+				}
+			}
+			image+=pitch*4;
+		}
+	}
+	else {
+		vu32 *wgPipePtr = GX_RedirectWriteGatherPipe(GXtexture);
+		u32 *src1 = (u32 *) buffer;
+		u32 *src2 = (u32 *) (buffer + pitch);
+		u32 *src3 = (u32 *) (buffer + (pitch * 2));
+		u32 *src4 = (u32 *) (buffer + (pitch * 3));
+		int rowpitch = (pitch) - (width >> 1);
+		u32 alphaMask = 0x00800080;
+		for (h = 0; h < height; h += 4)
+		{
+			for (w = 0; w < (width >> 2); w++)
+			{
+				// Convert from BGR555 LE data to BGR BE, we OR the first bit with "1" to send RGB5A3 mode into RGB555 on the GP (GC/Wii)
+				__asm__ (
+					"lwz 3, 0(%1)\n"
+					"lwz 4, 4(%1)\n"
+					"lwz 5, 0(%2)\n"
+					"lwz 6, 4(%2)\n"
+					
+					"rlwinm 3, 3, 16, 0, 31\n"
+					"rlwinm 4, 4, 16, 0, 31\n"
+					"rlwinm 5, 5, 16, 0, 31\n"
+					"rlwinm 6, 6, 16, 0, 31\n"
+					
+					"or 3, 3, %5\n"
+					"or 4, 4, %5\n"
+					"or 5, 5, %5\n"
+					"or 6, 6, %5\n"				
+					
+					"stwbrx 3, 0, %0\n" 
+					"stwbrx 4, 0, %0\n" 
+					"stwbrx 5, 0, %0\n" 	
+					"stwbrx 6, 0, %0\n" 
+					
+					"lwz 3, 0(%3)\n"
+					"lwz 4, 4(%3)\n"
+					"lwz 5, 0(%4)\n"
+					"lwz 6, 4(%4)\n"
+					
+					"rlwinm 3, 3, 16, 0, 31\n"
+					"rlwinm 4, 4, 16, 0, 31\n"
+					"rlwinm 5, 5, 16, 0, 31\n"
+					"rlwinm 6, 6, 16, 0, 31\n"
+					
+					"or 3, 3, %5\n"
+					"or 4, 4, %5\n"
+					"or 5, 5, %5\n"
+					"or 6, 6, %5\n"
+					
+					"stwbrx 3, 0, %0\n" 
+					"stwbrx 4, 0, %0\n" 					
+					"stwbrx 5, 0, %0\n" 
+					"stwbrx 6, 0, %0" 					
+					: : "r" (wgPipePtr), "r" (src1), "r" (src2), "r" (src3), "r" (src4), "r" (alphaMask) : "memory", "r3", "r4", "r5", "r6");
+					//         %0             %1            %2          %3          %4           %5     
+				src1+=2;
+				src2+=2;
+				src3+=2;
+				src4+=2;
+			}
+
+		  src1 += rowpitch;
+		  src2 += rowpitch;
+		  src3 += rowpitch;
+		  src4 += rowpitch;
+		}
+	}
+	GX_RestoreWriteGatherPipe();
+
+	GX_LoadTexObj(&GXtexobj, GX_TEXMAP0);
+
+	Mtx44	GXprojIdent;
+	Mtx		GXmodelIdent;
+	guMtxIdentity(GXprojIdent);
+	guMtxIdentity(GXmodelIdent);
+	GXprojIdent[2][2] = 0.5;
+	GXprojIdent[2][3] = -0.5;
+	GX_LoadProjectionMtx(GXprojIdent, GX_ORTHOGRAPHIC);
+	GX_LoadPosMtxImm(GXmodelIdent,GX_PNMTX0);
+
+	GX_SetCullMode(GX_CULL_NONE);
+	GX_SetZMode(GX_ENABLE,GX_ALWAYS,GX_TRUE);
+
+	GX_InvalidateTexAll();
+	GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
+	GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
+
+
+	GX_ClearVtxDesc();
+	GX_SetVtxDesc(GX_VA_PTNMTXIDX, GX_PNMTX0);
+	GX_SetVtxDesc(GX_VA_TEX0MTXIDX, GX_IDENTITY);
+	GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+
+	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XY, GX_F32, 0);
+	GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+
+	GX_SetNumTexGens(1);
+	GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
+
+	float xcoord = 1.0;
+	float ycoord = 1.0;
+	if(screenMode == SCREENMODE_16x9_PILLARBOX) xcoord = 640.0/848.0;
+
+	GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
+	  GX_Position2f32(-xcoord, ycoord);
+	  GX_TexCoord2f32( 0.0, 0.0);
+	  GX_Position2f32( xcoord, ycoord);
+	  GX_TexCoord2f32( 1.0, 0.0);
+	  GX_Position2f32( xcoord,-ycoord);
+	  GX_TexCoord2f32( 1.0, 1.0);
+	  GX_Position2f32(-xcoord,-ycoord);
+	  GX_TexCoord2f32( 0.0, 1.0);
+	GX_End();
+	
+	// Show lightgun cursors
+	//if(usCursorActive) {
+	//	for(int iPlayer=0;iPlayer<8;iPlayer++)                  // -> loop all possible players
+	//	{
+	//		if(usCursorActive&(1<<iPlayer))                   // -> player active?
+	//		{
+	//			// show a small semi-transparent square for the gun target
+	//			int gx = ptCursorPoint[iPlayer].x;
+	//			int gy = ptCursorPoint[iPlayer].y;
+	//			// Take 0 to 1024 and scale it between -1 to 1.
+	//			float startX = (gx < 512 ? (-1 + ((gx)/511.5f)) : ((gx-512)/511.5f));
+	//			float endX = (gx < 512 ? (-1 + ((gx+8)/511.5f)) : (((gx-504))/511.5f));
+	//			
+	//			float startY = (gy > 512 ? (-1 * ((gy-512)/511.5f)) : (1 - ((gy)/511.5f)));
+	//			float endY = (gy > 512 ? (-1 * ((gy-506)/511.5f)) : (1 - ((gy+6)/511.5f)));
+	//			//print_gecko("startX, endX (%.2f, %.2f) startY, endY (%.2f, %.2f)\r\n", startX, endX, startY, endY);
+	//			GX_InvVtxCache();
+	//			GX_InvalidateTexAll();
+	//			GX_ClearVtxDesc();
+	//			GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+	//			GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+	//			GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS,	GX_POS_XY,	GX_F32,	0);
+	//			GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8,	0);
+	//			// No textures
+	//			GX_SetNumChans(1);
+	//			GX_SetNumTexGens(0);
+	//			GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORDNULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+	//			GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+	//			
+	//			GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
+	//			  GX_Position2f32(endX, endY);
+	//			  GX_Color4u8(crCursorColor32[iPlayer][0], crCursorColor32[iPlayer][1], crCursorColor32[iPlayer][2], 0x80);
+	//			  GX_Position2f32( startX, endY);
+	//			  GX_Color4u8(crCursorColor32[iPlayer][0], crCursorColor32[iPlayer][1], crCursorColor32[iPlayer][2], 0x80);
+	//			  GX_Position2f32( startX,startY);
+	//			  GX_Color4u8(crCursorColor32[iPlayer][0], crCursorColor32[iPlayer][1], crCursorColor32[iPlayer][2], 0x80);
+	//			  GX_Position2f32(endX,startY);
+	//			  GX_Color4u8(crCursorColor32[iPlayer][0], crCursorColor32[iPlayer][1], crCursorColor32[iPlayer][2], 0x80);
+	//			GX_End();
+	//
+	//		}
+	//	}
+	//}
+
+	//Write menu/debug text on screen
+	GXColor fontColor = {150,255,150,255};
+	IplFont_drawInit(fontColor);
+	//if((ulKeybits&KEY_SHOWFPS)&&showFPSonScreen)
+	//	IplFont_drawString(10,35,szDispBuf, 1.0, false);
+
+	int i = 0;
+	DEBUG_update();
+	for (i=0;i<DEBUG_TEXT_HEIGHT;i++)
+		IplFont_drawString(10,(10*i+60),text[i], 0.5, false);
+		
+   //reset swap table from GUI/DEBUG
+	GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_BLUE, GX_CH_GREEN, GX_CH_RED ,GX_CH_ALPHA);
+	GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+
+	GX_DrawDone();
+
+	whichfb ^= 1;
+	GX_CopyDisp(xfb[whichfb], GX_TRUE);
+	GX_DrawDone();
+//	printf("Prv.Rng.x0,x1,y0 = %d, %d, %d, Prv.Mode.y = %d,DispPos.x,y = %d, %d, RGB24 = %x\n",PreviousPSXDisplay.Range.x0,PreviousPSXDisplay.Range.x1,PreviousPSXDisplay.Range.y0,PreviousPSXDisplay.DisplayMode.y,PSXDisplay.DisplayPosition.x,PSXDisplay.DisplayPosition.y,PSXDisplay.RGB24);
+	VIDEO_SetNextFramebuffer(xfb[whichfb]);
+	VIDEO_Flush();
+//	VIDEO_WaitVSync();
+}
+
+static int gc_vout_open(void) { 
+	memset(GXtexture,0,RESX_MAX*RESY_MAX*2);
+	return 0; 
+}
+
+static void gc_vout_close(void) {}
+
+static void gc_vout_flip(const void *vram, int stride, int bgr24,
+			      int x, int y, int w, int h, int dims_changed) {
+	if(vram == NULL) {
+		memset(GXtexture,0,RESX_MAX*RESY_MAX*2);
+		if (menuActive) return;
+
+		// clear the screen, and flush it
+		DEBUG_print("gc_vout_flip_null_vram",DBG_GPU1);
+
+		//Write menu/debug text on screen
+		GXColor fontColor = {150,255,150,255};
+		IplFont_drawInit(fontColor);
+		//if(showFPSonScreen)
+		//	IplFont_drawString(10,35,szDispBuf, 1.0, false);
+
+		int i = 0;
+		DEBUG_update();
+		for (i=0;i<DEBUG_TEXT_HEIGHT;i++)
+			IplFont_drawString(10,(10*i+60),text[i], 0.5, false);
+
+	   //reset swap table from GUI/DEBUG
+		GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+		GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+
+		GX_DrawDone();
+
+		whichfb ^= 1;
+		GX_CopyDisp(xfb[whichfb], GX_TRUE);
+		GX_DrawDone();
+		VIDEO_SetNextFramebuffer(xfb[whichfb]);
+		VIDEO_Flush();
+		return;
+	}
+	if (menuActive) return;
+	GX_Flip(w, h, vram, stride*2, bgr24 ? GX_TF_RGBA8 : GX_TF_RGB5A3);
+}
+static void gc_vout_set_mode(int w, int h, int raw_w, int raw_h, int bpp) {SysPrintf("gc_vout_set_mode\r\n");}
+//static void *gc_mmap(unsigned int size) {}
+//static void gc_munmap(void *ptr, unsigned int size) {}
+
+static struct rearmed_cbs gc_rearmed_cbs = {
+   .pl_vout_open     = gc_vout_open,
+   .pl_vout_set_mode = gc_vout_set_mode,
+   .pl_vout_flip     = gc_vout_flip,
+   .pl_vout_close    = gc_vout_close,
+   //.mmap             = gc_mmap,
+   //.munmap           = gc_munmap,
+   /* from psxcounters */
+   .gpu_hcnt         = &hSyncCount,
+   .gpu_frame_count  = &frame_counter,
+
+   .gpu_unai = {
+	   .lighting = 1,
+	   .blending = 1,
+   },
+};
+
+void plugin_call_rearmed_cbs(void)
+{
+	extern void *hGPUDriver;
+	void (*rearmed_set_cbs)(const struct rearmed_cbs *cbs);
+
+	rearmed_set_cbs = SysLoadSym(hGPUDriver, "GPUrearmedCallbacks");
+	if (rearmed_set_cbs != NULL)
+		rearmed_set_cbs(&gc_rearmed_cbs);
+}
+
+
 int OpenPlugins() {
 	int ret;
 
+	plugin_call_rearmed_cbs();
 	while ((ret = _OpenPlugins()) == -2) {
 		ReleasePlugins();
 		if (LoadPlugins() == -1) return -1;

@@ -33,21 +33,22 @@ typedef struct {
 } PluginTable;
 #define NUM_PLUGINS 6
 
-/* PEOPS GPU */
-long PEOPS_GPUopen(unsigned long *, char *, char *);
-long PEOPS_GPUinit(void);
-long PEOPS_GPUshutdown(void);
-long PEOPS_GPUclose(void);
-void PEOPS_GPUwriteStatus(unsigned long);
-void PEOPS_GPUwriteData(unsigned long);
-void PEOPS_GPUwriteDataMem(unsigned long *, int);
-unsigned long PEOPS_GPUreadStatus(void);
-unsigned long PEOPS_GPUreadData(void);
-void PEOPS_GPUreadDataMem(unsigned long *, int);
-long PEOPS_GPUdmaChain(unsigned long *,unsigned long);
-void PEOPS_GPUupdateLace(void);
-void PEOPS_GPUdisplayText(char *);
-long PEOPS_GPUfreeze(unsigned long,void *);
+/* GPU */
+long GPUopen(unsigned long *disp, char *cap, char *cfg);
+long GPUinit(void);
+long GPUshutdown(void);
+long GPUclose(void);
+void GPUwriteStatus(unsigned long);
+void GPUwriteData(unsigned long);
+void GPUwriteDataMem(unsigned long *, int);
+unsigned long GPUreadStatus(void);
+unsigned long GPUreadData(void);
+void GPUreadDataMem(unsigned long *, int);
+long GPUdmaChain(unsigned long *,unsigned long, unsigned long *);
+void GPUupdateLace(void);
+void GPUdisplayText(char *);
+long GPUfreeze(unsigned long,void *);
+void GPUrearmedCallbacks(const void **cbs);
 
 
 /* PAD */
@@ -71,16 +72,11 @@ void CALLBACK SPUupdate(void);
 void CALLBACK SPUasync(unsigned int cycle, unsigned int flags);
 long CALLBACK SPUinit(void);
 long CALLBACK SPUshutdown(void);
-long CALLBACK SPUtest(void);
-long CALLBACK SPUconfigure(void);
-void CALLBACK SPUabout(void);
 void CALLBACK SPUregisterCallback(void (CALLBACK *callback)(void));
 void CALLBACK SPUregisterCDDAVolume(void (CALLBACK *CDDAVcallback)(short, short));
 void CALLBACK SPUregisterScheduleCb(void (CALLBACK *callback)(unsigned int));
 void CALLBACK SPUwriteDMAMem(unsigned short *pusPSXMem, int iSize, unsigned int cycles);
-void CALLBACK SPUwriteDMA(unsigned short val);
 void CALLBACK SPUreadDMAMem(unsigned short *pusPSXMem, int iSize, unsigned int cycles);
-unsigned short CALLBACK SPUreadDMA(void);
 unsigned short CALLBACK SPUreadRegister(unsigned long reg);
 void CALLBACK SPUwriteRegister(unsigned long reg, unsigned short val, unsigned int cycles);
 long CALLBACK SPUopen(void);
@@ -142,20 +138,10 @@ long CALLBACK SPUfreeze(uint32_t ulFreezeMode, void * pF, uint32_t cycles);
 	      (void*)SPUopen}, \
 	    { "SPUclose", \
 	      (void*)SPUclose}, \
-	    { "SPUconfigure", \
-	      (void*)SPUconfigure}, \
-	    { "SPUabout", \
-	      (void*)SPUabout}, \
-	    { "SPUtest", \
-	      (void*)SPUtest}, \
 	    { "SPUwriteRegister", \
 	      (void*)SPUwriteRegister}, \
 	    { "SPUreadRegister", \
 	      (void*)SPUreadRegister}, \
-	    { "SPUwriteDMA", \
-	      (void*)SPUwriteDMA}, \
-	    { "SPUreadDMA", \
-	      (void*)SPUreadDMA}, \
 	    { "SPUwriteDMAMem", \
 	      (void*)SPUwriteDMAMem}, \
 	    { "SPUreadDMAMem", \
@@ -180,33 +166,33 @@ long CALLBACK SPUfreeze(uint32_t ulFreezeMode, void * pF, uint32_t cycles);
 	{ "plugins/builtin_gpu",      \
 	  14,         \
 	  { { "GPUinit",  \
-	      (void*)PEOPS_GPUinit }, \
+	      (void*)GPUinit }, \
 	    { "GPUshutdown",	\
-	      (void*)PEOPS_GPUshutdown}, \
+	      (void*)GPUshutdown}, \
 	    { "GPUopen", \
-	      (void*)PEOPS_GPUopen}, \
+	      (void*)GPUopen}, \
 	    { "GPUclose", \
-	      (void*)PEOPS_GPUclose}, \
+	      (void*)GPUclose}, \
 	    { "GPUwriteStatus", \
-	      (void*)PEOPS_GPUwriteStatus}, \
+	      (void*)GPUwriteStatus}, \
 	    { "GPUwriteData", \
-	      (void*)PEOPS_GPUwriteData}, \
+	      (void*)GPUwriteData}, \
 	    { "GPUwriteDataMem", \
-	      (void*)PEOPS_GPUwriteDataMem}, \
+	      (void*)GPUwriteDataMem}, \
 	    { "GPUreadStatus", \
-	      (void*)PEOPS_GPUreadStatus}, \
+	      (void*)GPUreadStatus}, \
 	    { "GPUreadData", \
-	      (void*)PEOPS_GPUreadData}, \
+	      (void*)GPUreadData}, \
 	    { "GPUreadDataMem", \
-	      (void*)PEOPS_GPUreadDataMem}, \
+	      (void*)GPUreadDataMem}, \
 	    { "GPUdmaChain", \
-	      (void*)PEOPS_GPUdmaChain}, \
-	    { "GPUdisplayText", \
-	      (void*)PEOPS_GPUdisplayText}, \
+	      (void*)GPUdmaChain}, \
 	    { "GPUfreeze", \
-	      (void*)PEOPS_GPUfreeze}, \
+	      (void*)GPUfreeze}, \
 	    { "GPUupdateLace", \
-	      (void*)PEOPS_GPUupdateLace} \
+	      (void*)GPUupdateLace}, \
+		{ "GPUrearmedCallbacks", \
+	      (void*)GPUrearmedCallbacks} \
 	       } }
 
 
