@@ -680,10 +680,12 @@ int in_type[8] = {
    PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE
 };
 
-static s8 psxM_buf[0x220000] __attribute__((aligned(4096)));
-static s8 psxR_buf[0x80000] __attribute__((aligned(4096)));
-
-static s8 code_buf [0x400000] __attribute__((aligned(32))); // 4 MiB code buffer for Lightrec
+/* 0x000000 -> 0x200000: RAM (2 MiB)
+ * 0x200000 -> 0x210000: Parallel port (64 KiB)
+ * 0x210000 -> 0x220000: Scratchpad + I/O registers
+ * 0x220000 -> 0x2a0000: BIOS
+ * 0x2a0000 -> 0x6a0000: Code buffer (4 MiB) */
+static s8 lightrec_buf[0x2a0000 + CODE_BUFFER_SIZE] __attribute__((aligned(4096)));
 
 extern void * code_buffer;
 
@@ -693,33 +695,41 @@ extern void * code_buffer;
 
 int lightrec_init_mmap(void)
 {
-	code_buffer = code_buf;
+	psxP = &lightrec_buf[0x200000];
 
-	psxP = &psxM_buf[0x200000];
-
-	if (lightrec_mmap(psxM_buf, MAP_OFFSET, 0x200000)
-	    || lightrec_mmap(psxM_buf, MAP_OFFSET + 0x200000, 0x200000)
-	    || lightrec_mmap(psxM_buf, MAP_OFFSET + 0x400000, 0x200000)
-	    || lightrec_mmap(psxM_buf, MAP_OFFSET + 0x600000, 0x200000)) {
+	if (lightrec_mmap(lightrec_buf, MAP_OFFSET, 0x200000)
+	    || lightrec_mmap(lightrec_buf, MAP_OFFSET + 0x200000, 0x200000)
+	    || lightrec_mmap(lightrec_buf, MAP_OFFSET + 0x400000, 0x200000)
+	    || lightrec_mmap(lightrec_buf, MAP_OFFSET + 0x600000, 0x200000)) {
 		SysMessage(_("Error mapping RAM"));
 		return -1;
 	}
 
 	psxM = (s8 *) MAP_OFFSET;
 
-	if (lightrec_mmap(psxR_buf, MAP_OFFSET + 0x1fc00000, 0x80000)) {
+	if (lightrec_mmap(&lightrec_buf[0x220000],
+			  MAP_OFFSET + 0x1fc00000, 0x80000)) {
 		SysMessage(_("Error mapping BIOS"));
 		return -1;
 	}
 
 	psxR = (s8 *) (MAP_OFFSET + 0x1fc00000);
 
-	if (lightrec_mmap(psxM_buf + 0x210000, MAP_OFFSET + 0x1f800000, 0x10000)) {
+	if (lightrec_mmap(&lightrec_buf[0x210000],
+			  MAP_OFFSET + 0x1f800000, 0x10000)) {
 		SysMessage(_("Error mapping I/O"));
 		return -1;
 	}
 
 	psxH = (s8 *) (MAP_OFFSET + 0x1f800000);
+
+	if (lightrec_mmap(&lightrec_buf[0x2a0000],
+			  MAP_OFFSET + 0x800000, CODE_BUFFER_SIZE)) {
+		SysMessage(_("Error mapping I/O"));
+		return -1;
+	}
+
+	code_buffer = (void *)(MAP_OFFSET + 0x800000);
 
 	return 0;
 }
@@ -729,7 +739,7 @@ void lightrec_free_mmap(void)
 }
 
 void PreSaveState() {
-	psxM = (s8 *) &psxM_buf[0];
+	psxM = lightrec_buf;
 }
 
 void PostSaveState() {
