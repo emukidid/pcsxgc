@@ -438,15 +438,16 @@ int loadISO(fileBrowser_file* file)
 	if(SysInit() < 0)
 		return -1;
 	hasLoadedISO = TRUE;
-	SysReset();
 	
 	char *tempStr = &file->name[0];
 	if((strstr(tempStr,".EXE")!=NULL) || (strstr(tempStr,".exe")!=NULL)) {
 		//TODO
+		SysReset();
 		//Load(file);
 	}
 	else {
 		CheckCdrom();
+		SysReset();
 		LoadCdrom();
 	}
 	
@@ -599,8 +600,14 @@ int SysInit() {
 	return 0;
 }
 
+extern void pl_timing_prepare(int is_pal_);
+int g_emu_resetting;
 void SysReset() {
+	g_emu_resetting = 1;
+	// reset can run code, timing must be set
+	pl_timing_prepare(Config.PsxType);
 	psxReset();
+	g_emu_resetting = 0;
 }
 
 void SysStartCPU() {
@@ -662,10 +669,6 @@ void SysUpdate()
 
 void SysRunGui() {}
 void SysMessage(const char *fmt, ...) {}
-
-void pl_frame_limit(void)
-{
-}
 
 void pl_gun_byte2(int port, unsigned char byte)
 {

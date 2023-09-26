@@ -366,11 +366,11 @@ extern int whichfb;        /*** Frame buffer toggle ***/
 extern char text[DEBUG_TEXT_HEIGHT][DEBUG_TEXT_WIDTH]; /*** DEBUG textbuffer ***/
 extern char menuActive;
 extern char screenMode;
+static char fpsInfo[32];
 // Lightgun vars
 //PSXPoint_t     ptCursorPoint[8];
 //unsigned short usCursorActive=0;
 //static unsigned long crCursorColor32[8][3]={{0xff,0x00,0x00},{0x00,0xff,0x00},{0x00,0x00,0xff},{0xff,0x00,0xff},{0xff,0xff,0x00},{0x00,0xff,0xff},{0xff,0xff,0xff},{0x7f,0x7f,0x7f}};
-
 
 void GX_Flip(int width, int height, const void* buffer, int pitch, u8 fmt)
 {	
@@ -588,8 +588,9 @@ void GX_Flip(int width, int height, const void* buffer, int pitch, u8 fmt)
 	//Write menu/debug text on screen
 	GXColor fontColor = {150,255,150,255};
 	IplFont_drawInit(fontColor);
-	//if((ulKeybits&KEY_SHOWFPS)&&showFPSonScreen)
-	//	IplFont_drawString(10,35,szDispBuf, 1.0, false);
+	if(showFPSonScreen == FPS_SHOW) {
+		IplFont_drawString(10,35,fpsInfo, 1.0, false);
+	}
 
 	int i = 0;
 	DEBUG_update();
@@ -674,6 +675,94 @@ static struct rearmed_cbs gc_rearmed_cbs = {
 	   .blending = 1,
    },
 };
+
+// Frame limiting/calculation routines, taken from plugin_lib.c, adapted for Wii/GC.
+extern int g_emu_resetting;
+static int vsync_cnt;
+static int is_pal, frame_interval, frame_interval1024;
+static int vsync_usec_time;
+#define MAX_LAG_FRAMES 3
+
+#define tvdiff(tv, tv_old) \
+	((tv.tv_sec - tv_old.tv_sec) * 1000000 + tv.tv_usec - tv_old.tv_usec)
+
+/* called on every vsync */
+void pl_frame_limit(void)
+{
+	static struct timeval tv_old, tv_expect;
+	static int vsync_cnt_prev, drc_active_vsyncs;
+	struct timeval now;
+	int diff, usadj;
+
+	if (g_emu_resetting)
+		return;
+
+	vsync_cnt++;
+	gettimeofday(&now, 0);
+
+	if (now.tv_sec != tv_old.tv_sec) {
+		diff = tvdiff(now, tv_old);
+		gc_rearmed_cbs.vsps_cur = 0.0f;
+		if (0 < diff && diff < 2000000)
+			gc_rearmed_cbs.vsps_cur = 1000000.0f * (vsync_cnt - vsync_cnt_prev) / diff;
+		vsync_cnt_prev = vsync_cnt;
+
+		gc_rearmed_cbs.flips_per_sec = gc_rearmed_cbs.flip_cnt;
+		sprintf(fpsInfo, "FPS %.2f", gc_rearmed_cbs.vsps_cur);
+
+		gc_rearmed_cbs.flip_cnt = 0;
+
+		tv_old = now;
+		//new_dynarec_print_stats();
+	}
+
+	// tv_expect uses usec*1024 units instead of usecs for better accuracy
+	tv_expect.tv_usec += frame_interval1024;
+	if (tv_expect.tv_usec >= (1000000 << 10)) {
+		tv_expect.tv_usec -= (1000000 << 10);
+		tv_expect.tv_sec++;
+	}
+	diff = (tv_expect.tv_sec - now.tv_sec) * 1000000 + (tv_expect.tv_usec >> 10) - now.tv_usec;
+
+	if (diff > MAX_LAG_FRAMES * frame_interval || diff < -MAX_LAG_FRAMES * frame_interval) {
+		//printf("pl_frame_limit reset, diff=%d, iv %d\n", diff, frame_interval);
+		tv_expect = now;
+		diff = 0;
+		// try to align with vsync
+		usadj = vsync_usec_time;
+		while (usadj < tv_expect.tv_usec - frame_interval)
+			usadj += frame_interval;
+		tv_expect.tv_usec = usadj << 10;
+	}
+
+	if ((frameLimit == FRAMELIMIT_AUTO) && diff > frame_interval) {
+		//printf("usleep %d\n", diff - frame_interval / 2);
+		usleep(diff - frame_interval);
+	}
+
+	if (gc_rearmed_cbs.frameskip) {
+		if (diff < -frame_interval)
+			gc_rearmed_cbs.fskip_advice = 1;
+		else if (diff >= 0)
+			gc_rearmed_cbs.fskip_advice = 0;
+	}
+}
+
+void pl_timing_prepare(int is_pal_)
+{
+	gc_rearmed_cbs.fskip_advice = 0;
+	gc_rearmed_cbs.flips_per_sec = 0;
+	gc_rearmed_cbs.cpu_usage = 0;
+
+	is_pal = is_pal_;
+	frame_interval = is_pal ? 20000 : 16667;
+	frame_interval1024 = is_pal ? 20000*1024 : 17066667;
+
+	// used by P.E.Op.S. frameskip code
+	gc_rearmed_cbs.gpu_peops.fFrameRateHz = is_pal ? 50.0f : 59.94f;
+	gc_rearmed_cbs.gpu_peops.dwFrameRateTicks =
+		(100000*100 / (unsigned long)(gc_rearmed_cbs.gpu_peops.fFrameRateHz*100));
+}
 
 void plugin_call_rearmed_cbs(void)
 {
