@@ -360,7 +360,7 @@ int _OpenPlugins() {
 ///
 #define RESX_MAX 1024	//Vmem width
 #define RESY_MAX 512	//Vmem height
-static unsigned char	GXtexture[RESX_MAX*RESY_MAX*2] __attribute__((aligned(32)));
+static unsigned char	GXtexture[RESX_MAX*RESY_MAX*4] __attribute__((aligned(32)));
 extern u32* xfb[2];	/*** Framebuffers ***/
 extern int whichfb;        /*** Frame buffer toggle ***/
 extern char text[DEBUG_TEXT_HEIGHT][DEBUG_TEXT_WIDTH]; /*** DEBUG textbuffer ***/
@@ -389,7 +389,7 @@ void GX_Flip(int width, int height, const void* buffer, int pitch, u8 fmt)
 		oldwidth = width;
 		oldheight = height;
 		oldformat = fmt;
-		memset(GXtexture,0,RESX_MAX*RESY_MAX*2);
+		memset(GXtexture,0,RESX_MAX*RESY_MAX*4);
 		GX_InitTexObj(&GXtexobj, GXtexture, width, height, fmt, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	}
 
