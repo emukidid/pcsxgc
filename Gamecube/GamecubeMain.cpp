@@ -692,12 +692,17 @@ static s8 lightrec_buf[0x2a0000 + CODE_BUFFER_SIZE] __attribute__((aligned(4096)
 
 extern void * code_buffer;
 
+static bool lightrec_mmap_inited;
+
 #ifndef MAP_OFFSET
 #define MAP_OFFSET 0x0
 #endif
 
 int lightrec_init_mmap(void)
 {
+	if (lightrec_mmap_inited)
+		return 0;
+
 	psxP = &lightrec_buf[0x200000];
 
 	if (lightrec_mmap(lightrec_buf, MAP_OFFSET, 0x200000)
@@ -733,6 +738,7 @@ int lightrec_init_mmap(void)
 	}
 
 	code_buffer = (void *)(MAP_OFFSET + 0x800000);
+	lightrec_mmap_inited = true;
 
 	return 0;
 }
