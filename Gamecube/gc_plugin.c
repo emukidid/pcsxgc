@@ -372,6 +372,8 @@ static char fpsInfo[32];
 //unsigned short usCursorActive=0;
 //static unsigned long crCursorColor32[8][3]={{0xff,0x00,0x00},{0x00,0xff,0x00},{0x00,0x00,0xff},{0xff,0x00,0xff},{0xff,0xff,0x00},{0x00,0xff,0xff},{0xff,0xff,0xff},{0x7f,0x7f,0x7f}};
 
+static int vsync_enable;
+
 void GX_Flip(int width, int height, const void* buffer, int pitch, u8 fmt)
 {	
 	int h, w;
@@ -609,7 +611,8 @@ void GX_Flip(int width, int height, const void* buffer, int pitch, u8 fmt)
 //	printf("Prv.Rng.x0,x1,y0 = %d, %d, %d, Prv.Mode.y = %d,DispPos.x,y = %d, %d, RGB24 = %x\n",PreviousPSXDisplay.Range.x0,PreviousPSXDisplay.Range.x1,PreviousPSXDisplay.Range.y0,PreviousPSXDisplay.DisplayMode.y,PSXDisplay.DisplayPosition.x,PSXDisplay.DisplayPosition.y,PSXDisplay.RGB24);
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();
-//	VIDEO_WaitVSync();
+	if (vsync_enable)
+		VIDEO_WaitVSync();
 }
 
 static int gc_vout_open(void) { 
@@ -735,7 +738,8 @@ void pl_frame_limit(void)
 		tv_expect.tv_usec = usadj << 10;
 	}
 
-	if ((frameLimit == FRAMELIMIT_AUTO) && diff > frame_interval) {
+	if (frameLimit == FRAMELIMIT_AUTO
+	    && !vsync_enable && diff > frame_interval) {
 		//printf("usleep %d\n", diff - frame_interval / 2);
 		usleep(diff - frame_interval);
 	}
@@ -762,6 +766,8 @@ void pl_timing_prepare(int is_pal_)
 	gc_rearmed_cbs.gpu_peops.fFrameRateHz = is_pal ? 50.0f : 59.94f;
 	gc_rearmed_cbs.gpu_peops.dwFrameRateTicks =
 		(100000*100 / (unsigned long)(gc_rearmed_cbs.gpu_peops.fFrameRateHz*100));
+
+	vsync_enable = !is_pal && frameLimit == FRAMELIMIT_AUTO;
 }
 
 void plugin_call_rearmed_cbs(void)
