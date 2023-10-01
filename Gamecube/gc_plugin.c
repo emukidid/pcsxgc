@@ -361,7 +361,7 @@ int _OpenPlugins() {
 #define RESX_MAX 1024	//Vmem width
 #define RESY_MAX 512	//Vmem height
 static unsigned char	GXtexture[RESX_MAX*RESY_MAX*4] __attribute__((aligned(32)));
-extern u32* xfb[2];	/*** Framebuffers ***/
+extern u32* xfb[3];	/*** Framebuffers ***/
 extern int whichfb;        /*** Frame buffer toggle ***/
 extern char text[DEBUG_TEXT_HEIGHT][DEBUG_TEXT_WIDTH]; /*** DEBUG textbuffer ***/
 extern char menuActive;

@@ -63,7 +63,7 @@ extern u32 __di_check_ahbprot(void);
 }
 #endif //WII
 
-u32* xfb[2] = { NULL, NULL };	/*** Framebuffers ***/
+u32* xfb[3] = { NULL, NULL, NULL };	/*** Framebuffers ***/
 int whichfb = 0;        /*** Frame buffer toggle ***/
 GXRModeObj *vmode;				/*** Graphics Mode Object ***/
 #define DEFAULT_FIFO_SIZE ( 256 * 1024 )
@@ -332,11 +332,12 @@ void ShutdownWii()
 }
 #endif
 
-void video_mode_init(GXRModeObj *videomode, u32 *fb1, u32 *fb2)
+void video_mode_init(GXRModeObj *videomode, u32 *fb1, u32 *fb2, u32 *fb3)
 {
 	vmode = videomode;
 	xfb[0] = fb1;
 	xfb[1] = fb2;
+	xfb[2] = fb3;
 }
 
 int main(int argc, char *argv[]) 

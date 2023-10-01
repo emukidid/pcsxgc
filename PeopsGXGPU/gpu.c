@@ -568,7 +568,7 @@ long CALLBACK GPUinit()                                // GPU INIT
 }                             
 
 #ifdef __GX__
-extern u32* xfb[2];			/*** Framebuffers ***/
+extern u32* xfb[3];			/*** Framebuffers ***/
 extern int whichfb;        	/*** Frame buffer toggle ***/
 void VI_GX_PreRetraceCallback(u32 retraceCnt)
 {
