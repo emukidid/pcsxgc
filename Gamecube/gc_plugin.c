@@ -358,9 +358,8 @@ int _OpenPlugins() {
 ///
 // GX stuff
 ///
-#define RESX_MAX 1024	//Vmem width
-#define RESY_MAX 512	//Vmem height
-static unsigned char	GXtexture[RESX_MAX*RESY_MAX*4] __attribute__((aligned(32)));
+#define FB_MAX_SIZE (640 * 528 * 4)
+static unsigned char	GXtexture[FB_MAX_SIZE] __attribute__((aligned(32)));
 extern u32* xfb[3];	/*** Framebuffers ***/
 extern int whichfb;        /*** Frame buffer toggle ***/
 extern char text[DEBUG_TEXT_HEIGHT][DEBUG_TEXT_WIDTH]; /*** DEBUG textbuffer ***/
@@ -391,7 +390,7 @@ void GX_Flip(int width, int height, const void* buffer, int pitch, u8 fmt)
 		oldwidth = width;
 		oldheight = height;
 		oldformat = fmt;
-		memset(GXtexture,0,RESX_MAX*RESY_MAX*4);
+		memset(GXtexture,0,sizeof(GXtexture));
 		GX_InitTexObj(&GXtexobj, GXtexture, width, height, fmt, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	}
 
@@ -616,7 +615,7 @@ void GX_Flip(int width, int height, const void* buffer, int pitch, u8 fmt)
 }
 
 static int gc_vout_open(void) { 
-	memset(GXtexture,0,RESX_MAX*RESY_MAX*2);
+	memset(GXtexture,0,sizeof(GXtexture));
 	return 0; 
 }
 
@@ -625,7 +624,7 @@ static void gc_vout_close(void) {}
 static void gc_vout_flip(const void *vram, int stride, int bgr24,
 			      int x, int y, int w, int h, int dims_changed) {
 	if(vram == NULL) {
-		memset(GXtexture,0,RESX_MAX*RESY_MAX*2);
+		memset(GXtexture,0,sizeof(GXtexture));
 		if (menuActive) return;
 
 		// clear the screen, and flush it
