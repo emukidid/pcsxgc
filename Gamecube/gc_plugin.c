@@ -34,6 +34,8 @@
 #include "NoPic.h"
 #endif //!__GX__
 
+#include <ogc/machine/processor.h>
+
 void OnFile_Exit(){}
 
 unsigned long gpuDisp;
@@ -358,11 +360,9 @@ int _OpenPlugins() {
 ///
 // GX stuff
 ///
-#define RESX_MAX 1024	//Vmem width
-#define RESY_MAX 512	//Vmem height
-static unsigned char	GXtexture[RESX_MAX*RESY_MAX*4] __attribute__((aligned(32)));
-extern u32* xfb[2];	/*** Framebuffers ***/
-extern int whichfb;        /*** Frame buffer toggle ***/
+#define FB_MAX_SIZE (640 * 528 * 4)
+static unsigned char	GXtexture[FB_MAX_SIZE] __attribute__((aligned(32)));
+extern u32* xfb[3];	/*** Framebuffers ***/
 extern char text[DEBUG_TEXT_HEIGHT][DEBUG_TEXT_WIDTH]; /*** DEBUG textbuffer ***/
 extern char menuActive;
 extern char screenMode;
@@ -373,6 +373,52 @@ static char fpsInfo[32];
 //static unsigned long crCursorColor32[8][3]={{0xff,0x00,0x00},{0x00,0xff,0x00},{0x00,0x00,0xff},{0xff,0x00,0xff},{0xff,0xff,0x00},{0x00,0xff,0xff},{0xff,0xff,0xff},{0x7f,0x7f,0x7f}};
 
 static int vsync_enable;
+static int new_frame;
+
+enum {
+	FB_BACK,
+	FB_NEXT,
+	FB_FRONT,
+};
+
+static void gc_vout_vsync(unsigned int)
+{
+	u32 *tmp;
+
+	if (new_frame) {
+		tmp = xfb[FB_FRONT];
+		xfb[FB_FRONT] = xfb[FB_NEXT];
+		xfb[FB_NEXT] = tmp;
+		new_frame = 0;
+
+		VIDEO_SetNextFramebuffer(xfb[FB_FRONT]);
+		VIDEO_Flush();
+	}
+}
+
+static void gc_vout_copydone(void)
+{
+	u32 *tmp;
+
+	tmp = xfb[FB_NEXT];
+	xfb[FB_NEXT] = xfb[FB_BACK];
+	xfb[FB_BACK] = tmp;
+
+	new_frame = 1;
+}
+
+static void gc_vout_drawdone(void)
+{
+	GX_CopyDisp(xfb[FB_BACK], GX_TRUE);
+	GX_SetDrawDoneCallback(gc_vout_copydone);
+	GX_SetDrawDone();
+}
+
+static void gc_vout_render(void)
+{
+	GX_SetDrawDoneCallback(gc_vout_drawdone);
+	GX_SetDrawDone();
+}
 
 void GX_Flip(int width, int height, const void* buffer, int pitch, u8 fmt)
 {	
@@ -391,7 +437,7 @@ void GX_Flip(int width, int height, const void* buffer, int pitch, u8 fmt)
 		oldwidth = width;
 		oldheight = height;
 		oldformat = fmt;
-		memset(GXtexture,0,RESX_MAX*RESY_MAX*4);
+		memset(GXtexture,0,sizeof(GXtexture));
 		GX_InitTexObj(&GXtexobj, GXtexture, width, height, fmt, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	}
 
@@ -603,20 +649,12 @@ void GX_Flip(int width, int height, const void* buffer, int pitch, u8 fmt)
 	GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_BLUE, GX_CH_GREEN, GX_CH_RED ,GX_CH_ALPHA);
 	GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
 
-	GX_DrawDone();
-
-	whichfb ^= 1;
-	GX_CopyDisp(xfb[whichfb], GX_TRUE);
-	GX_DrawDone();
-//	printf("Prv.Rng.x0,x1,y0 = %d, %d, %d, Prv.Mode.y = %d,DispPos.x,y = %d, %d, RGB24 = %x\n",PreviousPSXDisplay.Range.x0,PreviousPSXDisplay.Range.x1,PreviousPSXDisplay.Range.y0,PreviousPSXDisplay.DisplayMode.y,PSXDisplay.DisplayPosition.x,PSXDisplay.DisplayPosition.y,PSXDisplay.RGB24);
-	VIDEO_SetNextFramebuffer(xfb[whichfb]);
-	VIDEO_Flush();
-	if (vsync_enable)
-		VIDEO_WaitVSync();
+	gc_vout_render();
 }
 
 static int gc_vout_open(void) { 
-	memset(GXtexture,0,RESX_MAX*RESY_MAX*2);
+	memset(GXtexture,0,sizeof(GXtexture));
+	VIDEO_SetPreRetraceCallback(gc_vout_vsync);
 	return 0; 
 }
 
@@ -625,7 +663,7 @@ static void gc_vout_close(void) {}
 static void gc_vout_flip(const void *vram, int stride, int bgr24,
 			      int x, int y, int w, int h, int dims_changed) {
 	if(vram == NULL) {
-		memset(GXtexture,0,RESX_MAX*RESY_MAX*2);
+		memset(GXtexture,0,sizeof(GXtexture));
 		if (menuActive) return;
 
 		// clear the screen, and flush it
@@ -646,13 +684,7 @@ static void gc_vout_flip(const void *vram, int stride, int bgr24,
 		GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
 		GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
 
-		GX_DrawDone();
-
-		whichfb ^= 1;
-		GX_CopyDisp(xfb[whichfb], GX_TRUE);
-		GX_DrawDone();
-		VIDEO_SetNextFramebuffer(xfb[whichfb]);
-		VIDEO_Flush();
+		gc_vout_render();
 		return;
 	}
 	if (menuActive) return;
@@ -738,10 +770,11 @@ void pl_frame_limit(void)
 		tv_expect.tv_usec = usadj << 10;
 	}
 
-	if (frameLimit == FRAMELIMIT_AUTO
-	    && !vsync_enable && diff > frame_interval) {
-		//printf("usleep %d\n", diff - frame_interval / 2);
-		usleep(diff - frame_interval);
+	if (frameLimit == FRAMELIMIT_AUTO && diff > frame_interval) {
+		if (vsync_enable)
+			VIDEO_WaitVSync();
+		else
+			usleep(diff - frame_interval);
 	}
 
 	if (gc_rearmed_cbs.frameskip) {

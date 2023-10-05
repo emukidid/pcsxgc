@@ -25,7 +25,7 @@
 
 
 extern "C" unsigned int usleep(unsigned int us);
-void video_mode_init(GXRModeObj *rmode, u32 *fb1, u32 *fb2);
+void video_mode_init(GXRModeObj *rmode, u32 *fb1, u32 *fb2, u32 *fb3);
 
 namespace menu {
 
@@ -80,6 +80,7 @@ Graphics::Graphics(GXRModeObj *rmode)
 
 	xfb[0] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
 	xfb[1] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
+	xfb[2] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
 
 	console_init (xfb[0], 20, 64, vmode->fbWidth, vmode->xfbHeight, vmode->fbWidth * 2);
 
@@ -90,7 +91,7 @@ Graphics::Graphics(GXRModeObj *rmode)
 	which_fb ^= 1;
 
 	//Pass vmode, xfb[0] and xfb[1] back to main program
-	video_mode_init(vmode, (u32*)xfb[0], (u32*)xfb[1]);
+	video_mode_init(vmode, (u32*)xfb[0], (u32*)xfb[1], (u32*)xfb[2]);
 
 	//Perform GX init stuff here?
 	//GX_init here or in main?
