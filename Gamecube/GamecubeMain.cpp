@@ -64,7 +64,6 @@ extern u32 __di_check_ahbprot(void);
 #endif //WII
 
 u32* xfb[3] = { NULL, NULL, NULL };	/*** Framebuffers ***/
-int whichfb = 0;        /*** Frame buffer toggle ***/
 GXRModeObj *vmode;				/*** Graphics Mode Object ***/
 #define DEFAULT_FIFO_SIZE ( 256 * 1024 )
 BOOL hasLoadedISO = FALSE;
