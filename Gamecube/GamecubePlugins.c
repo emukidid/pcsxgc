@@ -59,8 +59,8 @@ extern long PAD__open(void);
 extern long PAD__close(void);
 extern long PAD1__readPort1(PadDataS *pad);
 extern long PAD2__readPort2(PadDataS *pad);
-unsigned char CALLBACK PAD1__poll(unsigned char value);
-unsigned char CALLBACK PAD2__poll(unsigned char value);
+unsigned char CALLBACK PAD1__poll(unsigned char value, int *more_data);
+unsigned char CALLBACK PAD2__poll(unsigned char value, int *more_data);
 unsigned char CALLBACK PAD1__startPoll(int pad);
 unsigned char CALLBACK PAD2__startPoll(int pad);
 

@@ -174,6 +174,7 @@ void plat_trigger_vibrate(int pad, int low, int high) {
 
 long PAD1__readPort1(PadDataS *pad) {
 	int pad_index = pad->requestPadIndex;
+	if(!virtualControllers[pad_index].inUse) return 0;
 
 	static BUTTONS PAD_Data;
 	if(virtualControllers[pad_index].inUse && DO_CONTROL(pad_index, GetKeys, (BUTTONS*)&PAD_Data, virtualControllers[pad_index].config))
@@ -224,9 +225,10 @@ long PAD1__readPort1(PadDataS *pad) {
 
 long PAD2__readPort2(PadDataS *pad) {
 	int pad_index = pad->requestPadIndex;
-
-	static BUTTONS PAD_Data;
-	if(virtualControllers[pad_index].inUse && DO_CONTROL(pad_index, GetKeys, (BUTTONS*)&PAD_Data, virtualControllers[pad_index].config))
+	if(!virtualControllers[pad_index].inUse) return 0;
+	
+	static BUTTONS PAD_Data2;
+	if(virtualControllers[pad_index].inUse && DO_CONTROL(pad_index, GetKeys, (BUTTONS*)&PAD_Data2, virtualControllers[pad_index].config))
 		stop = 1;
 
 	switch(controllerType) {
@@ -240,7 +242,7 @@ long PAD2__readPort2(PadDataS *pad) {
 			pad->controllerType = PSE_PAD_TYPE_STANDARD;
 			break;
 	}
-	pad->buttonStatus = PAD_Data.btns.All;
+	pad->buttonStatus = PAD_Data2.btns.All;
 
 	//if (multitap2 == 1)
 	//	pad->portMultitap = 2;
@@ -249,12 +251,13 @@ long PAD2__readPort2(PadDataS *pad) {
 
 	if (controllerType == CONTROLLERTYPE_ANALOG || controllerType == CONTROLLERTYPE_LIGHTGUN)
 	{
-		/*pad->leftJoyX = in_analog_left[pad_index][0];
-		pad->leftJoyY = in_analog_left[pad_index][1];
-		pad->rightJoyX = in_analog_right[pad_index][0];
-		pad->rightJoyY = in_analog_right[pad_index][1];
-		pad->absoluteX = in_analog_left[pad_index][0];
-		pad->absoluteY = in_analog_left[pad_index][1];*/
+		pad->leftJoyX = PAD_Data2.leftStickX;
+		pad->leftJoyY = PAD_Data2.leftStickY;
+		pad->rightJoyX = PAD_Data2.rightStickX;
+		pad->rightJoyY = PAD_Data2.rightStickY;
+
+		pad->absoluteX = PAD_Data2.gunX;
+		pad->absoluteY = PAD_Data2.gunY;
 	}
 
 	/*if (in_type[pad_index] == PSE_PAD_TYPE_MOUSE)
