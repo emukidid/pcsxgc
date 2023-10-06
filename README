@@ -80,6 +80,11 @@ CREDITS:
  * Visit us on IRC. EFNet #gc-forever or www.gc-forever.com or https://github.com/emukidid/pcsxgc/
 
 CHANGE LOG:
+Beta 4.0:
+	* libpsxcore properly integrated, no more hacky mess to receive fixes from upstream
+	* switch to upstream unai gpu plugin for a huge performance boost
+	* triple buffering
+	* switch to cmake
 Beta 3.0:
 	* Back nearly 13 years later with a new dynarec thanks to pcercuei's lightrec
 	  * Increases speed and compatibility
