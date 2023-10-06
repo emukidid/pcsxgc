@@ -21,7 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
+#include <libpcsxcore/misc.h>
 #include <libpcsxcore/psxcommon.h>
+#include <libpcsxcore/psxcounters.h>
 #include "fileBrowser/fileBrowser.h"
 #include "DEBUG.h"
 #include "libgui/IPLFontC.h"
@@ -30,6 +32,7 @@
 #include <pcsx_rearmed/frontend/plugin_lib.h>
 
 #include <libpcsxcore/spu.h>
+#include <libpcsxcore/gpu.h>
 #ifndef __GX__
 #include "NoPic.h"
 #endif //!__GX__
@@ -707,6 +710,7 @@ static struct rearmed_cbs gc_rearmed_cbs = {
    /* from psxcounters */
    .gpu_hcnt         = &hSyncCount,
    .gpu_frame_count  = &frame_counter,
+   .gpu_state_change = gpu_state_change,
 
    .gpu_unai = {
 	   .lighting = 1,

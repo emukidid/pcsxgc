@@ -33,8 +33,11 @@
 #ifdef DEBUGON
 # include <debug.h>
 #endif
+#include <libpcsxcore/misc.h>
 #include <libpcsxcore/psxcommon.h>
+#include <libpcsxcore/psxmem.h>
 #include <libpcsxcore/r3000a.h>
+#include <libpcsxcore/sio.h>
 #include "wiiSXconfig.h"
 #include "menu/MenuContext.h"
 extern "C" {
@@ -204,7 +207,6 @@ void loadSettings(int argc, char *argv[])
 	Config.Cdda = 0; //CDDA enabled
 	spu_config.iVolume = 1024 - (volume * 192); //Volume="medium" in PEOPSspu
 	spu_config.iUseThread = 0;	// Don't enable, broken on GC/Wii
-	spu_config.iUseFixedUpdates = 1;
 	spu_config.iUseReverb = 0;
 	spu_config.iUseInterpolation = 1;
 	spu_config.iXAPitch = 0;
