@@ -65,7 +65,6 @@ extern u32 __di_check_ahbprot(void);
 
 u32* xfb[3] = { NULL, NULL, NULL };	/*** Framebuffers ***/
 GXRModeObj *vmode;				/*** Graphics Mode Object ***/
-#define DEFAULT_FIFO_SIZE ( 256 * 1024 )
 BOOL hasLoadedISO = FALSE;
 fileBrowser_file isoFile;  //the ISO file
 fileBrowser_file cddaFile; //the CDDA file

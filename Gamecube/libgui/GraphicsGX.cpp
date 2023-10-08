@@ -21,9 +21,6 @@
 #include <math.h>
 #include "GraphicsGX.h"
 
-#define DEFAULT_FIFO_SIZE		(256 * 1024)
-
-
 extern "C" unsigned int usleep(unsigned int us);
 void video_mode_init(GXRModeObj *rmode, u32 *fb1, u32 *fb2, u32 *fb3);
 
@@ -111,9 +108,9 @@ void Graphics::init()
 	void *gpfifo = NULL;
 	GXColor background = {0, 0, 0, 0xff};
 
-	gpfifo = memalign(32,DEFAULT_FIFO_SIZE);
-	memset(gpfifo,0,DEFAULT_FIFO_SIZE);
-	GX_Init(gpfifo,DEFAULT_FIFO_SIZE);
+	gpfifo = memalign(32,GX_FIFO_MINSIZE);
+	memset(gpfifo,0,GX_FIFO_MINSIZE);
+	GX_Init(gpfifo,GX_FIFO_MINSIZE);
 	GX_SetCopyClear(background, GX_MAX_Z24);
 
 	GX_SetViewport(0,0,vmode->fbWidth,vmode->efbHeight,0,1);
