@@ -37,6 +37,7 @@ static Jit g_jit;
 #include "new_dynarec_config.h"
 #include "../psxhle.h"
 #include "../psxinterpreter.h"
+#include "../psxcounters.h"
 #include "../gte.h"
 #include "emu_if.h" // emulator interface
 #include "linkage_offsets.h"
@@ -647,6 +648,24 @@ static struct ht_entry *hash_table_get(u_int vaddr)
   return &hash_table[((vaddr>>16)^vaddr)&0xFFFF];
 }
 
+#define HASH_TABLE_BAD 0xbac
+
+static void hash_table_clear(void)
+{
+  struct ht_entry *ht_bin;
+  int i, j;
+  for (i = 0; i < ARRAY_SIZE(hash_table); i++) {
+    for (j = 0; j < ARRAY_SIZE(hash_table[i].vaddr); j++) {
+      hash_table[i].vaddr[j] = ~0;
+      hash_table[i].tcaddr[j] = (void *)(uintptr_t)HASH_TABLE_BAD;
+    }
+  }
+  // don't allow ~0 to hit
+  ht_bin = hash_table_get(~0);
+  for (j = 0; j < ARRAY_SIZE(ht_bin->vaddr); j++)
+    ht_bin->vaddr[j] = 1;
+}
+
 static void hash_table_add(u_int vaddr, void *tcaddr)
 {
   struct ht_entry *ht_bin = hash_table_get(vaddr);
@@ -662,15 +681,28 @@ static void hash_table_remove(int vaddr)
   //printf("remove hash: %x\n",vaddr);
   struct ht_entry *ht_bin = hash_table_get(vaddr);
   if (ht_bin->vaddr[1] == vaddr) {
-    ht_bin->vaddr[1] = -1;
-    ht_bin->tcaddr[1] = NULL;
+    ht_bin->vaddr[1] = ~0;
+    ht_bin->tcaddr[1] = (void *)(uintptr_t)HASH_TABLE_BAD;
   }
   if (ht_bin->vaddr[0] == vaddr) {
     ht_bin->vaddr[0] = ht_bin->vaddr[1];
     ht_bin->tcaddr[0] = ht_bin->tcaddr[1];
-    ht_bin->vaddr[1] = -1;
-    ht_bin->tcaddr[1] = NULL;
+    ht_bin->vaddr[1] = ~0;
+    ht_bin->tcaddr[1] = (void *)(uintptr_t)HASH_TABLE_BAD;
   }
+}
+
+static void mini_ht_clear(void)
+{
+#ifdef USE_MINI_HT
+  int i;
+  for (i = 0; i < ARRAY_SIZE(mini_ht) - 1; i++) {
+    mini_ht[i][0] = ~0;
+    mini_ht[i][1] = HASH_TABLE_BAD;
+  }
+  mini_ht[i][0] = 1;
+  mini_ht[i][1] = HASH_TABLE_BAD;
+#endif
 }
 
 static void mark_invalid_code(u_int vaddr, u_int len, char invalid)
@@ -1567,9 +1599,7 @@ static int invalidate_range(u_int start, u_int end,
   }
   if (hit) {
     do_clear_cache();
-#ifdef USE_MINI_HT
-    memset(mini_ht, -1, sizeof(mini_ht));
-#endif
+    mini_ht_clear();
   }
 
   if (inv_start <= (start_m & ~0xfff) && inv_end >= (start_m | 0xfff))
@@ -1626,10 +1656,8 @@ void new_dynarec_invalidate_all_pages(void)
     }
   }
 
-  #ifdef USE_MINI_HT
-  memset(mini_ht, -1, sizeof(mini_ht));
-  #endif
   do_clear_cache();
+  mini_ht_clear();
 }
 
 // Add an entry to jump_out after making a link
@@ -6191,6 +6219,12 @@ static noinline void new_dynarec_test(void)
   out = ndrc->translation_cache;
 }
 
+static int get_cycle_multiplier(void)
+{
+  return Config.cycle_multiplier_override && Config.cycle_multiplier == CYCLE_MULT_DEFAULT
+     ? Config.cycle_multiplier_override : Config.cycle_multiplier;
+}
+
 // clear the state completely, instead of just marking
 // things invalid like invalidate_all_pages() does
 void new_dynarec_clear_full(void)
@@ -6198,9 +6232,9 @@ void new_dynarec_clear_full(void)
   int n;
   out = ndrc->translation_cache;
   memset(invalid_code,1,sizeof(invalid_code));
-  memset(hash_table,0xff,sizeof(hash_table));
-  memset(mini_ht,-1,sizeof(mini_ht));
   memset(shadow,0,sizeof(shadow));
+  hash_table_clear();
+  mini_ht_clear();
   copy=shadow;
   expirep = EXPIRITY_OFFSET;
   pending_exception=0;
@@ -6218,6 +6252,12 @@ void new_dynarec_clear_full(void)
   stat_clear(stat_blocks);
   stat_clear(stat_links);
 
+  if (cycle_multiplier_old != Config.cycle_multiplier
+      || new_dynarec_hacks_old != new_dynarec_hacks)
+  {
+    SysPrintf("ndrc config: mul=%d, ha=%x, pex=%d\n",
+      get_cycle_multiplier(), new_dynarec_hacks, Config.PreciseExceptions);
+  }
   cycle_multiplier_old = Config.cycle_multiplier;
   new_dynarec_hacks_old = new_dynarec_hacks;
 }
@@ -6488,6 +6528,15 @@ void new_dynarec_print_stats(void)
 #endif
 }
 
+static void force_intcall(int i)
+{
+  memset(&dops[i], 0, sizeof(dops[i]));
+  dops[i].itype = INTCALL;
+  dops[i].rs1 = CCREG;
+  dops[i].is_exception = 1;
+  cinfo[i].ba = -1;
+}
+
 static int apply_hacks(void)
 {
   int i;
@@ -6522,22 +6571,29 @@ static int apply_hacks(void)
       return 1;
     }
   }
+  if (Config.HLE)
+  {
+    if (start <= psxRegs.biosBranchCheck && psxRegs.biosBranchCheck < start + i*4)
+    {
+      i = (psxRegs.biosBranchCheck - start) / 4u + 23;
+      if (dops[i].is_jump && !dops[i+1].bt)
+      {
+        force_intcall(i);
+        dops[i+1].is_ds = 0;
+      }
+    }
+  }
   return 0;
 }
 
-static int is_ld_use_hazard(int ld_rt, const struct decoded_insn *op)
+static int is_ld_use_hazard(const struct decoded_insn *op_ld,
+  const struct decoded_insn *op)
 {
-  return ld_rt != 0 && (ld_rt == op->rs1 || ld_rt == op->rs2)
-    && op->itype != LOADLR && op->itype != CJUMP && op->itype != SJUMP;
-}
-
-static void force_intcall(int i)
-{
-  memset(&dops[i], 0, sizeof(dops[i]));
-  dops[i].itype = INTCALL;
-  dops[i].rs1 = CCREG;
-  dops[i].is_exception = 1;
-  cinfo[i].ba = -1;
+  if (op_ld->rt1 == 0 || (op_ld->rt1 != op->rs1 && op_ld->rt1 != op->rs2))
+    return 0;
+  if (op_ld->itype == LOADLR && op->itype == LOADLR)
+    return op_ld->rt1 == op_ld->rs1;
+  return op->itype != CJUMP && op->itype != SJUMP;
 }
 
 static void disassemble_one(int i, u_int src)
@@ -6920,7 +6976,7 @@ static noinline void pass1_disassemble(u_int pagelimit)
           else
             dop = &dops[t];
         }
-        if ((dop && is_ld_use_hazard(dops[i].rt1, dop))
+        if ((dop && is_ld_use_hazard(&dops[i], dop))
             || (!dop && Config.PreciseExceptions)) {
           // jump target wants DS result - potential load delay effect
           SysPrintf("load delay in DS @%08x (%08x)\n", start + i*4, start);
@@ -6937,7 +6993,7 @@ static noinline void pass1_disassemble(u_int pagelimit)
       }
     }
     else if (i > 0 && dops[i-1].is_delay_load
-             && is_ld_use_hazard(dops[i-1].rt1, &dops[i])
+             && is_ld_use_hazard(&dops[i-1], &dops[i])
              && (i < 2 || !dops[i-2].is_ujump)) {
       SysPrintf("load delay @%08x (%08x)\n", start + i*4, start);
       for (j = i - 1; j > 0 && dops[j-1].is_delay_load; j--)
@@ -8853,9 +8909,7 @@ static noinline void pass10_expire_blocks(void)
       hit = blocks_remove_matching_addrs(&blocks[block_i], base_offs, base_shift);
       if (hit) {
         do_clear_cache();
-        #ifdef USE_MINI_HT
-        memset(mini_ht, -1, sizeof(mini_ht));
-        #endif
+        mini_ht_clear();
       }
     }
     else
@@ -8958,13 +9012,13 @@ static int new_recompile_block(u_int addr)
     return 0;
   }
 
-  cycle_multiplier_active = Config.cycle_multiplier_override && Config.cycle_multiplier == CYCLE_MULT_DEFAULT
-    ? Config.cycle_multiplier_override : Config.cycle_multiplier;
+  cycle_multiplier_active = get_cycle_multiplier();
 
   source = get_source_start(start, &pagelimit);
   if (source == NULL) {
     if (addr != hack_addr) {
-      SysPrintf("Compile at bogus memory address: %08x\n", addr);
+      SysPrintf("Compile at bogus memory address: %08x, ra=%x\n",
+        addr, psxRegs.GPR.n.ra);
       hack_addr = addr;
     }
     //abort();
@@ -9032,17 +9086,22 @@ static int new_recompile_block(u_int addr)
   void *instr_addr0_override = NULL;
   int ds = 0;
 
-  if (start == 0x80030000) {
-    // nasty hack for the fastbios thing
-    // override block entry to this code
+  if ((Config.HLE && start == 0x80000080) || start == 0x80030000) {
     instr_addr0_override = out;
-    emit_movimm(start,0);
-    // abuse io address var as a flag that we
-    // have already returned here once
-    emit_readword(&address,1);
-    emit_writeword(0,&pcaddr);
-    emit_writeword(0,&address);
-    emit_cmp(0,1);
+    emit_movimm(start, 0);
+    if (start == 0x80030000) {
+      // for BiosBootBypass() to work
+      // io address var abused as a "already been here" flag
+      emit_readword(&address, 1);
+      emit_writeword(0, &pcaddr);
+      emit_writeword(0, &address);
+      emit_cmp(0, 1);
+    }
+    else {
+      emit_readword(&psxRegs.cpuInRecursion, 1);
+      emit_writeword(0, &pcaddr);
+      emit_test(1, 1);
+    }
     #ifdef __aarch64__
     emit_jeq(out + 4*2);
     emit_far_jump(new_dyna_leave);

@@ -36,6 +36,7 @@
 #include "sio.h"
 #include "psxhle.h"
 #include "psxinterpreter.h"
+#include "new_dynarec/events.h"
 #include <zlib.h>
 
 #ifndef PSXBIOS_LOG
@@ -309,6 +310,12 @@ static u32 floodchk;
 
 #define HLEOP(n) SWAPu32((0x3b << 26) | (n));
 
+static u8 loadRam8(u32 addr)
+{
+	assert(!(addr & 0x5f800000));
+	return psxM[addr & 0x1fffff];
+}
+
 static u32 loadRam32(u32 addr)
 {
 	assert(!(addr & 0x5f800000));
@@ -391,14 +398,17 @@ static inline void softCall(u32 pc) {
 	ra = 0x80001000;
 	psxRegs.CP0.n.SR &= ~0x404; // disable interrupts
 
+	assert(psxRegs.cpuInRecursion <= 1);
+	psxRegs.cpuInRecursion++;
 	psxCpu->Notify(R3000ACPU_NOTIFY_AFTER_LOAD, PTR_1);
 
-	while (pc0 != 0x80001000 && ++lim < 1000000)
+	while (pc0 != 0x80001000 && ++lim < 0x100000)
 		psxCpu->ExecuteBlock(EXEC_CALLER_HLE);
 
 	psxCpu->Notify(R3000ACPU_NOTIFY_BEFORE_SAVE, PTR_1);
+	psxRegs.cpuInRecursion--;
 
-	if (lim == 1000000)
+	if (lim == 0x100000)
 		PSXBIOS_LOG("softCall @%x hit lim\n", pc);
 	ra = sra;
 	psxRegs.CP0.n.SR |= ssr & 0x404;
@@ -414,14 +424,16 @@ static inline void softCallInException(u32 pc) {
 		return;
 	ra = 0x80001000;
 
+	psxRegs.cpuInRecursion++;
 	psxCpu->Notify(R3000ACPU_NOTIFY_AFTER_LOAD, PTR_1);
 
-	while (!returned_from_exception() && pc0 != 0x80001000 && ++lim < 1000000)
+	while (!returned_from_exception() && pc0 != 0x80001000 && ++lim < 0x100000)
 		psxCpu->ExecuteBlock(EXEC_CALLER_HLE);
 
 	psxCpu->Notify(R3000ACPU_NOTIFY_BEFORE_SAVE, PTR_1);
+	psxRegs.cpuInRecursion--;
 
-	if (lim == 1000000)
+	if (lim == 0x100000)
 		PSXBIOS_LOG("softCallInException @%x hit lim\n", pc);
 	if (pc0 == 0x80001000)
 		ra = sra;
@@ -561,6 +573,11 @@ void psxBios_atoi() { // 0x10
 	s32 n = 0, f = 0;
 	char *p = (char *)Ra0;
 
+	if (p == INVALID_PTR) {
+		mips_return(0);
+		return;
+	}
+
 	for (;;p++) {
 		switch (*p) {
 			case ' ': case '\t': continue;
@@ -576,6 +593,7 @@ void psxBios_atoi() { // 0x10
 
 	v0 = (f ? -n : n);
 	pc0 = ra;
+	PSXBIOS_LOG("psxBios_%s %s (%x) -> 0x%x\n", biosA0n[0x10], Ra0, a0, v0);
 }
 
 void psxBios_atol() { // 0x11
@@ -625,22 +643,24 @@ void psxBios_longjmp() { // 0x14
 }
 
 void psxBios_strcat() { // 0x15
-	char *p1 = (char *)Ra0, *p2 = (char *)Ra1;
+	u8 *p2 = (u8 *)Ra1;
+	u32 p1 = a0;
 
-#ifdef PSXBIOS_LOG
-	PSXBIOS_LOG("psxBios_%s: %s, %s\n", biosA0n[0x15], Ra0, Ra1);
-#endif
-	if (a0 == 0 || a1 == 0)
+	PSXBIOS_LOG("psxBios_%s %s (%x), %s (%x)\n", biosA0n[0x15], Ra0, a0, Ra1, a1);
+	if (a0 == 0 || a1 == 0 || p2 == INVALID_PTR)
 	{
-		v0 = 0;
-		pc0 = ra;
+		mips_return_c(0, 6);
 		return;
 	}
-	while (*p1++);
-	--p1;
-	while ((*p1++ = *p2++) != '\0');
+	while (loadRam8(p1)) {
+		use_cycles(4);
+		p1++;
+	}
+	for (; *p2; p1++, p2++)
+		storeRam8(p1, *p2);
+	storeRam8(p1, 0);
 
-	v0 = a0; pc0 = ra;
+	mips_return_c(a0, 22);
 }
 
 void psxBios_strncat() { // 0x16
@@ -759,6 +779,7 @@ void psxBios_strncmp() { // 0x18
 
 void psxBios_strcpy() { // 0x19
 	char *p1 = (char *)Ra0, *p2 = (char *)Ra1;
+	PSXBIOS_LOG("psxBios_%s %x, %s (%x)\n", biosA0n[0x19], a0, p2, a1);
 	if (a0 == 0 || a1 == 0)
 	{
 		v0 = 0;
@@ -900,6 +921,7 @@ void psxBios_strtok() { // 0x23
 
 void psxBios_strstr() { // 0x24
 	char *p = (char *)Ra0, *p1, *p2;
+	PSXBIOS_LOG("psxBios_%s %s (%x), %s (%x)\n", biosA0n[0x24], p, a0, Ra1, a1);
 
 	while (*p != '\0') {
 		p1 = p;
@@ -912,10 +934,12 @@ void psxBios_strstr() { // 0x24
 		if (*p2 == '\0') {
 			v0 = a0 + (p - (char *)Ra0);
 			pc0 = ra;
+			PSXBIOS_LOG(" -> %x\n", v0);
 			return;
 		}
 
-		p++;
+		// bug: skips the whole matched substring + 1
+		p = p1 + 1;
 	}
 
 	v0 = 0; pc0 = ra;
@@ -3312,6 +3336,8 @@ void psxBiosInit() {
 	int i;
 	uLongf len;
 
+	psxRegs.biosBranchCheck = ~0;
+
 	memset(psxM, 0, 0x10000);
 	for(i = 0; i < 256; i++) {
 		biosA0[i] = NULL;
@@ -3323,7 +3349,15 @@ void psxBiosInit() {
 	biosA0[0x3e] = biosB0[0x3f] = psxBios_puts_psxout;
 	biosA0[0x3f] = psxBios_printf_psxout;
 
-	if (!Config.HLE) return;
+	if (!Config.HLE) {
+		char verstr[0x24+1];
+		rom32 = (u32 *)psxR;
+		memcpy(verstr, psxR + 0x12c, 0x24);
+		verstr[0x24] = 0;
+		SysPrintf("BIOS: %08x, '%s', '%c'\n", SWAP32(rom32[0x100/4]),
+			verstr, psxR[0x7ff52]);
+		return;
+	}
 
 	for(i = 0; i < 256; i++) {
 		if (biosA0[i] == NULL) biosA0[i] = psxBios_dummy;
@@ -4006,6 +4040,7 @@ void psxBiosException() {
 	sp = fp = loadRam32(A_EXC_SP);
 	gp = A_EXC_GP;
 	use_cycles(46);
+	assert(!psxRegs.cpuInRecursion);
 
 	// do the chains (always 4)
 	for (c = lim = 0; c < 4; c++) {
@@ -4067,6 +4102,7 @@ static void hleA0() {
 	else if (biosA0[call])
 		biosA0[call]();
 
+	//printf("A(%02x) -> %x\n", call, v0);
 	psxBranchTest();
 }
 
@@ -4089,6 +4125,7 @@ static void hleB0() {
 	else if (biosB0[call])
 		biosB0[call]();
 
+	//printf("B(%02x) -> %x\n", call, v0);
 	psxBranchTest();
 }
 
@@ -4106,6 +4143,7 @@ static void hleC0() {
 	else if (biosC0[call])
 		biosC0[call]();
 
+	//printf("C(%02x) -> %x\n", call, v0);
 	psxBranchTest();
 }
 
@@ -4143,6 +4181,75 @@ void (* const psxHLEt[24])() = {
 	hleExcPadCard1, hleExcPadCard2,
 };
 
+void psxBiosCheckExe(u32 t_addr, u32 t_size, int loading_state)
+{
+	// lw      $v0, 0x10($sp)
+	// nop
+	// addiu   $v0, -1
+	// sw      $v0, 0x10($sp)
+	// lw      $v0, 0x10($sp)
+	// nop
+	// bne     $v0, $v1, not_timeout
+	// nop
+	// lui     $a0, ...
+	static const u8 pattern[] = {
+		0x10, 0x00, 0xA2, 0x8F, 0x00, 0x00, 0x00, 0x00,
+		0xFF, 0xFF, 0x42, 0x24, 0x10, 0x00, 0xA2, 0xAF,
+		0x10, 0x00, 0xA2, 0x8F, 0x00, 0x00, 0x00, 0x00,
+		0x0C, 0x00, 0x43, 0x14, 0x00, 0x00, 0x00, 0x00,
+	};
+	u32 start = t_addr & 0x1ffffc;
+	u32 end = (start + t_size) & 0x1ffffc;
+	u32 buf[sizeof(pattern) / sizeof(u32)];
+	const u32 *r32 = (u32 *)(psxM + start);
+	u32 i, j;
+
+	if (end <= start)
+		return;
+	if (!Config.HLE)
+		return;
+
+	memcpy(buf, pattern, sizeof(buf));
+	for (i = 0; i < t_size / 4; i += j + 1) {
+		for (j = 0; j < sizeof(buf) / sizeof(buf[0]); j++)
+			if (r32[i + j] != buf[j])
+				break;
+		if (j != sizeof(buf) / sizeof(buf[0]))
+			continue;
+
+		if ((SWAP32(r32[i + j]) >> 16) != 0x3c04) // lui
+			continue;
+		if (!loading_state)
+			SysPrintf("HLE vsync @%08x\n", start + i * 4);
+		psxRegs.biosBranchCheck = (t_addr & 0xa01ffffc) + i * 4;
+	}
+}
+
+void psxBiosCheckBranch(void)
+{
+#if 1
+	// vsync HLE hack
+	static u32 cycles_prev, v0_prev;
+	u32 cycles_passed, waste_cycles;
+	u32 loops, v0_expect = v0_prev - 1;
+	if (v0 != 1)
+		return;
+	execI(&psxRegs);
+	cycles_passed = psxRegs.cycle - cycles_prev;
+	cycles_prev = psxRegs.cycle;
+	v0_prev = v0;
+	if (cycles_passed < 10 || cycles_passed > 50 || v0 != v0_expect)
+		return;
+
+	waste_cycles = schedule_timeslice() - psxRegs.cycle;
+	loops = waste_cycles / cycles_passed;
+	if (loops > v0)
+		loops = v0;
+	v0 -= loops;
+	psxRegs.cycle += loops * cycles_passed;
+	//printf("c %4u %d\n", loops, cycles_passed);
+#endif
+}
 
 #define bfreeze(ptr, size) { \
 	if (Mode == 1) memcpy(&psxR[base], ptr, size); \

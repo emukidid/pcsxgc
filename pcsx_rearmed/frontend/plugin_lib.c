@@ -33,6 +33,7 @@
 #include "psemu_plugin_defs.h"
 #include "../libpcsxcore/new_dynarec/new_dynarec.h"
 #include "../libpcsxcore/psxmem_map.h"
+#include "../libpcsxcore/gpu.h"
 
 #define HUD_HEIGHT 10
 
@@ -137,7 +138,7 @@ static __attribute__((noinline)) void draw_active_chans(int vout_w, int vout_h)
 	unsigned short *d, p;
 	int c, x, y;
 
-	if (dest == NULL || pl_vout_bpp != 16)
+	if (pl_vout_buf == NULL || pl_vout_bpp != 16)
 		return;
 
 	spu_get_debug_info(&live_chans, &run_chans, &fmod_chans, &noise_chans);
@@ -770,6 +771,7 @@ struct rearmed_cbs pl_rearmed_cbs = {
 	.mmap = pl_mmap,
 	.munmap = pl_munmap,
 	.pl_set_gpu_caps = pl_set_gpu_caps,
+	.gpu_state_change = gpu_state_change,
 };
 
 /* watchdog */

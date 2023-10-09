@@ -14,7 +14,8 @@ endif
 endif
 CFLAGS += -DP_HAVE_MMAP=$(if $(NO_MMAP),0,1) \
 	  -DP_HAVE_PTHREAD=$(if $(NO_PTHREAD),0,1) \
-	  -DP_HAVE_POSIX_MEMALIGN=$(if $(NO_POSIX_MEMALIGN),0,1)
+	  -DP_HAVE_POSIX_MEMALIGN=$(if $(NO_POSIX_MEMALIGN),0,1) \
+	  -DDISABLE_MEM_LUTS=0
 CXXFLAGS += $(CFLAGS)
 #DRC_DBG = 1
 #PCNT = 1
@@ -56,7 +57,7 @@ OBJS += libpcsxcore/cdriso.o libpcsxcore/cdrom.o libpcsxcore/cheat.o libpcsxcore
 	libpcsxcore/misc.o libpcsxcore/plugins.o libpcsxcore/ppf.o libpcsxcore/psxbios.o \
 	libpcsxcore/psxcommon.o libpcsxcore/psxcounters.o libpcsxcore/psxdma.o \
 	libpcsxcore/psxhw.o libpcsxcore/psxinterpreter.o libpcsxcore/psxmem.o libpcsxcore/r3000a.o \
-	libpcsxcore/sio.o libpcsxcore/spu.o
+	libpcsxcore/sio.o libpcsxcore/spu.o libpcsxcore/gpu.o
 OBJS += libpcsxcore/gte.o libpcsxcore/gte_nf.o libpcsxcore/gte_divider.o
 
 ifeq ($(DEBUG), 1)
@@ -376,7 +377,7 @@ endif
 
 # misc
 OBJS += frontend/main.o frontend/plugin.o
-
+frontend/main.o: CFLAGS += -DBUILTIN_GPU=$(BUILTIN_GPU)
 
 frontend/menu.o frontend/main.o: frontend/revision.h
 frontend/plat_sdl.o frontend/libretro.o: frontend/revision.h
