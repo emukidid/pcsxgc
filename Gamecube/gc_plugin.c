@@ -820,6 +820,19 @@ void plugin_call_rearmed_cbs(void)
 		rearmed_set_cbs(&gc_rearmed_cbs);
 }
 
+void go(void) {
+	Config.PsxOut = 0;
+	stop = 0;
+
+	/* Apply settings from menu */
+	gc_rearmed_cbs.gpu_unai.dithering = !!useDithering;
+	gc_rearmed_cbs.gpu_peops.iUseDither = useDithering;
+	gc_rearmed_cbs.gpu_peopsgl.bDrawDither = useDithering;
+	gc_rearmed_cbs.frameskip = frameSkip;
+
+	plugin_call_rearmed_cbs();
+	psxCpu->Execute();
+}
 
 int OpenPlugins() {
 	int ret;
