@@ -159,6 +159,7 @@ add_library(libpcsxcore OBJECT
 	pcsx_rearmed/libpcsxcore/database.c
 	pcsx_rearmed/libpcsxcore/decode_xa.c
 	pcsx_rearmed/libpcsxcore/disr3000a.c
+	pcsx_rearmed/libpcsxcore/gpu.c
 	pcsx_rearmed/libpcsxcore/gte.c
 	pcsx_rearmed/libpcsxcore/gte_divider.c
 	pcsx_rearmed/libpcsxcore/mdec.c
@@ -189,7 +190,7 @@ target_include_directories(libpcsxcore PRIVATE pcsx_rearmed/deps/lightrec)
 target_include_directories(libpcsxcore PUBLIC ${ZLIB_INCLUDE_DIR})
 target_compile_definitions(libpcsxcore PUBLIC LIGHTREC LIGHTREC_CUSTOM_MAP NO_SOCKET
 	$<IF:$<PLATFORM_ID:NintendoWii>,HW_RVL,HW_DOL>
-	CODE_BUFFER_SIZE=0x400000
+	DISABLE_MEM_LUTS CODE_BUFFER_SIZE=0x400000
 )
 set_target_properties(libpcsxcore PROPERTIES LINKER_LANGUAGE C)
 target_link_libraries(libpcsxcore PUBLIC ${ZLIB_LIBRARIES} libchdr)

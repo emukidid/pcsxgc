@@ -180,6 +180,29 @@ make_dma_func(3)
 make_dma_func(4)
 make_dma_func(6)
 
+static u32 io_spu_read8_even(u32 addr)
+{
+	return SPU_readRegister(addr, psxRegs.cycle) & 0xff;
+}
+
+static u32 io_spu_read8_odd(u32 addr)
+{
+	return SPU_readRegister(addr, psxRegs.cycle) >> 8;
+}
+
+static u32 io_spu_read16(u32 addr)
+{
+	return SPU_readRegister(addr, psxRegs.cycle);
+}
+
+static u32 io_spu_read32(u32 addr)
+{
+	u32 ret;
+	ret  = SPU_readRegister(addr, psxRegs.cycle);
+	ret |= SPU_readRegister(addr + 2, psxRegs.cycle) << 16;
+	return ret;
+}
+
 static void io_spu_write16(u32 value)
 {
 	// meh
@@ -244,9 +267,6 @@ static u32 read_biu(u32 addr)
 	if (addr != 0xfffe0130)
 		return read_mem_dummy(addr);
 
- FILE *f = fopen("/tmp/psxbiu.bin", "wb");
- fwrite(psxM, 1, 0x200000, f);
- fclose(f);
 	memprintf("read_biu  %08x @%08x %u\n",
 		psxRegs.biuReg, psxRegs.pc, psxRegs.cycle);
 	return psxRegs.biuReg;
@@ -390,6 +410,13 @@ void new_dyna_pcsx_mem_init(void)
 	map_item(&mem_iortab[IOMEM8(0x1802)], cdrRead2, 1);
 	map_item(&mem_iortab[IOMEM8(0x1803)], cdrRead3, 1);
 
+	for (i = 0x1c00; i < 0x2000; i += 2) {
+		map_item(&mem_iortab[IOMEM8(i)], io_spu_read8_even, 1);
+		map_item(&mem_iortab[IOMEM8(i+1)], io_spu_read8_odd, 1);
+		map_item(&mem_iortab[IOMEM16(i)], io_spu_read16, 1);
+		map_item(&mem_iortab[IOMEM32(i)], io_spu_read32, 1);
+	}
+
 	// write(u32 data)
 	map_item(&mem_iowtab[IOMEM32(0x1040)], io_write_sio32, 1);
 	map_item(&mem_iowtab[IOMEM32(0x1070)], psxHwWriteIstat, 1);
@@ -459,14 +486,8 @@ void new_dyna_pcsx_mem_init(void)
 
 void new_dyna_pcsx_mem_reset(void)
 {
-	int i;
-
 	// plugins might change so update the pointers
 	map_item(&mem_iortab[IOMEM32(0x1810)], GPU_readData, 1);
-
-	for (i = 0x1c00; i < 0x2000; i += 2)
-		map_item(&mem_iortab[IOMEM16(i)], SPU_readRegister, 1);
-
 	map_item(&mem_iowtab[IOMEM32(0x1810)], GPU_writeData, 1);
 }
 

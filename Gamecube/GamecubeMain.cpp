@@ -33,8 +33,11 @@
 #ifdef DEBUGON
 # include <debug.h>
 #endif
+#include <libpcsxcore/misc.h>
 #include <libpcsxcore/psxcommon.h>
+#include <libpcsxcore/psxmem.h>
 #include <libpcsxcore/r3000a.h>
+#include <libpcsxcore/sio.h>
 #include "wiiSXconfig.h"
 #include "menu/MenuContext.h"
 extern "C" {
@@ -107,6 +110,7 @@ char rumbleEnabled;
 char loadButtonSlot;
 char controllerType;
 char numMultitaps;
+char useDithering;
 
 #define CONFIG_STRING_TYPE 0
 #define CONFIG_STRING_SIZE 256
@@ -131,6 +135,7 @@ static struct {
 //  { "Debug", &printToScreen, DEBUG_HIDE, DEBUG_SHOW },
   { "ScreenMode", &screenMode, SCREENMODE_4x3, SCREENMODE_16x9_PILLARBOX },
   { "VideoMode", &videoMode, VIDEOMODE_AUTO, VIDEOMODE_PROGRESSIVE },
+  { "Dithering", &useDithering, USEDITHER_NONE, USEDITHER_ALWAYS },
   { "FileSortMode", &fileSortMode, FILESORT_DIRS_MIXED, FILESORT_DIRS_FIRST },
   { "Core", &dynacore, DYNACORE_DYNAREC, DYNACORE_INTERPRETER },
   { "NativeDevice", &nativeSaveDevice, NATIVESAVEDEVICE_SD, NATIVESAVEDEVICE_CARDB },
@@ -173,7 +178,7 @@ void loadSettings(int argc, char *argv[])
 	printToSD        = 0; // Disable SD logging
 	frameLimit		 = 1; // Auto limit FPS
 	frameSkip		 = 0; // Disable frame skipping
-	//iUseDither		 = 1; // Default dithering
+	useDithering		 = 1; // Default dithering
 	saveEnabled      = 0; // Don't save game
 	nativeSaveDevice = 0; // SD
 	saveStateDevice	 = 0; // SD
@@ -204,8 +209,7 @@ void loadSettings(int argc, char *argv[])
 	Config.Cdda = 0; //CDDA enabled
 	spu_config.iVolume = 1024 - (volume * 192); //Volume="medium" in PEOPSspu
 	spu_config.iUseThread = 0;	// Don't enable, broken on GC/Wii
-	spu_config.iUseFixedUpdates = 1;
-	spu_config.iUseReverb = 0;
+	spu_config.iUseReverb = 1;
 	spu_config.iUseInterpolation = 1;
 	spu_config.iXAPitch = 0;
 	spu_config.iTempo = 0;
@@ -556,12 +560,6 @@ void writeConfig(FILE* f){
 
 extern "C" {
 //System Functions
-void go(void) {
-	Config.PsxOut = 0;
-	stop = 0;
-	psxCpu->Execute();
-}
-
 int SysInit() {
 #if defined (CPU_LOG) || defined(DMA_LOG) || defined(CDR_LOG) || defined(HW_LOG) || \
 	defined(BIOS_LOG) || defined(GTE_LOG) || defined(PAD_LOG)

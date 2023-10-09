@@ -14,6 +14,7 @@
 #include <stdlib.h> /* for calloc */
 
 #include "gpu.h"
+#include "../../libpcsxcore/gpu.h" // meh
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #ifdef __GNUC__
@@ -228,15 +229,25 @@ static noinline void get_gpu_info(uint32_t data)
 // vram ptr received from mmap/malloc/alloc (will deallocate using this)
 static uint16_t *vram_ptr_orig = NULL;
 
-#ifdef GPULIB_USE_MMAP
+#ifndef GPULIB_USE_MMAP
+# ifdef __linux__
+#  define GPULIB_USE_MMAP 1
+# else
+#  define GPULIB_USE_MMAP 0
+# endif
+#endif
 static int map_vram(void)
 {
+#if GPULIB_USE_MMAP
   gpu.vram = vram_ptr_orig = gpu.mmap(VRAM_SIZE + (VRAM_ALIGN-1));
-  if (gpu.vram != NULL) {
-	// 4kb guard in front
+#else
+  gpu.vram = vram_ptr_orig = calloc(VRAM_SIZE + (VRAM_ALIGN-1), 1);
+#endif
+  if (gpu.vram != NULL && gpu.vram != (void *)(intptr_t)-1) {
+    // 4kb guard in front
     gpu.vram += (4096 / 2);
-	// Align
-	gpu.vram = (uint16_t*)(((uintptr_t)gpu.vram + (VRAM_ALIGN-1)) & ~(VRAM_ALIGN-1));
+    // Align
+    gpu.vram = (uint16_t*)(((uintptr_t)gpu.vram + (VRAM_ALIGN-1)) & ~(VRAM_ALIGN-1));
     return 0;
   }
   else {
@@ -244,54 +255,9 @@ static int map_vram(void)
     return -1;
   }
 }
-#else
-static int map_vram(void)
-{
-  gpu.vram = vram_ptr_orig = (uint16_t*)calloc(VRAM_SIZE + (VRAM_ALIGN-1), 1);
-  if (gpu.vram != NULL) {
-	// 4kb guard in front
-    gpu.vram += (4096 / 2);
-	// Align
-	gpu.vram = (uint16_t*)(((uintptr_t)gpu.vram + (VRAM_ALIGN-1)) & ~(VRAM_ALIGN-1));
-    return 0;
-  } else {
-    fprintf(stderr, "could not allocate vram, expect crashes\n");
-    return -1;
-  }
-}
-
-static int allocate_vram(void)
-{
-  gpu.vram = vram_ptr_orig = (uint16_t*)calloc(VRAM_SIZE + (VRAM_ALIGN-1), 1);
-  if (gpu.vram != NULL) {
-	// 4kb guard in front
-    gpu.vram += (4096 / 2);
-	// Align
-	gpu.vram = (uint16_t*)(((uintptr_t)gpu.vram + (VRAM_ALIGN-1)) & ~(VRAM_ALIGN-1));
-    return 0;
-  } else {
-    fprintf(stderr, "could not allocate vram, expect crashes\n");
-    return -1;
-  }
-}
-#endif
 
 long GPUinit(void)
 {
-#ifndef GPULIB_USE_MMAP
-  if (gpu.vram == NULL) {
-    if (allocate_vram() != 0) {
-      printf("ERROR: could not allocate VRAM, exiting..\n");
-	  exit(1);
-	}
-  }
-#endif
-
-  //extern uint32_t hSyncCount;         // in psxcounters.cpp
-  //extern uint32_t frame_counter;      // in psxcounters.cpp
-  //gpu.state.hcnt = &hSyncCount;
-  //gpu.state.frame_count = &frame_counter;
-
   int ret;
   ret  = vout_init();
   ret |= renderer_init();
@@ -319,7 +285,7 @@ long GPUshutdown(void)
   ret = vout_finish();
 
   if (vram_ptr_orig != NULL) {
-#ifdef GPULIB_USE_MMAP
+#if GPULIB_USE_MMAP
     gpu.munmap(vram_ptr_orig, VRAM_SIZE);
 #else
     free(vram_ptr_orig);
@@ -517,15 +483,21 @@ static void start_vram_transfer(uint32_t pos_word, uint32_t size_word, int is_re
 
   log_io("start_vram_transfer %c (%d, %d) %dx%d\n", is_read ? 'r' : 'w',
     gpu.dma.x, gpu.dma.y, gpu.dma.w, gpu.dma.h);
+  if (gpu.gpu_state_change)
+    gpu.gpu_state_change(PGS_VRAM_TRANSFER_START);
 }
 
 static void finish_vram_transfer(int is_read)
 {
   if (is_read)
     gpu.status &= ~PSX_GPU_STATUS_IMG;
-  else
+  else {
+    gpu.state.fb_dirty = 1;
     renderer_update_caches(gpu.dma_start.x, gpu.dma_start.y,
                            gpu.dma_start.w, gpu.dma_start.h, 0);
+  }
+  if (gpu.gpu_state_change)
+    gpu.gpu_state_change(PGS_VRAM_TRANSFER_END);
 }
 
 static void do_vram_copy(const uint32_t *params)
@@ -674,6 +646,7 @@ static noinline int do_cmd_buffer(uint32_t *data, int count)
         break;
       }
       do_vram_copy(data + pos + 1);
+      vram_dirty = 1;
       pos += 4;
       continue;
     }
@@ -703,12 +676,16 @@ static noinline int do_cmd_buffer(uint32_t *data, int count)
   return count - pos;
 }
 
-static void flush_cmd_buffer(void)
+static noinline void flush_cmd_buffer(void)
 {
   int left = do_cmd_buffer(gpu.cmd_buffer, gpu.cmd_len);
   if (left > 0)
     memmove(gpu.cmd_buffer, gpu.cmd_buffer + gpu.cmd_len - left, left * 4);
-  gpu.cmd_len = left;
+  if (left != gpu.cmd_len) {
+    if (!gpu.dma.h && gpu.gpu_state_change)
+      gpu.gpu_state_change(PGS_PRIMITIVE_START);
+    gpu.cmd_len = left;
+  }
 }
 
 void GPUwriteDataMem(uint32_t *mem, int count)
@@ -995,6 +972,7 @@ void GPUrearmedCallbacks(const struct rearmed_cbs *cbs)
 
   gpu.mmap = cbs->mmap;
   gpu.munmap = cbs->munmap;
+  gpu.gpu_state_change = cbs->gpu_state_change;
 
   // delayed vram mmap
   if (gpu.vram == NULL)

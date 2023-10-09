@@ -21,7 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
+#include <libpcsxcore/misc.h>
 #include <libpcsxcore/psxcommon.h>
+#include <libpcsxcore/psxcounters.h>
 #include "fileBrowser/fileBrowser.h"
 #include "DEBUG.h"
 #include "libgui/IPLFontC.h"
@@ -30,6 +32,7 @@
 #include <pcsx_rearmed/frontend/plugin_lib.h>
 
 #include <libpcsxcore/spu.h>
+#include <libpcsxcore/gpu.h>
 #ifndef __GX__
 #include "NoPic.h"
 #endif //!__GX__
@@ -707,6 +710,7 @@ static struct rearmed_cbs gc_rearmed_cbs = {
    /* from psxcounters */
    .gpu_hcnt         = &hSyncCount,
    .gpu_frame_count  = &frame_counter,
+   .gpu_state_change = gpu_state_change,
 
    .gpu_unai = {
 	   .lighting = 1,
@@ -816,6 +820,19 @@ void plugin_call_rearmed_cbs(void)
 		rearmed_set_cbs(&gc_rearmed_cbs);
 }
 
+void go(void) {
+	Config.PsxOut = 0;
+	stop = 0;
+
+	/* Apply settings from menu */
+	gc_rearmed_cbs.gpu_unai.dithering = !!useDithering;
+	gc_rearmed_cbs.gpu_peops.iUseDither = useDithering;
+	gc_rearmed_cbs.gpu_peopsgl.bDrawDither = useDithering;
+	gc_rearmed_cbs.frameskip = frameSkip;
+
+	plugin_call_rearmed_cbs();
+	psxCpu->Execute();
+}
 
 int OpenPlugins() {
 	int ret;

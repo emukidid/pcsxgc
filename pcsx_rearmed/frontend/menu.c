@@ -312,11 +312,13 @@ static void menu_sync_config(void)
 	switch (in_type_sel1) {
 	case 1:  in_type[0] = PSE_PAD_TYPE_ANALOGPAD; break;
 	case 2:  in_type[0] = PSE_PAD_TYPE_NEGCON;    break;
+	case 3:  in_type[0] = PSE_PAD_TYPE_NONE;      break;
 	default: in_type[0] = PSE_PAD_TYPE_STANDARD;
 	}
 	switch (in_type_sel2) {
 	case 1:  in_type[1] = PSE_PAD_TYPE_ANALOGPAD; break;
 	case 2:  in_type[1] = PSE_PAD_TYPE_NEGCON;    break;
+	case 3:  in_type[1] = PSE_PAD_TYPE_NONE;      break;
 	default: in_type[1] = PSE_PAD_TYPE_STANDARD;
 	}
 	if (in_evdev_allow_abs_only != allow_abs_only_old) {
@@ -589,7 +591,7 @@ static void parse_str_val(char *cval, const char *src)
 
 static void keys_load_all(const char *cfg);
 
-static int menu_load_config(int is_game)
+int menu_load_config(int is_game)
 {
 	char cfgfile[MAXPATHLEN];
 	int i, ret = -1;
@@ -1205,6 +1207,7 @@ static const char *men_in_type_sel[] = {
 	"Standard (SCPH-1080)",
 	"Analog (SCPH-1150)",
 	"GunCon",
+	"None",
 	NULL
 };
 static const char h_nub_btns[] = "Experimental, keep this OFF if unsure. Select rescan after change.";
