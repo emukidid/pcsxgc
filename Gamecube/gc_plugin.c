@@ -279,7 +279,7 @@ void SignalExit(int sig) {
 	OnFile_Exit();
 }
 
-void SPUirq(void);
+void SPUirq(int);
 
 #define PARSEPATH(dst, src) \
 	ptr = src + strlen(src); \
