@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include <zlib.h>
 #include <libpcsxcore/misc.h>
 #include <libpcsxcore/psxcommon.h>
