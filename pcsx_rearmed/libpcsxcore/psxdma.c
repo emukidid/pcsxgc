@@ -67,7 +67,7 @@ void psxDma4(u32 madr, u32 bcr, u32 chcr) { // SPU
 			// This should be much slower, like 12+ cycles/byte, it's like
 			// that because the CPU runs too fast and fifo is not emulated.
 			// See also set_dma_end().
-			SPUDMA_INT(words * 4);
+			set_event(PSXINT_SPUDMA, words * 4);
 			return;
 
 		case 0x01000200: //spu to cpu transfer
@@ -78,7 +78,7 @@ void psxDma4(u32 madr, u32 bcr, u32 chcr) { // SPU
 			psxCpu->Clear(madr, words_copy);
 
 			HW_DMA4_MADR = SWAPu32(madr + words_copy * 4);
-			SPUDMA_INT(words * 4);
+			set_event(PSXINT_SPUDMA, words * 4);
 			return;
 
 		default:
@@ -157,9 +157,9 @@ void psxDma2(u32 madr, u32 bcr, u32 chcr) { // GPU
 			HW_DMA2_MADR = SWAPu32(madr + words_copy * 4);
 
 			// careful: gpu_state_change() also messes with this
-			HW_GPU_STATUS &= SWAP32(~PSXGPU_nBUSY);
+			psxRegs.gpuIdleAfter = psxRegs.cycle + words / 4 + 16;
 			// already 32-bit word size ((size * 4) / 4)
-			GPUDMA_INT(words / 4);
+			set_event(PSXINT_GPUDMA, words / 4);
 			return;
 
 		case 0x01000201: // mem2vram
@@ -180,9 +180,9 @@ void psxDma2(u32 madr, u32 bcr, u32 chcr) { // GPU
 			HW_DMA2_MADR = SWAPu32(madr);
 
 			// careful: gpu_state_change() also messes with this
-			HW_GPU_STATUS &= SWAP32(~PSXGPU_nBUSY);
+			psxRegs.gpuIdleAfter = psxRegs.cycle + words / 4 + 16;
 			// already 32-bit word size ((size * 4) / 4)
-			GPUDMA_INT(words / 4);
+			set_event(PSXINT_GPUDMA, words / 4);
 			return;
 
 		case 0x01000401: // dma chain
@@ -199,14 +199,14 @@ void psxDma2(u32 madr, u32 bcr, u32 chcr) { // GPU
 			if ((int)size <= 0)
 				size = gpuDmaChainSize(madr);
 
-			HW_GPU_STATUS &= SWAP32(~PSXGPU_nBUSY);
 			HW_DMA2_MADR = SWAPu32(madr_next);
 
 			// Tekken 3 = use 1.0 only (not 1.5x)
 
 			// Einhander = parse linked list in pieces (todo)
 			// Rebel Assault 2 = parse linked list in pieces (todo)
-			GPUDMA_INT(size);
+			psxRegs.gpuIdleAfter = psxRegs.cycle + size + 16;
+			set_event(PSXINT_GPUDMA, size);
 			return;
 
 		default:
@@ -218,15 +218,14 @@ void psxDma2(u32 madr, u32 bcr, u32 chcr) { // GPU
 	DMA_INTERRUPT(2);
 }
 
-// note: this is also (ab)used for non-dma prim command
-// to delay gpu returning to idle state, see gpu_state_change()
 void gpuInterrupt() {
 	if (HW_DMA2_CHCR == SWAP32(0x01000401) && !(HW_DMA2_MADR & SWAP32(0x800000)))
 	{
-		u32 size, madr_next = 0xffffff;
-		size = GPU_dmaChain((u32 *)psxM, HW_DMA2_MADR & 0x1fffff, &madr_next);
+		u32 size, madr_next = 0xffffff, madr = SWAPu32(HW_DMA2_MADR);
+		size = GPU_dmaChain((u32 *)psxM, madr & 0x1fffff, &madr_next);
 		HW_DMA2_MADR = SWAPu32(madr_next);
-		GPUDMA_INT(size);
+		psxRegs.gpuIdleAfter = psxRegs.cycle + size + 64;
+		set_event(PSXINT_GPUDMA, size);
 		return;
 	}
 	if (HW_DMA2_CHCR & SWAP32(0x01000000))
@@ -234,7 +233,6 @@ void gpuInterrupt() {
 		HW_DMA2_CHCR &= SWAP32(~0x01000000);
 		DMA_INTERRUPT(2);
 	}
-	HW_GPU_STATUS |= SWAP32(PSXGPU_nBUSY); // GPU no longer busy
 }
 
 void psxDma6(u32 madr, u32 bcr, u32 chcr) {
@@ -261,10 +259,9 @@ void psxDma6(u32 madr, u32 bcr, u32 chcr) {
 		}
 		*++mem = SWAP32(0xffffff);
 
-		//GPUOTCDMA_INT(size);
 		// halted
 		psxRegs.cycle += words;
-		GPUOTCDMA_INT(16);
+		set_event(PSXINT_GPUOTCDMA, 16);
 		return;
 	}
 	else {

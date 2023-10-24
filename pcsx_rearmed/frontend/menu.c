@@ -9,6 +9,11 @@
  */
 
 #define _GNU_SOURCE 1
+#ifdef __FreeBSD__
+#define STAT stat
+#else
+#define STAT stat64
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -214,7 +219,7 @@ static int optional_cdimg_filter(struct dirent **namelist, int count,
 	const char *ext, *p;
 	char buf[256], buf2[256];
 	int i, d, ret, good_cue;
-	struct stat64 statf;
+	struct STAT statf;
 	FILE *f;
 
 	if (count <= 1)
@@ -263,7 +268,7 @@ static int optional_cdimg_filter(struct dirent **namelist, int count,
 					p = buf2;
 
 				snprintf(buf, sizeof(buf), "%s/%s", basedir, p);
-				ret = stat64(buf, &statf);
+				ret = STAT(buf, &statf);
 				if (ret == 0) {
 					rm_namelist_entry(namelist, count, p);
 					good_cue = 1;
@@ -543,7 +548,7 @@ static int menu_do_last_cd_img(int is_get)
 {
 	static const char *defaults[] = { "/media", "/mnt/sd", "/mnt" };
 	char path[256];
-	struct stat64 st;
+	struct STAT st;
 	FILE *f;
 	int i, ret = -1;
 
@@ -566,7 +571,7 @@ static int menu_do_last_cd_img(int is_get)
 out:
 	if (is_get) {
 		for (i = 0; last_selected_fname[0] == 0
-		       || stat64(last_selected_fname, &st) != 0; i++)
+		       || STAT(last_selected_fname, &st) != 0; i++)
 		{
 			if (i >= ARRAY_SIZE(defaults))
 				break;
@@ -1261,7 +1266,7 @@ static const char *men_soft_filter[] = { "None",
 #endif
 	NULL };
 static const char *men_dummy[] = { NULL };
-static const char *men_centering[] = { "Auto", "Ingame", "Force", NULL };
+static const char *men_centering[] = { "Auto", "Ingame", "Borderless", "Force", NULL };
 static const char h_scaler[]    = "int. 2x  - scales w. or h. 2x if it fits on screen\n"
 				  "int. 4:3 - uses integer if possible, else fractional";
 static const char h_cscaler[]   = "Displays the scaler layer, you can resize it\n"

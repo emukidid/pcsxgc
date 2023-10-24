@@ -22,17 +22,24 @@
 */
 
 #include "spu.h"
+#include "psxevents.h"
 
-void CALLBACK SPUirq(void) {
+void CALLBACK SPUirq(int cycles_after) {
+	if (cycles_after > 0) {
+		set_event(PSXINT_SPU_IRQ, cycles_after);
+		return;
+	}
+
+	psxHu32ref(0x1070) |= SWAPu32(0x200);
+}
+
+void spuDelayedIrq() {
 	psxHu32ref(0x1070) |= SWAPu32(0x200);
 }
 
 // spuUpdate
 void CALLBACK SPUschedule(unsigned int cycles_after) {
-	psxRegs.interrupt |= (1 << PSXINT_SPU_UPDATE);
-	psxRegs.intCycle[PSXINT_SPU_UPDATE].cycle = cycles_after;
-	psxRegs.intCycle[PSXINT_SPU_UPDATE].sCycle = psxRegs.cycle;
-	new_dyna_set_event(PSXINT_SPU_UPDATE, cycles_after);
+	set_event(PSXINT_SPU_UPDATE, cycles_after);
 }
 
 void spuUpdate() {

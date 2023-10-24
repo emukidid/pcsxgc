@@ -28,6 +28,7 @@
 #include "../libpcsxcore/cheat.h"
 #include "../libpcsxcore/r3000a.h"
 #include "../libpcsxcore/gpu.h"
+#include "../libpcsxcore/database.h"
 #include "../plugins/dfsound/out.h"
 #include "../plugins/dfsound/spu_config.h"
 #include "cspace.h"
@@ -97,6 +98,7 @@ static bool show_advanced_gpu_peops_settings = true;
 static bool show_advanced_gpu_unai_settings = true;
 #endif
 static float mouse_sensitivity = 1.0f;
+static unsigned int disk_current_index;
 
 typedef enum
 {
@@ -143,6 +145,7 @@ int in_mouse[8][2];
 int multitap1 = 0;
 int multitap2 = 0;
 int in_enable_vibration = 1;
+int in_enable_crosshair[2] = { 0, 0 };
 
 // NegCon adjustment parameters
 // > The NegCon 'twist' action is somewhat awkward when mapped
@@ -270,14 +273,54 @@ static void convert(void *buf, size_t bytes)
 }
 #endif
 
+// Function to add crosshairs
+static void addCrosshair(int port, int crosshair_color, unsigned short *buffer, int bufferStride, int pos_x, int pos_y, int thickness, int size_x, int size_y) {
+   for (port = 0; port < 2; port++) {
+      // Draw the horizontal line of the crosshair
+      for (int i = pos_y - thickness / 2; i <= pos_y + thickness / 2; i++) {
+         for (int j = pos_x - size_x / 2; j <= pos_x + size_x / 2; j++) {
+            if ((i + vout_height) >= 0 && (i + vout_height) < bufferStride && j >= 0 && j < bufferStride && in_enable_crosshair[port] > 0)
+               buffer[i * bufferStride + j] = crosshair_color;
+      }
+         }
+
+      // Draw the vertical line of the crosshair
+      for (int i = pos_x - thickness / 2; i <= pos_x + thickness / 2; i++) {
+         for (int j = pos_y - size_y / 2; j <= pos_y + size_y / 2; j++) {
+            if (i >= 0 && i < bufferStride && (j + vout_height) >= 0 && (j + vout_height) < bufferStride && in_enable_crosshair[port] > 0)
+               buffer[j * bufferStride + i] = crosshair_color;
+         }
+      }
+   }
+}
+
+struct CrosshairInfo {
+   int pos_x, pos_y, thickness, size_x, size_y;
+};
+
+// Calculate size and position of crosshairs
+static void CrosshairDimensions(int port, struct CrosshairInfo *info) {
+   int gunx = input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X);
+   int guny = input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y);
+   if (gunx == 32767) // Prevent crosshairs from wrapping around right side of screen to left
+      info->pos_x = (gunx + 32767.0f) * vout_width / 65534.0f - 0.5f;
+   else
+      info->pos_x = (gunx + 32767.0f) * vout_width / 65534.0f;
+   info->pos_y = (guny + 32767.0f) * vout_height / 65534.0f - vout_height;
+   info->thickness = pl_rearmed_cbs.gpu_neon.enhancement_enable ? 4 : 2;
+   info->size_x = psx_w * (pl_rearmed_cbs.gpu_neon.enhancement_enable ? 2 : 1) / 40.0f;
+   info->size_y = psx_h * (pl_rearmed_cbs.gpu_neon.enhancement_enable ? 2 : 1) * (4.0f / 3.0f) / 40.0f;
+}
+
 static void vout_flip(const void *vram, int stride, int bgr24,
       int x, int y, int w, int h, int dims_changed)
 {
    unsigned short *dest = vout_buf_ptr;
    const unsigned short *src = vram;
    int dstride = vout_width, h1 = h;
+   int port = 0;
 
-   if (vram == NULL || dims_changed)
+   if (vram == NULL || dims_changed || (in_enable_crosshair[0] + in_enable_crosshair[1]) > 0)
    {
       memset(vout_buf_ptr, 0, dstride * vout_height * 2);
       // blanking
@@ -300,6 +343,15 @@ static void vout_flip(const void *vram, int stride, int bgr24,
       for (; h1-- > 0; dest += dstride, src += stride)
       {
          bgr555_to_rgb565(dest, src, w * 2);
+      }
+   }
+
+   for (port = 0; port < 2; port++) {
+      if (in_enable_crosshair[port] > 0 && (in_type[port] == PSE_PAD_TYPE_GUNCON || in_type[port] == PSE_PAD_TYPE_GUN))
+      {
+	 struct CrosshairInfo crosshairInfo;
+	 CrosshairDimensions(port, &crosshairInfo);
+         addCrosshair(port, in_enable_crosshair[port], dest, dstride, crosshairInfo.pos_x, crosshairInfo.pos_y, crosshairInfo.thickness, crosshairInfo.size_x, crosshairInfo.size_y);
       }
    }
 
@@ -518,8 +570,41 @@ void plat_trigger_vibrate(int pad, int low, int high)
    }
 }
 
+//Percentage distance of screen to adjust for Konami Gun
+static float KonamiGunAdjustX = 0;
+static float KonamiGunAdjustY = 0;
+
 void pl_gun_byte2(int port, unsigned char byte)
 {
+   int irq_count = 4;
+   float justifier_multiplier = 0;
+   int justifier_width = psx_w;
+   int justifier_height = psx_h;
+   int justifier_offscreen = input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN);
+   int justifier_reload = input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_RELOAD);
+
+   if (justifier_width == 256)
+      justifier_multiplier = is_pal_mode ? .157086f : .158532f;
+   else if (justifier_width == 320)
+      justifier_multiplier = is_pal_mode ? .196358f : .198166f;
+   else if (justifier_width == 384)
+      justifier_multiplier = is_pal_mode ? .224409f : .226475f;
+   else if (justifier_width == 512)
+      justifier_multiplier = is_pal_mode ? .314173f : .317065f;
+   else // (justifier_width == 640)
+      justifier_multiplier = is_pal_mode ? .392717f : .396332f;
+
+   int gunx = input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X);
+   int guny = input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y);
+
+   //Default offset of +105 for X and -12 for Y is chosen to obtain alignment in Die Hard Trilogy, which has no calibration feature
+   int gunx_scaled = ((gunx + 32767.0f) / 65534.0f + KonamiGunAdjustX) * justifier_width / justifier_multiplier + 105.0f;
+   int guny_scaled = ((guny + 32767.0f) / 65534.0f + KonamiGunAdjustY) * justifier_height - 12.0f;
+
+   if ((byte & 0x10) && !justifier_offscreen && !justifier_reload)
+   {
+      psxScheduleIrq10(irq_count, gunx_scaled, guny_scaled);
+   }
 }
 
 /* sound calls */
@@ -538,25 +623,27 @@ void out_register_libretro(struct out_driver *drv)
    drv->feed   = snd_feed;
 }
 
-#define RETRO_DEVICE_PSE_STANDARD   RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD,   0)
-#define RETRO_DEVICE_PSE_ANALOG     RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG,   0)
-#define RETRO_DEVICE_PSE_DUALSHOCK  RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG,   1)
-#define RETRO_DEVICE_PSE_NEGCON     RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG,   2)
-#define RETRO_DEVICE_PSE_GUNCON     RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)
-#define RETRO_DEVICE_PSE_MOUSE      RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE,    0)
+#define RETRO_DEVICE_PSE_STANDARD         RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD,   0)
+#define RETRO_DEVICE_PSE_ANALOG           RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG,   0)
+#define RETRO_DEVICE_PSE_DUALSHOCK        RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG,   1)
+#define RETRO_DEVICE_PSE_NEGCON           RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_ANALOG,   2)
+#define RETRO_DEVICE_PSE_GUNCON           RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 0)
+#define RETRO_DEVICE_PSE_JUSTIFIER        RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 1)
+#define RETRO_DEVICE_PSE_MOUSE            RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_MOUSE,    0)
 
 static char *get_pse_pad_label[] = {
    "none", "mouse", "negcon", "konami gun", "standard", "analog", "guncon", "dualshock"
 };
 
-static const struct retro_controller_description pads[7] =
+static const struct retro_controller_description pads[8] =
 {
-   { "standard",  RETRO_DEVICE_JOYPAD },
-   { "analog",    RETRO_DEVICE_PSE_ANALOG },
-   { "dualshock", RETRO_DEVICE_PSE_DUALSHOCK },
-   { "negcon",    RETRO_DEVICE_PSE_NEGCON },
-   { "guncon",    RETRO_DEVICE_PSE_GUNCON },
-   { "mouse",     RETRO_DEVICE_PSE_MOUSE },
+   { "standard",   RETRO_DEVICE_JOYPAD },
+   { "analog",     RETRO_DEVICE_PSE_ANALOG },
+   { "dualshock",  RETRO_DEVICE_PSE_DUALSHOCK },
+   { "negcon",     RETRO_DEVICE_PSE_NEGCON },
+   { "guncon",     RETRO_DEVICE_PSE_GUNCON },
+   { "konami gun", RETRO_DEVICE_PSE_JUSTIFIER },
+   { "mouse",      RETRO_DEVICE_PSE_MOUSE },
    { NULL, 0 },
 };
 
@@ -610,6 +697,10 @@ static bool update_option_visibility(void)
             "pcsx_rearmed_negcon_deadzone",
             "pcsx_rearmed_negcon_response",
             "pcsx_rearmed_input_sensitivity",
+	    "pcsx_rearmed_crosshair1",
+	    "pcsx_rearmed_crosshair2",
+            "pcsx_rearmed_konamigunadjustx",
+            "pcsx_rearmed_konamigunadjusty",
             "pcsx_rearmed_gunconadjustx",
             "pcsx_rearmed_gunconadjusty",
             "pcsx_rearmed_gunconadjustratiox",
@@ -850,6 +941,9 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
    case RETRO_DEVICE_PSE_GUNCON:
       in_type[port] = PSE_PAD_TYPE_GUNCON;
       break;
+   case RETRO_DEVICE_PSE_JUSTIFIER:
+      in_type[port] = PSE_PAD_TYPE_GUN;
+      break;
    case RETRO_DEVICE_NONE:
    default:
       in_type[port] = PSE_PAD_TYPE_NONE;
@@ -977,14 +1071,24 @@ static void save_close(void *file)
 
 bool retro_serialize(void *data, size_t size)
 {
-   int ret = SaveState(data);
+   int ret;
+   CdromFrontendId = disk_current_index;
+   ret = SaveState(data);
    return ret == 0 ? true : false;
 }
 
+static bool disk_set_image_index(unsigned int index);
+
 bool retro_unserialize(const void *data, size_t size)
 {
-   int ret = LoadState(data);
-   return ret == 0 ? true : false;
+   int ret;
+   CdromFrontendId = -1;
+   ret = LoadState(data);
+   if (ret)
+      return false;
+   if (CdromFrontendId != -1 && CdromFrontendId != disk_current_index)
+      disk_set_image_index(CdromFrontendId);
+   return true;
 }
 
 /* cheats */
@@ -1050,7 +1154,6 @@ finish:
 static unsigned int disk_initial_index;
 static char disk_initial_path[PATH_MAX];
 static bool disk_ejected;
-static unsigned int disk_current_index;
 static unsigned int disk_count;
 static struct disks_state
 {
@@ -1410,6 +1513,32 @@ static void set_retro_memmap(void)
 #endif
 }
 
+static void show_notification(const char *msg_str,
+      unsigned duration_ms, unsigned priority)
+{
+   if (msg_interface_version >= 1)
+   {
+      struct retro_message_ext msg = {
+         msg_str,
+         duration_ms,
+         3,
+         RETRO_LOG_WARN,
+         RETRO_MESSAGE_TARGET_ALL,
+         RETRO_MESSAGE_TYPE_NOTIFICATION,
+         -1
+      };
+      environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
+   }
+   else
+   {
+      struct retro_message msg = {
+         msg_str,
+         180
+      };
+      environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
+   }
+}
+
 static void retro_audio_buff_status_cb(
    bool active, unsigned occupancy, bool underrun_likely)
 {
@@ -1499,7 +1628,8 @@ bool retro_load_game(const struct retro_game_info *info)
       { port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_TRIGGER, "Gun Trigger" },                        \
       { port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_RELOAD,  "Gun Reload" },                         \
       { port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_AUX_A,   "Gun Aux A" },                          \
-      { port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_AUX_B,   "Gun Aux B" },
+      { port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_AUX_B,   "Gun Aux B" },                          \
+      { port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_START,   "Gun Start" },
       
       JOYP(0)
       JOYP(1)
@@ -1688,6 +1818,9 @@ bool retro_load_game(const struct retro_game_info *info)
    set_retro_memmap();
    retro_set_audio_buff_status_cb();
 
+   if (check_unsatisfied_libcrypt())
+      show_notification("LibCrypt protected game with missing SBI detected", 3000, 3);
+
    return true;
 }
 
@@ -1743,11 +1876,11 @@ static const unsigned short retro_psx_map[] = {
 };
 #define RETRO_PSX_MAP_LEN (sizeof(retro_psx_map) / sizeof(retro_psx_map[0]))
 
-//Percentage distance of screen to adjust
+//Percentage distance of screen to adjust for Guncon
 static int GunconAdjustX = 0;
 static int GunconAdjustY = 0;
 
-//Used when out by a percentage
+//Used when out by a percentage with Guncon
 static float GunconAdjustRatioX = 1;
 static float GunconAdjustRatioY = 1;
 
@@ -2160,8 +2293,10 @@ static void update_variables(bool in_flight)
    {
       if (strcmp(var.value, "game") == 0)
          pl_rearmed_cbs.screen_centering_type = 1;
-      else if (strcmp(var.value, "manual") == 0)
+      else if (strcmp(var.value, "borderless") == 0)
          pl_rearmed_cbs.screen_centering_type = 2;
+      else if (strcmp(var.value, "manual") == 0)
+         pl_rearmed_cbs.screen_centering_type = 3;
       else // auto
          pl_rearmed_cbs.screen_centering_type = 0;
    }
@@ -2328,8 +2463,58 @@ static void update_variables(bool in_flight)
    }
 #endif // GPU_UNAI
 
+   var.value = NULL;
+   var.key = "pcsx_rearmed_crosshair1";
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "disabled") == 0)
+         in_enable_crosshair[0] = 0;
+      else if (strcmp(var.value, "blue") == 0)
+         in_enable_crosshair[0] = 0x1F;
+      else if (strcmp(var.value, "green") == 0)
+         in_enable_crosshair[0] = 0x7E0;
+      else if (strcmp(var.value, "red") == 0)
+         in_enable_crosshair[0] = 0xF800;
+      else if (strcmp(var.value, "white") == 0)
+         in_enable_crosshair[0] = 0xFFFF;
+   }
+
+   var.value = NULL;
+   var.key = "pcsx_rearmed_crosshair2";
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "disabled") == 0)
+         in_enable_crosshair[1] = 0;
+      else if (strcmp(var.value, "blue") == 0)
+         in_enable_crosshair[1] = 0x1F;
+      else if (strcmp(var.value, "green") == 0)
+         in_enable_crosshair[1] = 0x7E0;
+      else if (strcmp(var.value, "red") == 0)
+         in_enable_crosshair[1] = 0xF800;
+      else if (strcmp(var.value, "white") == 0)
+         in_enable_crosshair[1] = 0xFFFF;
+   }
+
    //This adjustment process gives the user the ability to manually align the mouse up better
    //with where the shots are in the emulator.
+
+   var.value = NULL;
+   var.key = "pcsx_rearmed_konamigunadjustx";
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      KonamiGunAdjustX = atof(var.value) / 100.0f;
+   }
+
+   var.value = NULL;
+   var.key = "pcsx_rearmed_konamigunadjusty";
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      KonamiGunAdjustY = atof(var.value) / 100.0f;
+   }
 
    var.value = NULL;
    var.key = "pcsx_rearmed_gunconadjustx";
@@ -2466,7 +2651,6 @@ unsigned char axis_range_modifier(int16_t axis_value, bool is_square)
 static void update_input_guncon(int port, int ret)
 {
    //ToDo:
-   //Core option for cursors for both players
    //Separate pointer and lightgun control types
 
    //Mouse range is -32767 -> 32767
@@ -2502,6 +2686,29 @@ static void update_input_guncon(int port, int ret)
    // B
    if (input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_AUX_B))
       in_keystate[port] |= (1 << DKEY_CROSS);
+	   
+}
+
+static void update_input_justifier(int port, int ret)
+{
+   //ToDo:
+   //Separate pointer and lightgun control types
+
+   //RetroArch lightgun range is -32767 -> 32767 on both axes (positive Y is down)
+
+   //JUSTIFIER has 3 controls, Trigger,Special,Start which equal Square,Cross,Start
+
+   // Trigger
+   if (input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_TRIGGER) || input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_RELOAD))
+      in_keystate[port] |= (1 << DKEY_SQUARE);
+
+   // Special
+   if (input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_AUX_A))
+      in_keystate[port] |= (1 << DKEY_CROSS);
+
+   // Start
+   if (input_state_cb(port, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_START))
+      in_keystate[port] |= (1 << DKEY_START);
 	   
 }
 
@@ -2672,6 +2879,9 @@ static void update_input(void)
       {
       case PSE_PAD_TYPE_GUNCON:
          update_input_guncon(i, ret);
+         break;
+      case PSE_PAD_TYPE_GUN:
+         update_input_justifier(i, ret);
          break;
       case PSE_PAD_TYPE_NEGCON:
          update_input_negcon(i, ret);
@@ -3013,38 +3223,21 @@ static void loadPSXBios(void)
    if (!found_bios)
    {
       const char *msg_str;
+      unsigned duration;
       if (useHLE)
       {
-         msg_str = "BIOS set to \'hle\' in core options - real BIOS will be ignored";
+         msg_str = "BIOS set to \'hle\'";
          SysPrintf("Using HLE BIOS.\n");
+         // shorter as the user probably intentionally wants to use HLE
+         duration = 700;
       }
       else
       {
          msg_str = "No PlayStation BIOS file found - add for better compatibility";
          SysPrintf("No BIOS files found.\n");
+         duration = 3000;
       }
-
-      if (msg_interface_version >= 1)
-      {
-         struct retro_message_ext msg = {
-            msg_str,
-            3000,
-            3,
-            RETRO_LOG_WARN,
-            RETRO_MESSAGE_TARGET_ALL,
-            RETRO_MESSAGE_TYPE_NOTIFICATION,
-            -1
-         };
-         environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
-      }
-      else
-      {
-         struct retro_message msg = {
-            msg_str,
-            180
-         };
-         environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
-      }
+      show_notification(msg_str, duration, 2);
    }
 }
 

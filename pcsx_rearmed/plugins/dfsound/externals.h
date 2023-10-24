@@ -190,7 +190,7 @@ typedef union
   union {
    struct {
     int pos;
-    signed short val[4];
+    int val[4];
    } gauss;
    int simple[5]; // 28-32
   } interp;
@@ -204,11 +204,6 @@ typedef struct
  unsigned short  spuStat;
 
  unsigned int    spuAddr;
- union {
-  unsigned char  *spuMemC;
-  unsigned short *spuMem;
- };
- unsigned char * pSpuIrq;
 
  unsigned int    cycles_played;
  unsigned int    cycles_dma_end;
@@ -224,11 +219,30 @@ typedef struct
  unsigned int    dwChannelsAudible;    // not silent channels
  unsigned int    dwChannelDead;        // silent+not useful channels
 
+ unsigned int    XARepeat;
+ unsigned int    XALastVal;
+
+ int             iLeftXAVol;
+ int             iRightXAVol;
+
+ unsigned int    last_keyon_cycles;
+
+ union {
+  unsigned char  *spuMemC;
+  unsigned short *spuMem;
+ };
+ unsigned char * pSpuIrq;
+
  unsigned char * pSpuBuffer;
  short         * pS;
 
- void (CALLBACK *irqCallback)(void);   // func of main emu, called on spu irq
- void (CALLBACK *cddavCallback)(short, short);
+ SPUCHAN       * s_chan;
+ REVERBInfo    * rvb;
+
+ int           * SSumLR;
+
+ void (CALLBACK *irqCallback)(int);
+ //void (CALLBACK *cddavCallback)(short, short);
  void (CALLBACK *scheduleCallback)(unsigned int);
 
  const xa_decode_t * xapGlobal;
@@ -241,19 +255,6 @@ typedef struct
  unsigned int  * CDDAPlay;
  unsigned int  * CDDAStart;
  unsigned int  * CDDAEnd;
-
- unsigned int    XARepeat;
- unsigned int    XALastVal;
-
- int             iLeftXAVol;
- int             iRightXAVol;
-
- SPUCHAN       * s_chan;
- REVERBInfo    * rvb;
-
- // buffers
- void          * unused;
- int           * SSumLR;
 
  unsigned short  regArea[0x400];
 

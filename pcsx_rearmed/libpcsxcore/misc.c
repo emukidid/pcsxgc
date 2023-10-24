@@ -35,6 +35,7 @@
 
 char CdromId[10] = "";
 char CdromLabel[33] = "";
+int  CdromFrontendId; // for frontend use
 
 // PSX Executable types
 #define PSX_EXE     1
@@ -640,7 +641,21 @@ static const char PcsxHeader[32] = "STv4 PCSX v" PCSX_VERSION;
 // If you make changes to the savestate version, please increment the value below.
 static const u32 SaveVersion = 0x8b410006;
 
+#define MISC_MAGIC 0x4353494d
+struct misc_save_data {
+	u32 magic;
+	u32 gteBusyCycle;
+	u32 muldivBusyCycle;
+	u32 biuReg;
+	u32 biosBranchCheck;
+	u32 gpuIdleAfter;
+	u32 gpuSr;
+	u32 frame_counter;
+	int CdromFrontendId;
+};
+
 int SaveState(const char *file) {
+	struct misc_save_data *misc = (void *)(psxH + 0xf000);
 	void *f;
 	GPUFreeze_t *gpufP = NULL;
 	SPUFreezeHdr_t spufH;
@@ -648,6 +663,19 @@ int SaveState(const char *file) {
 	unsigned char *pMem = NULL;
 	int result = -1;
 	int Size;
+
+	assert(!psxRegs.branching);
+	assert(!psxRegs.cpuInRecursion);
+	assert(!misc->magic);
+	misc->magic = MISC_MAGIC;
+	misc->gteBusyCycle = psxRegs.gteBusyCycle;
+	misc->muldivBusyCycle = psxRegs.muldivBusyCycle;
+	misc->biuReg = psxRegs.biuReg;
+	misc->biosBranchCheck = psxRegs.biosBranchCheck;
+	misc->gpuIdleAfter = psxRegs.gpuIdleAfter;
+	misc->gpuSr = HW_GPU_STATUS;
+	misc->frame_counter = frame_counter;
+	misc->CdromFrontendId = CdromFrontendId;
 
 	f = SaveFuncs.open(file, "wb");
 	if (f == NULL) return -1;
@@ -700,11 +728,13 @@ int SaveState(const char *file) {
 
 	result = 0;
 cleanup:
+	memset(misc, 0, sizeof(*misc));
 	SaveFuncs.close(f);
 	return result;
 }
 
 int LoadState(const char *file) {
+	struct misc_save_data *misc = (void *)(psxH + 0xf000);
 	u32 biosBranchCheckOld = psxRegs.biosBranchCheck;
 	void *f;
 	GPUFreeze_t *gpufP = NULL;
@@ -738,6 +768,18 @@ int LoadState(const char *file) {
 	SaveFuncs.read(f, &psxRegs, offsetof(psxRegisters, gteBusyCycle));
 	psxRegs.gteBusyCycle = psxRegs.cycle;
 	psxRegs.biosBranchCheck = ~0;
+	psxRegs.gpuIdleAfter = psxRegs.cycle - 1;
+	HW_GPU_STATUS &= SWAP32(~PSXGPU_nBUSY);
+	if (misc->magic == MISC_MAGIC) {
+		psxRegs.gteBusyCycle = misc->gteBusyCycle;
+		psxRegs.muldivBusyCycle = misc->muldivBusyCycle;
+		psxRegs.biuReg = misc->biuReg;
+		psxRegs.biosBranchCheck = misc->biosBranchCheck;
+		psxRegs.gpuIdleAfter = misc->gpuIdleAfter;
+		HW_GPU_STATUS = misc->gpuSr;
+		frame_counter = misc->frame_counter;
+		CdromFrontendId = misc->CdromFrontendId;
+	}
 
 	psxCpu->Notify(R3000ACPU_NOTIFY_AFTER_LOAD, NULL);
 
@@ -750,8 +792,7 @@ int LoadState(const char *file) {
 	SaveFuncs.read(f, gpufP, sizeof(GPUFreeze_t));
 	GPU_freeze(0, gpufP);
 	free(gpufP);
-	if (HW_GPU_STATUS == 0)
-		HW_GPU_STATUS = SWAP32(GPU_readStatus());
+	gpuSyncPluginSR();
 
 	// spu
 	SaveFuncs.read(f, &Size, 4);
@@ -769,11 +810,13 @@ int LoadState(const char *file) {
 	new_dyna_freeze(f, 0);
 	padFreeze(f, 0);
 
+	events_restore();
 	if (Config.HLE)
 		psxBiosCheckExe(biosBranchCheckOld, 0x60, 1);
 
 	result = 0;
 cleanup:
+	memset(misc, 0, sizeof(*misc));
 	SaveFuncs.close(f);
 	return result;
 }
