@@ -8,7 +8,7 @@
 // 10 = red
 // 11 = transparent
 
-static inline unsigned char cFont[10][120]=
+static unsigned char cFont[10][120]=
 {
 // 0
 {0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,

@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include <zlib.h>
 #include <libpcsxcore/misc.h>
 #include <libpcsxcore/psxcommon.h>
@@ -279,7 +280,7 @@ void SignalExit(int sig) {
 	OnFile_Exit();
 }
 
-void SPUirq(void);
+void SPUirq(int);
 
 #define PARSEPATH(dst, src) \
 	ptr = src + strlen(src); \

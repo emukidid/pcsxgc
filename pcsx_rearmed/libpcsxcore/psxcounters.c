@@ -22,6 +22,7 @@
  */
 
 #include "psxcounters.h"
+#include "psxevents.h"
 #include "gpu.h"
 //#include "debug.h"
 #define DebugVSync()
@@ -232,8 +233,7 @@ void psxRcntSet()
         }
     }
 
-    psxRegs.interrupt |= (1 << PSXINT_RCNT);
-    new_dyna_set_event(PSXINT_RCNT, psxNextCounter);
+    set_event(PSXINT_RCNT, psxNextCounter);
 }
 
 /******************************************************************************/
@@ -397,6 +397,8 @@ void psxRcntUpdate()
             }
             HW_GPU_STATUS = SWAP32(status);
             GPU_vBlank(0, field);
+            if ((s32)(psxRegs.gpuIdleAfter - psxRegs.cycle) < 0)
+                psxRegs.gpuIdleAfter = psxRegs.cycle - 1; // prevent overflow
 
             if ((rcnts[0].mode & 7) == (RcSyncModeEnable | Rc01UnblankReset) ||
                 (rcnts[0].mode & 7) == (RcSyncModeEnable | Rc01UnblankReset2))
@@ -561,6 +563,7 @@ void psxRcntInit()
 s32 psxRcntFreeze( void *f, s32 Mode )
 {
     u32 spuSyncCount = 0;
+    u32 count;
     s32 i;
 
     gzfreeze( &rcnts, sizeof(Rcnt) * CounterQuantity );
@@ -573,7 +576,12 @@ s32 psxRcntFreeze( void *f, s32 Mode )
     {
         rcnts[3].rate = 1;
         for( i = 0; i < CounterQuantity - 1; ++i )
+        {
             _psxRcntWmode( i, rcnts[i].mode );
+            count = (psxRegs.cycle - rcnts[i].cycleStart) / rcnts[i].rate;
+            if (count > 0x1000)
+                _psxRcntWcount( i, count & 0xffff );
+        }
         scheduleRcntBase();
         psxRcntSet();
     }

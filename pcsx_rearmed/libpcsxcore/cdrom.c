@@ -26,6 +26,7 @@
 #include "misc.h"
 #include "ppf.h"
 #include "psxdma.h"
+#include "psxevents.h"
 #include "arm_features.h"
 
 /* logging */
@@ -67,7 +68,8 @@ static struct {
 	} subq;
 	unsigned char TrackChanged;
 	unsigned char ReportDelay;
-	unsigned char unused3[2];
+	unsigned char unused3;
+	unsigned short sectorsRead;
 	unsigned int  freeze_ver;
 
 	unsigned char Prev[4];
@@ -104,7 +106,7 @@ static struct {
 	u16 CmdInProgress;
 	u8 Irq1Pending;
 	u8 unused5;
-	u32 LastReadCycles;
+	u32 LastReadSeekCycles;
 
 	u8 unused7;
 
@@ -241,14 +243,6 @@ static void sec2msf(unsigned int s, u8 *msf) {
 	msf[2] = s;
 }
 
-// cdrInterrupt
-#define CDR_INT(eCycle) { \
-	psxRegs.interrupt |= (1 << PSXINT_CDR); \
-	psxRegs.intCycle[PSXINT_CDR].cycle = eCycle; \
-	psxRegs.intCycle[PSXINT_CDR].sCycle = psxRegs.cycle; \
-	new_dyna_set_event(PSXINT_CDR, eCycle); \
-}
-
 // cdrPlayReadInterrupt
 #define CDRPLAYREAD_INT(eCycle, isFirst) { \
 	u32 e_ = eCycle; \
@@ -258,15 +252,7 @@ static void sec2msf(unsigned int s, u8 *msf) {
 	else \
 		psxRegs.intCycle[PSXINT_CDREAD].sCycle += psxRegs.intCycle[PSXINT_CDREAD].cycle; \
 	psxRegs.intCycle[PSXINT_CDREAD].cycle = e_; \
-	new_dyna_set_event_abs(PSXINT_CDREAD, psxRegs.intCycle[PSXINT_CDREAD].sCycle + e_); \
-}
-
-// cdrLidSeekInterrupt
-#define CDRLID_INT(eCycle) { \
-	psxRegs.interrupt |= (1 << PSXINT_CDRLID); \
-	psxRegs.intCycle[PSXINT_CDRLID].cycle = eCycle; \
-	psxRegs.intCycle[PSXINT_CDRLID].sCycle = psxRegs.cycle; \
-	new_dyna_set_event(PSXINT_CDRLID, eCycle); \
+	set_event_raw_abs(PSXINT_CDREAD, psxRegs.intCycle[PSXINT_CDREAD].sCycle + e_); \
 }
 
 #define StopReading() { \
@@ -330,7 +316,7 @@ void cdrLidSeekInterrupt(void)
 		{
 			memset(cdr.Prev, 0xff, sizeof(cdr.Prev));
 			cdr.DriveState = DRIVESTATE_LID_OPEN;
-			CDRLID_INT(0x800);
+			set_event(PSXINT_CDRLID, 0x800);
 		}
 		break;
 
@@ -346,7 +332,7 @@ void cdrLidSeekInterrupt(void)
 			// only sometimes does that
 			// (not done when lots of commands are sent?)
 
-			CDRLID_INT(cdReadTime * 30);
+			set_event(PSXINT_CDRLID, cdReadTime * 30);
 			break;
 		}
 		else if (cdr.StatP & STATUS_ROTATING) {
@@ -360,12 +346,12 @@ void cdrLidSeekInterrupt(void)
 			// and is only cleared by CdlNop
 
 			cdr.DriveState = DRIVESTATE_RESCAN_CD;
-			CDRLID_INT(cdReadTime * 105);
+			set_event(PSXINT_CDRLID, cdReadTime * 105);
 			break;
 		}
 
 		// recheck for close
-		CDRLID_INT(cdReadTime * 3);
+		set_event(PSXINT_CDRLID, cdReadTime * 3);
 		break;
 
 	case DRIVESTATE_RESCAN_CD:
@@ -374,7 +360,7 @@ void cdrLidSeekInterrupt(void)
 
 		// this is very long on real hardware, over 6 seconds
 		// make it a bit faster here...
-		CDRLID_INT(cdReadTime * 150);
+		set_event(PSXINT_CDRLID, cdReadTime * 150);
 		break;
 
 	case DRIVESTATE_PREPARE_CD:
@@ -384,7 +370,7 @@ void cdrLidSeekInterrupt(void)
 		}
 		else {
 			SetPlaySeekRead(cdr.StatP, STATUS_SEEK);
-			CDRLID_INT(cdReadTime * 26);
+			set_event(PSXINT_CDRLID, cdReadTime * 26);
 		}
 		break;
 	}
@@ -476,12 +462,13 @@ static int ReadTrack(const u8 *time)
 static void UpdateSubq(const u8 *time)
 {
 	const struct SubQ *subq;
+	int s = MSF2SECT(time[0], time[1], time[2]);
 	u16 crc;
 
-	if (CheckSBI(time))
+	if (CheckSBI(s))
 		return;
 
-	subq = (struct SubQ *)CDR_getBufferSub(MSF2SECT(time[0], time[1], time[2]));
+	subq = (struct SubQ *)CDR_getBufferSub(s);
 	if (subq != NULL && cdr.CurTrack == 1) {
 		crc = calcCrc((u8 *)subq + 12, 10);
 		if (crc == (((u16)subq->CRC[0] << 8) | subq->CRC[1])) {
@@ -569,16 +556,15 @@ static void cdrPlayInterrupt_Autopause()
 		cdr.ReportDelay--;
 }
 
-// LastReadCycles
 static int cdrSeekTime(unsigned char *target)
 {
 	int diff = msf2sec(cdr.SetSectorPlay) - msf2sec(target);
-	int pausePenalty, seekTime = abs(diff) * (cdReadTime / 2000);
+	int seekTime = abs(diff) * (cdReadTime / 2000);
 	seekTime = MAX_VALUE(seekTime, 20000);
 
 	// need this stupidly long penalty or else Spyro2 intro desyncs
-	pausePenalty = (s32)(psxRegs.cycle - cdr.LastReadCycles) > cdReadTime * 4 ? cdReadTime * 25 : 0;
-	seekTime += pausePenalty;
+	if ((s32)(psxRegs.cycle - cdr.LastReadSeekCycles) > cdReadTime * 8)
+		seekTime += cdReadTime * 25;
 
 	seekTime = MIN_VALUE(seekTime, PSXCLK * 2 / 3);
 	CDR_LOG("seek: %.2f %.2f\n", (float)seekTime / PSXCLK, (float)seekTime / cdReadTime);
@@ -631,9 +617,23 @@ static void msfiAdd(u8 *msfi, u32 count)
 	}
 }
 
+static void msfiSub(u8 *msfi, u32 count)
+{
+	assert(count < 75);
+	msfi[2] -= count;
+	if ((s8)msfi[2] < 0) {
+		msfi[2] += 75;
+		msfi[1]--;
+		if ((s8)msfi[1] < 0) {
+			msfi[1] = 60;
+			msfi[0]--;
+		}
+	}
+}
+
 void cdrPlayReadInterrupt(void)
 {
-	cdr.LastReadCycles = psxRegs.cycle;
+	cdr.LastReadSeekCycles = psxRegs.cycle;
 
 	if (cdr.Reading) {
 		cdrReadInterrupt();
@@ -825,6 +825,7 @@ void cdrInterrupt(void) {
 			cdr.TrackChanged = FALSE;
 			cdr.FirstSector = 1;
 			cdr.ReportDelay = 60;
+			cdr.sectorsRead = 0;
 
 			if (!Config.Cdda)
 				CDR_play(cdr.SetSectorPlay);
@@ -898,6 +899,12 @@ void cdrInterrupt(void) {
 		case CdlPause:
 			StopCdda();
 			StopReading();
+
+			// how the drive maintains the position while paused is quite
+			// complicated, this is the minimum to make "Bedlam" happy
+			msfiSub(cdr.SetSectorPlay, MIN_VALUE(cdr.sectorsRead, 4));
+			cdr.sectorsRead = 0;
+
 			/*
 			Gundam Battle Assault 2: much slower (*)
 			- Fixes boot, gameplay
@@ -1064,6 +1071,7 @@ void cdrInterrupt(void) {
 				memcpy(cdr.LocL, buf, 8);
 			UpdateSubq(cdr.SetSectorPlay);
 			cdr.TrackChanged = FALSE;
+			cdr.LastReadSeekCycles = psxRegs.cycle;
 			break;
 
 		case CdlTest:
@@ -1120,7 +1128,7 @@ void cdrInterrupt(void) {
 			// yes, it really sets STATUS_SHELLOPEN
 			cdr.StatP |= STATUS_SHELLOPEN;
 			cdr.DriveState = DRIVESTATE_RESCAN_CD;
-			CDRLID_INT(20480);
+			set_event(PSXINT_CDRLID, 20480);
 			start_rotating = 1;
 			break;
 
@@ -1165,6 +1173,7 @@ void cdrInterrupt(void) {
 			UpdateSubq(cdr.SetSectorPlay);
 			cdr.LocL[0] = LOCL_INVALID;
 			cdr.SubqForwardSectors = 1;
+			cdr.sectorsRead = 0;
 
 			cycles = (cdr.Mode & MODE_SPEED) ? cdReadTime : cdReadTime * 2;
 			cycles += seekTime;
@@ -1197,7 +1206,7 @@ void cdrInterrupt(void) {
 
 	if (second_resp_time) {
 		cdr.CmdInProgress = Cmd | 0x100;
-		CDR_INT(second_resp_time);
+		set_event(PSXINT_CDR, second_resp_time);
 	}
 	else if (cdr.Cmd && cdr.Cmd != (Cmd & 0xff)) {
 		cdr.CmdInProgress = cdr.Cmd;
@@ -1287,7 +1296,8 @@ static void cdrUpdateTransferBuf(const u8 *buf)
 		return;
 	memcpy(cdr.Transfer, buf, DATA_SIZE);
 	CheckPPFCache(cdr.Transfer, cdr.Prev[0], cdr.Prev[1], cdr.Prev[2]);
-	CDR_LOG("cdr.Transfer %x:%x:%x\n", cdr.Transfer[0], cdr.Transfer[1], cdr.Transfer[2]);
+	CDR_LOG("cdr.Transfer  %02x:%02x:%02x\n",
+		cdr.Transfer[0], cdr.Transfer[1], cdr.Transfer[2]);
 	if (cdr.FifoOffset < 2048 + 12)
 		CDR_LOG("FifoOffset(1) %d/%d\n", cdr.FifoOffset, cdr.FifoSize);
 }
@@ -1309,6 +1319,7 @@ static void cdrReadInterrupt(void)
 
 	// note: CdlGetlocL should work as soon as STATUS_READ is indicated
 	SetPlaySeekRead(cdr.StatP, STATUS_READ | STATUS_ROTATING);
+	cdr.sectorsRead++;
 
 	read_ok = ReadTrack(cdr.SetSectorPlay);
 	if (read_ok)
@@ -1444,7 +1455,7 @@ void cdrWrite1(unsigned char rt) {
 	if (!cdr.CmdInProgress) {
 		cdr.CmdInProgress = rt;
 		// should be something like 12k + controller delays
-		CDR_INT(5000);
+		set_event(PSXINT_CDR, 5000);
 	}
 	else {
 		CDR_LOG_I("cmd while busy: %02x, prev %02x, busy %02x\n",
@@ -1525,7 +1536,7 @@ void cdrWrite3(unsigned char rt) {
 					c = 2048 - (psxRegs.cycle - nextCycle);
 					c = MAX_VALUE(c, 512);
 				}
-				CDR_INT(c);
+				set_event(PSXINT_CDR, c);
 			}
 		}
 		cdr.Stat &= ~rt;
@@ -1615,7 +1626,7 @@ void psxDma3(u32 madr, u32 bcr, u32 chcr) {
 			}
 			psxCpu->Clear(madr, cdsize / 4);
 
-			CDRDMA_INT((cdsize/4) * 24);
+			set_event(PSXINT_CDRDMA, (cdsize / 4) * 24);
 
 			HW_DMA3_CHCR &= SWAPu32(~0x10000000);
 			if (chcr & 0x100) {
