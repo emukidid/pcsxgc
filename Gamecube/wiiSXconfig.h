@@ -32,16 +32,11 @@ enum audioEnabled
 	AUDIO_ENABLE
 };
 
-enum ConfigXa //Config.Xa
+extern char reverb;
+enum ConfigReverb
 {
-	XA_ENABLE=0,
-	XA_DISABLE
-};
-
-enum ConfigCdda //Config.Cdda
-{
-	CDDA_ENABLE=0,
-	CDDA_DISABLE
+	REVERB_DISABLE=0,
+	REVERB_ENABLE
 };
 
 extern char volume;
