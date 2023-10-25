@@ -88,6 +88,7 @@ char frameLimit;
 char frameSkip;
 extern char audioEnabled;
 char volume;
+char reverb;
 char showFPSonScreen;
 char printToScreen;
 char menuActive;
@@ -131,6 +132,7 @@ static struct {
 } OPTIONS[] =
 { { "Audio", &audioEnabled, AUDIO_DISABLE, AUDIO_ENABLE },
   { "Volume", &volume, VOLUME_LOUDEST, VOLUME_LOW },
+  { "Reverb", &reverb, REVERB_DISABLE, REVERB_ENABLE },
   { "FPS", &showFPSonScreen, FPS_HIDE, FPS_SHOW },
 //  { "Debug", &printToScreen, DEBUG_HIDE, DEBUG_SHOW },
   { "ScreenMode", &screenMode, SCREENMODE_4x3, SCREENMODE_16x9_PILLARBOX },
@@ -169,6 +171,7 @@ void loadSettings(int argc, char *argv[])
 	// Default Settings
 	audioEnabled     = 1; // Audio
 	volume           = VOLUME_MEDIUM;
+	reverb			 = REVERB_ENABLE;
 #ifdef RELEASE
 	showFPSonScreen  = 0; // Don't show FPS on Screen
 #else
@@ -201,15 +204,12 @@ void loadSettings(int argc, char *argv[])
 
 	//PCSX-specific defaults
 	memset(&Config, 0, sizeof(PcsxConfig));
-	Config.Cpu=dynacore;		//Dynarec core
 	strcpy(Config.Net,"Disabled");
 	Config.PsxOut = 1;
 	Config.HLE = 1;
 	Config.Xa = 0;  //XA enabled
 	Config.Cdda = 0; //CDDA enabled
-	spu_config.iVolume = 1024 - (volume * 192); //Volume="medium" in PEOPSspu
 	spu_config.iUseThread = 0;	// Don't enable, broken on GC/Wii
-	spu_config.iUseReverb = 1;
 	spu_config.iUseInterpolation = 1;
 	spu_config.iXAPitch = 0;
 	spu_config.iTempo = 0;
@@ -228,8 +228,40 @@ void loadSettings(int argc, char *argv[])
 	//config stuff
 	fileBrowser_file* configFile_file;
 	int (*configFile_init)(fileBrowser_file*) = fileBrowser_libfat_init;
+	// Try SD always first.
+	configFile_file = &saveDir_libfat_Default;
+	if(configFile_init(configFile_file)) {                //only if device initialized ok
+		FILE* f = fopen( "sd:/wiisx/settings.cfg", "r" );  //attempt to open file
+		if(f) {        //open ok, read it
+			readConfig(f);
+			fclose(f);
+		}
+		f = fopen( "sd:/wiisx/controlG.cfg", "r" );  //attempt to open file
+		if(f) {
+			load_configurations(f, &controller_GC);					//read in GC controller mappings
+			fclose(f);
+		}
 #ifdef HW_RVL
-	if(argv[0][0] == 'u') {  //assume USB
+		f = fopen( "sd:/wiisx/controlC.cfg", "r" );  //attempt to open file
+		if(f) {
+			load_configurations(f, &controller_Classic);			//read in Classic controller mappings
+			fclose(f);
+		}
+		f = fopen( "sd:/wiisx/controlN.cfg", "r" );  //attempt to open file
+		if(f) {
+			load_configurations(f, &controller_WiimoteNunchuk);		//read in WM+NC controller mappings
+			fclose(f);
+		}
+		f = fopen( "sd:/wiisx/controlW.cfg", "r" );  //attempt to open file
+		if(f) {
+			load_configurations(f, &controller_Wiimote);			//read in Wiimote controller mappings
+			fclose(f);
+		}
+#endif //HW_RVL
+	}
+#ifdef HW_RVL
+	// On Wii, try USB if SD failed.
+	else {
 		configFile_file = &saveDir_libfat_USB;
 		if(configFile_init(configFile_file)) {                //only if device initialized ok
 			FILE* f = fopen( "usb:/wiisx/settings.cfg", "r" );  //attempt to open file
@@ -242,7 +274,6 @@ void loadSettings(int argc, char *argv[])
 				load_configurations(f, &controller_GC);					//read in GC controller mappings
 				fclose(f);
 			}
-#ifdef HW_RVL
 			f = fopen( "usb:/wiisx/controlC.cfg", "r" );  //attempt to open file
 			if(f) {
 				load_configurations(f, &controller_Classic);			//read in Classic controller mappings
@@ -258,43 +289,9 @@ void loadSettings(int argc, char *argv[])
 				load_configurations(f, &controller_Wiimote);			//read in Wiimote controller mappings
 				fclose(f);
 			}
-#endif //HW_RVL
 		}
 	}
-	else /*if((argv[0][0]=='s') || (argv[0][0]=='/'))*/
-#endif //HW_RVL
-	{ //assume SD
-		configFile_file = &saveDir_libfat_Default;
-		if(configFile_init(configFile_file)) {                //only if device initialized ok
-			FILE* f = fopen( "sd:/wiisx/settings.cfg", "r" );  //attempt to open file
-			if(f) {        //open ok, read it
-				readConfig(f);
-				fclose(f);
-			}
-			f = fopen( "sd:/wiisx/controlG.cfg", "r" );  //attempt to open file
-			if(f) {
-				load_configurations(f, &controller_GC);					//read in GC controller mappings
-				fclose(f);
-			}
-#ifdef HW_RVL
-			f = fopen( "sd:/wiisx/controlC.cfg", "r" );  //attempt to open file
-			if(f) {
-				load_configurations(f, &controller_Classic);			//read in Classic controller mappings
-				fclose(f);
-			}
-			f = fopen( "sd:/wiisx/controlN.cfg", "r" );  //attempt to open file
-			if(f) {
-				load_configurations(f, &controller_WiimoteNunchuk);		//read in WM+NC controller mappings
-				fclose(f);
-			}
-			f = fopen( "sd:/wiisx/controlW.cfg", "r" );  //attempt to open file
-			if(f) {
-				load_configurations(f, &controller_Wiimote);			//read in Wiimote controller mappings
-				fclose(f);
-			}
-#endif //HW_RVL
-		}
-	}
+#endif
 #ifdef HW_RVL
 	// Handle options passed in through arguments
 	int i;
@@ -316,6 +313,10 @@ void loadSettings(int argc, char *argv[])
 
 	//Synch settings with Config
 	Config.Cpu=dynacore;
+	Config.SlowBoot = LoadCdBios;
+	spu_config.iVolume = 1024 - (volume * 192); //Volume="medium" in PEOPSspu
+	spu_config.iUseReverb = reverb;
+
 }
 
 void ScanPADSandReset(u32 dummy) 
@@ -590,6 +591,8 @@ int SysInit() {
 		strcat(biosFile->name, "/SCPH1001.BIN");
 		biosFile_init(biosFile);  //initialize the bios device (it might not be the same as ISO device)
 		Config.HLE = 0;
+		strcpy(Config.BiosDir, &biosFile_dir->name[0]);
+		strcpy(Config.Bios, "/SCPH1001.BIN");
 	} else {
 		Config.HLE = 1;
 	}

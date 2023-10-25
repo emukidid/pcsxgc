@@ -39,6 +39,7 @@ extern "C" {
 }
 
 extern void Func_SetPlayGame();
+extern int loadISO(fileBrowser_file* file);
 
 void Func_TabGeneral();
 void Func_TabVideo();
@@ -70,8 +71,6 @@ void Func_ScreenForce16_9();
 void Func_DitheringNone();
 void Func_DitheringDefault();
 void Func_DitheringAlways();
-void Func_ScalingNone();
-void Func_Scaling2xSai();
 
 void Func_ConfigureInput();
 void Func_ConfigureButtons();
@@ -86,20 +85,15 @@ void Func_ToggleButtonLoad();
 
 void Func_DisableAudioYes();
 void Func_DisableAudioNo();
-void Func_DisableXaYes();
-void Func_DisableXaNo();
-void Func_DisableCddaYes();
-void Func_DisableCddaNo();
 void Func_DisableReverbYes();
 void Func_DisableReverbNo();
-void Func_VolumeToggle();
+void Func_VolumeLoudest();
+void Func_VolumeLoud();
+void Func_VolumeMedium();
+void Func_VolumeLow();
 
 void Func_MemcardSaveSD();
 void Func_MemcardSaveUSB();
-void Func_MemcardSaveCardA();
-void Func_MemcardSaveCardB();
-void Func_AutoSaveYes();
-void Func_AutoSaveNo();
 void Func_SaveStateSD();
 void Func_SaveStateUSB();
 
@@ -114,18 +108,20 @@ void SysReset();
 int SysInit();
 void SysClose();
 void SysStartCPU();
+void SetIsoFile(const char *filename);
 void CheckCdrom();
 void LoadCdrom();
 void pauseAudio(void);  void pauseInput(void);
 void resumeAudio(void); void resumeInput(void);
 }
 
-#define NUM_FRAME_BUTTONS 57
 #define NUM_TAB_BUTTONS 5
-#define FRAME_BUTTONS settingsFrameButtons
-#define FRAME_STRINGS settingsFrameStrings
-#define NUM_FRAME_TEXTBOXES 22
-#define FRAME_TEXTBOXES settingsFrameTextBoxes
+#define NUM_FRAME_TEXTBOXES 20
+#define TAB_Y_POS 30
+#define TAB_Y_LABEL_PAD 28.0
+#define TAB_Y_ENTRY_START 100
+#define TAB_Y_ENTRY_INC 70
+#define BTN_HEIGHT 56
 
 /*
 General Tab:
@@ -140,249 +136,440 @@ Show FPS: Yes; No
 Limit FPS: Auto; Off; xxx
 Frame Skip: On; Off
 Screen Mode: 4:3; 16:9
-Scaling: None; 2xSaI
 Dithering: None; Game Dependent; Always
 
 Input Tab:
 Assign Controllers (assign player->pad)
 Configure Button Mappings
 PSX Controller Type: Standard/Analog/Gun
-Number of Multitaps: 0, 1, 2
+//Number of Multitaps: 0, 1, 2
 
 Audio Tab:
 Disable Audio: Yes; No
-Disable XA: Yes; No
-Disable CDDA: Yes; No
 Volume Level: ("0: low", "1: medium", "2: loud", "3: loudest")
 	Note: volume=4-ComboBox_GetCurSel(hWC);, so 1 is loudest and 4 is low; default is medium
 Disable Reverb: Yes; No
 
 Saves Tab:
-Memcard Save Device: SD; USB; CardA; CardB
-Auto Save Memcards: Yes; No
+Memcard Save Device: SD; USB
 Save States Device: SD; USB
 */
 
-static char FRAME_STRINGS[58][24] =
-	{ "General",
-	  "Video",
-	  "Input",
-	  "Audio",
-	  "Saves",
-	//Strings for General tab (starting at FRAME_STRINGS[5])
-	  "Select CPU Core",
-	  "Select Bios",
-	  "Boot Through Bios",
-	  "Execute Bios",
-	  "Save settings.cfg",
-	  "Interpreter",
-	  "Dynarec",
-	  "HLE",
-	  "SD",
-	  "USB",
-	  "DVD",
-	  "Yes",
-	  "No",
-	//Strings for Video tab (starting at FRAME_STRINGS[18])..was[])
-	  "Show FPS",
-	  "Limit FPS",
-	  "Frame Skip",
-	  "Screen Mode",
-	  "Dithering",
-	  "Scaling",
-	  "On",
-	  "Off",
-	  "Auto",
-	  "4:3",
-	  "16:9",
-	  "Force 16:9",
-	  "None",
-	  "2xSaI",
-	  "Default",
-	  "Always",
-	//Strings for Input tab (starting at FRAME_STRINGS[34]..was[])
-	  "Configure Input",
-	  "Configure Buttons",
-	  "PSX Controller Type",
-	  "Disable Rumble",
-	  "Standard",
-	  "Analog",
-	  "Save Button Configs",
-	  "Auto Load Slot:",
-	  "Default",
-	//Strings for Audio tab (starting at FRAME_STRINGS[43]) ..was[47]
-	  "Disable Audio",
-	  "Disable XA",
-	  "Disable CDDA",
-	  "Volume",
-	  "loudest",	//volume=1
-	  "loud",
-	  "medium",
-	  "low",		//volume=4
-	//Strings for Saves tab (starting at FRAME_STRINGS[51]) ..was[55]
-	  "Memcard Save Device",
-	  "Auto Save Memcards",
-	  "Save States Device",
-	  "CardA",
-	  "CardB",
-	// New Strings
-	  "Disable Reverb",
-	  "Gun"
-	};
+static char *slotText[5] = {
+	"Default", "Slot 1", "Slot 2", "Slot 3", "Slot 4"
+};
 
+enum BUTTON_IDS {
+	BTN_TAB_GENERAL,
+	BTN_TAB_VIDEO,
+	BTN_TAB_INPUT,
+	BTN_TAB_AUDIO,
+	BTN_TAB_SAVES,
+	
+	BTN_INTERP,
+	BTN_DYNAREC,
+	BTN_HLE,
+	BTN_SD,
+	BTN_USB,
+	BTN_BIOS_YES,
+	BTN_BIOS_NO,
+	BTN_EXEC_BIOS,
+	BTN_SAVE_SETTING_SD,
+	BTN_SAVE_SETTING_USB,
+	
+	BTN_SHOW_FPS_ON,
+	BTN_SHOW_FPS_OFF,
+	BTN_LIMIT_FPS_ON,
+	BTN_LIMIT_FPS_OFF,
+	BTN_FSKIP_ON,
+	BTN_FSKIP_OFF,
+	BTN_SM_4_3,
+	BTN_SM_16_9,
+	BTN_SM_F_16_9,
+	BTN_DITHER_NONE,
+	BTN_DITHER_DEFAULT,
+	BTN_DITHER_ALWAYS,
+	
+	BTN_CONF_INPUT,
+	BTN_CONF_BTN_MAP,
+	BTN_PAD_STANDARD,
+	BTN_PAD_ANALOG,
+	BTN_PAD_GUN,
+	BTN_RUMBLE_YES,
+	BTN_RUMBLE_NO,
+	BTN_SAVE_BTN_MAP_SD,
+	BTN_SAVE_BTN_MAP_USB,
+	BTN_AUTOLOAD_BTN_CONF,
+	
+	BTN_DISABLE_AUDIO_YES,
+	BTN_DISABLE_AUDIO_NO,
+	BTN_DISABLE_REVERB_YES,
+	BTN_DISABLE_REVERB_NO,
+	BTN_VOLUME_LOUDEST,
+	BTN_VOLUME_LOUD,
+	BTN_VOLUME_MEDIUM,
+	BTN_VOLUME_LOW,
+	
+	BTN_MEMCARD_SD,
+	BTN_MEMCARD_USB,
+	BTN_SSTATE_SD,
+	BTN_SSTATE_USB,
+	
+	BTNS_END
+};
 
-struct ButtonInfo
+struct LabelResources
+{
+	int	key;
+	char* def_val;
+} RES_BTN_LBL[BTNS_END] =
+{
+	{BTN_TAB_GENERAL, "General"},
+	{BTN_TAB_VIDEO, "Video"},
+	{BTN_TAB_INPUT, "Input"},
+	{BTN_TAB_AUDIO, "Audio"},
+	{BTN_TAB_SAVES, "Saves"},
+	
+	{BTN_INTERP, "Interpreter"},
+	{BTN_DYNAREC, "Dynarec"},
+	{BTN_HLE, "HLE"},
+	{BTN_SD, "SD"},
+	{BTN_USB, "USB"},
+	{BTN_BIOS_YES, "Yes"},
+	{BTN_BIOS_NO, "No"},
+	{BTN_EXEC_BIOS, "Start"},
+	{BTN_SAVE_SETTING_SD, "SD"},
+	{BTN_SAVE_SETTING_USB, "USB"},
+
+	
+	{BTN_SHOW_FPS_ON, "On"},
+	{BTN_SHOW_FPS_OFF, "Off"},
+	{BTN_LIMIT_FPS_ON, "Auto"},
+	{BTN_LIMIT_FPS_OFF, "Off"},
+	{BTN_FSKIP_ON, "On"},
+	{BTN_FSKIP_OFF, "Off"},
+	{BTN_SM_4_3, "4:3"},
+	{BTN_SM_16_9, "16:9"},
+	{BTN_SM_F_16_9, "Force 16:9"},
+	{BTN_DITHER_NONE, "None"},
+	{BTN_DITHER_DEFAULT, "Default"},
+	{BTN_DITHER_ALWAYS, "Always"},
+	
+	{BTN_CONF_INPUT, "Assign"},
+	{BTN_CONF_BTN_MAP, "Map"},
+	{BTN_PAD_STANDARD, "Standard"},
+	{BTN_PAD_ANALOG, "Analog"},
+	{BTN_PAD_GUN, "Gun"},
+	{BTN_RUMBLE_YES, "Yes"},
+	{BTN_RUMBLE_NO, "No"},
+	{BTN_SAVE_BTN_MAP_SD, "SD"},
+	{BTN_SAVE_BTN_MAP_USB, "USB"},
+	{BTN_AUTOLOAD_BTN_CONF, "N/A"},
+	
+	{BTN_DISABLE_AUDIO_YES, "Yes"},
+	{BTN_DISABLE_AUDIO_NO, "No"},
+	{BTN_DISABLE_REVERB_YES, "Yes"},
+	{BTN_DISABLE_REVERB_NO, "No"},
+	{BTN_VOLUME_LOUDEST, "Loudest"},
+	{BTN_VOLUME_LOUD, "Loud"},
+	{BTN_VOLUME_MEDIUM, "Medium"},
+	{BTN_VOLUME_LOW, "Low"},
+	
+	{BTN_MEMCARD_SD, "SD"},
+	{BTN_MEMCARD_USB, "USB"},
+	{BTN_SSTATE_SD, "SD"},
+	{BTN_SSTATE_USB, "USB"}
+};
+
+enum TAB_IDS {
+	TAB_NONE,
+	TAB_GENERAL,
+	TAB_VIDEO,
+	TAB_INPUT,
+	TAB_AUDIO,
+	TAB_SAVES
+};
+
+enum LABEL_IDS {
+	// Tabs
+	LBL_TAB,
+	// General
+	LBL_GENERAL_CPU,
+	LBL_GENERAL_BIOS,
+	LBL_GENERAL_BOOT_BIOS,
+	LBL_GENERAL_EXEC_BIOS,
+	LBL_GENERAL_SAVE,
+	// Video
+	LBL_VIDEO_FPS_SHOW,
+	LBL_VIDEO_FPS_LIMIT,
+	LBL_VIDEO_FRAMESKIP,
+	LBL_VIDEO_SCREENMODE,
+	LBL_VIDEO_DITHER,
+	// Input
+	LBL_INPUT_CONF_INPUT,
+	LBL_INPUT_CONT_TYPE,
+	LBL_INPUT_RUMBLE,
+	LBL_INPUT_SAVE,
+	LBL_INPUT_AUTOLOAD,
+	// Audio
+	LBL_AUDIO_DISABLE,
+	LBL_AUDIO_REVERB,
+	LBL_AUDIO_VOLUME,
+	// Saves tab
+	LBL_SAVES_NATIVE_LOC,
+	LBL_SAVES_STATE_LOC,
+	LABEL_GROUPS_END
+};
+
+LabelResources RES_LBL[LABEL_GROUPS_END] =
+{
+	{LBL_TAB, "Tab"},
+	// General
+	{LBL_GENERAL_CPU, "Select CPU Core"},
+	{LBL_GENERAL_BIOS, "Select BIOS"},
+	{LBL_GENERAL_BOOT_BIOS, "Boot Through BIOS"},
+	{LBL_GENERAL_EXEC_BIOS, "Execute BIOS"},
+	{LBL_GENERAL_SAVE, "Save settings.cfg"},
+	// Video
+	{LBL_VIDEO_FPS_SHOW, "Show FPS"},
+	{LBL_VIDEO_FPS_LIMIT, "Limit FPS"},
+	{LBL_VIDEO_FRAMESKIP, "Frame Skip"},
+	{LBL_VIDEO_SCREENMODE, "Screen Mode"},
+	{LBL_VIDEO_DITHER, "Dithering"},
+	// Input
+	{LBL_INPUT_CONF_INPUT, "Configure Input"},
+	{LBL_INPUT_CONT_TYPE, "PSX Controller Type"},
+	{LBL_INPUT_RUMBLE, "Disable Rumble"},
+	{LBL_INPUT_SAVE, "Save Button Configs"},
+	{LBL_INPUT_AUTOLOAD, "Auto Load Slot:"},
+	// Audio
+	{LBL_AUDIO_DISABLE, "Disable Audio"},
+	{LBL_AUDIO_REVERB, "Disable Reverb"},
+	{LBL_AUDIO_VOLUME, "Volume"},
+	// Saves tab
+	{LBL_SAVES_NATIVE_LOC, "Memcard Save Device"},
+	{LBL_SAVES_STATE_LOC, "Save States Device"}
+};
+
+struct SettingsButtonInfo
 {
 	menu::Button	*button;
 	int				buttonStyle;
-	char*			buttonString;
 	float			x;
-	float			y;
 	float			width;
-	float			height;
-	int				focusUp;
-	int				focusDown;
-	int				focusLeft;
-	int				focusRight;
+	int				focusUp;	// btnId
+	int				focusDown;	// btnId
+	int				focusLeft;	// btnId
+	int				focusRight;	// btnId
 	ButtonFunc		clickedFunc;
-	ButtonFunc		returnFunc;
-} FRAME_BUTTONS[NUM_FRAME_BUTTONS] =
-{ //	button	buttonStyle buttonString		x		y		width	height	Up	Dwn	Lft	Rt	clickFunc				returnFunc
-	//Buttons for Tabs (starts at button[0])
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[0],	 25.0,	 30.0,	110.0,	56.0,	-1,	-1,	 4,	 1,	Func_TabGeneral,		Func_ReturnFromSettingsFrame }, // General tab
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[1],	155.0,	 30.0,	100.0,	56.0,	-1,	-1,	 0,	 2,	Func_TabVideo,			Func_ReturnFromSettingsFrame }, // Video tab
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[2],	275.0,	 30.0,	100.0,	56.0,	-1,	-1,	 1,	 3,	Func_TabInput,			Func_ReturnFromSettingsFrame }, // Input tab
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[3],	395.0,	 30.0,	100.0,	56.0,	-1,	-1,	 2,	 4,	Func_TabAudio,			Func_ReturnFromSettingsFrame }, // Audio tab
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[4],	515.0,	 30.0,	100.0,	56.0,	-1,	-1,	 3,	 0,	Func_TabSaves,			Func_ReturnFromSettingsFrame }, // Saves tab
-	//Buttons for General Tab (starts at button[5])
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[10],	295.0,	100.0,	160.0,	56.0,	 0,	 7,	 6,	 6,	Func_CpuInterp,			Func_ReturnFromSettingsFrame }, // CPU: Interp
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[11],	465.0,	100.0,	130.0,	56.0,	 0,	 9,	 5,	 5,	Func_CpuDynarec,		Func_ReturnFromSettingsFrame }, // CPU: Dynarec
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[12],	295.0,	170.0,	 70.0,	56.0,	 5,	11,	10,	 8,	Func_BiosSelectHLE,		Func_ReturnFromSettingsFrame }, // Bios: HLE
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[13],	375.0,	170.0,	 55.0,	56.0,	 5,	12,	 7,	 9,	Func_BiosSelectSD,		Func_ReturnFromSettingsFrame }, // Bios: SD
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[14],	440.0,	170.0,	 70.0,	56.0,	 6,	12,	 8,	10,	Func_BiosSelectUSB,		Func_ReturnFromSettingsFrame }, // Bios: USB
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[15],	520.0,	170.0,	 70.0,	56.0,	 6,	12,	 9,	 7,	Func_BiosSelectDVD,		Func_ReturnFromSettingsFrame }, // Bios: DVD
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	295.0,	240.0,	 75.0,	56.0,	 7,	13,	12,	12,	Func_BootBiosYes,		Func_ReturnFromSettingsFrame }, // Boot Thru Bios: Yes
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	380.0,	240.0,	 75.0,	56.0,	 8,	13,	11,	11,	Func_BootBiosNo,		Func_ReturnFromSettingsFrame }, // Boot Thru Bios: No
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[8],	295.0,	310.0,	200.0,	56.0,	11,	14,	-1,	-1,	Func_ExecuteBios,		Func_ReturnFromSettingsFrame }, // Execute Bios
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[13],	295.0,	380.0,	 55.0,	56.0,	13,	 0,	15,	15,	Func_SaveSettingsSD,	Func_ReturnFromSettingsFrame }, // Save Settings: SD
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[14],	360.0,	380.0,	 70.0,	56.0,	13,	 0,	14,	14,	Func_SaveSettingsUSB,	Func_ReturnFromSettingsFrame }, // Save Settings: USB
-	//Buttons for Video Tab (starts at button[16])
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[24],	325.0,	100.0,	 75.0,	56.0,	 1,	18,	17,	17,	Func_ShowFpsOn,			Func_ReturnFromSettingsFrame }, // Show FPS: On
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[25],	420.0,	100.0,	 75.0,	56.0,	 1,	19,	16,	16,	Func_ShowFpsOff,		Func_ReturnFromSettingsFrame }, // Show FPS: Off
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[26],	325.0,	170.0,	 75.0,	56.0,	16,	20,	19,	19,	Func_FpsLimitAuto,		Func_ReturnFromSettingsFrame }, // FPS Limit: Auto
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[25],	420.0,	170.0,	 75.0,	56.0,	17,	21,	18,	18,	Func_FpsLimitOff,		Func_ReturnFromSettingsFrame }, // FPS Limit: Off
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[24],	325.0,	240.0,	 75.0,	56.0,	18,	23,	21,	21,	Func_FrameSkipOn,		Func_ReturnFromSettingsFrame }, // Frame Skip: On
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[25],	420.0,	240.0,	 75.0,	56.0,	19,	24,	20,	20,	Func_FrameSkipOff,		Func_ReturnFromSettingsFrame }, // Frame Skip: Off
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[27],	230.0,	310.0,	 75.0,	56.0,	20,	25,	24,	23,	Func_ScreenMode4_3,		Func_ReturnFromSettingsFrame }, // ScreenMode: 4:3
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[28],	325.0,	310.0,	 75.0,	56.0,	20,	26,	22,	24,	Func_ScreenMode16_9,	Func_ReturnFromSettingsFrame }, // ScreenMode: 16:9
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[29],	420.0,	310.0,	155.0,	56.0,	21,	27,	23,	22,	Func_ScreenForce16_9,	Func_ReturnFromSettingsFrame }, // ScreenMode: Force 16:9
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[30],	230.0,	380.0,	 75.0,	56.0,	22,	 1,	27,	26,	Func_DitheringNone,		Func_ReturnFromSettingsFrame }, // Dithering: None
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[32],	325.0,	380.0,	110.0,	56.0,	23,	 1,	25,	27,	Func_DitheringDefault,	Func_ReturnFromSettingsFrame }, // Dithering: Game Dependent
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[33],	455.0,	380.0,	110.0,	56.0,	24,	 1,	26,	25,	Func_DitheringAlways,	Func_ReturnFromSettingsFrame }, // Dithering: Always
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[30],	325.0,	430.0,	 75.0,	56.0,	-1,	-1,	29,	29,	Func_ScalingNone,		Func_ReturnFromSettingsFrame }, // Scaling: None
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[31],	420.0,	430.0,	 75.0,	56.0,	-1,	-1,	28,	28,	Func_Scaling2xSai,		Func_ReturnFromSettingsFrame }, // Scaling: 2xSai
-	//Buttons for Input Tab (starts at button[30])
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[34],	 90.0,	100.0,	220.0,	56.0,	 2,	32,	31,	31,	Func_ConfigureInput,	Func_ReturnFromSettingsFrame }, // Configure Input Assignment
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[35],	325.0,	100.0,	235.0,	56.0,	 2,	32,	30,	30,	Func_ConfigureButtons,	Func_ReturnFromSettingsFrame }, // Configure Button Mappings
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[38],	285.0,	170.0,	130.0,	56.0,	30,	34,	56,	33,	Func_PsxTypeStandard,	Func_ReturnFromSettingsFrame }, // PSX Controller Type: Standard
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[39],	425.0,	170.0,	110.0,	56.0,	31,	35,	32,	56,	Func_PsxTypeAnalog,		Func_ReturnFromSettingsFrame }, // PSX Controller Type: Analog
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	285.0,	240.0,	 75.0,	56.0,	32,	36,	35,	35,	Func_DisableRumbleYes,	Func_ReturnFromSettingsFrame }, // Disable Rumble: Yes
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	380.0,	240.0,	 75.0,	56.0,	33,	37,	34,	34,	Func_DisableRumbleNo,	Func_ReturnFromSettingsFrame }, // Disable Rumble: No
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[13],	285.0,	310.0,	 55.0,	56.0,	34,	38,	37,	37,	Func_SaveButtonsSD,		Func_ReturnFromSettingsFrame }, // Save Button Mappings: SD
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[14],	350.0,	310.0,	 70.0,	56.0,	35,	38,	36,	36,	Func_SaveButtonsUSB,	Func_ReturnFromSettingsFrame }, // Save Button Mappings: USB
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[42],	285.0,	380.0,	135.0,	56.0,	36,	 2,	-1,	-1,	Func_ToggleButtonLoad,	Func_ReturnFromSettingsFrame }, // Auto Load Button Config Slot: Default,1,2,3,4
-	//Buttons for Audio Tab (starts at button[39]) ..was[41]
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	345.0,	100.0,	 75.0,	56.0,	 3,	41,	40,	40,	Func_DisableAudioYes,	Func_ReturnFromSettingsFrame }, // Disable Audio: Yes
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	440.0,	100.0,	 75.0,	56.0,	 3,	42,	39,	39,	Func_DisableAudioNo,	Func_ReturnFromSettingsFrame }, // Disable Audio: No
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	345.0,	170.0,	 75.0,	56.0,	39,	43,	42,	42,	Func_DisableXaYes,		Func_ReturnFromSettingsFrame }, // Disable XA: Yes
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	440.0,	170.0,	 75.0,	56.0,	40,	44,	41,	41,	Func_DisableXaNo,		Func_ReturnFromSettingsFrame }, // Disable XA: No
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	345.0,	240.0,	 75.0,	56.0,	41,	45,	44,	44,	Func_DisableCddaYes,	Func_ReturnFromSettingsFrame }, // Disable CDDA: Yes
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	440.0,	240.0,	 75.0,	56.0,	42,	45,	43,	43,	Func_DisableCddaNo,		Func_ReturnFromSettingsFrame }, // Disable CDDA: No
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[47],	345.0,	310.0,	170.0,	56.0,	43,	54,	-1,	-1,	Func_VolumeToggle,		Func_ReturnFromSettingsFrame }, // Volume: low/medium/loud/loudest
-	//Buttons for Saves Tab (starts at button[46]) ..was[48]
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[13],	295.0,	100.0,	 55.0,	56.0,	 4,	50,	49,	47,	Func_MemcardSaveSD,		Func_ReturnFromSettingsFrame }, // Memcard Save: SD
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[14],	360.0,	100.0,	 70.0,	56.0,	 4,	51,	46,	48,	Func_MemcardSaveUSB,	Func_ReturnFromSettingsFrame }, // Memcard Save: USB
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[54],	440.0,	100.0,	 90.0,	56.0,	 4,	51,	47,	49,	Func_MemcardSaveCardA,	Func_ReturnFromSettingsFrame }, // Memcard Save: Card A
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[55],	540.0,	100.0,	 90.0,	56.0,	 4,	51,	48,	46,	Func_MemcardSaveCardB,	Func_ReturnFromSettingsFrame }, // Memcard Save: Card B
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	295.0,	170.0,	 75.0,	56.0,	46,	52,	51,	51,	Func_AutoSaveYes,		Func_ReturnFromSettingsFrame }, // Auto Save Memcards: Yes
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	380.0,	170.0,	 75.0,	56.0,	47,	53,	50,	50,	Func_AutoSaveNo,		Func_ReturnFromSettingsFrame }, // Auto Save Memcards: No
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[13],	295.0,	240.0,	 55.0,	56.0,	50,	 4,	53,	53,	Func_SaveStateSD,		Func_ReturnFromSettingsFrame }, // Save State: SD
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[14],	360.0,	240.0,	 70.0,	56.0,	51,	 4,	52,	52,	Func_SaveStateUSB,		Func_ReturnFromSettingsFrame }, // Save State: USB
-	// New buttons [54]
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[16],	345.0,	380.0,	 75.0,	56.0,	45,	3,	55,	55,	Func_DisableReverbYes,	Func_ReturnFromSettingsFrame }, // Disable Reverb: Yes
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[17],	440.0,	380.0,	 75.0,	56.0,	45,	3,	54,	54,	Func_DisableReverbNo,	Func_ReturnFromSettingsFrame }, // Disable Reverb: No
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[57],	550.0,	170.0,	 75.0,	56.0,	31,	35,	33,	32,	Func_PsxTypeLightgun,	Func_ReturnFromSettingsFrame }, // PSX Controller Type: Gun
-
+	int				tabGrpId;
+	int				lblGrpId;	// Label/button group. Used for labelling but also for button selections.
+	int				btnId;
+} FRAME_BUTTONS[BTNS_END] =
+{ //	button	buttonStyle x		width	Up	Dwn	Lft	Rt	clickFunc				
+	//Buttons for Tabs
+	{	NULL,	BTN_A_SEL,	 25.0,	110.0,	-1,	-1,	 BTN_TAB_SAVES,	 	BTN_TAB_VIDEO,	Func_TabGeneral,TAB_NONE, LBL_TAB, BTN_TAB_GENERAL }, // General tab
+	{	NULL,	BTN_A_SEL,	155.0,	100.0,	-1,	-1,	 BTN_TAB_GENERAL,	BTN_TAB_INPUT,	Func_TabVideo,	TAB_NONE, LBL_TAB, BTN_TAB_VIDEO }, // Video tab
+	{	NULL,	BTN_A_SEL,	275.0,	100.0,	-1,	-1,	 BTN_TAB_VIDEO,	 	BTN_TAB_AUDIO,	Func_TabInput,	TAB_NONE, LBL_TAB, BTN_TAB_INPUT }, // Input tab
+	{	NULL,	BTN_A_SEL,	395.0,	100.0,	-1,	-1,	 BTN_TAB_INPUT,	 	BTN_TAB_SAVES,	Func_TabAudio,	TAB_NONE, LBL_TAB, BTN_TAB_AUDIO }, // Audio tab
+	{	NULL,	BTN_A_SEL,	515.0,	100.0,	-1,	-1,	 BTN_TAB_AUDIO,	 	BTN_TAB_GENERAL,Func_TabSaves,	TAB_NONE, LBL_TAB, BTN_TAB_SAVES }, // Saves tab
+	//Buttons for General Tab	
+	{	NULL,	BTN_A_SEL,	295.0,	160.0,	 BTN_TAB_GENERAL,	 BTN_HLE,	 BTN_DYNAREC,	 BTN_DYNAREC,	Func_CpuInterp,			TAB_GENERAL, LBL_GENERAL_CPU, BTN_INTERP }, // CPU: Interp
+	{	NULL,	BTN_A_SEL,	465.0,	130.0,	 BTN_TAB_GENERAL,	 BTN_USB,	 BTN_INTERP,	 BTN_INTERP,	Func_CpuDynarec,		TAB_GENERAL, LBL_GENERAL_CPU, BTN_DYNAREC }, // CPU: Dynarec
+	{	NULL,	BTN_A_SEL,	295.0,	 70.0,	 BTN_INTERP,	BTN_BIOS_YES,	BTN_USB,	 BTN_SD,	Func_BiosSelectHLE,		TAB_GENERAL, LBL_GENERAL_BIOS, BTN_HLE }, // Bios: HLE
+	{	NULL,	BTN_A_SEL,	375.0,	 55.0,	 BTN_INTERP,	BTN_BIOS_NO,	 BTN_HLE,	 BTN_USB,	Func_BiosSelectSD,		TAB_GENERAL, LBL_GENERAL_BIOS, BTN_SD }, // Bios: SD
+	{	NULL,	BTN_A_SEL,	440.0,	 70.0,	 BTN_DYNAREC,	BTN_BIOS_NO,	 BTN_SD,	BTN_HLE,	Func_BiosSelectUSB,		TAB_GENERAL, LBL_GENERAL_BIOS, BTN_USB }, // Bios: USB
+	{	NULL,	BTN_A_SEL,	295.0,	 75.0,	 BTN_HLE,	BTN_EXEC_BIOS,	BTN_BIOS_NO,	BTN_BIOS_NO,	Func_BootBiosYes,		TAB_GENERAL, LBL_GENERAL_BOOT_BIOS, BTN_BIOS_YES }, // Boot Thru Bios: Yes
+	{	NULL,	BTN_A_SEL,	380.0,	 75.0,	 BTN_SD,	BTN_EXEC_BIOS,	BTN_BIOS_YES,	BTN_BIOS_YES,	Func_BootBiosNo,		TAB_GENERAL, LBL_GENERAL_BOOT_BIOS, BTN_BIOS_NO }, // Boot Thru Bios: No
+	{	NULL,	BTN_A_NRM,	295.0,	 130.0,	 BTN_BIOS_YES,	BTN_SAVE_SETTING_USB,	-1,	-1,	Func_ExecuteBios,		TAB_GENERAL, LBL_GENERAL_EXEC_BIOS, BTN_EXEC_BIOS }, // Execute Bios
+	{	NULL,	BTN_A_NRM,	295.0,	 55.0,	BTN_EXEC_BIOS,	 BTN_TAB_GENERAL,	BTN_SAVE_SETTING_USB,	BTN_SAVE_SETTING_USB,	Func_SaveSettingsSD,	TAB_GENERAL, LBL_GENERAL_SAVE, BTN_SAVE_SETTING_SD }, // Save Settings: SD
+	{	NULL,	BTN_A_NRM,	360.0,	 70.0,	BTN_EXEC_BIOS,	 BTN_TAB_GENERAL,	BTN_SAVE_SETTING_SD,	BTN_SAVE_SETTING_SD,	Func_SaveSettingsUSB,	TAB_GENERAL, LBL_GENERAL_SAVE, BTN_SAVE_SETTING_USB }, // Save Settings: USB
+	//Buttons for Video Tab	
+	{	NULL,	BTN_A_SEL,	325.0,	 75.0,	BTN_TAB_VIDEO,	BTN_LIMIT_FPS_ON,	BTN_SHOW_FPS_OFF,	BTN_SHOW_FPS_OFF,	Func_ShowFpsOn,			TAB_VIDEO, LBL_VIDEO_FPS_SHOW, BTN_SHOW_FPS_ON }, // Show FPS: On
+	{	NULL,	BTN_A_SEL,	420.0,	 75.0,	BTN_TAB_VIDEO,	BTN_LIMIT_FPS_OFF,	BTN_SHOW_FPS_ON,	BTN_SHOW_FPS_ON,	Func_ShowFpsOff,		TAB_VIDEO, LBL_VIDEO_FPS_SHOW, BTN_SHOW_FPS_OFF }, // Show FPS: Off
+	{	NULL,	BTN_A_SEL,	325.0,	 75.0,	BTN_SHOW_FPS_ON,	BTN_FSKIP_ON,	BTN_LIMIT_FPS_OFF,	BTN_LIMIT_FPS_OFF,	Func_FpsLimitAuto,		TAB_VIDEO, LBL_VIDEO_FPS_LIMIT, BTN_LIMIT_FPS_ON }, // FPS Limit: Auto
+	{	NULL,	BTN_A_SEL,	420.0,	 75.0,	BTN_SHOW_FPS_OFF,	BTN_FSKIP_OFF,	BTN_LIMIT_FPS_ON,	BTN_LIMIT_FPS_ON,	Func_FpsLimitOff,		TAB_VIDEO, LBL_VIDEO_FPS_LIMIT, BTN_LIMIT_FPS_OFF }, // FPS Limit: Off
+	{	NULL,	BTN_A_SEL,	325.0,	 75.0,	BTN_LIMIT_FPS_ON,	BTN_SM_4_3,	BTN_FSKIP_OFF,	BTN_FSKIP_OFF,	Func_FrameSkipOn,		TAB_VIDEO, LBL_VIDEO_FRAMESKIP, BTN_FSKIP_ON }, // Frame Skip: On
+	{	NULL,	BTN_A_SEL,	420.0,	 75.0,	BTN_LIMIT_FPS_OFF,	BTN_SM_F_16_9,	BTN_FSKIP_ON,	BTN_FSKIP_ON,	Func_FrameSkipOff,		TAB_VIDEO, LBL_VIDEO_FRAMESKIP, BTN_FSKIP_OFF }, // Frame Skip: Off
+	{	NULL,	BTN_A_SEL,	230.0,	 75.0,	BTN_FSKIP_ON,	BTN_DITHER_NONE,	BTN_SM_F_16_9,	BTN_SM_16_9,	Func_ScreenMode4_3,		TAB_VIDEO, LBL_VIDEO_SCREENMODE, BTN_SM_4_3 }, // ScreenMode: 4:3
+	{	NULL,	BTN_A_SEL,	325.0,	 75.0,	BTN_FSKIP_ON,	BTN_DITHER_DEFAULT,	BTN_SM_4_3,	BTN_SM_F_16_9,	Func_ScreenMode16_9,	TAB_VIDEO, LBL_VIDEO_SCREENMODE, BTN_SM_16_9 }, // ScreenMode: 16:9
+	{	NULL,	BTN_A_SEL,	420.0,	155.0,	BTN_FSKIP_OFF,	BTN_DITHER_ALWAYS,	BTN_SM_16_9,	BTN_SM_4_3,	Func_ScreenForce16_9,	TAB_VIDEO, LBL_VIDEO_SCREENMODE, BTN_SM_F_16_9 }, // ScreenMode: Force 16:9
+	{	NULL,	BTN_A_SEL,	230.0,	 75.0,	BTN_SM_4_3,	 BTN_TAB_VIDEO,	BTN_DITHER_ALWAYS,	BTN_DITHER_DEFAULT,	Func_DitheringNone,		TAB_VIDEO, LBL_VIDEO_DITHER, BTN_DITHER_NONE }, // Dithering: None
+	{	NULL,	BTN_A_SEL,	325.0,	110.0,	BTN_SM_16_9,	 BTN_TAB_VIDEO,	BTN_DITHER_NONE,	BTN_DITHER_ALWAYS,	Func_DitheringDefault,	TAB_VIDEO, LBL_VIDEO_DITHER, BTN_DITHER_DEFAULT }, // Dithering: Game Dependent
+	{	NULL,	BTN_A_SEL,	455.0,	110.0,	BTN_SM_F_16_9,	 BTN_TAB_VIDEO,	BTN_DITHER_DEFAULT,	BTN_DITHER_NONE,	Func_DitheringAlways,	TAB_VIDEO, LBL_VIDEO_DITHER, BTN_DITHER_ALWAYS }, // Dithering: Always
+	//Buttons for Input Tab	
+	{	NULL,	BTN_A_NRM,	285.0,	140.0,	BTN_TAB_INPUT,	BTN_PAD_STANDARD,	BTN_CONF_BTN_MAP,	BTN_CONF_BTN_MAP,	Func_ConfigureInput,	TAB_INPUT, LBL_INPUT_CONF_INPUT, BTN_CONF_INPUT }, // Configure Input Assignment
+	{	NULL,	BTN_A_NRM,	435.0,	110.0,	BTN_TAB_INPUT,	BTN_PAD_STANDARD,	BTN_CONF_INPUT,	BTN_CONF_INPUT,	Func_ConfigureButtons,	TAB_INPUT, LBL_INPUT_CONF_INPUT, BTN_CONF_BTN_MAP }, // Configure Button Mappings
+	{	NULL,	BTN_A_SEL,	285.0,	130.0,	BTN_CONF_INPUT,	BTN_RUMBLE_YES,	BTN_PAD_GUN,	BTN_PAD_ANALOG,	Func_PsxTypeStandard,	TAB_INPUT, LBL_INPUT_CONT_TYPE, BTN_PAD_STANDARD }, // PSX Controller Type: Standard
+	{	NULL,	BTN_A_SEL,	425.0,	110.0,	BTN_CONF_BTN_MAP,	BTN_RUMBLE_NO,	BTN_PAD_STANDARD,	BTN_PAD_GUN,	Func_PsxTypeAnalog,		TAB_INPUT, LBL_INPUT_CONT_TYPE, BTN_PAD_ANALOG }, // PSX Controller Type: Analog
+	{	NULL,	BTN_A_SEL,	550.0,	 75.0,	BTN_CONF_BTN_MAP,	BTN_RUMBLE_NO,	BTN_PAD_ANALOG,	BTN_PAD_STANDARD,	Func_PsxTypeLightgun,	TAB_INPUT, LBL_INPUT_CONT_TYPE, BTN_PAD_GUN }, // PSX Controller Type: Gun
+	{	NULL,	BTN_A_SEL,	285.0,	 75.0,	BTN_PAD_STANDARD,	BTN_SAVE_BTN_MAP_SD,	BTN_RUMBLE_NO,	BTN_RUMBLE_NO,	Func_DisableRumbleYes,	TAB_INPUT, LBL_INPUT_RUMBLE, BTN_RUMBLE_YES }, // Disable Rumble: Yes
+	{	NULL,	BTN_A_SEL,	380.0,	 75.0,	BTN_PAD_GUN,	BTN_SAVE_BTN_MAP_USB,	BTN_RUMBLE_YES,	BTN_RUMBLE_YES,	Func_DisableRumbleNo,	TAB_INPUT, LBL_INPUT_RUMBLE, BTN_RUMBLE_NO }, // Disable Rumble: No
+	{	NULL,	BTN_A_NRM,	285.0,	 55.0,	BTN_RUMBLE_YES,	BTN_AUTOLOAD_BTN_CONF,	BTN_SAVE_BTN_MAP_USB,	BTN_SAVE_BTN_MAP_USB,	Func_SaveButtonsSD,		TAB_INPUT, LBL_INPUT_SAVE, BTN_SAVE_BTN_MAP_SD }, // Save Button Mappings: SD
+	{	NULL,	BTN_A_NRM,	350.0,	 70.0,	BTN_RUMBLE_NO,	BTN_AUTOLOAD_BTN_CONF,	BTN_SAVE_BTN_MAP_SD,	BTN_SAVE_BTN_MAP_SD,	Func_SaveButtonsUSB,	TAB_INPUT, LBL_INPUT_SAVE, BTN_SAVE_BTN_MAP_USB }, // Save Button Mappings: USB
+	{	NULL,	BTN_A_NRM,	285.0,	135.0,	BTN_SAVE_BTN_MAP_SD,	 BTN_TAB_INPUT,	-1,	-1,	Func_ToggleButtonLoad,	TAB_INPUT, LBL_INPUT_AUTOLOAD, BTN_AUTOLOAD_BTN_CONF }, // Auto Load Button Config Slot: Default,1,2,3,4
+	//Buttons for Audio Tab	
+	{	NULL,	BTN_A_SEL,	345.0,	 75.0,	BTN_TAB_AUDIO,	BTN_DISABLE_REVERB_YES,	BTN_DISABLE_AUDIO_NO,	BTN_DISABLE_AUDIO_NO,	Func_DisableAudioYes,	TAB_AUDIO, LBL_AUDIO_DISABLE, BTN_DISABLE_AUDIO_YES }, // Disable Audio: Yes
+	{	NULL,	BTN_A_SEL,	440.0,	 75.0,	BTN_TAB_AUDIO,	BTN_DISABLE_REVERB_NO,	BTN_DISABLE_AUDIO_YES,	BTN_DISABLE_AUDIO_YES,	Func_DisableAudioNo,	TAB_AUDIO, LBL_AUDIO_DISABLE, BTN_DISABLE_AUDIO_NO }, // Disable Audio: No
+	{	NULL,	BTN_A_SEL,	345.0,	 75.0,	BTN_DISABLE_AUDIO_YES,	BTN_VOLUME_LOUDEST,	BTN_DISABLE_REVERB_NO,	BTN_DISABLE_REVERB_NO,	Func_DisableReverbYes,	TAB_AUDIO, LBL_AUDIO_REVERB, BTN_DISABLE_REVERB_YES }, // Disable Reverb: Yes
+	{	NULL,	BTN_A_SEL,	440.0,	 75.0,	BTN_DISABLE_AUDIO_NO,	BTN_VOLUME_MEDIUM,	BTN_DISABLE_REVERB_YES,	BTN_DISABLE_REVERB_YES,	Func_DisableReverbNo,	TAB_AUDIO, LBL_AUDIO_REVERB, BTN_DISABLE_REVERB_NO }, // Disable Reverb: No
+	{	NULL,	BTN_A_SEL,	195.0,	 100.0,	BTN_DISABLE_REVERB_YES,	BTN_TAB_AUDIO,	BTN_VOLUME_LOW,	BTN_VOLUME_LOUD,	Func_VolumeLoudest,		TAB_AUDIO, LBL_AUDIO_VOLUME, BTN_VOLUME_LOUDEST }, // Volume: low/medium/loud/loudest
+	{	NULL,	BTN_A_SEL,	305.0,	 90.0,	BTN_DISABLE_REVERB_YES,	BTN_TAB_AUDIO,	BTN_VOLUME_LOUDEST,	BTN_VOLUME_MEDIUM,	Func_VolumeLoud,		TAB_AUDIO, LBL_AUDIO_VOLUME, BTN_VOLUME_LOUD }, // Volume: low/medium/loud/loudest
+	{	NULL,	BTN_A_SEL,	405.0,	 100.0,	BTN_DISABLE_REVERB_NO,	BTN_TAB_AUDIO,	BTN_VOLUME_LOUD,	BTN_VOLUME_LOW,	Func_VolumeMedium,		TAB_AUDIO, LBL_AUDIO_VOLUME, BTN_VOLUME_MEDIUM }, // Volume: low/medium/loud/loudest
+	{	NULL,	BTN_A_SEL,	515.0,	 90.0,	BTN_DISABLE_REVERB_NO,	BTN_TAB_AUDIO,	BTN_VOLUME_MEDIUM,	BTN_VOLUME_LOUDEST,	Func_VolumeLow,		TAB_AUDIO, LBL_AUDIO_VOLUME, BTN_VOLUME_LOW }, // Volume: low/medium/loud/loudest
+	//Buttons for Saves Tab	
+	{	NULL,	BTN_A_SEL,	295.0,	 55.0,	BTN_TAB_SAVES,	BTN_SSTATE_SD,	BTN_MEMCARD_USB,BTN_MEMCARD_USB,Func_MemcardSaveSD,	TAB_SAVES, LBL_SAVES_NATIVE_LOC, BTN_MEMCARD_SD }, // Memcard Save: SD
+	{	NULL,	BTN_A_SEL,	360.0,	 70.0,	BTN_TAB_SAVES,	BTN_SSTATE_USB,	BTN_MEMCARD_SD, BTN_MEMCARD_SD,	Func_MemcardSaveUSB,TAB_SAVES, LBL_SAVES_NATIVE_LOC, BTN_MEMCARD_USB }, // Memcard Save: USB
+	{	NULL,	BTN_A_SEL,	295.0,	 55.0,	BTN_MEMCARD_SD,	BTN_TAB_SAVES,	BTN_SSTATE_USB,	BTN_SSTATE_USB,	Func_SaveStateSD,	TAB_SAVES, LBL_SAVES_STATE_LOC, BTN_SSTATE_SD }, // Save State: SD
+	{	NULL,	BTN_A_SEL,	360.0,	 70.0,	BTN_MEMCARD_USB,BTN_TAB_SAVES,	BTN_SSTATE_SD,	BTN_SSTATE_SD,	Func_SaveStateUSB,	TAB_SAVES, LBL_SAVES_STATE_LOC, BTN_SSTATE_USB }, // Save State: USB
 };
 
-struct TextBoxInfo
+struct SettingsTextBoxInfo
 {
 	menu::TextBox	*textBox;
-	char*			textBoxString;
 	float			x;
-	float			y;
-	float			scale;
-	bool			centered;
+	int				tabGrpId;
+	int				lblGrpId;
 } FRAME_TEXTBOXES[NUM_FRAME_TEXTBOXES] =
-{ //	textBox	textBoxString		x		y		scale	centered
-	//TextBoxes for General Tab (starts at textBox[0])
-	{	NULL,	FRAME_STRINGS[5],	155.0,	128.0,	 1.0,	true }, // CPU Core: Pure Interp/Dynarec
-	{	NULL,	FRAME_STRINGS[6],	155.0,	198.0,	 1.0,	true }, // Bios: HLE/SD/USB/DVD
-	{	NULL,	FRAME_STRINGS[7],	155.0,	268.0,	 1.0,	true }, // Boot Thru Bios: Yes/No
-	{	NULL,	FRAME_STRINGS[9],	155.0,	408.0,	 1.0,	true }, // Save settings.cfg: SD/USB
-	//TextBoxes for Video Tab (starts at textBox[4])
-	{	NULL,	FRAME_STRINGS[18],	190.0,	128.0,	 1.0,	true }, // Show FPS: On/Off
-	{	NULL,	FRAME_STRINGS[19],	190.0,	198.0,	 1.0,	true }, // Limit FPS: Auto/Off
-	{	NULL,	FRAME_STRINGS[20],	190.0,	268.0,	 1.0,	true }, // Frame Skip: On/Off
-	{	NULL,	FRAME_STRINGS[21],	130.0,	338.0,	 1.0,	true }, // ScreenMode: 4x3/16x9/Force16x9
-	{	NULL,	FRAME_STRINGS[22],	130.0,	408.0,	 1.0,	true }, // Dithering: None/Game Dependent/Always
-	{	NULL,	FRAME_STRINGS[23],	190.0,	478.0,	 1.0,	true }, // Scaling: None/2xSai
-	//TextBoxes for Input Tab (starts at textBox[10])
-	{	NULL,	FRAME_STRINGS[36],	145.0,	198.0,	 1.0,	true }, // PSX Controller Type: Analog/Digital/Gun
-	{	NULL,	FRAME_STRINGS[37],	145.0,	268.0,	 1.0,	true }, // Disable Rumble: Yes/No
-	{	NULL,	FRAME_STRINGS[40],	145.0,	338.0,	 1.0,	true }, // Save Button Configs: SD/USB
-	{	NULL,	FRAME_STRINGS[41],	145.0,	408.0,	 1.0,	true }, // Auto Load Slot: Default/1/2/3/4
-	//TextBoxes for Audio Tab (starts at textBox[14]) ..was[12]
-	{	NULL,	FRAME_STRINGS[43],	210.0,	128.0,	 1.0,	true }, // Disable Audio: Yes/No
-	{	NULL,	FRAME_STRINGS[44],	210.0,	198.0,	 1.0,	true }, // Disable XA Audio: Yes/No
-	{	NULL,	FRAME_STRINGS[45],	210.0,	268.0,	 1.0,	true }, // Disable CDDA Audio: Yes/No
-	{	NULL,	FRAME_STRINGS[46],	210.0,	338.0,	 1.0,	true }, // Volume: low/medium/loud/loudest
-	{	NULL,	FRAME_STRINGS[56],	210.0,	408.0,	 1.0,	true }, // Disable Reverb: Yes/No
-	//TextBoxes for Saves Tab (starts at textBox[18]) ..was[16]
-	{	NULL,	FRAME_STRINGS[51],	150.0,	128.0,	 1.0,	true }, // Memcard Save Device: SD/USB/CardA/CardB
-	{	NULL,	FRAME_STRINGS[52],	150.0,	198.0,	 1.0,	true }, // Auto Save Memcards: Yes/No
-	{	NULL,	FRAME_STRINGS[53],	150.0,	268.0,	 1.0,	true }, // Save State Device: SD/USB
+{ //	textBox	x		y		tabGrpId		lblGrpId
+	//TextBoxes for General Tab
+	{	NULL,	155.0,	TAB_GENERAL,	LBL_GENERAL_CPU }, // CPU Core: Pure Interp/Dynarec
+	{	NULL,	155.0,	TAB_GENERAL,	LBL_GENERAL_BIOS }, // Bios: HLE/SD/USB/DVD
+	{	NULL,	155.0,	TAB_GENERAL,	LBL_GENERAL_BOOT_BIOS }, // Boot Thru Bios: Yes/No
+	{	NULL,	155.0,	TAB_GENERAL,	LBL_GENERAL_EXEC_BIOS }, // Execute BIOS
+	{	NULL,	155.0,	TAB_GENERAL,	LBL_GENERAL_SAVE }, // Save settings.cfg: SD/USB
+	//TextBoxes for Video Tab 	
+	{	NULL,	190.0,	TAB_VIDEO,		LBL_VIDEO_FPS_SHOW }, // Show FPS: On/Off
+	{	NULL,	190.0,	TAB_VIDEO,		LBL_VIDEO_FPS_LIMIT }, // Limit FPS: Auto/Off
+	{	NULL,	190.0,	TAB_VIDEO,		LBL_VIDEO_FRAMESKIP }, // Frame Skip: On/Off
+	{	NULL,	130.0,	TAB_VIDEO,		LBL_VIDEO_SCREENMODE }, // ScreenMode: 4x3/16x9/Force16x9
+	{	NULL,	130.0,	TAB_VIDEO,		LBL_VIDEO_DITHER }, // Dithering: None/Game Dependent/Always
+	//TextBoxes for Input Tab 	
+	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_CONF_INPUT }, // blank.
+	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_CONT_TYPE }, // PSX Controller Type: Analog/Digital/Gun
+	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_RUMBLE }, // Disable Rumble: Yes/No
+	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_SAVE }, // Save Button Configs: SD/USB
+	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_AUTOLOAD }, // Auto Load Slot: Default/1/2/3/4
+	//TextBoxes for Audio Tab 	
+	{	NULL,	155.0,	TAB_AUDIO,		LBL_AUDIO_DISABLE }, // Disable Audio: Yes/No
+	{	NULL,	155.0,	TAB_AUDIO,		LBL_AUDIO_REVERB }, // Disable Reverb: Yes/No
+	{	NULL,	135.0,	TAB_AUDIO,		LBL_AUDIO_VOLUME }, // Volume: low/medium/loud/loudest
+	//TextBoxes for Saves Tab 	
+	{	NULL,	150.0,	TAB_SAVES,		LBL_SAVES_NATIVE_LOC }, // Memcard Save Device: SD/USB
+	{	NULL,	150.0,	TAB_SAVES,		LBL_SAVES_STATE_LOC }, // Save State Device: SD/USB
 };
+
+// Selects a specific button in a group of buttons sharing a label/group, deselects the rest in that group.
+void SelectBtnInGroup(int curBtnId, int lblGrpId) {
+	for (int i = 0; i < BTNS_END; i++) {
+		if(FRAME_BUTTONS[i].lblGrpId == lblGrpId) {
+			FRAME_BUTTONS[i].button->setSelected(FRAME_BUTTONS[i].btnId == curBtnId);
+		}
+	}
+}
+
+// Selects a button
+void SelectBtn(int curBtnId) {
+	for (int i = 0; i < BTNS_END; i++) {
+		if(FRAME_BUTTONS[i].btnId == curBtnId) {
+			FRAME_BUTTONS[i].button->setSelected(true);
+			return;
+		}
+	}
+}
+
+// Sets the labels to visible
+void SetVisibleLabelsForTab(int tabGrpId) {
+	for (int i = 0; i < NUM_FRAME_TEXTBOXES; i++) {
+		if(FRAME_TEXTBOXES[i].tabGrpId == tabGrpId) {
+			FRAME_TEXTBOXES[i].textBox->setVisible(true);
+		}
+	}
+}
+
+// Sets the buttons to visible
+void SetVisibleButtonsForTab(int tabGrpId) {
+	for (int i = 0; i < BTNS_END; i++) {
+		if(FRAME_BUTTONS[i].tabGrpId == tabGrpId) {
+			FRAME_BUTTONS[i].button->setVisible(true);
+			FRAME_BUTTONS[i].button->setActive(true);
+		}
+	}
+}
+
+menu::Button* GetButtonById(int btnId) {
+	for (int i = 0; i < BTNS_END; i++) {
+		if(FRAME_BUTTONS[i].btnId == btnId) {
+			return FRAME_BUTTONS[i].button;
+		}
+	}
+	return FRAME_BUTTONS[0].button;
+}
 
 SettingsFrame::SettingsFrame()
 		: activeSubmenu(SUBMENU_GENERAL)
 {
-	for (int i = 0; i < NUM_FRAME_BUTTONS; i++)
-		FRAME_BUTTONS[i].button = new menu::Button(FRAME_BUTTONS[i].buttonStyle, &FRAME_BUTTONS[i].buttonString, 
-										FRAME_BUTTONS[i].x, FRAME_BUTTONS[i].y, 
-										FRAME_BUTTONS[i].width, FRAME_BUTTONS[i].height);
-
-	for (int i = 0; i < NUM_FRAME_BUTTONS; i++)
+	int y_pos = 0;
+	int lastTabId = -1;
+	int lastLblGrpId = -1;
+	// Create buttons from the struct above.
+	for (int i = 0; i < BTNS_END; i++) {
+		// tab button, give it the top y pos.
+		if(FRAME_BUTTONS[i].tabGrpId == TAB_NONE) {
+			y_pos = TAB_Y_POS;
+		}
+		else {
+			y_pos = FRAME_BUTTONS[i].tabGrpId != lastTabId ? TAB_Y_ENTRY_START : (FRAME_BUTTONS[i].lblGrpId != lastLblGrpId ? (y_pos + TAB_Y_ENTRY_INC) : y_pos);
+		}
+		
+		// Look up the label from the bundle
+		for (int j = 0; j < BTNS_END; j++) {
+			if(RES_BTN_LBL[j].key == FRAME_BUTTONS[i].btnId) {
+				FRAME_BUTTONS[i].button = new menu::Button(FRAME_BUTTONS[i].buttonStyle, &RES_BTN_LBL[j].def_val, 
+										FRAME_BUTTONS[i].x, y_pos, 
+										FRAME_BUTTONS[i].width, BTN_HEIGHT);
+				break;
+			}
+		}
+		lastTabId = FRAME_BUTTONS[i].tabGrpId;	
+		lastLblGrpId = FRAME_BUTTONS[i].lblGrpId;
+	}
+	
+	// Configure buttons (focus, functions)
+	for (int i = 0; i < BTNS_END; i++)
 	{
-		if (FRAME_BUTTONS[i].focusUp != -1) FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[FRAME_BUTTONS[i].focusUp].button);
-		if (FRAME_BUTTONS[i].focusDown != -1) FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, FRAME_BUTTONS[FRAME_BUTTONS[i].focusDown].button);
-		if (FRAME_BUTTONS[i].focusLeft != -1) FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_LEFT, FRAME_BUTTONS[FRAME_BUTTONS[i].focusLeft].button);
-		if (FRAME_BUTTONS[i].focusRight != -1) FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_RIGHT, FRAME_BUTTONS[FRAME_BUTTONS[i].focusRight].button);
+		if (FRAME_BUTTONS[i].focusUp != -1) FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, GetButtonById(FRAME_BUTTONS[i].focusUp));
+		if (FRAME_BUTTONS[i].focusDown != -1) FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, GetButtonById(FRAME_BUTTONS[i].focusDown));
+		if (FRAME_BUTTONS[i].focusLeft != -1) FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_LEFT, GetButtonById(FRAME_BUTTONS[i].focusLeft));
+		if (FRAME_BUTTONS[i].focusRight != -1) FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_RIGHT, GetButtonById(FRAME_BUTTONS[i].focusRight));
 		FRAME_BUTTONS[i].button->setActive(true);
 		if (FRAME_BUTTONS[i].clickedFunc) FRAME_BUTTONS[i].button->setClicked(FRAME_BUTTONS[i].clickedFunc);
-		if (FRAME_BUTTONS[i].returnFunc) FRAME_BUTTONS[i].button->setReturn(FRAME_BUTTONS[i].returnFunc);
+		FRAME_BUTTONS[i].button->setReturn(Func_ReturnFromSettingsFrame);
 		add(FRAME_BUTTONS[i].button);
 		menu::Cursor::getInstance().addComponent(this, FRAME_BUTTONS[i].button, FRAME_BUTTONS[i].x, 
-												FRAME_BUTTONS[i].x+FRAME_BUTTONS[i].width, FRAME_BUTTONS[i].y, 
-												FRAME_BUTTONS[i].y+FRAME_BUTTONS[i].height);
+												FRAME_BUTTONS[i].x+FRAME_BUTTONS[i].width, FRAME_BUTTONS[i].button->y, 
+												FRAME_BUTTONS[i].button->y+BTN_HEIGHT);
 	}
 
+	lastTabId = -1;
+	lastLblGrpId = -1;
+	y_pos = 0;
+	// Create labels from the struct above.
 	for (int i = 0; i < NUM_FRAME_TEXTBOXES; i++)
 	{
-		FRAME_TEXTBOXES[i].textBox = new menu::TextBox(&FRAME_TEXTBOXES[i].textBoxString, 
-										FRAME_TEXTBOXES[i].x, FRAME_TEXTBOXES[i].y, 
-										FRAME_TEXTBOXES[i].scale, FRAME_TEXTBOXES[i].centered);
-		add(FRAME_TEXTBOXES[i].textBox);
+		// label y pos.
+		y_pos = FRAME_TEXTBOXES[i].tabGrpId != lastTabId ? (TAB_Y_ENTRY_START+TAB_Y_LABEL_PAD) : (FRAME_TEXTBOXES[i].lblGrpId != lastLblGrpId ? (y_pos + TAB_Y_ENTRY_INC) : y_pos);
+		
+		// Look up the label from the bundle
+		for (int j = 0; j < LABEL_GROUPS_END; j++) {
+			if(RES_LBL[j].key == FRAME_TEXTBOXES[i].lblGrpId) {
+				FRAME_TEXTBOXES[i].textBox = new menu::TextBox(&RES_LBL[j].def_val, FRAME_TEXTBOXES[i].x, y_pos, 1.0, true);
+				add(FRAME_TEXTBOXES[i].textBox);
+				break;
+			}
+		}
+		lastTabId = FRAME_TEXTBOXES[i].tabGrpId;	
+		lastLblGrpId = FRAME_TEXTBOXES[i].lblGrpId;
 	}
 
 	setDefaultFocus(FRAME_BUTTONS[0].button);
@@ -393,9 +580,10 @@ SettingsFrame::SettingsFrame()
 
 SettingsFrame::~SettingsFrame()
 {
+	// Destroy all button/label instances.
 	for (int i = 0; i < NUM_FRAME_TEXTBOXES; i++)
 		delete FRAME_TEXTBOXES[i].textBox;
-	for (int i = 0; i < NUM_FRAME_BUTTONS; i++)
+	for (int i = 0; i < BTNS_END; i++)
 	{
 		menu::Cursor::getInstance().removeComponent(this, FRAME_BUTTONS[i].button);
 		delete FRAME_BUTTONS[i].button;
@@ -406,18 +594,19 @@ void SettingsFrame::activateSubmenu(int submenu)
 {
 	activeSubmenu = submenu;
 
-	//All buttons: hide; unselect
-	for (int i = 0; i < NUM_FRAME_BUTTONS; i++)
+	// All buttons: hide; unselect
+	for (int i = 0; i < BTNS_END; i++)
 	{
 		FRAME_BUTTONS[i].button->setVisible(false);
 		FRAME_BUTTONS[i].button->setSelected(false);
 		FRAME_BUTTONS[i].button->setActive(false);
 	}
-	//All textBoxes: hide
+	// All textBoxes: hide
 	for (int i = 0; i < NUM_FRAME_TEXTBOXES; i++)
 	{
 		FRAME_TEXTBOXES[i].textBox->setVisible(false);
 	}
+	
 	switch (activeSubmenu)	//Tab buttons: set visible; set focus up/down; set selected
 	{						//Config buttons: set visible; set selected
 		case SUBMENU_GENERAL:
@@ -425,134 +614,99 @@ void SettingsFrame::activateSubmenu(int submenu)
 			for (int i = 0; i < NUM_TAB_BUTTONS; i++)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, FRAME_BUTTONS[5].button);
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[14].button);
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, GetButtonById(BTN_INTERP));
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, GetButtonById(BTN_SAVE_SETTING_USB));
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
-			for (int i = 0; i < 4; i++)
-				FRAME_TEXTBOXES[i].textBox->setVisible(true);
-			FRAME_BUTTONS[0].button->setSelected(true);
-			if (dynacore == DYNACORE_INTERPRETER)	FRAME_BUTTONS[5].button->setSelected(true);
-			else									FRAME_BUTTONS[6].button->setSelected(true);
-			FRAME_BUTTONS[7+biosDevice].button->setSelected(true);
-			if (LoadCdBios == BOOTTHRUBIOS_YES)	FRAME_BUTTONS[11].button->setSelected(true);
-			else								FRAME_BUTTONS[12].button->setSelected(true);
-			for (int i = 5; i < 16; i++)
-			{
-				FRAME_BUTTONS[i].button->setVisible(true);
-				FRAME_BUTTONS[i].button->setActive(true);
-			}
+			SetVisibleLabelsForTab(TAB_GENERAL);
+			SetVisibleButtonsForTab(TAB_GENERAL);
+			// Display button selections based on settings
+			SelectBtn(BTN_TAB_GENERAL);
+			SelectBtnInGroup((dynacore == DYNACORE_INTERPRETER) ? BTN_INTERP : BTN_DYNAREC, LBL_GENERAL_CPU);
+			SelectBtnInGroup((biosDevice == BIOSDEVICE_HLE) ? BTN_HLE : ((biosDevice == BIOSDEVICE_SD) ? BTN_SD : BTN_USB), LBL_GENERAL_BIOS);
+			SelectBtnInGroup((LoadCdBios == BOOTTHRUBIOS_YES) ? BTN_BIOS_YES : BTN_BIOS_NO, LBL_GENERAL_BOOT_BIOS);
 			break;
 		case SUBMENU_VIDEO:
 			setDefaultFocus(FRAME_BUTTONS[1].button);
 			for (int i = 0; i < NUM_TAB_BUTTONS; i++)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, FRAME_BUTTONS[16].button);
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[26].button);
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, GetButtonById(BTN_SHOW_FPS_ON));
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, GetButtonById(BTN_DITHER_NONE));
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
-			for (int i = 4; i < 9; i++)
-				FRAME_TEXTBOXES[i].textBox->setVisible(true);
-			FRAME_BUTTONS[1].button->setSelected(true);
-			if (showFPSonScreen == FPS_SHOW)	FRAME_BUTTONS[16].button->setSelected(true);
-			else								FRAME_BUTTONS[17].button->setSelected(true);
-			if (frameLimit == FRAMELIMIT_AUTO)	FRAME_BUTTONS[18].button->setSelected(true);
-			else								FRAME_BUTTONS[19].button->setSelected(true);
-			if (frameSkip == FRAMESKIP_ENABLE)	FRAME_BUTTONS[20].button->setSelected(true);
-			else								FRAME_BUTTONS[21].button->setSelected(true);
-			if (screenMode == SCREENMODE_4x3)		FRAME_BUTTONS[22].button->setSelected(true);
-			else if (screenMode == SCREENMODE_16x9)	FRAME_BUTTONS[23].button->setSelected(true);
-			else									FRAME_BUTTONS[24].button->setSelected(true);
-			FRAME_BUTTONS[25+useDithering].button->setSelected(true);
-			for (int i = 16; i < 28; i++)
-			{
-				FRAME_BUTTONS[i].button->setVisible(true);
-				FRAME_BUTTONS[i].button->setActive(true);
-			}
+			SetVisibleLabelsForTab(TAB_VIDEO);
+			SetVisibleButtonsForTab(TAB_VIDEO);
+			// Display button selections based on settings
+			SelectBtn(BTN_TAB_VIDEO);
+			SelectBtnInGroup((showFPSonScreen == FPS_SHOW) ? BTN_SHOW_FPS_ON : BTN_SHOW_FPS_OFF, LBL_VIDEO_FPS_SHOW);
+			SelectBtnInGroup((frameLimit == FRAMELIMIT_AUTO) ? BTN_LIMIT_FPS_ON : BTN_LIMIT_FPS_OFF, LBL_VIDEO_FPS_LIMIT);
+			SelectBtnInGroup((frameSkip == FRAMESKIP_ENABLE) ? BTN_FSKIP_ON : BTN_FSKIP_OFF, LBL_VIDEO_FRAMESKIP);
+			SelectBtnInGroup((screenMode == SCREENMODE_4x3) ? BTN_SM_4_3 : ((screenMode == SCREENMODE_16x9) ? BTN_SM_16_9 : BTN_SM_F_16_9), LBL_VIDEO_SCREENMODE);
+			SelectBtnInGroup((useDithering == USEDITHER_NONE) ? BTN_DITHER_NONE : ((useDithering == USEDITHER_DEFAULT) ? BTN_DITHER_DEFAULT : BTN_DITHER_ALWAYS), LBL_VIDEO_DITHER);
 			break;
 		case SUBMENU_INPUT:
 			setDefaultFocus(FRAME_BUTTONS[2].button);
 			for (int i = 0; i < NUM_TAB_BUTTONS; i++)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, FRAME_BUTTONS[30].button);
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[38].button);
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, GetButtonById(BTN_CONF_INPUT));
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, GetButtonById(BTN_AUTOLOAD_BTN_CONF));
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
-			for (int i = 10; i < 14; i++)
-				FRAME_TEXTBOXES[i].textBox->setVisible(true);
-			FRAME_BUTTONS[2].button->setSelected(true);
-			if(controllerType == CONTROLLERTYPE_LIGHTGUN) {
-				FRAME_BUTTONS[56].button->setSelected(true);
-			}
-			else {
-				FRAME_BUTTONS[32+controllerType].button->setSelected(true);
-			}
-			FRAME_BUTTONS[34+rumbleEnabled].button->setSelected(true);
-			for (int i = 30; i < 39; i++)
-			{
-				FRAME_BUTTONS[i].button->setVisible(true);
-				FRAME_BUTTONS[i].button->setActive(true);
-			}
-			// Enable Lightgun button
-			FRAME_BUTTONS[56].button->setVisible(true);
-			FRAME_BUTTONS[56].button->setActive(true);
+			SetVisibleLabelsForTab(TAB_INPUT);
+			SetVisibleButtonsForTab(TAB_INPUT);
+			// Display button selections based on settings
+			SelectBtn(BTN_TAB_INPUT);
+			SelectBtnInGroup((controllerType == CONTROLLERTYPE_LIGHTGUN) ? BTN_PAD_GUN : ((controllerType == CONTROLLERTYPE_ANALOG) ? BTN_PAD_ANALOG : BTN_PAD_STANDARD), LBL_INPUT_CONT_TYPE);
+			SelectBtnInGroup(rumbleEnabled ? BTN_RUMBLE_NO : BTN_RUMBLE_YES, LBL_INPUT_RUMBLE);
+			GetButtonById(BTN_AUTOLOAD_BTN_CONF)->setText(&slotText[(loadButtonSlot == LOADBUTTON_DEFAULT) ? 0 : (loadButtonSlot+1)]);
 			break;
 		case SUBMENU_AUDIO:
 			setDefaultFocus(FRAME_BUTTONS[3].button);
 			for (int i = 0; i < NUM_TAB_BUTTONS; i++)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, FRAME_BUTTONS[39].button);
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[55].button);
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, GetButtonById(BTN_DISABLE_AUDIO_YES));
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, GetButtonById(BTN_VOLUME_LOUDEST));
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
-			for (int i = 14; i < 19; i++)
-				FRAME_TEXTBOXES[i].textBox->setVisible(true);
-			FRAME_BUTTONS[3].button->setSelected(true);
-			if (audioEnabled == AUDIO_DISABLE)	FRAME_BUTTONS[39].button->setSelected(true);
-			else								FRAME_BUTTONS[40].button->setSelected(true);
-			if (Config.Xa == XA_DISABLE)		FRAME_BUTTONS[41].button->setSelected(true);
-			else								FRAME_BUTTONS[42].button->setSelected(true);
-			if (Config.Cdda == CDDA_DISABLE)	FRAME_BUTTONS[43].button->setSelected(true);
-			else								FRAME_BUTTONS[44].button->setSelected(true);
-			if (!spu_config.iUseReverb)			FRAME_BUTTONS[54].button->setSelected(true);
-			else								FRAME_BUTTONS[55].button->setSelected(true);
-			FRAME_BUTTONS[45].buttonString = FRAME_STRINGS[46+volume];
-			for (int i = 39; i < 46; i++)
-			{
-				FRAME_BUTTONS[i].button->setVisible(true);
-				FRAME_BUTTONS[i].button->setActive(true);
+			SetVisibleLabelsForTab(TAB_AUDIO);
+			SetVisibleButtonsForTab(TAB_AUDIO);
+			// Display button selections based on settings
+			SelectBtn(BTN_TAB_AUDIO);
+			SelectBtnInGroup((audioEnabled == AUDIO_DISABLE) ? BTN_DISABLE_AUDIO_YES : BTN_DISABLE_AUDIO_NO, LBL_AUDIO_DISABLE);
+			SelectBtnInGroup((reverb == REVERB_DISABLE) ? BTN_DISABLE_REVERB_YES : BTN_DISABLE_REVERB_NO, LBL_AUDIO_REVERB);
+			switch(volume) {
+				case VOLUME_LOUDEST:
+					SelectBtnInGroup(BTN_VOLUME_LOUDEST, LBL_AUDIO_VOLUME);
+					break;
+				case VOLUME_LOUD:
+					SelectBtnInGroup(BTN_VOLUME_LOUD, LBL_AUDIO_VOLUME);
+					break;
+				case VOLUME_MEDIUM:
+					SelectBtnInGroup(BTN_VOLUME_MEDIUM, LBL_AUDIO_VOLUME);
+					break;
+				default:
+					SelectBtnInGroup(BTN_VOLUME_LOW, LBL_AUDIO_VOLUME);
+					break;
 			}
-			// Enable Reverb buttons
-			FRAME_BUTTONS[54].button->setVisible(true);
-			FRAME_BUTTONS[54].button->setActive(true);
-			FRAME_BUTTONS[55].button->setVisible(true);
-			FRAME_BUTTONS[55].button->setActive(true);
 			break;
 		case SUBMENU_SAVES:
 			setDefaultFocus(FRAME_BUTTONS[4].button);
 			for (int i = 0; i < NUM_TAB_BUTTONS; i++)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, FRAME_BUTTONS[46].button);
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[52].button);
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, GetButtonById(BTN_MEMCARD_SD));
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, GetButtonById(BTN_SSTATE_SD));
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
-			for (int i = 19; i < 22; i++)
-				FRAME_TEXTBOXES[i].textBox->setVisible(true);
-			FRAME_BUTTONS[4].button->setSelected(true);
-			FRAME_BUTTONS[46+nativeSaveDevice].button->setSelected(true);
-			if (autoSave == AUTOSAVE_ENABLE)	FRAME_BUTTONS[50].button->setSelected(true);
-			else								FRAME_BUTTONS[51].button->setSelected(true);
-			if (saveStateDevice == SAVESTATEDEVICE_SD)	FRAME_BUTTONS[52].button->setSelected(true);
-			else										FRAME_BUTTONS[53].button->setSelected(true);
-			for (int i = 46; i < NUM_FRAME_BUTTONS-3; i++)
-			{
-				FRAME_BUTTONS[i].button->setVisible(true);
-				FRAME_BUTTONS[i].button->setActive(true);
-			}
+			SetVisibleLabelsForTab(TAB_SAVES);
+			SetVisibleButtonsForTab(TAB_SAVES);
+			// Display button selections based on settings
+			SelectBtn(BTN_TAB_SAVES);
+			SelectBtnInGroup((nativeSaveDevice == NATIVESAVEDEVICE_SD) ? BTN_MEMCARD_SD : BTN_MEMCARD_USB, LBL_SAVES_NATIVE_LOC);
+			SelectBtnInGroup((saveStateDevice == SAVESTATEDEVICE_SD) ? BTN_SSTATE_SD : BTN_SSTATE_USB, LBL_SAVES_STATE_LOC);
 			break;
 	}
 }
@@ -685,9 +839,7 @@ void Func_TabSaves()
 
 void Func_CpuInterp()
 {
-	for (int i = 5; i <= 6; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[5].button->setSelected(true);
+	SelectBtnInGroup(BTN_INTERP, LBL_GENERAL_CPU);
 
 	int needInit = 0;
 	if(hasLoadedISO && dynacore != DYNACORE_INTERPRETER){ SysClose(); needInit = 1; }
@@ -704,9 +856,7 @@ void Func_CpuInterp()
 
 void Func_CpuDynarec()
 {
-	for (int i = 5; i <= 6; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[6].button->setSelected(true);
+	SelectBtnInGroup(BTN_DYNAREC, LBL_GENERAL_CPU);
 
 	int needInit = 0;
 	if(hasLoadedISO && dynacore != DYNACORE_DYNAREC){ SysClose(); needInit = 1; }
@@ -723,9 +873,7 @@ void Func_CpuDynarec()
 
 void Func_BiosSelectHLE()
 {
-	for (int i = 7; i <= 10; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[7].button->setSelected(true);
+	SelectBtnInGroup(BTN_HLE, LBL_GENERAL_BIOS);
 
 	int needInit = 0;
 	if(hasLoadedISO && biosDevice != BIOSDEVICE_HLE){ SysClose(); needInit = 1; }
@@ -757,20 +905,18 @@ int checkBiosExists(int testDevice)
 
 void Func_BiosSelectSD()
 {
-	for (int i = 7; i <= 10; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
 
 	int needInit = 0;
 	if(checkBiosExists(BIOSDEVICE_SD) == FILE_BROWSER_ERROR_NO_FILE) {
 		menu::MessageBox::getInstance().setMessage("BIOS not found on SD");
 		if(hasLoadedISO && biosDevice != BIOSDEVICE_HLE){ SysClose(); needInit = 1; }
 		biosDevice = BIOSDEVICE_HLE;
-		FRAME_BUTTONS[7].button->setSelected(true);
+		SelectBtnInGroup(BTN_HLE, LBL_GENERAL_BIOS);
 	}
 	else {
 		if(hasLoadedISO && biosDevice != BIOSDEVICE_SD){ SysClose(); needInit = 1; }
 		biosDevice = BIOSDEVICE_SD;
-		FRAME_BUTTONS[8].button->setSelected(true);
+		SelectBtnInGroup(BTN_SD, LBL_GENERAL_BIOS);
 	}
 	if(hasLoadedISO && needInit) {
 		SysInit ();
@@ -784,20 +930,18 @@ void Func_BiosSelectSD()
 
 void Func_BiosSelectUSB()
 {
-	for (int i = 7; i <= 10; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
 
 	int needInit = 0;
 	if(checkBiosExists(BIOSDEVICE_USB) == FILE_BROWSER_ERROR_NO_FILE) {
 		menu::MessageBox::getInstance().setMessage("BIOS not found on USB");
 		if(hasLoadedISO && biosDevice != BIOSDEVICE_HLE){ SysClose(); needInit = 1; }
 		biosDevice = BIOSDEVICE_HLE;
-		FRAME_BUTTONS[7].button->setSelected(true);
+		SelectBtnInGroup(BTN_HLE, LBL_GENERAL_BIOS);
 	}
 	else {
 		if(hasLoadedISO && biosDevice != BIOSDEVICE_USB){ SysClose(); needInit = 1; }
 		biosDevice = BIOSDEVICE_USB;
-		FRAME_BUTTONS[9].button->setSelected(true);
+		SelectBtnInGroup(BTN_USB, LBL_GENERAL_BIOS);
 	}
 	if(hasLoadedISO && needInit) {
 		SysInit ();
@@ -809,33 +953,18 @@ void Func_BiosSelectUSB()
 	}
 }
 
-void Func_BiosSelectDVD()
-{
-  	menu::MessageBox::getInstance().setMessage("DVD BIOS not implemented");
-}
-
 void Func_BootBiosYes()
 {
-	/* If HLE bios selected, boot thru bios shouldn't make a difference. TODO: Check this.
-	if(biosDevice == BIOSDEVICE_HLE) {
-		menu::MessageBox::getInstance().setMessage("You must select a BIOS, not HLE");
-		return;
-	}*/
-	
-	for (int i = 11; i <= 12; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[11].button->setSelected(true);
-	
+	SelectBtnInGroup(BTN_BIOS_YES, LBL_GENERAL_BOOT_BIOS);
 	LoadCdBios = BOOTTHRUBIOS_YES;
+	Config.SlowBoot = 1;
 }
 
 void Func_BootBiosNo()
 {
-	for (int i = 11; i <= 12; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[12].button->setSelected(true);
-
+	SelectBtnInGroup(BTN_BIOS_NO, LBL_GENERAL_BOOT_BIOS);
 	LoadCdBios = BOOTTHRUBIOS_NO;
+	Config.SlowBoot = 0;
 }
 
 void Func_ExecuteBios()
@@ -844,18 +973,12 @@ void Func_ExecuteBios()
 		menu::MessageBox::getInstance().setMessage("You must select a BIOS, not HLE");
 		return;
 	}
-	if(hasLoadedISO) {
-		//TODO: Implement yes/no that current game will be reset
-		SysClose();
-	}
-
-	//TODO: load/save memcards here
-	if(SysInit() < 0) {
-		menu::MessageBox::getInstance().setMessage("Failed to initialize system.\nTry loading an ISO.");
-		return;
-	}
-	CheckCdrom();
-	SysReset();
+	fileBrowser_file testFile;
+	memset(&testFile, 0, sizeof(fileBrowser_file));
+	sprintf(&testFile.name[0], "%s/SCPH1001.BIN", &biosFile_dir->name[0]);
+	
+	Config.SlowBoot = 1;
+	loadISO(&testFile);
 	resumeAudio();
 	resumeInput();
 	menuActive = 0;
@@ -863,6 +986,7 @@ void Func_ExecuteBios()
 	menuActive = 1;
 	pauseInput();
 	pauseAudio();
+	Config.SlowBoot = LoadCdBios;	// put it back to the user setting.
 }
 
 extern void writeConfig(FILE* f);
@@ -903,167 +1027,114 @@ void Func_SaveSettingsUSB()
 
 void Func_ShowFpsOn()
 {
-	for (int i = 16; i <= 17; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[16].button->setSelected(true);
+	SelectBtnInGroup(BTN_SHOW_FPS_ON, LBL_VIDEO_FPS_SHOW);
 	showFPSonScreen = FPS_SHOW;
 }
 
 void Func_ShowFpsOff()
 {
-	for (int i = 16; i <= 17; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[17].button->setSelected(true);
+	SelectBtnInGroup(BTN_SHOW_FPS_OFF, LBL_VIDEO_FPS_SHOW);
 	showFPSonScreen = FPS_HIDE;
 }
 
-//extern "C" void GPUsetframelimit(unsigned long option);
-
 void Func_FpsLimitAuto()
 {
-	for (int i = 18; i <= 19; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[18].button->setSelected(true);
+	SelectBtnInGroup(BTN_LIMIT_FPS_ON, LBL_VIDEO_FPS_LIMIT);
 	frameLimit = FRAMELIMIT_AUTO;
-	//GPUsetframelimit(0);
 }
 
 void Func_FpsLimitOff()
 {
-	for (int i = 18; i <= 19; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[19].button->setSelected(true);
+	SelectBtnInGroup(BTN_LIMIT_FPS_OFF, LBL_VIDEO_FPS_LIMIT);
 	frameLimit = FRAMELIMIT_NONE;
-	//GPUsetframelimit(0);
 }
 
 void Func_FrameSkipOn()
 {
-	for (int i = 20; i <= 21; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[20].button->setSelected(true);
+	SelectBtnInGroup(BTN_FSKIP_ON, LBL_VIDEO_FRAMESKIP);
 	frameSkip = FRAMESKIP_ENABLE;
-	//GPUsetframelimit(0);
 }
 
 void Func_FrameSkipOff()
 {
-	for (int i = 20; i <= 21; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[21].button->setSelected(true);
+	SelectBtnInGroup(BTN_FSKIP_OFF, LBL_VIDEO_FRAMESKIP);
 	frameSkip = FRAMESKIP_DISABLE;
-	//GPUsetframelimit(0);
 }
 
 void Func_ScreenMode4_3()
 {
-	for (int i = 22; i <= 24; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[22].button->setSelected(true);
+	SelectBtnInGroup(BTN_SM_4_3, LBL_VIDEO_SCREENMODE);
 	screenMode = SCREENMODE_4x3;
 }
 
 void Func_ScreenMode16_9()
 {
-	for (int i = 22; i <= 24; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[23].button->setSelected(true);
+	SelectBtnInGroup(BTN_SM_16_9, LBL_VIDEO_SCREENMODE);
 	screenMode = SCREENMODE_16x9;
 }
 
 void Func_ScreenForce16_9()
 {
-	for (int i = 22; i <= 24; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[24].button->setSelected(true);
+	SelectBtnInGroup(BTN_SM_F_16_9, LBL_VIDEO_SCREENMODE);
 	screenMode = SCREENMODE_16x9_PILLARBOX;
 }
 
 void Func_DitheringNone()
 {
-	for (int i = 25; i <= 27; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[25].button->setSelected(true);
+	SelectBtnInGroup(BTN_DITHER_NONE, LBL_VIDEO_DITHER);
 	useDithering = USEDITHER_NONE;
 }
 
 void Func_DitheringDefault()
 {
-	for (int i = 25; i <= 27; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[26].button->setSelected(true);
+	SelectBtnInGroup(BTN_DITHER_DEFAULT, LBL_VIDEO_DITHER);
 	useDithering = USEDITHER_DEFAULT;
 }
 
 void Func_DitheringAlways()
 {
-	for (int i = 25; i <= 27; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[27].button->setSelected(true);
+	SelectBtnInGroup(BTN_DITHER_ALWAYS, LBL_VIDEO_DITHER);
 	useDithering = USEDITHER_ALWAYS;
 }
 
-void Func_ScalingNone()
-{
-	//TODO: Implement 2xSaI scaling and then make it an option.
-}
-
-void Func_Scaling2xSai()
-{
-	//TODO: Implement 2xSaI scaling and then make it an option.
-}
 
 void Func_ConfigureInput()
 {
-//	menu::MessageBox::getInstance().setMessage("Input configuration not implemented");
 	pMenuContext->setActiveFrame(MenuContext::FRAME_CONFIGUREINPUT,ConfigureInputFrame::SUBMENU_REINIT);
 }
 
 void Func_ConfigureButtons()
 {
-//	menu::MessageBox::getInstance().setMessage("Button Mapping not implemented");
 	pMenuContext->setActiveFrame(MenuContext::FRAME_CONFIGUREBUTTONS,ConfigureButtonsFrame::SUBMENU_PSX_PADNONE);
 }
 
 void Func_PsxTypeStandard()
 {
-	for (int i = 32; i <= 33; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[56].button->setSelected(false);
-	FRAME_BUTTONS[32].button->setSelected(true);
+	SelectBtnInGroup(BTN_PAD_STANDARD, LBL_INPUT_CONT_TYPE);
 	controllerType = CONTROLLERTYPE_STANDARD;
 }
 
 void Func_PsxTypeAnalog()
 {
-	for (int i = 32; i <= 33; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[56].button->setSelected(false);
-	FRAME_BUTTONS[33].button->setSelected(true);
+	SelectBtnInGroup(BTN_PAD_ANALOG, LBL_INPUT_CONT_TYPE);
 	controllerType = CONTROLLERTYPE_ANALOG;
 }
 
 void Func_PsxTypeLightgun()
 {
-	for (int i = 32; i <= 33; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[56].button->setSelected(true);
+	SelectBtnInGroup(BTN_PAD_GUN, LBL_INPUT_CONT_TYPE);
 	controllerType = CONTROLLERTYPE_LIGHTGUN;
 }
 
 void Func_DisableRumbleYes()
 {
-	for (int i = 34; i <= 35; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[34].button->setSelected(true);
+	SelectBtnInGroup(BTN_RUMBLE_YES, LBL_INPUT_RUMBLE);
 	rumbleEnabled = RUMBLE_DISABLE;
 }
 
 void Func_DisableRumbleNo()
 {
-	for (int i = 34; i <= 35; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[35].button->setSelected(true);
+	SelectBtnInGroup(BTN_RUMBLE_NO, LBL_INPUT_RUMBLE);
 	rumbleEnabled = RUMBLE_ENABLE;
 }
 
@@ -1150,150 +1221,83 @@ void Func_SaveButtonsUSB()
 void Func_ToggleButtonLoad()
 {
 	loadButtonSlot = (loadButtonSlot + 1) % 5;
-	if (loadButtonSlot == LOADBUTTON_DEFAULT)
-		strcpy(FRAME_STRINGS[42], "Default");
-	else
-		sprintf(FRAME_STRINGS[42], "Slot %d", loadButtonSlot+1);
+	GetButtonById(BTN_AUTOLOAD_BTN_CONF)->setText(&slotText[(loadButtonSlot == LOADBUTTON_DEFAULT) ? 0 : (loadButtonSlot+1)]);
 }
 
 void Func_DisableAudioYes()
 {
-	for (int i = 39; i <= 40; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[39].button->setSelected(true);
+	SelectBtnInGroup(BTN_DISABLE_AUDIO_YES, LBL_AUDIO_DISABLE);
 	audioEnabled = AUDIO_DISABLE;
 }
 
 void Func_DisableAudioNo()
 {
-	for (int i = 39; i <= 40; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[40].button->setSelected(true);
+	SelectBtnInGroup(BTN_DISABLE_AUDIO_NO, LBL_AUDIO_DISABLE);
 	audioEnabled = AUDIO_ENABLE;
-}
-
-void Func_DisableXaYes()
-{
-	for (int i = 41; i <= 42; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[41].button->setSelected(true);
-	Config.Xa = XA_DISABLE;
-}
-
-void Func_DisableXaNo()
-{
-	for (int i = 41; i <= 42; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[42].button->setSelected(true);
-	Config.Xa = XA_ENABLE;
-}
-
-void Func_DisableCddaYes()
-{
-	for (int i = 43; i <= 44; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[43].button->setSelected(true);
-	Config.Cdda = CDDA_DISABLE;
-}
-
-void Func_DisableCddaNo()
-{
-	for (int i = 43; i <= 44; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[44].button->setSelected(true);
-	Config.Cdda = CDDA_ENABLE;
 }
 
 void Func_DisableReverbYes()
 {
-	FRAME_BUTTONS[55].button->setSelected(false);
-	FRAME_BUTTONS[54].button->setSelected(true);
-	spu_config.iUseReverb = 0;
+	SelectBtnInGroup(BTN_DISABLE_REVERB_YES, LBL_AUDIO_REVERB);
+	spu_config.iUseReverb = reverb = 0;
 }
 
 void Func_DisableReverbNo()
 {
-	FRAME_BUTTONS[54].button->setSelected(false);
-	FRAME_BUTTONS[55].button->setSelected(true);
-	spu_config.iUseReverb = 1;
+	SelectBtnInGroup(BTN_DISABLE_REVERB_NO, LBL_AUDIO_REVERB);
+	spu_config.iUseReverb = reverb = 1;
 }
 
 extern "C" void SetVolume(void);
 
-void Func_VolumeToggle()
-{
-	volume--;
-	if (volume<1)
-		volume = 4;
+void doVolume(int v, int btnId) {
+	volume = v;
 	spu_config.iVolume = 1024 - (volume * 192);
-	FRAME_BUTTONS[45].buttonString = FRAME_STRINGS[46+volume];
+	SelectBtnInGroup(btnId, LBL_AUDIO_VOLUME);
 	SetVolume();
+}
+
+void Func_VolumeLoudest()
+{
+	doVolume(VOLUME_LOUDEST, BTN_VOLUME_LOUDEST);
+}
+
+void Func_VolumeLoud()
+{
+	doVolume(VOLUME_LOUD, BTN_VOLUME_LOUD);
+}
+
+void Func_VolumeMedium()
+{
+	doVolume(VOLUME_MEDIUM, BTN_VOLUME_MEDIUM);
+}
+
+void Func_VolumeLow()
+{
+	doVolume(VOLUME_LOW, BTN_VOLUME_LOW);
 }
 
 void Func_MemcardSaveSD()
 {
-	for (int i = 46; i <= 49; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[46].button->setSelected(true);
+	SelectBtnInGroup(BTN_MEMCARD_SD, LBL_SAVES_NATIVE_LOC);
 	nativeSaveDevice = NATIVESAVEDEVICE_SD;
 }
 
 void Func_MemcardSaveUSB()
 {
-	for (int i = 46; i <= 49; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[47].button->setSelected(true);
+	SelectBtnInGroup(BTN_MEMCARD_USB, LBL_SAVES_NATIVE_LOC);
 	nativeSaveDevice = NATIVESAVEDEVICE_USB;
-}
-
-void Func_MemcardSaveCardA()
-{
-	//for (int i = 46; i <= 49; i++)
-	//	FRAME_BUTTONS[i].button->setSelected(false);
-	//FRAME_BUTTONS[48].button->setSelected(true);
-	//nativeSaveDevice = NATIVESAVEDEVICE_CARDA;
-	menu::MessageBox::getInstance().setMessage("Not currently supported.");
-}
-
-void Func_MemcardSaveCardB()
-{
-	//for (int i = 46; i <= 49; i++)
-	//	FRAME_BUTTONS[i].button->setSelected(false);
-	//FRAME_BUTTONS[49].button->setSelected(true);
-	//nativeSaveDevice = NATIVESAVEDEVICE_CARDB;
-	menu::MessageBox::getInstance().setMessage("Not currently supported.");
-}
-
-void Func_AutoSaveYes()
-{
-	for (int i = 50; i <= 51; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[50].button->setSelected(true);
-	autoSave = AUTOSAVE_ENABLE;
-}
-
-void Func_AutoSaveNo()
-{
-	//for (int i = 50; i <= 51; i++)
-	//	FRAME_BUTTONS[i].button->setSelected(false);
-	//FRAME_BUTTONS[51].button->setSelected(true);
-	//autoSave = AUTOSAVE_DISABLE;
-	menu::MessageBox::getInstance().setMessage("Not currently supported.");
 }
 
 void Func_SaveStateSD()
 {
-	for (int i = 52; i <= 53; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[52].button->setSelected(true);
+	SelectBtnInGroup(BTN_SSTATE_SD, LBL_SAVES_STATE_LOC);
 	saveStateDevice = SAVESTATEDEVICE_SD;
 }
 
 void Func_SaveStateUSB()
 {
-	for (int i = 52; i <= 53; i++)
-		FRAME_BUTTONS[i].button->setSelected(false);
-	FRAME_BUTTONS[53].button->setSelected(true);
+	SelectBtnInGroup(BTN_SSTATE_USB, LBL_SAVES_STATE_LOC);
 	saveStateDevice = SAVESTATEDEVICE_USB;
 }
 

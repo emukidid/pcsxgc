@@ -71,6 +71,7 @@ public:
 		BUTTON_STYLEA_NORMAL,
 		BUTTON_STYLEA_SELECT
 	};
+	float x, y, width, height, fontSize;
 
 private:
 	bool active, selected;
@@ -81,7 +82,6 @@ private:
 	char** buttonText;
 	int buttonStyle, labelMode, labelScissor;
 	unsigned long StartTime;
-	float x, y, width, height, fontSize;
 	GXColor	focusColor, inactiveColor, activeColor, selectedColor, labelColor;
 	ButtonFunc clickedFunc, returnFunc;
 

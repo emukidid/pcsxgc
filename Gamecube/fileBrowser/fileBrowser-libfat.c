@@ -212,8 +212,15 @@ int fileBrowser_libfat_init(fileBrowser_file* f){
 		}
  	}
 	else if(f->name[0] == 'u') {	// USB
-		if(fatMountSimple ("usb", usb)) {
-			res = 1;
+		int retries = 3;
+		for(int i = 0; i < retries; i++) {
+			if(fatMountSimple ("usb", usb)) {
+				res = 1;
+				break;
+			}
+			// my USB devices really seem to need this.
+			sleep(1);
+			if(res) break;
 		}
 	}
 	else if(f->name[0] == 'd') {	// DVD
@@ -266,7 +273,7 @@ int fileBrowser_libfat_deinit(fileBrowser_file* f){
 static FILE* fd;
 
 int fileBrowser_libfatROM_deinit(fileBrowser_file* f){
-  if(fd) {
+	if(fd) {
 		fclose(fd);
 	}
 	

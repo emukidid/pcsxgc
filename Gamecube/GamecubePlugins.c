@@ -77,7 +77,7 @@ void CALLBACK SPUregisterCDDAVolume(void (CALLBACK *CDDAVcallback)(short, short)
 void CALLBACK SPUregisterScheduleCb(void (CALLBACK *callback)(unsigned int));
 void CALLBACK SPUwriteDMAMem(unsigned short *pusPSXMem, int iSize, unsigned int cycles);
 void CALLBACK SPUreadDMAMem(unsigned short *pusPSXMem, int iSize, unsigned int cycles);
-unsigned short CALLBACK SPUreadRegister(unsigned long reg);
+unsigned short CALLBACK SPUreadRegister(unsigned long reg, unsigned int cycles);
 void CALLBACK SPUwriteRegister(unsigned long reg, unsigned short val, unsigned int cycles);
 long CALLBACK SPUopen(void);
 long CALLBACK SPUclose(void);
