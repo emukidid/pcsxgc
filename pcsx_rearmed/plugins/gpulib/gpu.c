@@ -15,8 +15,11 @@
 
 #include "gpu.h"
 #include "../../libpcsxcore/gpu.h" // meh
+#include "../../frontend/plugin_lib.h"
 
+#ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#endif
 #ifdef __GNUC__
 #define unlikely(x) __builtin_expect((x), 0)
 #define preload __builtin_prefetch
@@ -85,9 +88,9 @@ static noinline void update_width(void)
     sw /= hdiv;
     sw = (sw + 2) & ~3; // according to nocash
     switch (gpu.state.screen_centering_type) {
-    case 1:
+    case C_INGAME:
       break;
-    case 2:
+    case C_MANUAL:
       x = gpu.state.screen_centering_x;
       break;
     default:
@@ -129,9 +132,12 @@ static noinline void update_height(void)
     /* nothing displayed? */;
   else {
     switch (gpu.state.screen_centering_type) {
-    case 1:
+    case C_INGAME:
       break;
-    case 2:
+    case C_BORDERLESS:
+      y = 0;
+      break;
+    case C_MANUAL:
       y = gpu.state.screen_centering_y;
       break;
     default:
@@ -299,6 +305,7 @@ long GPUshutdown(void)
 void GPUwriteStatus(uint32_t data)
 {
   uint32_t cmd = data >> 24;
+  int src_x, src_y;
 
   if (cmd < ARRAY_SIZE(gpu.regs)) {
     if (cmd > 1 && cmd != 5 && gpu.regs[cmd] == data)
@@ -328,14 +335,17 @@ void GPUwriteStatus(uint32_t data)
       gpu.status |= PSX_GPU_STATUS_DMA(data & 3);
       break;
     case 0x05:
-      gpu.screen.src_x = data & 0x3ff;
-      gpu.screen.src_y = (data >> 10) & 0x1ff;
-      renderer_notify_scanout_x_change(gpu.screen.src_x, gpu.screen.hres);
-      if (gpu.frameskip.set) {
-        decide_frameskip_allow(gpu.ex_regs[3]);
-        if (gpu.frameskip.last_flip_frame != *gpu.state.frame_count) {
-          decide_frameskip();
-          gpu.frameskip.last_flip_frame = *gpu.state.frame_count;
+      src_x = data & 0x3ff; src_y = (data >> 10) & 0x1ff;
+      if (src_x != gpu.screen.src_x || src_y != gpu.screen.src_y) {
+        gpu.screen.src_x = src_x;
+        gpu.screen.src_y = src_y;
+        renderer_notify_scanout_change(src_x, src_y);
+        if (gpu.frameskip.set) {
+          decide_frameskip_allow(gpu.ex_regs[3]);
+          if (gpu.frameskip.last_flip_frame != *gpu.state.frame_count) {
+            decide_frameskip();
+            gpu.frameskip.last_flip_frame = *gpu.state.frame_count;
+          }
         }
       }
       break;
@@ -869,7 +879,7 @@ long GPUfreeze(uint32_t type, struct GPUFreeze *freeze)
         GPUwriteStatus((i << 24) | (gpu.regs[i] ^ 1));
       }
       renderer_sync_ecmds(gpu.ex_regs);
-      renderer_update_caches(0, 0, 1024, 512, 1);
+      renderer_update_caches(0, 0, 1024, 512, 0);
       break;
   }
 
@@ -945,8 +955,6 @@ void GPUgetScreenInfo(int *y, int *base_hres)
   if (gpu.status & PSX_GPU_STATUS_DHEIGHT)
     *base_hres >>= 1;
 }
-
-#include "../../frontend/plugin_lib.h"
 
 void GPUrearmedCallbacks(const struct rearmed_cbs *cbs)
 {

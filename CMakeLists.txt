@@ -170,6 +170,7 @@ add_library(libpcsxcore OBJECT
 	pcsx_rearmed/libpcsxcore/psxcommon.c
 	pcsx_rearmed/libpcsxcore/psxcounters.c
 	pcsx_rearmed/libpcsxcore/psxdma.c
+	pcsx_rearmed/libpcsxcore/psxevents.c
 	pcsx_rearmed/libpcsxcore/psxhw.c
 	pcsx_rearmed/libpcsxcore/psxinterpreter.c
 	pcsx_rearmed/libpcsxcore/psxmem.c
@@ -178,7 +179,6 @@ add_library(libpcsxcore OBJECT
 	pcsx_rearmed/libpcsxcore/socket.c
 	pcsx_rearmed/libpcsxcore/spu.c
 	pcsx_rearmed/libpcsxcore/new_dynarec/emu_if.c
-	pcsx_rearmed/libpcsxcore/new_dynarec/events.c
 	pcsx_rearmed/libpcsxcore/lightrec/plugin.c
 )
 target_include_directories(libpcsxcore PUBLIC
