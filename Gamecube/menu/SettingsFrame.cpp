@@ -29,6 +29,7 @@
 #include "../wiiSXconfig.h"
 
 #include <libpcsxcore/psxcommon.h>
+#include <psemu_plugin_defs.h>
 
 extern "C" {
 #include "../../pcsx_rearmed/plugins/dfsound/spu_config.h"
@@ -36,6 +37,7 @@ extern "C" {
 #include "../fileBrowser/fileBrowser.h"
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
+extern int in_type[8];
 }
 
 extern void Func_SetPlayGame();
@@ -1112,18 +1114,21 @@ void Func_PsxTypeStandard()
 {
 	SelectBtnInGroup(BTN_PAD_STANDARD, LBL_INPUT_CONT_TYPE);
 	controllerType = CONTROLLERTYPE_STANDARD;
+	in_type[0] = in_type[1] = PSE_PAD_TYPE_STANDARD;
 }
 
 void Func_PsxTypeAnalog()
 {
 	SelectBtnInGroup(BTN_PAD_ANALOG, LBL_INPUT_CONT_TYPE);
 	controllerType = CONTROLLERTYPE_ANALOG;
+	in_type[0] = in_type[1] = PSE_PAD_TYPE_ANALOGPAD;
 }
 
 void Func_PsxTypeLightgun()
 {
 	SelectBtnInGroup(BTN_PAD_GUN, LBL_INPUT_CONT_TYPE);
 	controllerType = CONTROLLERTYPE_LIGHTGUN;
+	in_type[0] = in_type[1] = PSE_PAD_TYPE_GUNCON;
 }
 
 void Func_DisableRumbleYes()

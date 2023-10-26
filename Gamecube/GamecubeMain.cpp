@@ -120,6 +120,13 @@ char smbPassWord[CONFIG_STRING_SIZE];
 char smbShareName[CONFIG_STRING_SIZE];
 char smbIpAddr[CONFIG_STRING_SIZE];
 
+int in_type[8] = {
+   PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE,
+   PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE,
+   PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE,
+   PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE
+};
+
 extern "C" int stop;
 
 static struct {
@@ -317,6 +324,7 @@ void loadSettings(int argc, char *argv[])
 	Config.SlowBoot = LoadCdBios;
 	spu_config.iVolume = 1024 - (volume * 192); //Volume="medium" in PEOPSspu
 	spu_config.iUseReverb = reverb;
+	in_type[0] = in_type[1] = (controllerType == CONTROLLERTYPE_ANALOG ? PSE_PAD_TYPE_ANALOGPAD : (controllerType == CONTROLLERTYPE_STANDARD ? PSE_PAD_TYPE_STANDARD : PSE_PAD_TYPE_GUNCON));
 
 }
 
@@ -675,14 +683,6 @@ void pl_gun_byte2(int port, unsigned char byte)
 {
 }
 
-
-/* TODO: Should be populated properly */
-int in_type[8] = {
-   PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE,
-   PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE,
-   PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE,
-   PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE
-};
 
 /* 0x000000 -> 0x200000: RAM (2 MiB)
  * 0x200000 -> 0x210000: Parallel port (64 KiB)
