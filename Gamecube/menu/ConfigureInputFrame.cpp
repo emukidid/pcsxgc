@@ -51,7 +51,7 @@ void Func_ReturnFromConfigureInputFrame();
 #define NUM_FRAME_TEXTBOXES 3
 #define FRAME_TEXTBOXES configureInputFrameTextBoxes
 
-static char FRAME_STRINGS[16][15] =
+static const char FRAME_STRINGS[16][15] =
 	{ "Pad Assignment",
 	  "PSX Pad 1",
 	  "PSX Pad 2",
@@ -74,7 +74,7 @@ struct ButtonInfo
 {
 	menu::Button	*button;
 	int				buttonStyle;
-	char*			buttonString;
+	const char*		buttonString;
 	float			x;
 	float			y;
 	float			width;
@@ -99,7 +99,7 @@ struct ButtonInfo
 struct TextBoxInfo
 {
 	menu::TextBox	*textBox;
-	char*			textBoxString;
+	const char*		textBoxString;
 	float			x;
 	float			y;
 	float			scale;

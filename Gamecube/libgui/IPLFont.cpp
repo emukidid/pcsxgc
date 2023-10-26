@@ -289,13 +289,13 @@ void IplFont::setColor(GXColor* fontColorPtr)
 	fontColor.a = fontColorPtr->a;
 }
 
-void IplFont::drawString(int x, int y, char *string, float scale, bool centered)
+void IplFont::drawString(int x, int y, const char *string, float scale, bool centered)
 {
 	if(centered)
 	{
 		int strWidth = 0;
 		int strHeight = (fontChars.fheight+STRHEIGHT_OFFSET) * scale;
-		char* string_work = string;
+		const char* string_work = string;
 //		while(*string_work && (x < back_framewidth))
 		while(*string_work)
 		{
@@ -341,15 +341,15 @@ void IplFont::drawString(int x, int y, char *string, float scale, bool centered)
 
 }
 
-int IplFont::drawStringWrap(int x, int y, char *string, float scale, bool centered, int maxWidth, int lineSpacing)
+int IplFont::drawStringWrap(int x, int y, const char *string, float scale, bool centered, int maxWidth, int lineSpacing)
 {
 	int numLines = 0;
 	int stringWidth = 0;
 	int tokenWidth = 0;
 	int numTokens = 0;
-	char* lineStart = string;
-	char* lineStop = string;
-	char* stringWork = string;
+	const char* lineStart = string;
+	const char* lineStop = string;
+	const char* stringWork = string;
 	char* stringDraw = NULL;
 
 	while(1)
@@ -420,10 +420,10 @@ int IplFont::drawStringWrap(int x, int y, char *string, float scale, bool center
 	return numLines;
 }
 
-void IplFont::drawStringAtOrigin(char *string, float scale)
+void IplFont::drawStringAtOrigin(const char *string, float scale)
 {
 	int x0, y0, x = 0;
-	char* string_work = string;
+	const char* string_work = string;
 	while(*string_work)
 	{
 		unsigned char c = *string_work;
@@ -435,10 +435,10 @@ void IplFont::drawStringAtOrigin(char *string, float scale)
 	drawString(x0, y0, string, scale, false);
 }
 
-int IplFont::getStringWidth(char *string, float scale)
+int IplFont::getStringWidth(const char *string, float scale)
 {
 	int strWidth = 0;
-	char* string_work = string;
+	const char* string_work = string;
 	while(*string_work)
 	{
 		unsigned char c = *string_work;
@@ -448,7 +448,7 @@ int IplFont::getStringWidth(char *string, float scale)
 	return strWidth;
 }
 
-int IplFont::getStringHeight(char *string, float scale)
+int IplFont::getStringHeight(const char *string, float scale)
 {
 	int strHeight = (fontChars.fheight+STRHEIGHT_OFFSET) * scale;
 
@@ -463,7 +463,7 @@ void IplFont_drawInit(GXColor fontColor)
 	menu::IplFont::getInstance().drawInit(fontColor);
 }
 
-void IplFont_drawString(int x, int y, char *string, float scale, bool centered)
+void IplFont_drawString(int x, int y, const char *string, float scale, bool centered)
 {
 	menu::IplFont::getInstance().drawString(x, y, string, scale, centered); 
 }

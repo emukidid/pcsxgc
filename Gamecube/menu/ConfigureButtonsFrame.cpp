@@ -107,7 +107,7 @@ struct ButtonInfo
 {
 	menu::Button	*button;
 	int				buttonStyle;
-	char*			buttonString;
+	const char*		buttonString;
 	float			x;
 	float			y;
 	float			width;
@@ -156,7 +156,7 @@ struct ButtonInfo
 struct TextBoxInfo
 {
 	menu::TextBox	*textBox;
-	char*			textBoxString;
+	const char*		textBoxString;
 	float			x;
 	float			y;
 	float			scale;

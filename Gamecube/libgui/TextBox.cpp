@@ -24,7 +24,7 @@
 
 namespace menu {
 
-TextBox::TextBox(char** label, float x, float y, float scale, bool centered)
+TextBox::TextBox(const char** label, float x, float y, float scale, bool centered)
 		: centered(centered),
 		  textBoxText(label),
 		  x(x),
@@ -50,7 +50,7 @@ void TextBox::setColor(GXColor *colors)
 	labelColor.a = colors[0].a;
 }
 
-void TextBox::setText(char** strPtr)
+void TextBox::setText(const char** strPtr)
 {
 	textBoxText = strPtr;
 }

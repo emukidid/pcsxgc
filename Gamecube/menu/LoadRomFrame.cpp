@@ -44,7 +44,7 @@ void Func_ReturnFromLoadRomFrame();
 #define FRAME_BUTTONS loadRomFrameButtons
 #define FRAME_STRINGS loadRomFrameStrings
 
-static char FRAME_STRINGS[4][25] =
+static const char FRAME_STRINGS[4][25] =
 	{ "Load from SD",
 	  "Load from DVD",
 	  "Load from USB",
@@ -54,7 +54,7 @@ struct ButtonInfo
 {
 	menu::Button	*button;
 	int				buttonStyle;
-	char*			buttonString;
+	const char*		buttonString;
 	float			x;
 	float			y;
 	float			width;
