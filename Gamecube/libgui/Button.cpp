@@ -28,7 +28,7 @@
 
 namespace menu {
 
-Button::Button(int style, char** label, float x, float y, float width, float height)
+Button::Button(int style, const char** label, float x, float y, float width, float height)
 		: active(false),
 		  selected(false),
 		  normalImage(0),
@@ -121,7 +121,7 @@ void Button::doClicked()
 	if (clickedFunc) clickedFunc();
 }
 
-void Button::setText(char** strPtr)
+void Button::setText(const char** strPtr)
 {
 	buttonText = strPtr;
 }

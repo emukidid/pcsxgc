@@ -60,7 +60,7 @@ void Func_PlayGame();
 #define FRAME_BUTTONS mainFrameButtons
 #define FRAME_STRINGS mainFrameStrings
 
-char FRAME_STRINGS[7][20] =
+static const char FRAME_STRINGS[7][20] =
 	{ "Load ISO",
 	  "Current ISO",
 	  "Settings",
@@ -74,7 +74,7 @@ struct ButtonInfo
 {
 	menu::Button	*button;
 	int				buttonStyle;
-	char*			buttonString;
+	const char*		buttonString;
 	float			x;
 	float			y;
 	float			width;

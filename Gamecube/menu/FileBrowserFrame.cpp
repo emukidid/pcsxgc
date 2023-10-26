@@ -57,7 +57,7 @@ void Func_Select10();
 #define FRAME_BUTTONS fileBrowserFrameButtons
 #define FRAME_STRINGS fileBrowserFrameStrings
 
-static char FRAME_STRINGS[3][5] =
+static const char FRAME_STRINGS[3][5] =
 	{ "Prev",
 	  "Next",
 	  ""};
@@ -67,7 +67,7 @@ struct ButtonInfo
 {
 	menu::Button	*button;
 	int				buttonStyle;
-	char*			buttonString;
+	const char*			buttonString;
 	float			x;
 	float			y;
 	float			width;

@@ -157,7 +157,7 @@ Memcard Save Device: SD; USB
 Save States Device: SD; USB
 */
 
-static char *slotText[5] = {
+static const char *slotText[5] = {
 	"Default", "Slot 1", "Slot 2", "Slot 3", "Slot 4"
 };
 
@@ -223,7 +223,7 @@ enum BUTTON_IDS {
 struct LabelResources
 {
 	int	key;
-	char* def_val;
+	const char* def_val;
 } RES_BTN_LBL[BTNS_END] =
 {
 	{BTN_TAB_GENERAL, "General"},

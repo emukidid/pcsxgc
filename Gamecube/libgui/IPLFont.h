@@ -32,11 +32,11 @@ public:
 	void drawInit(GXColor fontColor);
 	void setColor(GXColor fontColor);
 	void setColor(GXColor* fontColorPtr);
-	void drawString(int x, int y, char *string, float scale, bool centered);
-	int drawStringWrap(int x, int y, char *string, float scale, bool centered, int maxWidth, int lineSpacing);
-	void drawStringAtOrigin(char *string, float scale);
-	int getStringWidth(char *string, float scale);
-	int getStringHeight(char *string, float scale);
+	void drawString(int x, int y, const char *string, float scale, bool centered);
+	int drawStringWrap(int x, int y, const char *string, float scale, bool centered, int maxWidth, int lineSpacing);
+	void drawStringAtOrigin(const char *string, float scale);
+	int getStringWidth(const char *string, float scale);
+	int getStringHeight(const char *string, float scale);
 	static IplFont& getInstance()
 	{
 		static IplFont obj;

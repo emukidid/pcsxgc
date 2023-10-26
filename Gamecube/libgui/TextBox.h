@@ -29,15 +29,15 @@ namespace menu {
 class TextBox : public Component
 {
 public:
-	TextBox(char** label, float x, float y, float scale, bool centered);
+	TextBox(const char** label, float x, float y, float scale, bool centered);
 	~TextBox();
 	void setColor(GXColor *labelColor);
-	void setText(char** strPtr);
+	void setText(const char** strPtr);
 	void drawComponent(Graphics& gfx);
 
 private:
 	bool centered;
-	char** textBoxText;
+	const char** textBoxText;
 	float x, y, scale;
 	GXColor	labelColor;
 

@@ -71,7 +71,7 @@ struct ButtonInfo
 {
 	menu::Button	*button;
 	int				buttonStyle;
-	char*			buttonString;
+	const char*			buttonString;
 	float			x;
 	float			y;
 	float			width;
