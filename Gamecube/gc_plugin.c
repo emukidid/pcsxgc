@@ -427,7 +427,10 @@ static void gc_vout_render(void)
 	GX_SetDrawDone();
 }
 
-void GX_Flip(int width, int height, const void* buffer, int pitch, u8 fmt)
+static int screen_w, screen_h;
+
+static void GX_Flip(const void *buffer, int pitch, u8 fmt,
+		    int x, int y, int width, int height)
 {	
 	int h, w;
 	static int oldwidth=0;
@@ -581,21 +584,27 @@ void GX_Flip(int width, int height, const void* buffer, int pitch, u8 fmt)
 	GX_SetNumTexGens(1);
 	GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
 
-	float xcoord = 1.0;
-	float ycoord = 1.0;
-	if(screenMode == SCREENMODE_16x9_PILLARBOX) xcoord = 640.0/848.0;
+	float ymin = 1.0f - (float)((y + height) * 2) / (float)screen_h;
+	float ymax = 1.0f - (float)y / (float)screen_h;
+	float xmin = (float)x / (float)screen_w - 1.0f;
+	float xmax = (float)((x + width) * 2) / (float)screen_w - 1.0f;
+
+	if(screenMode == SCREENMODE_16x9_PILLARBOX) {
+		xmin *= 640.0f / 848.0f;
+		xmax *= 640.0f / 848.0f;
+	}
 
 	GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-	  GX_Position2f32(-xcoord, ycoord);
+	  GX_Position2f32(xmin, ymax);
 	  GX_TexCoord2f32( 0.0, 0.0);
-	  GX_Position2f32( xcoord, ycoord);
+	  GX_Position2f32(xmax, ymax);
 	  GX_TexCoord2f32( 1.0, 0.0);
-	  GX_Position2f32( xcoord,-ycoord);
+	  GX_Position2f32(xmax, ymin);
 	  GX_TexCoord2f32( 1.0, 1.0);
-	  GX_Position2f32(-xcoord,-ycoord);
+	  GX_Position2f32(xmin, ymin);
 	  GX_TexCoord2f32( 0.0, 1.0);
 	GX_End();
-	
+
 	// Show lightgun cursors
 	//if(usCursorActive) {
 	//	for(int iPlayer=0;iPlayer<8;iPlayer++)                  // -> loop all possible players
@@ -695,9 +704,14 @@ static void gc_vout_flip(const void *vram, int stride, int bgr24,
 		return;
 	}
 	if (menuActive) return;
-	GX_Flip(w, h, vram, stride*2, bgr24 ? GX_TF_RGBA8 : GX_TF_RGB5A3);
+	GX_Flip(vram, stride * 2, bgr24 ? GX_TF_RGBA8 : GX_TF_RGB5A3, x, y, w, h);
 }
-static void gc_vout_set_mode(int w, int h, int raw_w, int raw_h, int bpp) {SysPrintf("gc_vout_set_mode\r\n");}
+
+static void gc_vout_set_mode(int w, int h, int raw_w, int raw_h, int bpp) {
+	screen_w = raw_w;
+	screen_h = raw_h;
+}
+
 //static void *gc_mmap(unsigned int size) {}
 //static void gc_munmap(void *ptr, unsigned int size) {}
 
