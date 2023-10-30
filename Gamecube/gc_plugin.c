@@ -660,10 +660,6 @@ static void GX_Flip(const void *buffer, int pitch, u8 fmt,
 	DEBUG_update();
 	for (i=0;i<DEBUG_TEXT_HEIGHT;i++)
 		IplFont_drawString(10,(10*i+60),text[i], 0.5, false);
-		
-   //reset swap table from GUI/DEBUG
-	GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_BLUE, GX_CH_GREEN, GX_CH_RED ,GX_CH_ALPHA);
-	GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
 
 	gc_vout_render();
 }
@@ -704,6 +700,11 @@ static void gc_vout_flip(const void *vram, int stride, int bgr24,
 		return;
 	}
 	if (menuActive) return;
+
+	//reset swap table from GUI/DEBUG
+	GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_BLUE, GX_CH_GREEN, GX_CH_RED ,GX_CH_ALPHA);
+	GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+
 	GX_Flip(vram, stride * 2, bgr24 ? GX_TF_RGBA8 : GX_TF_RGB5A3, x, y, w, h);
 }
 
