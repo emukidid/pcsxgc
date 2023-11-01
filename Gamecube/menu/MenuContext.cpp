@@ -57,7 +57,7 @@ MenuContext::MenuContext(GXRModeObj *vmode)
 	menu::Focus::getInstance().setFocusActive(true);
 	
 	// Don't show the menu if we autoboot a game.
-	if (!strlen(&AutobootROM[0]))
+	if (!AutobootROM[0])
 		setActiveFrame(FRAME_MAIN);
 }
 
