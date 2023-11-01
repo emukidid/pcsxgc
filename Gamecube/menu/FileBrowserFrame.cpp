@@ -19,6 +19,7 @@
 **/
 
 #include <math.h>
+#include <unistd.h>
 #include <cstdlib>
 #include "MenuContext.h"
 #include "FileBrowserFrame.h"
