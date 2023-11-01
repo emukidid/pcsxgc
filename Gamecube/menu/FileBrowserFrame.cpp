@@ -474,10 +474,8 @@ void fileBrowserFrame_LoadFile(int i)
 		
 		if(!ret){	// If the read succeeded.
 			if(Autoboot){
-				// Wiimpathy:
-				// FIXME: The MessageBox is a hacky way to fix input not responding.
-				// No time to improve this...
-				menu::MessageBox::getInstance().setMessage("Autobooting game...");
+				// FIX94: after init wpad, wait a bit
+				sleep(5);
 				Func_SetPlayGame();
 				Func_PlayGame();
 				pMenuContext->setActiveFrame(MenuContext::FRAME_MAIN);
