@@ -38,6 +38,7 @@
 #include <libpcsxcore/psxmem.h>
 #include <libpcsxcore/r3000a.h>
 #include <libpcsxcore/sio.h>
+#include <libpcsxcore/cdrom.h>
 #include "wiiSXconfig.h"
 #include "menu/MenuContext.h"
 extern "C" {
@@ -413,21 +414,28 @@ int main(int argc, char *argv[])
 
 // loadISO loads an ISO file as current media to read from.
 int loadISOSwap(fileBrowser_file* file) {
-  
-  // Refresh file pointers
+    // Refresh file pointers
 	memset(&isoFile, 0, sizeof(fileBrowser_file));
 	memset(&cddaFile, 0, sizeof(fileBrowser_file));
 	memset(&subFile, 0, sizeof(fileBrowser_file));
-	
 	memcpy(&isoFile, file, sizeof(fileBrowser_file) );
 	
-	CDR_close();
+	SysPrintf("selected file: %s\n", &file->name[0]);
+
+	CdromId[0] = '\0';
+	CdromLabel[0] = '\0';
+	
 	SetIsoFile(&file->name[0]);
-	//might need to insert code here to trigger a lid open/close interrupt
-	if(CDR_open() < 0)
+	
+	if (ReloadCdromPlugin() < 0) {
 		return -1;
-	CheckCdrom();
-	LoadCdrom();
+	}
+	if (CDR_open() < 0) {
+		return -1;
+	}
+
+	SetCdOpenCaseTime(time(NULL) + 2);
+	LidInterrupt();
 	return 0;
 }
 
