@@ -80,7 +80,7 @@ static unsigned msg_interface_version = 0;
 
 static void *vout_buf;
 static void *vout_buf_ptr;
-static int vout_width, vout_height;
+static int vout_width = 256, vout_height = 240, vout_pitch = 256;
 static int vout_fb_dirty;
 static int psx_w, psx_h;
 static bool vout_can_dupe;
@@ -234,8 +234,13 @@ static void set_vout_fb()
    fb.height         = vout_height;
    fb.access_flags   = RETRO_MEMORY_ACCESS_WRITE;
 
-   if (environ_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb) && fb.format == RETRO_PIXEL_FORMAT_RGB565)
-      vout_buf_ptr = (uint16_t *)fb.data;
+   vout_pitch = vout_width;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb) && fb.format == RETRO_PIXEL_FORMAT_RGB565) {
+      vout_buf_ptr = fb.data;
+      if (fb.pitch / 2 != vout_pitch && fb.pitch != vout_width * 2)
+         SysPrintf("got unusual pitch %zd for resolution %dx%d\n", fb.pitch, vout_width, vout_height);
+      vout_pitch = fb.pitch / 2;
+   }
    else
       vout_buf_ptr = vout_buf;
 }
@@ -317,7 +322,7 @@ static void vout_flip(const void *vram, int stride, int bgr24,
 {
    unsigned short *dest = vout_buf_ptr;
    const unsigned short *src = vram;
-   int dstride = vout_width, h1 = h;
+   int dstride = vout_pitch, h1 = h;
    int port = 0;
 
    if (vram == NULL || dims_changed || (in_enable_crosshair[0] + in_enable_crosshair[1]) > 0)
@@ -357,7 +362,7 @@ static void vout_flip(const void *vram, int stride, int bgr24,
 
 out:
 #ifndef FRONTEND_SUPPORTS_RGB565
-   convert(vout_buf_ptr, vout_width * vout_height * 2);
+   convert(vout_buf_ptr, vout_pitch * vout_height * 2);
 #endif
    vout_fb_dirty = 1;
    pl_rearmed_cbs.flip_cnt++;
@@ -377,7 +382,7 @@ psx_map_t custom_psx_maps[] = {
    { NULL, 0x12800000, 0x010000, MAP_TAG_OTHER }, // 0x1f800000
    { NULL, 0x12c00000, 0x080000, MAP_TAG_OTHER }, // 0x1fc00000
    { NULL, 0x11000000, 0x800000, MAP_TAG_LUTS }, // 0x08000000
-   { NULL, 0x12000000, 0x200000, MAP_TAG_VRAM }, // 0x00000000
+   { NULL, 0x12000000, 0x201000, MAP_TAG_VRAM }, // 0x00000000
 };
 
 void *pl_3ds_mmap(unsigned long addr, size_t size, int is_fixed,
@@ -395,6 +400,7 @@ void *pl_3ds_mmap(unsigned long addr, size_t size, int is_fixed,
          if ((custom_map->size == size) && (custom_map->tag == tag))
          {
             uint32_t ptr_aligned, tmp;
+            void *ret;
 
             custom_map->buffer = malloc(size + 0x1000);
             ptr_aligned = (((u32)custom_map->buffer) + 0xFFF) & ~0xFFF;
@@ -405,12 +411,14 @@ void *pl_3ds_mmap(unsigned long addr, size_t size, int is_fixed,
                exit(1);
             }
 
-            return (void *)custom_map->target_map;
+            ret = (void *)custom_map->target_map;
+            memset(ret, 0, size);
+            return ret;
          }
       }
    }
 
-   return malloc(size);
+   return calloc(size, 1);
 }
 
 void pl_3ds_munmap(void *ptr, size_t size, enum psxMapTag tag)
@@ -446,19 +454,20 @@ void pl_3ds_munmap(void *ptr, size_t size, enum psxMapTag tag)
 typedef struct
 {
    void *buffer;
-   uint32_t target_map;
    size_t size;
    enum psxMapTag tag;
+   int used;
 } psx_map_t;
 
-void *addr = NULL;
+static void *addr = NULL;
 
 psx_map_t custom_psx_maps[] = {
-   { NULL, NULL, 0x210000, MAP_TAG_RAM }, // 0x80000000
-   { NULL, NULL, 0x010000, MAP_TAG_OTHER }, // 0x1f800000
-   { NULL, NULL, 0x080000, MAP_TAG_OTHER }, // 0x1fc00000
-   { NULL, NULL, 0x800000, MAP_TAG_LUTS }, // 0x08000000
-   { NULL, NULL, 0x200000, MAP_TAG_VRAM }, // 0x00000000
+   { NULL, 0x800000, MAP_TAG_LUTS },
+   { NULL, 0x080000, MAP_TAG_OTHER },
+   { NULL, 0x010000, MAP_TAG_OTHER },
+   { NULL, 0x201000, MAP_TAG_VRAM },
+   { NULL, 0x802000, MAP_TAG_VRAM }, // enhanced renderer
+   { NULL, 0x210000, MAP_TAG_RAM },
 };
 
 int init_vita_mmap()
@@ -468,12 +477,14 @@ int init_vita_mmap()
    addr = malloc(64 * 1024 * 1024);
    if (addr == NULL)
       return -1;
-   tmpaddr = ((u32)(addr + 0xFFFFFF)) & ~0xFFFFFF;
-   custom_psx_maps[0].buffer = tmpaddr + 0x2000000;
-   custom_psx_maps[1].buffer = tmpaddr + 0x1800000;
-   custom_psx_maps[2].buffer = tmpaddr + 0x1c00000;
-   custom_psx_maps[3].buffer = tmpaddr + 0x0000000;
+   tmpaddr = (void *)(((size_t)addr + 0xFFFFFF) & ~0xFFFFFF);
+   custom_psx_maps[0].buffer = tmpaddr + 0x0000000;
+   custom_psx_maps[1].buffer = tmpaddr + 0x0800000;
+   custom_psx_maps[2].buffer = tmpaddr + 0x0880000;
+   custom_psx_maps[3].buffer = tmpaddr + 0x0900000;
    custom_psx_maps[4].buffer = tmpaddr + 0x1000000;
+   custom_psx_maps[5].buffer = tmpaddr + 0x2000000;
+   memset(tmpaddr, 0, 0x2210000);
 #if 0
    for(n = 0; n < 5; n++){
    sceClibPrintf("addr reserved %x\n",custom_psx_maps[n].buffer);
@@ -484,6 +495,11 @@ int init_vita_mmap()
 
 void deinit_vita_mmap()
 {
+   size_t i;
+   for (i = 0; i < sizeof(custom_psx_maps) / sizeof(custom_psx_maps[0]); i++) {
+      custom_psx_maps[i].buffer = NULL;
+      custom_psx_maps[i].used = 0;
+   }
    free(addr);
 }
 
@@ -497,13 +513,14 @@ void *pl_vita_mmap(unsigned long addr, size_t size, int is_fixed,
 
    for (; custom_map->size; custom_map++)
    {
-      if ((custom_map->size == size) && (custom_map->tag == tag))
+      if (custom_map->size == size && custom_map->tag == tag && !custom_map->used)
       {
+         custom_map->used = 1;
          return custom_map->buffer;
       }
    }
 
-   return malloc(size);
+   return calloc(size, 1);
 }
 
 void pl_vita_munmap(void *ptr, size_t size, enum psxMapTag tag)
@@ -516,6 +533,7 @@ void pl_vita_munmap(void *ptr, size_t size, enum psxMapTag tag)
    {
       if ((custom_map->buffer == ptr))
       {
+         custom_map->used = 0;
          return;
       }
    }
@@ -967,8 +985,8 @@ void retro_get_system_info(struct retro_system_info *info)
 
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
-   unsigned geom_height          = vout_height > 0 ? vout_height : 240;
-   unsigned geom_width           = vout_width > 0 ? vout_width : 320;
+   unsigned geom_height          = vout_height;
+   unsigned geom_width           = vout_width;
 
    memset(info, 0, sizeof(*info));
    info->timing.fps              = is_pal_mode ? 50.0 : 60.0;
@@ -2222,6 +2240,7 @@ static void update_variables(bool in_flight)
          spu_config.iUseInterpolation = 0;
    }
 
+#if P_HAVE_PTHREAD
    var.value = NULL;
    var.key = "pcsx_rearmed_spu_thread";
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -2231,7 +2250,9 @@ static void update_variables(bool in_flight)
       else
          spu_config.iUseThread = 0;
    }
+#endif
 
+#if 0 // currently disabled, see USE_READ_THREAD in libpcsxcore/cdriso.c
    if (P_HAVE_PTHREAD) {
 	   var.value = NULL;
 	   var.key = "pcsx_rearmed_async_cd";
@@ -2254,6 +2275,7 @@ static void update_variables(bool in_flight)
 		  }
        }
    }
+#endif
 
    var.value = NULL;
    var.key = "pcsx_rearmed_noxadecoding";
@@ -2555,6 +2577,18 @@ static void update_variables(bool in_flight)
       mouse_sensitivity = atof(var.value);
    }
 
+   if (found_bios)
+   {
+      var.value = NULL;
+      var.key = "pcsx_rearmed_show_bios_bootlogo";
+      if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      {
+         Config.SlowBoot = 0;
+         if (strcmp(var.value, "enabled") == 0)
+            Config.SlowBoot = 1;
+      }
+   }
+
    if (in_flight)
    {
       // inform core things about possible config changes
@@ -2571,27 +2605,6 @@ static void update_variables(bool in_flight)
          retro_set_audio_buff_status_cb();
 
       /* dfinput_activate(); */
-   }
-   else
-   {
-      //not yet running
-
-      //bootlogo display hack
-      if (found_bios)
-      {
-         var.value = NULL;
-         var.key = "pcsx_rearmed_show_bios_bootlogo";
-         if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-         {
-            Config.SlowBoot = 0;
-            rebootemu = 0;
-            if (strcmp(var.value, "enabled") == 0)
-            {
-               Config.SlowBoot = 1;
-               rebootemu = 1;
-            }
-         }
-      }
    }
 
    update_option_visibility();
@@ -2963,6 +2976,7 @@ void retro_run(void)
          LoadCdrom();
    }
 
+   set_vout_fb();
    print_internal_fps();
 
    /* Check whether current frame should
@@ -3024,10 +3038,8 @@ void retro_run(void)
    }
 
    video_cb((vout_fb_dirty || !vout_can_dupe || !duping_enable) ? vout_buf_ptr : NULL,
-       vout_width, vout_height, vout_width * 2);
+       vout_width, vout_height, vout_pitch * 2);
    vout_fb_dirty = 0;
-
-   set_vout_fb();
 }
 
 static bool try_use_bios(const char *path, bool preferred_only)
@@ -3285,8 +3297,10 @@ void retro_init(void)
 #elif defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE >= 200112L) && P_HAVE_POSIX_MEMALIGN
    if (posix_memalign(&vout_buf, 16, VOUT_MAX_WIDTH * VOUT_MAX_HEIGHT * 2) != 0)
       vout_buf = (void *) 0;
+   else
+      memset(vout_buf, 0, VOUT_MAX_WIDTH * VOUT_MAX_HEIGHT * 2);
 #else
-   vout_buf = malloc(VOUT_MAX_WIDTH * VOUT_MAX_HEIGHT * 2);
+   vout_buf = calloc(VOUT_MAX_WIDTH * VOUT_MAX_HEIGHT, 2);
 #endif
 
    vout_buf_ptr = vout_buf;

@@ -132,7 +132,7 @@ void CALLBACK SPUwriteRegister(unsigned long reg, unsigned short val,
    {
     //-------------------------------------------------//
     case H_SPUaddr:
-      spu.spuAddr = (unsigned long) val<<3;
+      spu.spuAddr = (unsigned int)val << 3;
       //check_irq_io(spu.spuAddr);
       break;
     //-------------------------------------------------//
@@ -144,8 +144,8 @@ void CALLBACK SPUwriteRegister(unsigned long reg, unsigned short val,
       break;
     //-------------------------------------------------//
     case H_SPUctrl:
+      spu.spuStat &= ~STAT_IRQ | val;
       if (!(spu.spuCtrl & CTRL_IRQ)) {
-        spu.spuStat&=~STAT_IRQ;
         if (val & CTRL_IRQ)
          schedule_next_irq();
       }
@@ -153,7 +153,7 @@ void CALLBACK SPUwriteRegister(unsigned long reg, unsigned short val,
       break;
     //-------------------------------------------------//
     case H_SPUstat:
-      spu.spuStat=val&0xf800;
+      //spu.spuStat=val&0xf800;
       break;
     //-------------------------------------------------//
     case H_SPUReverbAddr:
@@ -230,6 +230,7 @@ void CALLBACK SPUwriteRegister(unsigned long reg, unsigned short val,
         log_unhandled("koff1 %04x %d\n", val, cycles - spu.last_keyon_cycles);
        val &= ~regAreaGet(H_SPUon1);
       }
+      do_samples_if_needed(cycles, 0, 2);
       SoundOff(0,16,val);
       break;
     //-------------------------------------------------//
@@ -239,6 +240,7 @@ void CALLBACK SPUwriteRegister(unsigned long reg, unsigned short val,
         log_unhandled("koff2 %04x %d\n", val, cycles - spu.last_keyon_cycles);
        val &= ~regAreaGet(H_SPUon2);
       }
+      do_samples_if_needed(cycles, 0, 2);
       SoundOff(16,24,val);
       break;
     //-------------------------------------------------//
