@@ -39,6 +39,13 @@ enum ConfigReverb
 	REVERB_ENABLE
 };
 
+extern char deflicker;
+enum ConfigDeflicker
+{
+	DEFLICKER_DISABLE=0,
+	DEFLICKER_ENABLE
+};
+
 extern char volume;
 enum iVolume
 {

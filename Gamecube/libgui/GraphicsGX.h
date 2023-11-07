@@ -63,6 +63,7 @@ public:
 	void popTransparency();
 	void setTransparency(float f);
 	float getTransparency();
+	void setInGameVMode();
 
 private:
 	void applyCurrentColor();

@@ -90,6 +90,7 @@ char frameSkip;
 extern char audioEnabled;
 char volume;
 char reverb;
+char deflicker;
 char showFPSonScreen;
 char printToScreen;
 char menuActive;
@@ -141,6 +142,7 @@ static struct {
 { { "Audio", &audioEnabled, AUDIO_DISABLE, AUDIO_ENABLE },
   { "Volume", &volume, VOLUME_LOUDEST, VOLUME_LOW },
   { "Reverb", &reverb, REVERB_DISABLE, REVERB_ENABLE },
+  { "Deflicker", &deflicker, DEFLICKER_DISABLE, DEFLICKER_ENABLE },
   { "FPS", &showFPSonScreen, FPS_HIDE, FPS_SHOW },
 //  { "Debug", &printToScreen, DEBUG_HIDE, DEBUG_SHOW },
   { "ScreenMode", &screenMode, SCREENMODE_4x3, SCREENMODE_16x9_PILLARBOX },
@@ -180,6 +182,7 @@ void loadSettings(int argc, char *argv[])
 	audioEnabled     = 1; // Audio
 	volume           = VOLUME_MEDIUM;
 	reverb			 = REVERB_ENABLE;
+	deflicker		 = DEFLICKER_ENABLE;
 #ifdef RELEASE
 	showFPSonScreen  = 0; // Don't show FPS on Screen
 #else

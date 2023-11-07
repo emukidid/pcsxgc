@@ -20,6 +20,7 @@
 
 #include <math.h>
 #include "GraphicsGX.h"
+#include "../wiiSXconfig.h"
 
 extern "C" unsigned int usleep(unsigned int us);
 void video_mode_init(GXRModeObj *rmode, u32 *fb1, u32 *fb2, u32 *fb3);
@@ -500,6 +501,13 @@ float Graphics::getCurrentTransparency(int index)
 	float alpha = (float)currentColor[index].a/255.0f;
 	float val = alpha * transparency;
 	return val;
+}
+
+void Graphics::setInGameVMode() {
+	// Set deflicker
+	GX_SetCopyFilter(vmode->aa,vmode->sample_pattern,deflicker ? GX_TRUE : GX_FALSE,vmode->vfilter);
+	
+	// TODO: eventually change video mode for sync here too
 }
 
 } //namespace menu 

@@ -73,6 +73,8 @@ void Func_ScreenForce16_9();
 void Func_DitheringNone();
 void Func_DitheringDefault();
 void Func_DitheringAlways();
+void Func_DeflickerOff();
+void Func_DeflickerOn();
 
 void Func_ConfigureInput();
 void Func_ConfigureButtons();
@@ -118,12 +120,12 @@ void resumeAudio(void); void resumeInput(void);
 }
 
 #define NUM_TAB_BUTTONS 5
-#define NUM_FRAME_TEXTBOXES 20
+#define NUM_FRAME_TEXTBOXES 21
 #define TAB_Y_POS 30
 #define TAB_Y_LABEL_PAD 28.0
 #define TAB_Y_ENTRY_START 100
-#define TAB_Y_ENTRY_INC 70
-#define BTN_HEIGHT 56
+#define TAB_Y_ENTRY_INC 60
+#define BTN_HEIGHT 48
 
 /*
 General Tab:
@@ -139,6 +141,7 @@ Limit FPS: Auto; Off; xxx
 Frame Skip: On; Off
 Screen Mode: 4:3; 16:9
 Dithering: None; Game Dependent; Always
+Deflicker: On/Off
 
 Input Tab:
 Assign Controllers (assign player->pad)
@@ -191,6 +194,8 @@ enum BUTTON_IDS {
 	BTN_DITHER_NONE,
 	BTN_DITHER_DEFAULT,
 	BTN_DITHER_ALWAYS,
+	BTN_DEFLICKER_ON,
+	BTN_DEFLICKER_OFF,
 	
 	BTN_CONF_INPUT,
 	BTN_CONF_BTN_MAP,
@@ -256,6 +261,8 @@ struct LabelResources
 	{BTN_DITHER_NONE, "None"},
 	{BTN_DITHER_DEFAULT, "Default"},
 	{BTN_DITHER_ALWAYS, "Always"},
+	{BTN_DEFLICKER_ON, "On"},
+	{BTN_DEFLICKER_OFF, "Off"},
 	
 	{BTN_CONF_INPUT, "Assign"},
 	{BTN_CONF_BTN_MAP, "Map"},
@@ -307,6 +314,7 @@ enum LABEL_IDS {
 	LBL_VIDEO_FRAMESKIP,
 	LBL_VIDEO_SCREENMODE,
 	LBL_VIDEO_DITHER,
+	LBL_VIDEO_DEFLICKER,
 	// Input
 	LBL_INPUT_CONF_INPUT,
 	LBL_INPUT_CONT_TYPE,
@@ -338,6 +346,7 @@ LabelResources RES_LBL[LABEL_GROUPS_END] =
 	{LBL_VIDEO_FRAMESKIP, "Frame Skip"},
 	{LBL_VIDEO_SCREENMODE, "Screen Mode"},
 	{LBL_VIDEO_DITHER, "Dithering"},
+	{LBL_VIDEO_DEFLICKER, "Deflicker"},
 	// Input
 	{LBL_INPUT_CONF_INPUT, "Configure Input"},
 	{LBL_INPUT_CONT_TYPE, "PSX Controller Type"},
@@ -383,7 +392,7 @@ struct SettingsButtonInfo
 	{	NULL,	BTN_A_SEL,	440.0,	 70.0,	 BTN_DYNAREC,	BTN_BIOS_NO,	 BTN_SD,	BTN_HLE,	Func_BiosSelectUSB,		TAB_GENERAL, LBL_GENERAL_BIOS, BTN_USB }, // Bios: USB
 	{	NULL,	BTN_A_SEL,	295.0,	 75.0,	 BTN_HLE,	BTN_EXEC_BIOS,	BTN_BIOS_NO,	BTN_BIOS_NO,	Func_BootBiosYes,		TAB_GENERAL, LBL_GENERAL_BOOT_BIOS, BTN_BIOS_YES }, // Boot Thru Bios: Yes
 	{	NULL,	BTN_A_SEL,	380.0,	 75.0,	 BTN_SD,	BTN_EXEC_BIOS,	BTN_BIOS_YES,	BTN_BIOS_YES,	Func_BootBiosNo,		TAB_GENERAL, LBL_GENERAL_BOOT_BIOS, BTN_BIOS_NO }, // Boot Thru Bios: No
-	{	NULL,	BTN_A_NRM,	295.0,	 130.0,	 BTN_BIOS_YES,	BTN_SAVE_SETTING_USB,	-1,	-1,	Func_ExecuteBios,		TAB_GENERAL, LBL_GENERAL_EXEC_BIOS, BTN_EXEC_BIOS }, // Execute Bios
+	{	NULL,	BTN_A_NRM,	295.0,	 130.0,	 BTN_BIOS_YES,	BTN_SAVE_SETTING_SD,	-1,	-1,	Func_ExecuteBios,		TAB_GENERAL, LBL_GENERAL_EXEC_BIOS, BTN_EXEC_BIOS }, // Execute Bios
 	{	NULL,	BTN_A_NRM,	295.0,	 55.0,	BTN_EXEC_BIOS,	 BTN_TAB_GENERAL,	BTN_SAVE_SETTING_USB,	BTN_SAVE_SETTING_USB,	Func_SaveSettingsSD,	TAB_GENERAL, LBL_GENERAL_SAVE, BTN_SAVE_SETTING_SD }, // Save Settings: SD
 	{	NULL,	BTN_A_NRM,	360.0,	 70.0,	BTN_EXEC_BIOS,	 BTN_TAB_GENERAL,	BTN_SAVE_SETTING_SD,	BTN_SAVE_SETTING_SD,	Func_SaveSettingsUSB,	TAB_GENERAL, LBL_GENERAL_SAVE, BTN_SAVE_SETTING_USB }, // Save Settings: USB
 	//Buttons for Video Tab	
@@ -396,9 +405,11 @@ struct SettingsButtonInfo
 	{	NULL,	BTN_A_SEL,	230.0,	 75.0,	BTN_FSKIP_ON,	BTN_DITHER_NONE,	BTN_SM_F_16_9,	BTN_SM_16_9,	Func_ScreenMode4_3,		TAB_VIDEO, LBL_VIDEO_SCREENMODE, BTN_SM_4_3 }, // ScreenMode: 4:3
 	{	NULL,	BTN_A_SEL,	325.0,	 75.0,	BTN_FSKIP_ON,	BTN_DITHER_DEFAULT,	BTN_SM_4_3,	BTN_SM_F_16_9,	Func_ScreenMode16_9,	TAB_VIDEO, LBL_VIDEO_SCREENMODE, BTN_SM_16_9 }, // ScreenMode: 16:9
 	{	NULL,	BTN_A_SEL,	420.0,	155.0,	BTN_FSKIP_OFF,	BTN_DITHER_ALWAYS,	BTN_SM_16_9,	BTN_SM_4_3,	Func_ScreenForce16_9,	TAB_VIDEO, LBL_VIDEO_SCREENMODE, BTN_SM_F_16_9 }, // ScreenMode: Force 16:9
-	{	NULL,	BTN_A_SEL,	230.0,	 75.0,	BTN_SM_4_3,	 BTN_TAB_VIDEO,	BTN_DITHER_ALWAYS,	BTN_DITHER_DEFAULT,	Func_DitheringNone,		TAB_VIDEO, LBL_VIDEO_DITHER, BTN_DITHER_NONE }, // Dithering: None
-	{	NULL,	BTN_A_SEL,	325.0,	110.0,	BTN_SM_16_9,	 BTN_TAB_VIDEO,	BTN_DITHER_NONE,	BTN_DITHER_ALWAYS,	Func_DitheringDefault,	TAB_VIDEO, LBL_VIDEO_DITHER, BTN_DITHER_DEFAULT }, // Dithering: Game Dependent
-	{	NULL,	BTN_A_SEL,	455.0,	110.0,	BTN_SM_F_16_9,	 BTN_TAB_VIDEO,	BTN_DITHER_DEFAULT,	BTN_DITHER_NONE,	Func_DitheringAlways,	TAB_VIDEO, LBL_VIDEO_DITHER, BTN_DITHER_ALWAYS }, // Dithering: Always
+	{	NULL,	BTN_A_SEL,	230.0,	 75.0,	BTN_SM_4_3,	 BTN_DEFLICKER_ON,	BTN_DITHER_ALWAYS,	BTN_DITHER_DEFAULT,	Func_DitheringNone,		TAB_VIDEO, LBL_VIDEO_DITHER, BTN_DITHER_NONE }, // Dithering: None
+	{	NULL,	BTN_A_SEL,	325.0,	110.0,	BTN_SM_16_9,	 BTN_DEFLICKER_ON,	BTN_DITHER_NONE,	BTN_DITHER_ALWAYS,	Func_DitheringDefault,	TAB_VIDEO, LBL_VIDEO_DITHER, BTN_DITHER_DEFAULT }, // Dithering: Game Dependent
+	{	NULL,	BTN_A_SEL,	455.0,	110.0,	BTN_SM_F_16_9,	 BTN_DEFLICKER_OFF,	BTN_DITHER_DEFAULT,	BTN_DITHER_NONE,	Func_DitheringAlways,	TAB_VIDEO, LBL_VIDEO_DITHER, BTN_DITHER_ALWAYS }, // Dithering: Always
+	{	NULL,	BTN_A_SEL,	325.0,	75.0,	BTN_DITHER_DEFAULT,	 BTN_TAB_VIDEO,	BTN_DEFLICKER_OFF,	BTN_DEFLICKER_OFF,	Func_DeflickerOn,	TAB_VIDEO, LBL_VIDEO_DEFLICKER, BTN_DEFLICKER_ON }, // Deflicker: On
+	{	NULL,	BTN_A_SEL,	420.0,	75.0,	BTN_DITHER_DEFAULT,	 BTN_TAB_VIDEO,	BTN_DEFLICKER_ON,	BTN_DEFLICKER_ON,	Func_DeflickerOff,	TAB_VIDEO, LBL_VIDEO_DEFLICKER, BTN_DEFLICKER_OFF }, // Deflicker: Off
 	//Buttons for Input Tab	
 	{	NULL,	BTN_A_NRM,	285.0,	140.0,	BTN_TAB_INPUT,	BTN_PAD_STANDARD,	BTN_CONF_BTN_MAP,	BTN_CONF_BTN_MAP,	Func_ConfigureInput,	TAB_INPUT, LBL_INPUT_CONF_INPUT, BTN_CONF_INPUT }, // Configure Input Assignment
 	{	NULL,	BTN_A_NRM,	435.0,	110.0,	BTN_TAB_INPUT,	BTN_PAD_STANDARD,	BTN_CONF_INPUT,	BTN_CONF_INPUT,	Func_ConfigureButtons,	TAB_INPUT, LBL_INPUT_CONF_INPUT, BTN_CONF_BTN_MAP }, // Configure Button Mappings
@@ -446,6 +457,7 @@ struct SettingsTextBoxInfo
 	{	NULL,	190.0,	TAB_VIDEO,		LBL_VIDEO_FRAMESKIP }, // Frame Skip: On/Off
 	{	NULL,	130.0,	TAB_VIDEO,		LBL_VIDEO_SCREENMODE }, // ScreenMode: 4x3/16x9/Force16x9
 	{	NULL,	130.0,	TAB_VIDEO,		LBL_VIDEO_DITHER }, // Dithering: None/Game Dependent/Always
+	{	NULL,	190.0,	TAB_VIDEO,		LBL_VIDEO_DEFLICKER }, // Deflicker: On/Off
 	//TextBoxes for Input Tab 	
 	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_CONF_INPUT }, // blank.
 	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_CONT_TYPE }, // PSX Controller Type: Analog/Digital/Gun
@@ -634,7 +646,7 @@ void SettingsFrame::activateSubmenu(int submenu)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
 				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, GetButtonById(BTN_SHOW_FPS_ON));
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, GetButtonById(BTN_DITHER_NONE));
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, GetButtonById(BTN_DEFLICKER_ON));
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
 			SetVisibleLabelsForTab(TAB_VIDEO);
@@ -646,6 +658,7 @@ void SettingsFrame::activateSubmenu(int submenu)
 			SelectBtnInGroup((frameSkip == FRAMESKIP_ENABLE) ? BTN_FSKIP_ON : BTN_FSKIP_OFF, LBL_VIDEO_FRAMESKIP);
 			SelectBtnInGroup((screenMode == SCREENMODE_4x3) ? BTN_SM_4_3 : ((screenMode == SCREENMODE_16x9) ? BTN_SM_16_9 : BTN_SM_F_16_9), LBL_VIDEO_SCREENMODE);
 			SelectBtnInGroup((useDithering == USEDITHER_NONE) ? BTN_DITHER_NONE : ((useDithering == USEDITHER_DEFAULT) ? BTN_DITHER_DEFAULT : BTN_DITHER_ALWAYS), LBL_VIDEO_DITHER);
+			SelectBtnInGroup((deflicker == DEFLICKER_DISABLE) ? BTN_DEFLICKER_OFF : BTN_DEFLICKER_ON, LBL_VIDEO_DEFLICKER);
 			break;
 		case SUBMENU_INPUT:
 			setDefaultFocus(FRAME_BUTTONS[2].button);
@@ -1099,6 +1112,17 @@ void Func_DitheringAlways()
 	useDithering = USEDITHER_ALWAYS;
 }
 
+void Func_DeflickerOff()
+{
+	SelectBtnInGroup(BTN_DEFLICKER_OFF, LBL_VIDEO_DEFLICKER);
+	deflicker = DEFLICKER_DISABLE;
+}
+
+void Func_DeflickerOn()
+{
+	SelectBtnInGroup(BTN_DEFLICKER_ON, LBL_VIDEO_DEFLICKER);
+	deflicker = DEFLICKER_ENABLE;
+}
 
 void Func_ConfigureInput()
 {
