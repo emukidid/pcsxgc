@@ -679,7 +679,7 @@ static void gc_vout_flip(const void *vram, int stride, int bgr24,
 		if (menuActive) return;
 
 		// clear the screen, and flush it
-		DEBUG_print("gc_vout_flip_null_vram",DBG_GPU1);
+		//DEBUG_print("gc_vout_flip_null_vram",DBG_GPU1);
 
 		//Write menu/debug text on screen
 		GXColor fontColor = {150,255,150,255};
@@ -848,6 +848,9 @@ void go(void) {
 
 	plugin_call_rearmed_cbs();
 	psxCpu->Execute();
+	
+	// remove this callback to avoid any issues when returning to the menu.
+	GX_SetDrawDoneCallback(NULL);
 }
 
 int OpenPlugins() {

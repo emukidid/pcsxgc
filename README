@@ -1,5 +1,5 @@
 README : WiiSX / CubeSX
-Beta 3.0
+Beta 4.1
 
 LICENSE:
     This software is licensed under the GNU General Public License v2
@@ -13,9 +13,14 @@ LICENSE:
 QUICK USAGE:
  * ISOs can be .bin/.cue (Make sure .cue contains _relative_ directory!), .img, or .iso format
  * To install: Extract the contents of wiiSX-<version>.zip to the root of your SD card
+ * SD Card detection order is as follows: 
+	GameCube: GCLoader, SD2SP2, Slot A, Slot B.
+	Wii: Front SD, Slot A, Slot B.
  * For SD/USB: Put ISOs (.bin/.cue or other formats) in the directory named /wiisx/isos,
     All save types will automatically be placed in /wiisx/saves
- * For DVD: ISOs may be anywhere on the disc
+ * For DVD: ISOs may be anywhere on the disc, in ISO9660 format.
+	GameCube: Currently broken due to libOGC issues with backups, XenoGC might still work.
+	Wii: Requires a disc drive capable of reading DVD-R.
  * For actual BIOS: Put SCPH1001.BIN in the directory on SD/USB named /wiisx/bios
  * Load the executable from the HBC or in the loader of your choice
     Once loaded, select 'Load ISO' and choose the source and select the ISO to load
@@ -80,6 +85,7 @@ CREDITS:
  * Visit us on IRC. EFNet #gc-forever or www.gc-forever.com or https://github.com/emukidid/pcsxgc/
 
 CHANGE LOG:
+	* See releases on github for these now, this section here is no longer maintained.
 Beta 4.0:
 	* libpsxcore properly integrated, no more hacky mess to receive fixes from upstream
 	* switch to upstream unai gpu plugin for a huge performance boost
