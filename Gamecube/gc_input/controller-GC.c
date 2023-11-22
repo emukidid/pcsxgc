@@ -115,12 +115,18 @@ static inline u8 GCtoPSXAnalog(int a)
 	return a + 128; // PSX controls range 0-255
 }
 
+static inline s8 GCtoPSXMouse(s8 i)
+{
+	if(i > -4 && i < 4) return 0; // deadzone
+	int a = i * 4 / 3; // GC ranges -96 ~ 96 (192 values, PSX has 256)
+	if(a >= 128) a = 127; else if(a < -128) a = -128; // clamp
+	return a; // PSX mouse range -128-128
+}
+
 static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
 {
 	if(padNeedScan){ gc_connected = PAD_ScanPads(); padNeedScan = 0; }
 	BUTTONS* c = Keys;
-	u8 lastRawX = c->lastRawX;
-	u8 lastRawY = c->lastRawY;
 	u16 gunX = c->gunX;
 	u16 gunY = c->gunY;
 	
@@ -157,15 +163,18 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
 	c->btns.L3_BUTTON    = isHeld(config->L3);
 	c->btns.SELECT_BUTTON = isHeld(config->SELECT);
 
-	if(controllerType == CONTROLLERTYPE_LIGHTGUN) {
-		c->lastRawX = PAD_StickX(Control);
-		c->lastRawY = PAD_StickY(Control);
-		
+	if(controllerType == CONTROLLERTYPE_LIGHTGUN) {	
 		// Keep it within 0 to 1023
 		c->gunX += gunX + ((PAD_StickX(Control)) / 6);
 		c->gunY += gunY - ((PAD_StickY(Control)) / 6);
 		c->gunX = c->gunX > 1023 ? 1023 : (c->gunX < 0 ? 0 : c->gunX);
 		c->gunY = c->gunY > 1023 ? 1023 : (c->gunY < 0 ? 0 : c->gunY);
+	}
+	else if(controllerType == CONTROLLERTYPE_MOUSE) {
+		s8 stickX = PAD_StickX(Control);
+		s8 stickY = PAD_StickY(Control);
+		c->mouseX = GCtoPSXMouse(stickX);
+		c->mouseY = GCtoPSXMouse(config->invertedYL ? stickY : -stickY);
 	}
 	else {
 		//adjust values by 128 cause PSX sticks range 0-255 with a 128 center pos

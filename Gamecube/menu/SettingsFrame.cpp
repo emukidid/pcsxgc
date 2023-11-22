@@ -81,6 +81,7 @@ void Func_ConfigureButtons();
 void Func_PsxTypeStandard();
 void Func_PsxTypeAnalog();
 void Func_PsxTypeLightgun();
+void Func_PsxTypeMouse();
 void Func_DisableRumbleYes();
 void Func_DisableRumbleNo();
 void Func_SaveButtonsSD();
@@ -146,7 +147,7 @@ Deflicker: On/Off
 Input Tab:
 Assign Controllers (assign player->pad)
 Configure Button Mappings
-PSX Controller Type: Standard/Analog/Gun
+PAD1 Type: Standard/Analog/Gun/Mouse
 //Number of Multitaps: 0, 1, 2
 
 Audio Tab:
@@ -202,6 +203,7 @@ enum BUTTON_IDS {
 	BTN_PAD_STANDARD,
 	BTN_PAD_ANALOG,
 	BTN_PAD_GUN,
+	BTN_PAD_MOUSE,
 	BTN_RUMBLE_YES,
 	BTN_RUMBLE_NO,
 	BTN_SAVE_BTN_MAP_SD,
@@ -269,6 +271,7 @@ struct LabelResources
 	{BTN_PAD_STANDARD, "Standard"},
 	{BTN_PAD_ANALOG, "Analog"},
 	{BTN_PAD_GUN, "Gun"},
+	{BTN_PAD_MOUSE, "Mouse"},
 	{BTN_RUMBLE_YES, "Yes"},
 	{BTN_RUMBLE_NO, "No"},
 	{BTN_SAVE_BTN_MAP_SD, "SD"},
@@ -349,7 +352,7 @@ LabelResources RES_LBL[LABEL_GROUPS_END] =
 	{LBL_VIDEO_DEFLICKER, "Deflicker"},
 	// Input
 	{LBL_INPUT_CONF_INPUT, "Configure Input"},
-	{LBL_INPUT_CONT_TYPE, "PSX Controller Type"},
+	{LBL_INPUT_CONT_TYPE, "PAD1"},
 	{LBL_INPUT_RUMBLE, "Disable Rumble"},
 	{LBL_INPUT_SAVE, "Save Button Configs"},
 	{LBL_INPUT_AUTOLOAD, "Auto Load Slot:"},
@@ -413,9 +416,10 @@ struct SettingsButtonInfo
 	//Buttons for Input Tab	
 	{	NULL,	BTN_A_NRM,	285.0,	140.0,	BTN_TAB_INPUT,	BTN_PAD_STANDARD,	BTN_CONF_BTN_MAP,	BTN_CONF_BTN_MAP,	Func_ConfigureInput,	TAB_INPUT, LBL_INPUT_CONF_INPUT, BTN_CONF_INPUT }, // Configure Input Assignment
 	{	NULL,	BTN_A_NRM,	435.0,	110.0,	BTN_TAB_INPUT,	BTN_PAD_STANDARD,	BTN_CONF_INPUT,	BTN_CONF_INPUT,	Func_ConfigureButtons,	TAB_INPUT, LBL_INPUT_CONF_INPUT, BTN_CONF_BTN_MAP }, // Configure Button Mappings
-	{	NULL,	BTN_A_SEL,	285.0,	130.0,	BTN_CONF_INPUT,	BTN_RUMBLE_YES,	BTN_PAD_GUN,	BTN_PAD_ANALOG,	Func_PsxTypeStandard,	TAB_INPUT, LBL_INPUT_CONT_TYPE, BTN_PAD_STANDARD }, // PSX Controller Type: Standard
-	{	NULL,	BTN_A_SEL,	425.0,	110.0,	BTN_CONF_BTN_MAP,	BTN_RUMBLE_NO,	BTN_PAD_STANDARD,	BTN_PAD_GUN,	Func_PsxTypeAnalog,		TAB_INPUT, LBL_INPUT_CONT_TYPE, BTN_PAD_ANALOG }, // PSX Controller Type: Analog
-	{	NULL,	BTN_A_SEL,	550.0,	 75.0,	BTN_CONF_BTN_MAP,	BTN_RUMBLE_NO,	BTN_PAD_ANALOG,	BTN_PAD_STANDARD,	Func_PsxTypeLightgun,	TAB_INPUT, LBL_INPUT_CONT_TYPE, BTN_PAD_GUN }, // PSX Controller Type: Gun
+	{	NULL,	BTN_A_SEL,	200.0,	130.0,	BTN_CONF_INPUT,	BTN_RUMBLE_YES,	BTN_PAD_MOUSE,	BTN_PAD_ANALOG,	Func_PsxTypeStandard,	TAB_INPUT, LBL_INPUT_CONT_TYPE, BTN_PAD_STANDARD }, // PAD1 Type: Standard
+	{	NULL,	BTN_A_SEL,	335.0,	110.0,	BTN_CONF_BTN_MAP,	BTN_RUMBLE_NO,	BTN_PAD_STANDARD,	BTN_PAD_GUN,	Func_PsxTypeAnalog,		TAB_INPUT, LBL_INPUT_CONT_TYPE, BTN_PAD_ANALOG }, // PAD1 Type: Analog
+	{	NULL,	BTN_A_SEL,	450.0,	 75.0,	BTN_CONF_BTN_MAP,	BTN_RUMBLE_NO,	BTN_PAD_ANALOG,	BTN_PAD_MOUSE,	Func_PsxTypeLightgun,	TAB_INPUT, LBL_INPUT_CONT_TYPE, BTN_PAD_GUN }, // PAD1 Type: Gun
+	{	NULL,	BTN_A_SEL,	530.0,	100.0,	BTN_CONF_BTN_MAP,	BTN_RUMBLE_NO,	BTN_PAD_GUN,	BTN_PAD_STANDARD,	Func_PsxTypeMouse,	TAB_INPUT, LBL_INPUT_CONT_TYPE, BTN_PAD_MOUSE }, // PAD1 Type: Mouse
 	{	NULL,	BTN_A_SEL,	285.0,	 75.0,	BTN_PAD_STANDARD,	BTN_SAVE_BTN_MAP_SD,	BTN_RUMBLE_NO,	BTN_RUMBLE_NO,	Func_DisableRumbleYes,	TAB_INPUT, LBL_INPUT_RUMBLE, BTN_RUMBLE_YES }, // Disable Rumble: Yes
 	{	NULL,	BTN_A_SEL,	380.0,	 75.0,	BTN_PAD_GUN,	BTN_SAVE_BTN_MAP_USB,	BTN_RUMBLE_YES,	BTN_RUMBLE_YES,	Func_DisableRumbleNo,	TAB_INPUT, LBL_INPUT_RUMBLE, BTN_RUMBLE_NO }, // Disable Rumble: No
 	{	NULL,	BTN_A_NRM,	285.0,	 55.0,	BTN_RUMBLE_YES,	BTN_AUTOLOAD_BTN_CONF,	BTN_SAVE_BTN_MAP_USB,	BTN_SAVE_BTN_MAP_USB,	Func_SaveButtonsSD,		TAB_INPUT, LBL_INPUT_SAVE, BTN_SAVE_BTN_MAP_SD }, // Save Button Mappings: SD
@@ -460,7 +464,7 @@ struct SettingsTextBoxInfo
 	{	NULL,	190.0,	TAB_VIDEO,		LBL_VIDEO_DEFLICKER }, // Deflicker: On/Off
 	//TextBoxes for Input Tab 	
 	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_CONF_INPUT }, // blank.
-	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_CONT_TYPE }, // PSX Controller Type: Analog/Digital/Gun
+	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_CONT_TYPE }, // PAD1 Type: Analog/Digital/Gun/Mouse
 	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_RUMBLE }, // Disable Rumble: Yes/No
 	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_SAVE }, // Save Button Configs: SD/USB
 	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_AUTOLOAD }, // Auto Load Slot: Default/1/2/3/4
@@ -673,7 +677,10 @@ void SettingsFrame::activateSubmenu(int submenu)
 			SetVisibleButtonsForTab(TAB_INPUT);
 			// Display button selections based on settings
 			SelectBtn(BTN_TAB_INPUT);
-			SelectBtnInGroup((controllerType == CONTROLLERTYPE_LIGHTGUN) ? BTN_PAD_GUN : ((controllerType == CONTROLLERTYPE_ANALOG) ? BTN_PAD_ANALOG : BTN_PAD_STANDARD), LBL_INPUT_CONT_TYPE);
+			if(controllerType == CONTROLLERTYPE_LIGHTGUN) SelectBtnInGroup(BTN_PAD_GUN, LBL_INPUT_CONT_TYPE);
+			else if(controllerType == CONTROLLERTYPE_ANALOG) SelectBtnInGroup(BTN_PAD_ANALOG, LBL_INPUT_CONT_TYPE);
+			else if(controllerType == CONTROLLERTYPE_MOUSE) SelectBtnInGroup(BTN_PAD_MOUSE, LBL_INPUT_CONT_TYPE);
+			else if(controllerType == CONTROLLERTYPE_STANDARD) SelectBtnInGroup(BTN_PAD_STANDARD, LBL_INPUT_CONT_TYPE);
 			SelectBtnInGroup(rumbleEnabled ? BTN_RUMBLE_NO : BTN_RUMBLE_YES, LBL_INPUT_RUMBLE);
 			GetButtonById(BTN_AUTOLOAD_BTN_CONF)->setText(&slotText[(loadButtonSlot == LOADBUTTON_DEFAULT) ? 0 : (loadButtonSlot+1)]);
 			break;
@@ -1153,6 +1160,13 @@ void Func_PsxTypeLightgun()
 	SelectBtnInGroup(BTN_PAD_GUN, LBL_INPUT_CONT_TYPE);
 	controllerType = CONTROLLERTYPE_LIGHTGUN;
 	in_type[0] = in_type[1] = PSE_PAD_TYPE_GUNCON;
+}
+
+void Func_PsxTypeMouse()
+{
+	SelectBtnInGroup(BTN_PAD_MOUSE, LBL_INPUT_CONT_TYPE);
+	controllerType = CONTROLLERTYPE_MOUSE;
+	in_type[0] = in_type[1] = PSE_PAD_TYPE_MOUSE;
 }
 
 void Func_DisableRumbleYes()

@@ -16,10 +16,6 @@
 
 char text[DEBUG_TEXT_HEIGHT][DEBUG_TEXT_WIDTH];
 char printToSD = 1;
-#ifdef OLDDYNAREC
-extern u32 dyna_used;
-extern u32 dyna_total;
-#endif
 
 #ifdef SHOW_DEBUG
 char txtbuffer[1024];
@@ -28,12 +24,7 @@ extern long long gettime();
 extern unsigned int diff_sec(long long start,long long end);
 static void check_heap_space(void){
 	sprintf(txtbuffer,"%dKB MEM1 available", SYS_GetArena1Size()/1024);
-	DEBUG_print(txtbuffer,DBG_MEMFREEINFO);
-	
-#ifdef OLDDYNAREC
-	sprintf(txtbuffer,"Dynarec (KB) %04d/%04d",dyna_used,dyna_total/1024);
-	DEBUG_print(txtbuffer,DBG_CORE1);
-#endif
+	DEBUG_print(txtbuffer,DBG_MEMFREEINFO);	
 }
 #endif
 

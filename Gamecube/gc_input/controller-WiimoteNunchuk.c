@@ -106,6 +106,8 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config,
 	if(wpadNeedScan){ WPAD_ScanPads(); wpadNeedScan = 0; }
 	WPADData* wpad = WPAD_Data(Control);
 	BUTTONS* c = Keys;
+	u16 gunX = c->gunX;
+	u16 gunY = c->gunY;
 	memset(c, 0, sizeof(BUTTONS));
 	//Reset buttons & sticks
 	c->btns.All = 0xFFFF;
@@ -140,55 +142,109 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config,
 	c->btns.L3_BUTTON    = isHeld(config->L3);
 	c->btns.SELECT_BUTTON = isHeld(config->SELECT);
 
-	//adjust values by 128 cause PSX sticks range 0-255 with a 128 center pos
-	s8 stickX = 0;
-	s8 stickY = 0;
-	if(config->analogL->mask == NUNCHUK_AS_ANALOG){
-		stickX = getStickValue(&wpad->exp.nunchuk.js, STICK_X, 127);
-		stickY = getStickValue(&wpad->exp.nunchuk.js, STICK_Y, 127);
-	} else if(config->analogL->mask == IR_AS_ANALOG){
-		if(wpad->ir.smooth_valid){
-			stickX = ((short)(wpad->ir.sx - 512)) >> 2;
-			stickY = -(signed char)((wpad->ir.sy - 384) / 3);
+	if(controllerType == CONTROLLERTYPE_LIGHTGUN) {	
+		s8 stickX = 0;
+		s8 stickY = 0;
+		if(config->analogL->mask == NUNCHUK_AS_ANALOG){
+			stickX = getStickValue(&wpad->exp.nunchuk.js, STICK_X, 127);
+			stickY = getStickValue(&wpad->exp.nunchuk.js, STICK_Y, 127);
+			// deadzone
+			if(stickX < -10 || stickX > 10)
+				c->gunX += gunX + ((stickX) / 6);
+			else
+				c->gunX = gunX;
+			if(stickY < -10 || stickY > 10)
+				c->gunY += gunY - ((stickY) / 6);
+			else
+				c->gunY = gunY;
 		} else {
-			stickX = 0;
-			stickY = 0;
-		}
-	} else if(config->analogL->mask == TILT_AS_ANALOG){
-		stickX = -wpad->orient.pitch;
-		stickY = wpad->orient.roll;
-	} else if(config->analogL->mask == WHEEL_AS_ANALOG){
-		stickX = 512 - wpad->accel.y;
-		stickY = wpad->accel.z - 512;
-	}
-	c->leftStickX  = (u8)(stickX+127) & 0xFF;
-	if(config->invertedYL)	c->leftStickY = (u8)(stickY+127) & 0xFF;
-	else					c->leftStickY = (u8)(-stickY+127) & 0xFF;
+			if(wpad->ir.smooth_valid){
+				c->gunX = (int)(wpad->ir.sx);
+				c->gunY = (int)((wpad->ir.sy) * (1023.0f/768.0f));
+			}
+			else {
+				c->gunX = gunX;
+				c->gunY = gunY;
+			}
+		}		
 
-	stickX = 0;
-	stickY = 0;
-	if(config->analogR->mask == NUNCHUK_AS_ANALOG){
-		stickX = getStickValue(&wpad->exp.nunchuk.js, STICK_X, 127);
-		stickY = getStickValue(&wpad->exp.nunchuk.js, STICK_Y, 127);
-	} else if(config->analogR->mask == IR_AS_ANALOG){
-		if(wpad->ir.smooth_valid){
-			stickX = ((short)(wpad->ir.sx - 512)) >> 2;
-			stickY = -(signed char)((wpad->ir.sy - 384) / 3);
+		// Keep it within 0 to 1023
+		c->gunX = c->gunX > 1023 ? 1023 : (c->gunX < 0 ? 0 : c->gunX);
+		c->gunY = c->gunY > 1023 ? 1023 : (c->gunY < 0 ? 0 : c->gunY);
+	}
+	else if(controllerType == CONTROLLERTYPE_MOUSE) {
+		s8 stickX = 0;
+		s8 stickY = 0;
+		if(config->analogL->mask == NUNCHUK_AS_ANALOG){
+			stickX = getStickValue(&wpad->exp.nunchuk.js, STICK_X, 127);
+			stickY = getStickValue(&wpad->exp.nunchuk.js, STICK_Y, 127);
+			// deadzone
+			if(stickX < -10 || stickX > 10)
+				c->mouseX = stickX;
+			if(stickY < -10 || stickY > 10)
+				c->mouseY = config->invertedYL ? stickY : -stickY;
 		} else {
-			stickX = 0;
-			stickY = 0;
-		}
-	} else if(config->analogR->mask == TILT_AS_ANALOG){
-		stickX = -wpad->orient.pitch;
-		stickY = wpad->orient.roll;
-	} else if(config->analogR->mask == WHEEL_AS_ANALOG){
-		stickX = 512 - wpad->accel.y;
-		stickY = wpad->accel.z - 512;
+			if(wpad->ir.smooth_valid){
+				float ir_x = (wpad->ir.sx-512);
+				float ir_y = (wpad->ir.sy-384);
+				if(ir_x < -5 || ir_x > 5)
+					c->mouseX = (int)(ir_x * (128.0f/1024.0f));
+				if(ir_y < -5 || ir_y > 5)
+					c->mouseY = (int)(ir_y * (128.0f/768.0f));
+			}
+		}		
 	}
-	c->rightStickX  = (u8)(stickX+127) & 0xFF;
-	if(config->invertedYR)	c->rightStickY = (u8)(stickY+127) & 0xFF;
-	else					c->rightStickY = (u8)(-stickY+127) & 0xFF;
+	else {
+		//adjust values by 128 cause PSX sticks range 0-255 with a 128 center pos
+		s8 stickX = 0;
+		s8 stickY = 0;
+		if(config->analogL->mask == NUNCHUK_AS_ANALOG){
+			stickX = getStickValue(&wpad->exp.nunchuk.js, STICK_X, 127);
+			stickY = getStickValue(&wpad->exp.nunchuk.js, STICK_Y, 127);
+		} else if(config->analogL->mask == IR_AS_ANALOG){
+			if(wpad->ir.smooth_valid){
+				stickX = ((short)(wpad->ir.sx - 512)) >> 2;
+				stickY = -(signed char)((wpad->ir.sy - 384) / 3);
+			} else {
+				stickX = 0;
+				stickY = 0;
+			}
+		} else if(config->analogL->mask == TILT_AS_ANALOG){
+			stickX = -wpad->orient.pitch;
+			stickY = wpad->orient.roll;
+		} else if(config->analogL->mask == WHEEL_AS_ANALOG){
+			stickX = 512 - wpad->accel.y;
+			stickY = wpad->accel.z - 512;
+		}
+		c->leftStickX  = (u8)(stickX+127) & 0xFF;
+		if(config->invertedYL)	c->leftStickY = (u8)(stickY+127) & 0xFF;
+		else					c->leftStickY = (u8)(-stickY+127) & 0xFF;
 
+		stickX = 0;
+		stickY = 0;
+		if(config->analogR->mask == NUNCHUK_AS_ANALOG){
+			stickX = getStickValue(&wpad->exp.nunchuk.js, STICK_X, 127);
+			stickY = getStickValue(&wpad->exp.nunchuk.js, STICK_Y, 127);
+		} else if(config->analogR->mask == IR_AS_ANALOG){
+			if(wpad->ir.smooth_valid){
+				stickX = ((short)(wpad->ir.sx - 512)) >> 2;
+				stickY = -(signed char)((wpad->ir.sy - 384) / 3);
+			} else {
+				stickX = 0;
+				stickY = 0;
+			}
+		} else if(config->analogR->mask == TILT_AS_ANALOG){
+			stickX = -wpad->orient.pitch;
+			stickY = wpad->orient.roll;
+		} else if(config->analogR->mask == WHEEL_AS_ANALOG){
+			stickX = 512 - wpad->accel.y;
+			stickY = wpad->accel.z - 512;
+		}
+		c->rightStickX  = (u8)(stickX+127) & 0xFF;
+		if(config->invertedYR)	c->rightStickY = (u8)(stickY+127) & 0xFF;
+		else					c->rightStickY = (u8)(-stickY+127) & 0xFF;
+
+	}
 	// Return 1 if whether the exit button(s) are pressed
 	return isHeld(config->exit) ? 0 : 1;
 }

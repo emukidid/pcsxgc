@@ -151,6 +151,8 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
 	if(wpadNeedScan){ WPAD_ScanPads(); wpadNeedScan = 0; }
 	WPADData* wpad = WPAD_Data(Control);
 	BUTTONS* c = Keys;
+	u16 gunX = c->gunX;
+	u16 gunY = c->gunY;
 	memset(c, 0, sizeof(BUTTONS));
 	//Reset buttons & sticks
 	c->btns.All = 0xFFFF;
@@ -185,30 +187,58 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
 	c->btns.L3_BUTTON    = isHeld(config->L3);
 	c->btns.SELECT_BUTTON = isHeld(config->SELECT);
 
-	//adjust values by 128 cause PSX sticks range 0-255 with a 128 center pos
-	s8 stickX = 0;
-	s8 stickY = 0;
-	if(config->analogL->mask == L_STICK_AS_ANALOG){
-		stickX = getStickValue(&wpad->exp.classic.ljs, STICK_X, 127);
-		stickY = getStickValue(&wpad->exp.classic.ljs, STICK_Y, 127);
-	} else if(config->analogL->mask == R_STICK_AS_ANALOG){
-		stickX = getStickValue(&wpad->exp.classic.rjs, STICK_X, 127);
-		stickY = getStickValue(&wpad->exp.classic.rjs, STICK_Y, 127);
+	if(controllerType == CONTROLLERTYPE_LIGHTGUN) {	
+		s8 stickX      = getStickValue(&wpad->exp.classic.ljs, STICK_X, 127);
+		s8 stickY      = getStickValue(&wpad->exp.classic.ljs, STICK_Y, 127);
+		// deadzone
+		if(stickX < -10 || stickX > 10)
+			c->gunX += gunX + ((stickX) / 6);
+		else
+			c->gunX = gunX;
+		if(stickY < -10 || stickY > 10)
+			c->gunY += gunY - ((stickY) / 6);
+		else
+			c->gunY = gunY;
+		// Keep it within 0 to 1023
+		c->gunX = c->gunX > 1023 ? 1023 : (c->gunX < 0 ? 0 : c->gunX);
+		c->gunY = c->gunY > 1023 ? 1023 : (c->gunY < 0 ? 0 : c->gunY);
 	}
-	c->leftStickX  = (u8)(stickX+127) & 0xFF;
-	if(config->invertedYL)	c->leftStickY = (u8)(stickY+127) & 0xFF;
-	else					c->leftStickY = (u8)(-stickY+127) & 0xFF;
+	else if(controllerType == CONTROLLERTYPE_MOUSE) {
+		s8 stickX      = getStickValue(&wpad->exp.classic.ljs, STICK_X, 127);
+		s8 stickY      = getStickValue(&wpad->exp.classic.ljs, STICK_Y, 127);
+		// deadzone
+		if(stickX < -10 || stickX > 10)
+			c->mouseX = getStickValue(&wpad->exp.classic.ljs, STICK_X, 127);
+		if(stickY < -10 || stickY > 10)
+			c->mouseY = config->invertedYL ? getStickValue(&wpad->exp.classic.ljs, STICK_Y, 127) :
+											-getStickValue(&wpad->exp.classic.ljs, STICK_Y, 127);
+	}
+	else {
+		//adjust values by 128 cause PSX sticks range 0-255 with a 128 center pos
+		s8 stickX = 0;
+		s8 stickY = 0;
+		if(config->analogL->mask == L_STICK_AS_ANALOG){
+			stickX = getStickValue(&wpad->exp.classic.ljs, STICK_X, 127);
+			stickY = getStickValue(&wpad->exp.classic.ljs, STICK_Y, 127);
+		} else if(config->analogL->mask == R_STICK_AS_ANALOG){
+			stickX = getStickValue(&wpad->exp.classic.rjs, STICK_X, 127);
+			stickY = getStickValue(&wpad->exp.classic.rjs, STICK_Y, 127);
+		}
+		c->leftStickX  = (u8)(stickX+127) & 0xFF;
+		if(config->invertedYL)	c->leftStickY = (u8)(stickY+127) & 0xFF;
+		else					c->leftStickY = (u8)(-stickY+127) & 0xFF;
 
-	if(config->analogR->mask == L_STICK_AS_ANALOG){
-		stickX = getStickValue(&wpad->exp.classic.ljs, STICK_X, 127);
-		stickY = getStickValue(&wpad->exp.classic.ljs, STICK_Y, 127);
-	} else if(config->analogR->mask == R_STICK_AS_ANALOG){
-		stickX = getStickValue(&wpad->exp.classic.rjs, STICK_X, 127);
-		stickY = getStickValue(&wpad->exp.classic.rjs, STICK_Y, 127);
+		if(config->analogR->mask == L_STICK_AS_ANALOG){
+			stickX = getStickValue(&wpad->exp.classic.ljs, STICK_X, 127);
+			stickY = getStickValue(&wpad->exp.classic.ljs, STICK_Y, 127);
+		} else if(config->analogR->mask == R_STICK_AS_ANALOG){
+			stickX = getStickValue(&wpad->exp.classic.rjs, STICK_X, 127);
+			stickY = getStickValue(&wpad->exp.classic.rjs, STICK_Y, 127);
+		}
+		c->rightStickX  = (u8)(stickX+127) & 0xFF;
+		if(config->invertedYR)	c->rightStickY = (u8)(stickY+127) & 0xFF;
+		else					c->rightStickY = (u8)(-stickY+127) & 0xFF;
 	}
-	c->rightStickX  = (u8)(stickX+127) & 0xFF;
-	if(config->invertedYR)	c->rightStickY = (u8)(stickY+127) & 0xFF;
-	else					c->rightStickY = (u8)(-stickY+127) & 0xFF;
 
 	// Return 1 if whether the exit button(s) are pressed
 	return isHeld(config->exit) ? 0 : 1;
