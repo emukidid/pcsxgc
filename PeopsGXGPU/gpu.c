@@ -1960,7 +1960,7 @@ BOOL bSwapCheck(void)
 ////////////////////////////////////////////////////////////////////////
 // gun cursor func: player=0-7, x=0-511, y=0-255
 ////////////////////////////////////////////////////////////////////////
-
+#if 0
 void CALLBACK GPUcursor(int iPlayer,int x,int y)
 {
  if(iPlayer<0) return;
@@ -1976,7 +1976,7 @@ void CALLBACK GPUcursor(int iPlayer,int x,int y)
  ptCursorPoint[iPlayer].x=x;
  ptCursorPoint[iPlayer].y=y;
 }
-
+#endif
 ////////////////////////////////////////////////////////////////////////
 // update lace is called every VSync. Basically we limit frame rate 
 // here, and in interlaced mode we swap ogl display buffers.

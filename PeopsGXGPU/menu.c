@@ -39,11 +39,11 @@
 #include "draw.h"
 #include "menu.h"
 #include "gpu.h"
-
+#if 0
 unsigned long  dwCoreFlags=0;
 PSXPoint_t     ptCursorPoint[8];
 unsigned short usCursorActive=0;
-
+#endif
 ////////////////////////////////////////////////////////////////////////
 // field with menu chars... like good old C64 time :)
 ////////////////////////////////////////////////////////////////////////
