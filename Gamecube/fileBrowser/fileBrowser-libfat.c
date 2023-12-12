@@ -34,6 +34,7 @@
 #include <iso9660.h>
 #include <di/di.h>
 #include <ogc/dvd.h>
+#include "m2loader.h"
 
 
 #ifdef HW_RVL
@@ -50,6 +51,7 @@ const DISC_INTERFACE* carda = &__io_gcsda;
 const DISC_INTERFACE* cardb = &__io_gcsdb;
 const DISC_INTERFACE* sd2sp2 = &__io_gcsd2;
 const DISC_INTERFACE* gcloader = &__io_gcode;
+const DISC_INTERFACE* m2loader = &__io_m2ldr;
 #endif
 
 fileBrowser_file topLevel_libfat_Default =
@@ -231,7 +233,10 @@ int fileBrowser_libfat_init(fileBrowser_file* f){
 	return res;
 #else
 	if(f->name[0] == 's') {
-		if(gcloader->startup()) {
+		if(m2loader->startup()) {
+			res = fatMountSimple ("sd", m2loader);
+		}
+		if(!res && gcloader->startup()) {
 			res = fatMountSimple ("sd", gcloader);
 		}
 		if(!res && sd2sp2->startup()) {

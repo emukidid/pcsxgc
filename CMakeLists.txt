@@ -247,6 +247,7 @@ add_library(filebrowser OBJECT
 	Gamecube/fileBrowser/fileBrowser-SMB.c
 	Gamecube/fileBrowser/fileBrowser-libfat.c
 	Gamecube/fileBrowser/fileBrowser.c
+	Gamecube/fileBrowser/m2loader.c
 )
 set_target_properties(filebrowser PROPERTIES LINKER_LANGUAGE C)
 target_link_libraries(filebrowser PUBLIC libgui ogc)
