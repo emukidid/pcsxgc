@@ -78,10 +78,22 @@ void Func_DeflickerOn();
 
 void Func_ConfigureInput();
 void Func_ConfigureButtons();
-void Func_PsxTypeStandard();
-void Func_PsxTypeAnalog();
-void Func_PsxTypeLightgun();
-void Func_PsxTypeMouse();
+void Func_Pad1TypeStandard();
+void Func_Pad2TypeStandard();
+void Func_Pad3TypeStandard();
+void Func_Pad4TypeStandard();
+void Func_Pad1TypeAnalog();
+void Func_Pad2TypeAnalog();
+void Func_Pad3TypeAnalog();
+void Func_Pad4TypeAnalog();
+void Func_Pad1TypeLightgun();
+void Func_Pad2TypeLightgun();
+void Func_Pad3TypeLightgun();
+void Func_Pad4TypeLightgun();
+void Func_Pad1TypeMouse();
+void Func_Pad2TypeMouse();
+void Func_Pad3TypeMouse();
+void Func_Pad4TypeMouse();
 void Func_DisableRumbleYes();
 void Func_DisableRumbleNo();
 void Func_SaveButtonsSD();
@@ -121,12 +133,15 @@ void resumeAudio(void); void resumeInput(void);
 }
 
 #define NUM_TAB_BUTTONS 5
-#define NUM_FRAME_TEXTBOXES 21
+#define NUM_FRAME_TEXTBOXES 24
 #define TAB_Y_POS 30
 #define TAB_Y_LABEL_PAD 28.0
+#define TAB_Y_LABEL_PAD_SML 22.0
 #define TAB_Y_ENTRY_START 100
 #define TAB_Y_ENTRY_INC 60
+#define TAB_Y_ENTRY_INC_SML 45
 #define BTN_HEIGHT 48
+#define BTN_HEIGHT_SML 36
 
 /*
 General Tab:
@@ -200,10 +215,22 @@ enum BUTTON_IDS {
 	
 	BTN_CONF_INPUT,
 	BTN_CONF_BTN_MAP,
-	BTN_PAD_STANDARD,
-	BTN_PAD_ANALOG,
-	BTN_PAD_GUN,
-	BTN_PAD_MOUSE,
+	BTN_PAD1_STANDARD,
+	BTN_PAD1_ANALOG,
+	BTN_PAD1_GUN,
+	BTN_PAD1_MOUSE,
+	BTN_PAD2_STANDARD,
+	BTN_PAD2_ANALOG,
+	BTN_PAD2_GUN,
+	BTN_PAD2_MOUSE,
+	BTN_PAD3_STANDARD,
+	BTN_PAD3_ANALOG,
+	BTN_PAD3_GUN,
+	BTN_PAD3_MOUSE,
+	BTN_PAD4_STANDARD,
+	BTN_PAD4_ANALOG,
+	BTN_PAD4_GUN,
+	BTN_PAD4_MOUSE,
 	BTN_RUMBLE_YES,
 	BTN_RUMBLE_NO,
 	BTN_SAVE_BTN_MAP_SD,
@@ -268,10 +295,22 @@ struct LabelResources
 	
 	{BTN_CONF_INPUT, "Assign"},
 	{BTN_CONF_BTN_MAP, "Map"},
-	{BTN_PAD_STANDARD, "Standard"},
-	{BTN_PAD_ANALOG, "Analog"},
-	{BTN_PAD_GUN, "Gun"},
-	{BTN_PAD_MOUSE, "Mouse"},
+	{BTN_PAD1_STANDARD, "Standard"},
+	{BTN_PAD1_ANALOG, "Analog"},
+	{BTN_PAD1_GUN, "Gun"},
+	{BTN_PAD1_MOUSE, "Mouse"},
+	{BTN_PAD2_STANDARD, "Standard"},
+	{BTN_PAD2_ANALOG, "Analog"},
+	{BTN_PAD2_GUN, "Gun"},
+	{BTN_PAD2_MOUSE, "Mouse"},
+	{BTN_PAD3_STANDARD, "Standard"},
+	{BTN_PAD3_ANALOG, "Analog"},
+	{BTN_PAD3_GUN, "Gun"},
+	{BTN_PAD3_MOUSE, "Mouse"},
+	{BTN_PAD4_STANDARD, "Standard"},
+	{BTN_PAD4_ANALOG, "Analog"},
+	{BTN_PAD4_GUN, "Gun"},
+	{BTN_PAD4_MOUSE, "Mouse"},
 	{BTN_RUMBLE_YES, "Yes"},
 	{BTN_RUMBLE_NO, "No"},
 	{BTN_SAVE_BTN_MAP_SD, "SD"},
@@ -320,7 +359,10 @@ enum LABEL_IDS {
 	LBL_VIDEO_DEFLICKER,
 	// Input
 	LBL_INPUT_CONF_INPUT,
-	LBL_INPUT_CONT_TYPE,
+	LBL_INPUT_CONT1_TYPE,
+	LBL_INPUT_CONT2_TYPE,
+	LBL_INPUT_CONT3_TYPE,
+	LBL_INPUT_CONT4_TYPE,
 	LBL_INPUT_RUMBLE,
 	LBL_INPUT_SAVE,
 	LBL_INPUT_AUTOLOAD,
@@ -352,7 +394,10 @@ LabelResources RES_LBL[LABEL_GROUPS_END] =
 	{LBL_VIDEO_DEFLICKER, "Deflicker"},
 	// Input
 	{LBL_INPUT_CONF_INPUT, "Configure Input"},
-	{LBL_INPUT_CONT_TYPE, "PAD1"},
+	{LBL_INPUT_CONT1_TYPE, "PAD1"},
+	{LBL_INPUT_CONT2_TYPE, "PAD2"},
+	{LBL_INPUT_CONT3_TYPE, "PAD3"},
+	{LBL_INPUT_CONT4_TYPE, "PAD4"},
 	{LBL_INPUT_RUMBLE, "Disable Rumble"},
 	{LBL_INPUT_SAVE, "Save Button Configs"},
 	{LBL_INPUT_AUTOLOAD, "Auto Load Slot:"},
@@ -414,14 +459,27 @@ struct SettingsButtonInfo
 	{	NULL,	BTN_A_SEL,	325.0,	75.0,	BTN_DITHER_DEFAULT,	 BTN_TAB_VIDEO,	BTN_DEFLICKER_OFF,	BTN_DEFLICKER_OFF,	Func_DeflickerOn,	TAB_VIDEO, LBL_VIDEO_DEFLICKER, BTN_DEFLICKER_ON }, // Deflicker: On
 	{	NULL,	BTN_A_SEL,	420.0,	75.0,	BTN_DITHER_DEFAULT,	 BTN_TAB_VIDEO,	BTN_DEFLICKER_ON,	BTN_DEFLICKER_ON,	Func_DeflickerOff,	TAB_VIDEO, LBL_VIDEO_DEFLICKER, BTN_DEFLICKER_OFF }, // Deflicker: Off
 	//Buttons for Input Tab	
-	{	NULL,	BTN_A_NRM,	285.0,	140.0,	BTN_TAB_INPUT,	BTN_PAD_STANDARD,	BTN_CONF_BTN_MAP,	BTN_CONF_BTN_MAP,	Func_ConfigureInput,	TAB_INPUT, LBL_INPUT_CONF_INPUT, BTN_CONF_INPUT }, // Configure Input Assignment
-	{	NULL,	BTN_A_NRM,	435.0,	110.0,	BTN_TAB_INPUT,	BTN_PAD_STANDARD,	BTN_CONF_INPUT,	BTN_CONF_INPUT,	Func_ConfigureButtons,	TAB_INPUT, LBL_INPUT_CONF_INPUT, BTN_CONF_BTN_MAP }, // Configure Button Mappings
-	{	NULL,	BTN_A_SEL,	200.0,	130.0,	BTN_CONF_INPUT,	BTN_RUMBLE_YES,	BTN_PAD_MOUSE,	BTN_PAD_ANALOG,	Func_PsxTypeStandard,	TAB_INPUT, LBL_INPUT_CONT_TYPE, BTN_PAD_STANDARD }, // PAD1 Type: Standard
-	{	NULL,	BTN_A_SEL,	335.0,	110.0,	BTN_CONF_BTN_MAP,	BTN_RUMBLE_NO,	BTN_PAD_STANDARD,	BTN_PAD_GUN,	Func_PsxTypeAnalog,		TAB_INPUT, LBL_INPUT_CONT_TYPE, BTN_PAD_ANALOG }, // PAD1 Type: Analog
-	{	NULL,	BTN_A_SEL,	450.0,	 75.0,	BTN_CONF_BTN_MAP,	BTN_RUMBLE_NO,	BTN_PAD_ANALOG,	BTN_PAD_MOUSE,	Func_PsxTypeLightgun,	TAB_INPUT, LBL_INPUT_CONT_TYPE, BTN_PAD_GUN }, // PAD1 Type: Gun
-	{	NULL,	BTN_A_SEL,	530.0,	100.0,	BTN_CONF_BTN_MAP,	BTN_RUMBLE_NO,	BTN_PAD_GUN,	BTN_PAD_STANDARD,	Func_PsxTypeMouse,	TAB_INPUT, LBL_INPUT_CONT_TYPE, BTN_PAD_MOUSE }, // PAD1 Type: Mouse
-	{	NULL,	BTN_A_SEL,	285.0,	 75.0,	BTN_PAD_STANDARD,	BTN_SAVE_BTN_MAP_SD,	BTN_RUMBLE_NO,	BTN_RUMBLE_NO,	Func_DisableRumbleYes,	TAB_INPUT, LBL_INPUT_RUMBLE, BTN_RUMBLE_YES }, // Disable Rumble: Yes
-	{	NULL,	BTN_A_SEL,	380.0,	 75.0,	BTN_PAD_GUN,	BTN_SAVE_BTN_MAP_USB,	BTN_RUMBLE_YES,	BTN_RUMBLE_YES,	Func_DisableRumbleNo,	TAB_INPUT, LBL_INPUT_RUMBLE, BTN_RUMBLE_NO }, // Disable Rumble: No
+	{	NULL,	BTN_A_NRM,	285.0,	140.0,	BTN_TAB_INPUT,		BTN_PAD1_STANDARD,	BTN_CONF_BTN_MAP,	BTN_CONF_BTN_MAP,	Func_ConfigureInput,	TAB_INPUT, LBL_INPUT_CONF_INPUT, BTN_CONF_INPUT }, // Configure Input Assignment
+	{	NULL,	BTN_A_NRM,	435.0,	110.0,	BTN_TAB_INPUT,		BTN_PAD1_GUN,	BTN_CONF_INPUT,	BTN_CONF_INPUT,		Func_ConfigureButtons,	TAB_INPUT, LBL_INPUT_CONF_INPUT, BTN_CONF_BTN_MAP }, // Configure Button Mappings
+	{	NULL,	BTN_A_SEL,	200.0,	130.0,	BTN_CONF_INPUT,		BTN_PAD2_STANDARD,	BTN_PAD1_MOUSE,		BTN_PAD1_ANALOG,	Func_Pad1TypeStandard,	TAB_INPUT, LBL_INPUT_CONT1_TYPE, BTN_PAD1_STANDARD }, // PAD1 Type: Standard
+	{	NULL,	BTN_A_SEL,	335.0,	110.0,	BTN_CONF_INPUT,		BTN_PAD2_ANALOG,	BTN_PAD1_STANDARD,	BTN_PAD1_GUN,		Func_Pad1TypeAnalog,	TAB_INPUT, LBL_INPUT_CONT1_TYPE, BTN_PAD1_ANALOG }, // PAD1 Type: Analog
+	{	NULL,	BTN_A_SEL,	450.0,	 75.0,	BTN_CONF_BTN_MAP,	BTN_PAD2_GUN,		BTN_PAD1_ANALOG,	BTN_PAD1_MOUSE,		Func_Pad1TypeLightgun,	TAB_INPUT, LBL_INPUT_CONT1_TYPE, BTN_PAD1_GUN }, // PAD1 Type: Gun
+	{	NULL,	BTN_A_SEL,	530.0,	100.0,	BTN_CONF_BTN_MAP,	BTN_PAD2_MOUSE,		BTN_PAD1_GUN,		BTN_PAD1_STANDARD,	Func_Pad1TypeMouse,		TAB_INPUT, LBL_INPUT_CONT1_TYPE, BTN_PAD1_MOUSE }, // PAD1 Type: Mouse
+	{	NULL,	BTN_A_SEL,	200.0,	130.0,	BTN_PAD1_STANDARD,	BTN_PAD3_STANDARD,	BTN_PAD2_MOUSE,		BTN_PAD2_ANALOG,	Func_Pad2TypeStandard,	TAB_INPUT, LBL_INPUT_CONT2_TYPE, BTN_PAD2_STANDARD }, // PAD2 Type: Standard
+	{	NULL,	BTN_A_SEL,	335.0,	110.0,	BTN_PAD1_ANALOG,	BTN_PAD3_ANALOG,	BTN_PAD2_STANDARD,	BTN_PAD2_GUN,		Func_Pad2TypeAnalog,	TAB_INPUT, LBL_INPUT_CONT2_TYPE, BTN_PAD2_ANALOG }, // PAD2 Type: Analog
+	{	NULL,	BTN_A_SEL,	450.0,	 75.0,	BTN_PAD1_GUN,		BTN_PAD3_GUN,		BTN_PAD2_ANALOG,	BTN_PAD2_MOUSE,		Func_Pad2TypeLightgun,	TAB_INPUT, LBL_INPUT_CONT2_TYPE, BTN_PAD2_GUN }, // PAD2 Type: Gun
+	{	NULL,	BTN_A_SEL,	530.0,	100.0,	BTN_PAD1_MOUSE,		BTN_PAD3_MOUSE,		BTN_PAD2_GUN,		BTN_PAD2_STANDARD,	Func_Pad2TypeMouse,		TAB_INPUT, LBL_INPUT_CONT2_TYPE, BTN_PAD2_MOUSE }, // PAD2 Type: Mouse
+	{	NULL,	BTN_A_SEL,	200.0,	130.0,	BTN_PAD2_STANDARD,	BTN_PAD4_STANDARD,	BTN_PAD3_MOUSE,		BTN_PAD3_ANALOG,	Func_Pad3TypeStandard,	TAB_INPUT, LBL_INPUT_CONT3_TYPE, BTN_PAD3_STANDARD }, // PAD3 Type: Standard
+	{	NULL,	BTN_A_SEL,	335.0,	110.0,	BTN_PAD2_ANALOG,	BTN_PAD4_ANALOG,	BTN_PAD3_STANDARD,	BTN_PAD3_GUN,		Func_Pad3TypeAnalog,	TAB_INPUT, LBL_INPUT_CONT3_TYPE, BTN_PAD3_ANALOG }, // PAD3 Type: Analog
+	{	NULL,	BTN_A_SEL,	450.0,	 75.0,	BTN_PAD2_GUN,		BTN_PAD4_GUN,		BTN_PAD3_ANALOG,	BTN_PAD3_MOUSE,		Func_Pad3TypeLightgun,	TAB_INPUT, LBL_INPUT_CONT3_TYPE, BTN_PAD3_GUN }, // PAD3 Type: Gun
+	{	NULL,	BTN_A_SEL,	530.0,	100.0,	BTN_PAD2_MOUSE,		BTN_PAD4_MOUSE,		BTN_PAD3_GUN,		BTN_PAD3_STANDARD,	Func_Pad3TypeMouse,		TAB_INPUT, LBL_INPUT_CONT3_TYPE, BTN_PAD3_MOUSE }, // PAD3 Type: Mouse
+	{	NULL,	BTN_A_SEL,	200.0,	130.0,	BTN_PAD3_STANDARD,	BTN_RUMBLE_YES,		BTN_PAD4_MOUSE,		BTN_PAD4_ANALOG,	Func_Pad4TypeStandard,	TAB_INPUT, LBL_INPUT_CONT4_TYPE, BTN_PAD4_STANDARD }, // PAD4 Type: Standard
+	{	NULL,	BTN_A_SEL,	335.0,	110.0,	BTN_PAD3_ANALOG,	BTN_RUMBLE_YES,		BTN_PAD4_STANDARD,	BTN_PAD4_GUN,		Func_Pad4TypeAnalog,	TAB_INPUT, LBL_INPUT_CONT4_TYPE, BTN_PAD4_ANALOG }, // PAD4 Type: Analog
+	{	NULL,	BTN_A_SEL,	450.0,	 75.0,	BTN_PAD3_GUN,		BTN_RUMBLE_NO,		BTN_PAD4_ANALOG,	BTN_PAD4_MOUSE,		Func_Pad4TypeLightgun,	TAB_INPUT, LBL_INPUT_CONT4_TYPE, BTN_PAD4_GUN }, // PAD4 Type: Gun
+	{	NULL,	BTN_A_SEL,	530.0,	100.0,	BTN_PAD3_MOUSE,		BTN_RUMBLE_NO,		BTN_PAD4_GUN,		BTN_PAD4_STANDARD,	Func_Pad4TypeMouse,		TAB_INPUT, LBL_INPUT_CONT4_TYPE, BTN_PAD4_MOUSE }, // PAD4 Type: Mouse
+	
+	{	NULL,	BTN_A_SEL,	285.0,	 75.0,	BTN_PAD4_STANDARD,	BTN_SAVE_BTN_MAP_SD,	BTN_RUMBLE_NO,	BTN_RUMBLE_NO,	Func_DisableRumbleYes,	TAB_INPUT, LBL_INPUT_RUMBLE, BTN_RUMBLE_YES }, // Disable Rumble: Yes
+	{	NULL,	BTN_A_SEL,	380.0,	 75.0,	BTN_PAD4_GUN,	BTN_SAVE_BTN_MAP_USB,	BTN_RUMBLE_YES,	BTN_RUMBLE_YES,	Func_DisableRumbleNo,	TAB_INPUT, LBL_INPUT_RUMBLE, BTN_RUMBLE_NO }, // Disable Rumble: No
 	{	NULL,	BTN_A_NRM,	285.0,	 55.0,	BTN_RUMBLE_YES,	BTN_AUTOLOAD_BTN_CONF,	BTN_SAVE_BTN_MAP_USB,	BTN_SAVE_BTN_MAP_USB,	Func_SaveButtonsSD,		TAB_INPUT, LBL_INPUT_SAVE, BTN_SAVE_BTN_MAP_SD }, // Save Button Mappings: SD
 	{	NULL,	BTN_A_NRM,	350.0,	 70.0,	BTN_RUMBLE_NO,	BTN_AUTOLOAD_BTN_CONF,	BTN_SAVE_BTN_MAP_SD,	BTN_SAVE_BTN_MAP_SD,	Func_SaveButtonsUSB,	TAB_INPUT, LBL_INPUT_SAVE, BTN_SAVE_BTN_MAP_USB }, // Save Button Mappings: USB
 	{	NULL,	BTN_A_NRM,	285.0,	135.0,	BTN_SAVE_BTN_MAP_SD,	 BTN_TAB_INPUT,	-1,	-1,	Func_ToggleButtonLoad,	TAB_INPUT, LBL_INPUT_AUTOLOAD, BTN_AUTOLOAD_BTN_CONF }, // Auto Load Button Config Slot: Default,1,2,3,4
@@ -464,7 +522,10 @@ struct SettingsTextBoxInfo
 	{	NULL,	190.0,	TAB_VIDEO,		LBL_VIDEO_DEFLICKER }, // Deflicker: On/Off
 	//TextBoxes for Input Tab 	
 	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_CONF_INPUT }, // blank.
-	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_CONT_TYPE }, // PAD1 Type: Analog/Digital/Gun/Mouse
+	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_CONT1_TYPE }, // PAD1 Type: Analog/Digital/Gun/Mouse
+	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_CONT2_TYPE }, // PAD2 Type: Analog/Digital/Gun/Mouse
+	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_CONT3_TYPE }, // PAD3 Type: Analog/Digital/Gun/Mouse
+	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_CONT4_TYPE }, // PAD4 Type: Analog/Digital/Gun/Mouse
 	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_RUMBLE }, // Disable Rumble: Yes/No
 	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_SAVE }, // Save Button Configs: SD/USB
 	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_AUTOLOAD }, // Auto Load Slot: Default/1/2/3/4
@@ -532,12 +593,14 @@ SettingsFrame::SettingsFrame()
 	int lastLblGrpId = -1;
 	// Create buttons from the struct above.
 	for (int i = 0; i < BTNS_END; i++) {
+		bool useSmallSizes = (FRAME_BUTTONS[i].tabGrpId == TAB_INPUT);
+		
 		// tab button, give it the top y pos.
 		if(FRAME_BUTTONS[i].tabGrpId == TAB_NONE) {
 			y_pos = TAB_Y_POS;
 		}
 		else {
-			y_pos = FRAME_BUTTONS[i].tabGrpId != lastTabId ? TAB_Y_ENTRY_START : (FRAME_BUTTONS[i].lblGrpId != lastLblGrpId ? (y_pos + TAB_Y_ENTRY_INC) : y_pos);
+			y_pos = FRAME_BUTTONS[i].tabGrpId != lastTabId ? TAB_Y_ENTRY_START : (FRAME_BUTTONS[i].lblGrpId != lastLblGrpId ? (y_pos + (useSmallSizes ? TAB_Y_ENTRY_INC_SML : TAB_Y_ENTRY_INC)) : y_pos);
 		}
 		
 		// Look up the label from the bundle
@@ -545,7 +608,7 @@ SettingsFrame::SettingsFrame()
 			if(RES_BTN_LBL[j].key == FRAME_BUTTONS[i].btnId) {
 				FRAME_BUTTONS[i].button = new menu::Button(FRAME_BUTTONS[i].buttonStyle, &RES_BTN_LBL[j].def_val, 
 										FRAME_BUTTONS[i].x, y_pos, 
-										FRAME_BUTTONS[i].width, BTN_HEIGHT);
+										FRAME_BUTTONS[i].width, useSmallSizes ? BTN_HEIGHT_SML : BTN_HEIGHT);
 				break;
 			}
 		}
@@ -556,6 +619,7 @@ SettingsFrame::SettingsFrame()
 	// Configure buttons (focus, functions)
 	for (int i = 0; i < BTNS_END; i++)
 	{
+		bool useSmallSizes = (FRAME_BUTTONS[i].tabGrpId == TAB_INPUT);
 		if (FRAME_BUTTONS[i].focusUp != -1) FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, GetButtonById(FRAME_BUTTONS[i].focusUp));
 		if (FRAME_BUTTONS[i].focusDown != -1) FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, GetButtonById(FRAME_BUTTONS[i].focusDown));
 		if (FRAME_BUTTONS[i].focusLeft != -1) FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_LEFT, GetButtonById(FRAME_BUTTONS[i].focusLeft));
@@ -566,7 +630,7 @@ SettingsFrame::SettingsFrame()
 		add(FRAME_BUTTONS[i].button);
 		menu::Cursor::getInstance().addComponent(this, FRAME_BUTTONS[i].button, FRAME_BUTTONS[i].x, 
 												FRAME_BUTTONS[i].x+FRAME_BUTTONS[i].width, FRAME_BUTTONS[i].button->y, 
-												FRAME_BUTTONS[i].button->y+BTN_HEIGHT);
+												FRAME_BUTTONS[i].button->y+(useSmallSizes ? BTN_HEIGHT_SML : BTN_HEIGHT));
 	}
 
 	lastTabId = -1;
@@ -575,13 +639,14 @@ SettingsFrame::SettingsFrame()
 	// Create labels from the struct above.
 	for (int i = 0; i < NUM_FRAME_TEXTBOXES; i++)
 	{
+		bool useSmallSizes = (FRAME_TEXTBOXES[i].tabGrpId == TAB_INPUT);
 		// label y pos.
-		y_pos = FRAME_TEXTBOXES[i].tabGrpId != lastTabId ? (TAB_Y_ENTRY_START+TAB_Y_LABEL_PAD) : (FRAME_TEXTBOXES[i].lblGrpId != lastLblGrpId ? (y_pos + TAB_Y_ENTRY_INC) : y_pos);
+		y_pos = FRAME_TEXTBOXES[i].tabGrpId != lastTabId ? (TAB_Y_ENTRY_START+(useSmallSizes ? TAB_Y_LABEL_PAD_SML : TAB_Y_LABEL_PAD)) : (FRAME_TEXTBOXES[i].lblGrpId != lastLblGrpId ? (y_pos + (useSmallSizes ? TAB_Y_ENTRY_INC_SML : TAB_Y_ENTRY_INC)) : y_pos);
 		
 		// Look up the label from the bundle
 		for (int j = 0; j < LABEL_GROUPS_END; j++) {
 			if(RES_LBL[j].key == FRAME_TEXTBOXES[i].lblGrpId) {
-				FRAME_TEXTBOXES[i].textBox = new menu::TextBox(&RES_LBL[j].def_val, FRAME_TEXTBOXES[i].x, y_pos, 1.0, true);
+				FRAME_TEXTBOXES[i].textBox = new menu::TextBox(&RES_LBL[j].def_val, FRAME_TEXTBOXES[i].x, y_pos, useSmallSizes ? 0.75f : 1.0f, true);
 				add(FRAME_TEXTBOXES[i].textBox);
 				break;
 			}
@@ -594,6 +659,7 @@ SettingsFrame::SettingsFrame()
 	setBackFunc(Func_ReturnFromSettingsFrame);
 	setEnabled(true);
 	activateSubmenu(SUBMENU_GENERAL);
+
 }
 
 SettingsFrame::~SettingsFrame()
@@ -673,14 +739,31 @@ void SettingsFrame::activateSubmenu(int submenu)
 				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, GetButtonById(BTN_AUTOLOAD_BTN_CONF));
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
+
 			SetVisibleLabelsForTab(TAB_INPUT);
 			SetVisibleButtonsForTab(TAB_INPUT);
 			// Display button selections based on settings
 			SelectBtn(BTN_TAB_INPUT);
-			if(controllerType == CONTROLLERTYPE_LIGHTGUN) SelectBtnInGroup(BTN_PAD_GUN, LBL_INPUT_CONT_TYPE);
-			else if(controllerType == CONTROLLERTYPE_ANALOG) SelectBtnInGroup(BTN_PAD_ANALOG, LBL_INPUT_CONT_TYPE);
-			else if(controllerType == CONTROLLERTYPE_MOUSE) SelectBtnInGroup(BTN_PAD_MOUSE, LBL_INPUT_CONT_TYPE);
-			else if(controllerType == CONTROLLERTYPE_STANDARD) SelectBtnInGroup(BTN_PAD_STANDARD, LBL_INPUT_CONT_TYPE);
+			if(in_type[0] == PSE_PAD_TYPE_GUNCON) SelectBtnInGroup(BTN_PAD1_GUN, LBL_INPUT_CONT1_TYPE);
+			else if(in_type[0] == PSE_PAD_TYPE_ANALOGPAD) SelectBtnInGroup(BTN_PAD1_ANALOG, LBL_INPUT_CONT1_TYPE);
+			else if(in_type[0] == PSE_PAD_TYPE_MOUSE) SelectBtnInGroup(BTN_PAD1_MOUSE, LBL_INPUT_CONT1_TYPE);
+			else if(in_type[0] == PSE_PAD_TYPE_STANDARD) SelectBtnInGroup(BTN_PAD1_STANDARD, LBL_INPUT_CONT1_TYPE);
+			
+			if(in_type[1] == PSE_PAD_TYPE_GUNCON) SelectBtnInGroup(BTN_PAD2_GUN, LBL_INPUT_CONT2_TYPE);
+			else if(in_type[1] == PSE_PAD_TYPE_ANALOGPAD) SelectBtnInGroup(BTN_PAD2_ANALOG, LBL_INPUT_CONT2_TYPE);
+			else if(in_type[1] == PSE_PAD_TYPE_MOUSE) SelectBtnInGroup(BTN_PAD2_MOUSE, LBL_INPUT_CONT2_TYPE);
+			else if(in_type[1] == PSE_PAD_TYPE_STANDARD) SelectBtnInGroup(BTN_PAD2_STANDARD, LBL_INPUT_CONT2_TYPE);
+			
+			if(in_type[2] == PSE_PAD_TYPE_GUNCON) SelectBtnInGroup(BTN_PAD3_GUN, LBL_INPUT_CONT3_TYPE);
+			else if(in_type[2] == PSE_PAD_TYPE_ANALOGPAD) SelectBtnInGroup(BTN_PAD3_ANALOG, LBL_INPUT_CONT3_TYPE);
+			else if(in_type[2] == PSE_PAD_TYPE_MOUSE) SelectBtnInGroup(BTN_PAD3_MOUSE, LBL_INPUT_CONT3_TYPE);
+			else if(in_type[2] == PSE_PAD_TYPE_STANDARD) SelectBtnInGroup(BTN_PAD3_STANDARD, LBL_INPUT_CONT3_TYPE);
+			
+			if(in_type[3] == PSE_PAD_TYPE_GUNCON) SelectBtnInGroup(BTN_PAD4_GUN, LBL_INPUT_CONT4_TYPE);
+			else if(in_type[3] == PSE_PAD_TYPE_ANALOGPAD) SelectBtnInGroup(BTN_PAD4_ANALOG, LBL_INPUT_CONT4_TYPE);
+			else if(in_type[3] == PSE_PAD_TYPE_MOUSE) SelectBtnInGroup(BTN_PAD4_MOUSE, LBL_INPUT_CONT4_TYPE);
+			else if(in_type[3] == PSE_PAD_TYPE_STANDARD) SelectBtnInGroup(BTN_PAD4_STANDARD, LBL_INPUT_CONT4_TYPE);
+			
 			SelectBtnInGroup(rumbleEnabled ? BTN_RUMBLE_NO : BTN_RUMBLE_YES, LBL_INPUT_RUMBLE);
 			GetButtonById(BTN_AUTOLOAD_BTN_CONF)->setText(&slotText[(loadButtonSlot == LOADBUTTON_DEFAULT) ? 0 : (loadButtonSlot+1)]);
 			break;
@@ -1141,32 +1224,90 @@ void Func_ConfigureButtons()
 	pMenuContext->setActiveFrame(MenuContext::FRAME_CONFIGUREBUTTONS,ConfigureButtonsFrame::SUBMENU_PSX_PADNONE);
 }
 
-void Func_PsxTypeStandard()
+void Func_PadType(int btnId, int padNum, int type, int lblId)
 {
-	SelectBtnInGroup(BTN_PAD_STANDARD, LBL_INPUT_CONT_TYPE);
-	controllerType = CONTROLLERTYPE_STANDARD;
-	in_type[0] = in_type[1] = PSE_PAD_TYPE_STANDARD;
+	SelectBtnInGroup(btnId, lblId);
+	in_type[padNum] = type;
 }
 
-void Func_PsxTypeAnalog()
+void Func_Pad1TypeStandard()
 {
-	SelectBtnInGroup(BTN_PAD_ANALOG, LBL_INPUT_CONT_TYPE);
-	controllerType = CONTROLLERTYPE_ANALOG;
-	in_type[0] = in_type[1] = PSE_PAD_TYPE_ANALOGPAD;
+	Func_PadType(BTN_PAD1_STANDARD, 0, PSE_PAD_TYPE_STANDARD, LBL_INPUT_CONT1_TYPE);
 }
 
-void Func_PsxTypeLightgun()
+void Func_Pad2TypeStandard()
 {
-	SelectBtnInGroup(BTN_PAD_GUN, LBL_INPUT_CONT_TYPE);
-	controllerType = CONTROLLERTYPE_LIGHTGUN;
-	in_type[0] = in_type[1] = PSE_PAD_TYPE_GUNCON;
+	Func_PadType(BTN_PAD2_STANDARD, 1, PSE_PAD_TYPE_STANDARD, LBL_INPUT_CONT2_TYPE);
 }
 
-void Func_PsxTypeMouse()
+void Func_Pad3TypeStandard()
 {
-	SelectBtnInGroup(BTN_PAD_MOUSE, LBL_INPUT_CONT_TYPE);
-	controllerType = CONTROLLERTYPE_MOUSE;
-	in_type[0] = in_type[1] = PSE_PAD_TYPE_MOUSE;
+	Func_PadType(BTN_PAD3_STANDARD, 2, PSE_PAD_TYPE_STANDARD, LBL_INPUT_CONT3_TYPE);
+}
+
+void Func_Pad4TypeStandard()
+{
+	Func_PadType(BTN_PAD4_STANDARD, 3, PSE_PAD_TYPE_STANDARD, LBL_INPUT_CONT4_TYPE);
+}
+
+void Func_Pad1TypeAnalog()
+{
+	Func_PadType(BTN_PAD1_ANALOG, 0, PSE_PAD_TYPE_ANALOGPAD, LBL_INPUT_CONT1_TYPE);
+}
+
+void Func_Pad2TypeAnalog()
+{
+	Func_PadType(BTN_PAD2_ANALOG, 1, PSE_PAD_TYPE_ANALOGPAD, LBL_INPUT_CONT2_TYPE);
+}
+
+void Func_Pad3TypeAnalog()
+{
+	Func_PadType(BTN_PAD3_ANALOG, 2, PSE_PAD_TYPE_ANALOGPAD, LBL_INPUT_CONT3_TYPE);
+}
+
+void Func_Pad4TypeAnalog()
+{
+	Func_PadType(BTN_PAD4_ANALOG, 3, PSE_PAD_TYPE_ANALOGPAD, LBL_INPUT_CONT4_TYPE);
+}
+
+void Func_Pad1TypeLightgun()
+{
+	Func_PadType(BTN_PAD1_GUN, 0, PSE_PAD_TYPE_GUNCON, LBL_INPUT_CONT1_TYPE);
+}
+
+void Func_Pad2TypeLightgun()
+{
+	Func_PadType(BTN_PAD2_GUN, 1, PSE_PAD_TYPE_GUNCON, LBL_INPUT_CONT2_TYPE);
+}
+
+void Func_Pad3TypeLightgun()
+{
+	Func_PadType(BTN_PAD3_GUN, 2, PSE_PAD_TYPE_GUNCON, LBL_INPUT_CONT3_TYPE);
+}
+
+void Func_Pad4TypeLightgun()
+{
+	Func_PadType(BTN_PAD4_GUN, 3, PSE_PAD_TYPE_GUNCON, LBL_INPUT_CONT4_TYPE);
+}
+
+void Func_Pad1TypeMouse()
+{
+	Func_PadType(BTN_PAD1_MOUSE, 0, PSE_PAD_TYPE_MOUSE, LBL_INPUT_CONT1_TYPE);
+}
+
+void Func_Pad2TypeMouse()
+{
+	Func_PadType(BTN_PAD2_MOUSE, 1, PSE_PAD_TYPE_MOUSE, LBL_INPUT_CONT2_TYPE);
+}
+
+void Func_Pad3TypeMouse()
+{
+	Func_PadType(BTN_PAD3_MOUSE, 2, PSE_PAD_TYPE_MOUSE, LBL_INPUT_CONT3_TYPE);
+}
+
+void Func_Pad4TypeMouse()
+{
+	Func_PadType(BTN_PAD4_MOUSE, 3, PSE_PAD_TYPE_MOUSE, LBL_INPUT_CONT4_TYPE);
 }
 
 void Func_DisableRumbleYes()

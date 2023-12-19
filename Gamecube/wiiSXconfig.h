@@ -180,7 +180,7 @@ enum padAutoAssign
 	PADAUTOASSIGN_AUTOMATIC
 };
 
-extern char padType[2];
+extern char padType[4];
 enum padType
 {
 	PADTYPE_NONE=0,
@@ -188,7 +188,7 @@ enum padType
 	PADTYPE_WII
 };
 
-extern char padAssign[2];
+extern char padAssign[4];
 enum padAssign
 {
 	PADASSIGN_INPUT0=0,
@@ -212,15 +212,6 @@ enum loadButtonSlot
 	LOADBUTTON_SLOT2,
 	LOADBUTTON_SLOT3,
 	LOADBUTTON_DEFAULT
-};
-
-extern char controllerType;
-enum controllerType
-{
-	CONTROLLERTYPE_STANDARD=0,
-	CONTROLLERTYPE_ANALOG,
-	CONTROLLERTYPE_LIGHTGUN,
-	CONTROLLERTYPE_MOUSE
 };
 
 extern char numMultitaps;

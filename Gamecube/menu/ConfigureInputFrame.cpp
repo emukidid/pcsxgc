@@ -39,16 +39,20 @@ void Func_ManualSelectInput();
 
 void Func_TogglePad0Type();
 void Func_TogglePad1Type();
+void Func_TogglePad2Type();
+void Func_TogglePad3Type();
 void Func_TogglePad0Assign();
 void Func_TogglePad1Assign();
+void Func_TogglePad2Assign();
+void Func_TogglePad3Assign();
 
 void Func_ReturnFromConfigureInputFrame();
 
 
-#define NUM_FRAME_BUTTONS 6
+#define NUM_FRAME_BUTTONS 10
 #define FRAME_BUTTONS configureInputFrameButtons
 #define FRAME_STRINGS configureInputFrameStrings
-#define NUM_FRAME_TEXTBOXES 3
+#define NUM_FRAME_TEXTBOXES 5
 #define FRAME_TEXTBOXES configureInputFrameTextBoxes
 
 static const char FRAME_STRINGS[16][15] =
@@ -87,12 +91,17 @@ struct ButtonInfo
 	ButtonFunc		returnFunc;
 } FRAME_BUTTONS[NUM_FRAME_BUTTONS] =
 { //	button	buttonStyle buttonString		x		y		width	height	Up	Dwn	Lft	Rt	clickFunc				returnFunc
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[5],	240.0,	 80.0,	135.0,	56.0,	 5,	 2,	 1,	 1,	Func_AutoSelectInput,	Func_ReturnFromConfigureInputFrame }, // Automatic Pad Assignment
-	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[6],	395.0,	 80.0,	120.0,	56.0,	 9,	 6,	 0,	 0,	Func_ManualSelectInput,	Func_ReturnFromConfigureInputFrame }, // Manual Pad Assignment
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[10],	240.0,	150.0,	200.0,	56.0,	 0,	 3,	 4,	 4,	Func_TogglePad0Type,	Func_ReturnFromConfigureInputFrame }, // Toggle Pad 0 Type
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[10],	240.0,	220.0,	200.0,	56.0,	 2,	 0,	 5,	 5,	Func_TogglePad1Type,	Func_ReturnFromConfigureInputFrame }, // Toggle Pad 1 Type
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[11],	460.0,	150.0,	 55.0,	56.0,	 1,	 5,	 2,	 2,	Func_TogglePad0Assign,	Func_ReturnFromConfigureInputFrame }, // Toggle Pad 0 Assignment
-	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[11],	460.0,	220.0,	 55.0,	56.0,	 4,	 1,	 3,	 3,	Func_TogglePad1Assign,	Func_ReturnFromConfigureInputFrame }, // Toggle Pad 1 Assignment
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[5],	240.0,	 80.0,	135.0,	56.0,	 8,	 2,	 1,	 1,	Func_AutoSelectInput,	Func_ReturnFromConfigureInputFrame }, // Automatic Pad Assignment 0
+	{	NULL,	BTN_A_SEL,	FRAME_STRINGS[6],	395.0,	 80.0,	120.0,	56.0,	 9,	 4,	 0,	 0,	Func_ManualSelectInput,	Func_ReturnFromConfigureInputFrame }, // Manual Pad Assignment 1
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[10],	240.0,	150.0,	200.0,	56.0,	 0,	 3,	 4,	 4,	Func_TogglePad0Type,	Func_ReturnFromConfigureInputFrame }, // Toggle Pad 0 Type 2
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[10],	240.0,	220.0,	200.0,	56.0,	 2,	 6,	 5,	 5,	Func_TogglePad1Type,	Func_ReturnFromConfigureInputFrame }, // Toggle Pad 1 Type 3
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[11],	460.0,	150.0,	 55.0,	56.0,	 1,	 5,	 2,	 2,	Func_TogglePad0Assign,	Func_ReturnFromConfigureInputFrame }, // Toggle Pad 0 Assignment 4
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[11],	460.0,	220.0,	 55.0,	56.0,	 4,	 8,	 3,	 3,	Func_TogglePad1Assign,	Func_ReturnFromConfigureInputFrame }, // Toggle Pad 1 Assignment 5
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[10],	240.0,	290.0,	200.0,	56.0,	 3,	 7,	 8,	 8,	Func_TogglePad2Type,	Func_ReturnFromConfigureInputFrame }, // Toggle Pad 2 Type 6
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[10],	240.0,	360.0,	200.0,	56.0,	 6,	 0,	 9,	 9,	Func_TogglePad3Type,	Func_ReturnFromConfigureInputFrame }, // Toggle Pad 3 Type 7
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[11],	460.0,	290.0,	 55.0,	56.0,	 5,	 9,	 6,	 6,	Func_TogglePad2Assign,	Func_ReturnFromConfigureInputFrame }, // Toggle Pad 2 Assignment 8
+	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[11],	460.0,	360.0,	 55.0,	56.0,	 8,	 1,	 7,	 7,	Func_TogglePad3Assign,	Func_ReturnFromConfigureInputFrame }, // Toggle Pad 3 Assignment 9
+	
 
 };
 
@@ -109,6 +118,8 @@ struct TextBoxInfo
 	{	NULL,	FRAME_STRINGS[0],	125.0,	108.0,	 1.0,	true }, // Pad Assignment
 	{	NULL,	FRAME_STRINGS[1],	125.0,	178.0,	 1.0,	true }, // Pad 1
 	{	NULL,	FRAME_STRINGS[2],	125.0,	248.0,	 1.0,	true }, // Pad 2
+	{	NULL,	FRAME_STRINGS[3],	125.0,	318.0,	 1.0,	true }, // Pad 3
+	{	NULL,	FRAME_STRINGS[4],	125.0,	388.0,	 1.0,	true }, // Pad 4
 };
 
 ConfigureInputFrame::ConfigureInputFrame()
@@ -169,29 +180,52 @@ void ConfigureInputFrame::activateSubmenu(int submenu)
 		FRAME_BUTTONS[0].button->setNextFocus(menu::Focus::DIRECTION_UP, NULL);
 		FRAME_BUTTONS[1].button->setNextFocus(menu::Focus::DIRECTION_DOWN, NULL);
 		FRAME_BUTTONS[1].button->setNextFocus(menu::Focus::DIRECTION_UP, NULL);
-		for (int i = 0; i < 2; i++)
-		{
-			FRAME_BUTTONS[i+2].button->setActive(false);
-			FRAME_BUTTONS[i+2].buttonString = FRAME_STRINGS[10];
-			FRAME_BUTTONS[i+4].button->setActive(false);
-			FRAME_BUTTONS[i+4].buttonString = FRAME_STRINGS[11];
-		}
+		
+		FRAME_BUTTONS[2].button->setActive(false);
+		FRAME_BUTTONS[2].buttonString = FRAME_STRINGS[10];
+		FRAME_BUTTONS[4].button->setActive(false);
+		FRAME_BUTTONS[4].buttonString = FRAME_STRINGS[11];
+		FRAME_BUTTONS[3].button->setActive(false);
+		FRAME_BUTTONS[3].buttonString = FRAME_STRINGS[10];
+		FRAME_BUTTONS[5].button->setActive(false);
+		FRAME_BUTTONS[5].buttonString = FRAME_STRINGS[11];
+		FRAME_BUTTONS[6].button->setActive(false);
+		FRAME_BUTTONS[6].buttonString = FRAME_STRINGS[10];
+		FRAME_BUTTONS[8].button->setActive(false);
+		FRAME_BUTTONS[8].buttonString = FRAME_STRINGS[11];
+		FRAME_BUTTONS[7].button->setActive(false);
+		FRAME_BUTTONS[7].buttonString = FRAME_STRINGS[10];
+		FRAME_BUTTONS[9].button->setActive(false);
+		FRAME_BUTTONS[9].buttonString = FRAME_STRINGS[11];
+
+
 	}
 	else
 	{
 		FRAME_BUTTONS[0].button->setSelected(false);
 		FRAME_BUTTONS[1].button->setSelected(true);
 		FRAME_BUTTONS[0].button->setNextFocus(menu::Focus::DIRECTION_DOWN, FRAME_BUTTONS[2].button);
-		FRAME_BUTTONS[0].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[3].button);
+		FRAME_BUTTONS[0].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[7].button);
 		FRAME_BUTTONS[1].button->setNextFocus(menu::Focus::DIRECTION_DOWN, FRAME_BUTTONS[4].button);
-		FRAME_BUTTONS[1].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[5].button);
-		for (int i = 0; i < 2; i++)
-		{
-			FRAME_BUTTONS[i+2].button->setActive(true);
-			FRAME_BUTTONS[i+2].buttonString = FRAME_STRINGS[padType[i]+7];
-			FRAME_BUTTONS[i+4].button->setActive(true);
-			FRAME_BUTTONS[i+4].buttonString = FRAME_STRINGS[padAssign[i]+12];
-		}
+		FRAME_BUTTONS[1].button->setNextFocus(menu::Focus::DIRECTION_UP, FRAME_BUTTONS[9].button);
+
+		FRAME_BUTTONS[2].button->setActive(true);
+		FRAME_BUTTONS[2].buttonString = FRAME_STRINGS[padType[0]+7];
+		FRAME_BUTTONS[4].button->setActive(true);
+		FRAME_BUTTONS[4].buttonString = FRAME_STRINGS[padAssign[0]+12];
+		FRAME_BUTTONS[3].button->setActive(true);
+		FRAME_BUTTONS[3].buttonString = FRAME_STRINGS[padType[1]+7];
+		FRAME_BUTTONS[5].button->setActive(true);
+		FRAME_BUTTONS[5].buttonString = FRAME_STRINGS[padAssign[1]+12];
+		FRAME_BUTTONS[6].button->setActive(true);
+		FRAME_BUTTONS[6].buttonString = FRAME_STRINGS[padType[2]+7];
+		FRAME_BUTTONS[8].button->setActive(true);
+		FRAME_BUTTONS[8].buttonString = FRAME_STRINGS[padAssign[2]+12];
+		FRAME_BUTTONS[7].button->setActive(true);
+		FRAME_BUTTONS[7].buttonString = FRAME_STRINGS[padType[3]+7];
+		FRAME_BUTTONS[9].button->setActive(true);
+		FRAME_BUTTONS[9].buttonString = FRAME_STRINGS[padAssign[3]+12];
+
 	}
 }
 
@@ -230,9 +264,7 @@ void Func_AssignPad(int i)
 	assign_controller(i, type, (int) padAssign[i]);
 }
 
-void Func_TogglePad0Type()
-{
-	int i = PADASSIGN_INPUT0;
+void Func_TogglePadType(int i) {
 #ifdef HW_RVL
 	padType[i] = (padType[i]+1) %3;
 #else
@@ -244,38 +276,53 @@ void Func_TogglePad0Type()
 	pMenuContext->getFrame(MenuContext::FRAME_CONFIGUREINPUT)->activateSubmenu(ConfigureInputFrame::SUBMENU_REINIT);
 }
 
+void Func_TogglePad0Type()
+{
+	Func_TogglePadType(PADASSIGN_INPUT0);
+}
+
 void Func_TogglePad1Type()
 {
-	int i = PADASSIGN_INPUT1;
-#ifdef HW_RVL
-	padType[i] = (padType[i]+1) %3;
-#else
-	padType[i] = (padType[i]+1) %2;
-#endif
+	Func_TogglePadType(PADASSIGN_INPUT1);
+}
+
+void Func_TogglePad2Type()
+{
+	Func_TogglePadType(PADASSIGN_INPUT2);
+}
+
+void Func_TogglePad3Type()
+{
+	Func_TogglePadType(PADASSIGN_INPUT3);
+}
+
+void Func_TogglePadAssign(int i)
+{
+	padAssign[i] = (padAssign[i]+1) %4;
 
 	if (padType[i]) Func_AssignPad(i);
-	else			unassign_controller(i);
+
 	pMenuContext->getFrame(MenuContext::FRAME_CONFIGUREINPUT)->activateSubmenu(ConfigureInputFrame::SUBMENU_REINIT);
 }
 
 void Func_TogglePad0Assign()
 {
-	int i = PADASSIGN_INPUT0;
-	padAssign[i] = (padAssign[i]+1) %4;
-
-	if (padType[i]) Func_AssignPad(i);
-
-	pMenuContext->getFrame(MenuContext::FRAME_CONFIGUREINPUT)->activateSubmenu(ConfigureInputFrame::SUBMENU_REINIT);
+	Func_TogglePadAssign(PADASSIGN_INPUT0);
 }
 
 void Func_TogglePad1Assign()
 {
-	int i = PADASSIGN_INPUT1;
-	padAssign[i] = (padAssign[i]+1) %4;
+	Func_TogglePadAssign(PADASSIGN_INPUT1);
+}
 
-	if (padType[i]) Func_AssignPad(i);
+void Func_TogglePad2Assign()
+{
+	Func_TogglePadAssign(PADASSIGN_INPUT2);
+}
 
-	pMenuContext->getFrame(MenuContext::FRAME_CONFIGUREINPUT)->activateSubmenu(ConfigureInputFrame::SUBMENU_REINIT);
+void Func_TogglePad3Assign()
+{
+	Func_TogglePadAssign(PADASSIGN_INPUT3);
 }
 
 void Func_ReturnFromConfigureInputFrame()

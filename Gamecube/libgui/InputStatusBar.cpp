@@ -112,7 +112,7 @@ void InputStatusBar::drawComponent(Graphics& gfx)
 	}
 	gfx.disableScissor();
 	//Update controller availability
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < 4; i++)
 	{
 		switch (padType[i])
 		{

@@ -44,10 +44,9 @@
 
 
 /* Controller type, later do this by a Variable in the GUI */
-//extern char controllerType = 0; // 0 = standard, 1 = analog (analog fails on old games)
 long  PadFlags = 0;
 
-virtualControllers_t virtualControllers[2];
+virtualControllers_t virtualControllers[4];
 
 controller_t* controller_ts[num_controller_t] =
 #if defined(WII) && !defined(NO_BT)
@@ -73,13 +72,13 @@ void control_info_init(void){
 
 void pauseInput(void){
 	int i;
-	for(i=0; i<2; ++i)
+	for(i=0; i<4; ++i)
 		if(virtualControllers[i].inUse) DO_CONTROL(i, pause);
 }
 
 void resumeInput(void){
 	int i;
-	for(i=0; i<2; ++i)
+	for(i=0; i<4; ++i)
 		if(virtualControllers[i].inUse) DO_CONTROL(i, resume);
 }
 
@@ -126,7 +125,7 @@ void auto_assign_controllers(void)
 
 	// Map controllers in the priority given
 	// Outer loop: virtual controllers
-	for(i=0; i<2; ++i){
+	for(i=0; i<4; ++i){
 		// Middle loop: controller type
 		for(t=0; t<num_controller_t; ++t){
 			controller_t* type = controller_ts[t];
@@ -150,7 +149,7 @@ void auto_assign_controllers(void)
 	}
 
 	// 'Initialize' the unmapped virtual controllers
-	for(; i<2; ++i){
+	for(; i<4; ++i){
 		unassign_controller(i);
 		padType[i] = PADTYPE_NONE;
 	}

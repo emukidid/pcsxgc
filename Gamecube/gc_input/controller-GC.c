@@ -29,7 +29,6 @@
 #include <ogc/pad.h>
 #include "controller.h"
 #include "../wiiSXconfig.h"
-extern char controllerType;
 
 enum {
 	ANALOG_AS_ANALOG = 1, C_STICK_AS_ANALOG = 2,
@@ -123,7 +122,7 @@ static inline s8 GCtoPSXMouse(s8 i)
 	return a; // PSX mouse range -128-128
 }
 
-static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
+static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config, int psxType)
 {
 	if(padNeedScan){ gc_connected = PAD_ScanPads(); padNeedScan = 0; }
 	BUTTONS* c = Keys;
@@ -163,14 +162,14 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config)
 	c->btns.L3_BUTTON    = isHeld(config->L3);
 	c->btns.SELECT_BUTTON = isHeld(config->SELECT);
 
-	if(controllerType == CONTROLLERTYPE_LIGHTGUN) {	
+	if(psxType == PSE_PAD_TYPE_NEGCON || psxType == PSE_PAD_TYPE_GUNCON || psxType == PSE_PAD_TYPE_GUN) {	
 		// Keep it within 0 to 1023
 		c->gunX += gunX + ((PAD_StickX(Control)) / 6);
 		c->gunY += gunY - ((PAD_StickY(Control)) / 6);
 		c->gunX = c->gunX > 1023 ? 1023 : (c->gunX < 0 ? 0 : c->gunX);
 		c->gunY = c->gunY > 1023 ? 1023 : (c->gunY < 0 ? 0 : c->gunY);
 	}
-	else if(controllerType == CONTROLLERTYPE_MOUSE) {
+	else if(psxType == PSE_PAD_TYPE_MOUSE) {
 		s8 stickX = PAD_StickX(Control);
 		s8 stickY = PAD_StickY(Control);
 		c->mouseX = GCtoPSXMouse(stickX);

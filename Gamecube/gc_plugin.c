@@ -165,7 +165,7 @@ long PAD2__open(void) {
 #include "wiiSXconfig.h"
 extern int stop;
 //extern void GPUcursor(int iPlayer,int x,int y);
-extern virtualControllers_t virtualControllers[2];
+extern virtualControllers_t virtualControllers[4];
 // Use to invoke func on the mapped controller with args
 #define DO_CONTROL(Control,func,args...) \
 	virtualControllers[Control].control->func( \
@@ -198,36 +198,19 @@ void setCursor(int iPlayer,int x,int y)
 
 long PAD1__readPort1(PadDataS *pad) {
 	int pad_index = pad->requestPadIndex;
+	//SysPrintf("Read port 1 called with %i pad index, in use %s\r\n", pad_index, virtualControllers[pad_index].inUse ? "YES":"NO");
 	if(!virtualControllers[pad_index].inUse) return 0;
 
 	static BUTTONS PAD_Data;
-	if(virtualControllers[pad_index].inUse && DO_CONTROL(pad_index, GetKeys, (BUTTONS*)&PAD_Data, virtualControllers[pad_index].config))
+	if(virtualControllers[pad_index].inUse && DO_CONTROL(pad_index, GetKeys, (BUTTONS*)&PAD_Data, virtualControllers[pad_index].config, in_type[pad_index]))
 			stop = 1;
-	switch(controllerType) {
-		case CONTROLLERTYPE_LIGHTGUN:
-			pad->controllerType = PSE_PAD_TYPE_GUNCON;
-			break;
-		case CONTROLLERTYPE_MOUSE:
-			pad->controllerType = PSE_PAD_TYPE_MOUSE;
-			usCursorActive=0;
-			break;
-		case CONTROLLERTYPE_ANALOG:
-			pad->controllerType = PSE_PAD_TYPE_ANALOGPAD;
-			usCursorActive=0;
-			break;
-		default:
-			pad->controllerType = PSE_PAD_TYPE_STANDARD;
-			usCursorActive=0;
-			break;
-	}
+	pad->controllerType = in_type[pad_index];
 	pad->buttonStatus = PAD_Data.btns.All;
 
-	//if (multitap1 == 1)
-	//	pad->portMultitap = 1;
-	//else
-		pad->portMultitap = 0;
+	pad->portMultitap = multitap1;
 
-	if (controllerType == CONTROLLERTYPE_ANALOG || controllerType == CONTROLLERTYPE_LIGHTGUN)
+	usCursorActive=0;
+	if (in_type[pad_index] == PSE_PAD_TYPE_ANALOGJOY || in_type[pad_index] == PSE_PAD_TYPE_ANALOGPAD || in_type[pad_index] == PSE_PAD_TYPE_NEGCON || in_type[pad_index] == PSE_PAD_TYPE_GUNCON || in_type[pad_index] == PSE_PAD_TYPE_GUN)
 	{
 		pad->leftJoyX = PAD_Data.leftStickX;
 		pad->leftJoyY = PAD_Data.leftStickY;
@@ -236,13 +219,13 @@ long PAD1__readPort1(PadDataS *pad) {
 
 		pad->absoluteX = PAD_Data.gunX;
 		pad->absoluteY = PAD_Data.gunY;
-		
-		if(controllerType == CONTROLLERTYPE_LIGHTGUN) {
+		if(in_type[pad_index] == PSE_PAD_TYPE_GUN) {
+			usCursorActive=1;
 			setCursor(pad_index, pad->absoluteX, pad->absoluteY);
 		}
 	}
 	
-	if (controllerType == CONTROLLERTYPE_MOUSE)
+	if (in_type[pad_index] == PSE_PAD_TYPE_MOUSE)
 	{
 		pad->moveX = PAD_Data.mouseX;
 		pad->moveY = PAD_Data.mouseY;
@@ -253,37 +236,27 @@ long PAD1__readPort1(PadDataS *pad) {
 
 long PAD2__readPort2(PadDataS *pad) {
 	int pad_index = pad->requestPadIndex;
+	//SysPrintf("Read port 2 called with %i pad index, in use %s\r\n", pad_index, virtualControllers[pad_index].inUse ? "YES":"NO");
+	
+	// If multi-tap is enabled, this comes up as 4 (port 1 will do 0,1,2,3).
+	if(pad_index >=4) return 0;
+	
 	if(!virtualControllers[pad_index].inUse) return 0;
 	
 	static BUTTONS PAD_Data2;
-	if(virtualControllers[pad_index].inUse && DO_CONTROL(pad_index, GetKeys, (BUTTONS*)&PAD_Data2, virtualControllers[pad_index].config))
+	if(virtualControllers[pad_index].inUse && DO_CONTROL(pad_index, GetKeys, (BUTTONS*)&PAD_Data2, virtualControllers[pad_index].config, in_type[pad_index]))
 		stop = 1;
 
-	switch(controllerType) {
-		case CONTROLLERTYPE_LIGHTGUN:
-			pad->controllerType = PSE_PAD_TYPE_GUNCON;
-			break;
-		case CONTROLLERTYPE_MOUSE:
-			pad->controllerType = PSE_PAD_TYPE_MOUSE;
-			usCursorActive=0;
-			break;
-		case CONTROLLERTYPE_ANALOG:
-			pad->controllerType = PSE_PAD_TYPE_ANALOGPAD;
-			usCursorActive=0;
-			break;
-		default:
-			pad->controllerType = PSE_PAD_TYPE_STANDARD;
-			usCursorActive=0;
-			break;
-	}
+	pad->controllerType = in_type[pad_index];
 	pad->buttonStatus = PAD_Data2.btns.All;
 
 	//if (multitap2 == 1)
 	//	pad->portMultitap = 2;
 	//else
 		pad->portMultitap = 0;
-
-	if (controllerType == CONTROLLERTYPE_ANALOG || controllerType == CONTROLLERTYPE_LIGHTGUN)
+	
+	usCursorActive=0;
+	if (in_type[pad_index] == PSE_PAD_TYPE_ANALOGJOY || in_type[pad_index] == PSE_PAD_TYPE_ANALOGPAD || in_type[pad_index] == PSE_PAD_TYPE_NEGCON || in_type[pad_index] == PSE_PAD_TYPE_GUNCON || in_type[pad_index] == PSE_PAD_TYPE_GUN)
 	{
 		pad->leftJoyX = PAD_Data2.leftStickX;
 		pad->leftJoyY = PAD_Data2.leftStickY;
@@ -292,12 +265,13 @@ long PAD2__readPort2(PadDataS *pad) {
 
 		pad->absoluteX = PAD_Data2.gunX;
 		pad->absoluteY = PAD_Data2.gunY;
-		if(controllerType == CONTROLLERTYPE_LIGHTGUN) {
+		if(in_type[pad_index] == PSE_PAD_TYPE_GUN) {
+			usCursorActive=1;
 			setCursor(pad_index, pad->absoluteX, pad->absoluteY);
 		}
 	}
 
-	if (controllerType == CONTROLLERTYPE_MOUSE)
+	if (in_type[pad_index] == PSE_PAD_TYPE_MOUSE)
 	{
 		pad->moveX = PAD_Data2.mouseX;
 		pad->moveY = PAD_Data2.mouseY;
@@ -866,6 +840,14 @@ void plugin_call_rearmed_cbs(void)
 void go(void) {
 	Config.PsxOut = 0;
 	stop = 0;
+	
+	// Enable a multi-tap in port 1 if we have more than 2 mapped controllers.
+	int controllersConnected = 0;
+	for(int i = 0; i < 4; i++) {
+		controllersConnected += ((in_type[i] && virtualControllers[i].inUse) ? 1 : 0);
+	}
+	multitap1 = controllersConnected > 2 ? 1 : 0;
+	SysPrintf("Multi-tap port status: %s\r\n", multitap1 ? "connected" : "disconnected");
 
 	/* Apply settings from menu */
 	gc_rearmed_cbs.gpu_unai.dithering = !!useDithering;

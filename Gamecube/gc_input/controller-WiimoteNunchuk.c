@@ -101,7 +101,7 @@ static button_t menu_combos[] = {
 
 static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config,
                     int (*available)(int),
-                    unsigned int (*getButtons)(WPADData*))
+                    unsigned int (*getButtons)(WPADData*), int psxType)
 {
 	if(wpadNeedScan){ WPAD_ScanPads(); wpadNeedScan = 0; }
 	WPADData* wpad = WPAD_Data(Control);
@@ -142,7 +142,7 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config,
 	c->btns.L3_BUTTON    = isHeld(config->L3);
 	c->btns.SELECT_BUTTON = isHeld(config->SELECT);
 
-	if(controllerType == CONTROLLERTYPE_LIGHTGUN) {	
+	if(psxType == PSE_PAD_TYPE_NEGCON || psxType == PSE_PAD_TYPE_GUNCON || psxType == PSE_PAD_TYPE_GUN) {
 		s8 stickX = 0;
 		s8 stickY = 0;
 		if(config->analogL->mask == NUNCHUK_AS_ANALOG){
@@ -172,7 +172,7 @@ static int _GetKeys(int Control, BUTTONS * Keys, controller_config_t* config,
 		c->gunX = c->gunX > 1023 ? 1023 : (c->gunX < 0 ? 0 : c->gunX);
 		c->gunY = c->gunY > 1023 ? 1023 : (c->gunY < 0 ? 0 : c->gunY);
 	}
-	else if(controllerType == CONTROLLERTYPE_MOUSE) {
+	else if(psxType == PSE_PAD_TYPE_MOUSE) {
 		s8 stickX = 0;
 		s8 stickY = 0;
 		if(config->analogL->mask == NUNCHUK_AS_ANALOG){
@@ -307,12 +307,12 @@ static unsigned int getButtonsWMN(WPADData* controller){
 	return b;
 }
 
-static int GetKeysWM(int con, BUTTONS * keys, controller_config_t* cfg){
-	return _GetKeys(con, keys, cfg, availableWM, getButtonsWM);
+static int GetKeysWM(int con, BUTTONS * keys, controller_config_t* cfg, int psxType){
+	return _GetKeys(con, keys, cfg, availableWM, getButtonsWM, psxType);
 }
 
-static int GetKeysWMN(int con, BUTTONS * keys, controller_config_t* cfg){
-	return _GetKeys(con, keys, cfg, availableWMN, getButtonsWMN);
+static int GetKeysWMN(int con, BUTTONS * keys, controller_config_t* cfg, int psxType){
+	return _GetKeys(con, keys, cfg, availableWMN, getButtonsWMN, psxType);
 }
 
 static void pause(int Control){

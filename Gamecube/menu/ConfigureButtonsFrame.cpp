@@ -404,7 +404,7 @@ extern MenuContext *pMenuContext;
 
 void Func_NextPad()
 {
-	activePad = (activePad+1) %2;
+	activePad = (activePad+1) %4;
 
 	pMenuContext->getFrame(MenuContext::FRAME_CONFIGUREBUTTONS)->activateSubmenu(activePad);
 }

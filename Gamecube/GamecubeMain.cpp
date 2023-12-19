@@ -107,13 +107,12 @@ char screenMode = 0;
 char videoMode = 0;
 char fileSortMode = 1;
 char padAutoAssign;
-char padType[2];
-char padAssign[2];
+char padType[4];
+char padAssign[4];
 char rumbleEnabled;
 char loadButtonSlot;
-char controllerType;
-char numMultitaps;
 char useDithering;
+char multitap1;	// Multitap in port 1, determined at runtime if we require this based on the number of controllers set.
 
 #define CONFIG_STRING_TYPE 0
 #define CONFIG_STRING_SIZE 256
@@ -160,12 +159,18 @@ static struct {
   { "PadAutoAssign", &padAutoAssign, PADAUTOASSIGN_MANUAL, PADAUTOASSIGN_AUTOMATIC },
   { "PadType1", &padType[0], PADTYPE_NONE, PADTYPE_WII },
   { "PadType2", &padType[1], PADTYPE_NONE, PADTYPE_WII },
+  { "PadType3", &padType[2], PADTYPE_NONE, PADTYPE_WII },
+  { "PadType4", &padType[3], PADTYPE_NONE, PADTYPE_WII },
   { "PadAssign1", &padAssign[0], PADASSIGN_INPUT0, PADASSIGN_INPUT3 },
   { "PadAssign2", &padAssign[1], PADASSIGN_INPUT0, PADASSIGN_INPUT3 },
+  { "PadAssign3", &padAssign[2], PADASSIGN_INPUT0, PADASSIGN_INPUT3 },
+  { "PadAssign4", &padAssign[3], PADASSIGN_INPUT0, PADASSIGN_INPUT3 },
   { "RumbleEnabled", &rumbleEnabled, RUMBLE_DISABLE, RUMBLE_ENABLE },
   { "LoadButtonSlot", &loadButtonSlot, LOADBUTTON_SLOT0, LOADBUTTON_DEFAULT },
-  { "ControllerType", &controllerType, CONTROLLERTYPE_STANDARD, CONTROLLERTYPE_MOUSE },
-//  { "NumberMultitaps", &numMultitaps, MULTITAPS_NONE, MULTITAPS_TWO },
+  { "ControllerType1", ((char*)(&in_type[0])+3), PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_ANALOGPAD },
+  { "ControllerType2", ((char*)(&in_type[1])+3), PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_ANALOGPAD },
+  { "ControllerType3", ((char*)(&in_type[2])+3), PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_ANALOGPAD },
+  { "ControllerType4", ((char*)(&in_type[3])+3), PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_ANALOGPAD },
   { "smbusername", smbUserName, CONFIG_STRING_TYPE, CONFIG_STRING_TYPE },
   { "smbpassword", smbPassWord, CONFIG_STRING_TYPE, CONFIG_STRING_TYPE },
   { "smbsharename", smbShareName, CONFIG_STRING_TYPE, CONFIG_STRING_TYPE },
@@ -205,12 +210,18 @@ void loadSettings(int argc, char *argv[])
 	padAutoAssign	 = PADAUTOASSIGN_AUTOMATIC;
 	padType[0]		 = PADTYPE_NONE;
 	padType[1]		 = PADTYPE_NONE;
+	padType[2]		 = PADTYPE_NONE;
+	padType[3]		 = PADTYPE_NONE;
 	padAssign[0]	 = PADASSIGN_INPUT0;
 	padAssign[1]	 = PADASSIGN_INPUT1;
+	padAssign[2]	 = PADASSIGN_INPUT2;
+	padAssign[3]	 = PADASSIGN_INPUT3;
 	rumbleEnabled	 = RUMBLE_ENABLE;
 	loadButtonSlot	 = LOADBUTTON_DEFAULT;
-	controllerType	 = CONTROLLERTYPE_STANDARD;
-	numMultitaps	 = MULTITAPS_NONE;
+	in_type[0]		 = PSE_PAD_TYPE_STANDARD;
+	in_type[1]		 = PSE_PAD_TYPE_STANDARD;
+	in_type[2]		 = PSE_PAD_TYPE_STANDARD;
+	in_type[3]		 = PSE_PAD_TYPE_STANDARD;
 	menuActive = 1;
 
 	//PCSX-specific defaults
@@ -328,8 +339,6 @@ void loadSettings(int argc, char *argv[])
 	Config.SlowBoot = LoadCdBios;
 	spu_config.iVolume = 1024 - (volume * 192); //Volume="medium" in PEOPSspu
 	spu_config.iUseReverb = reverb;
-	in_type[0] = in_type[1] = (controllerType == CONTROLLERTYPE_ANALOG ? PSE_PAD_TYPE_ANALOGPAD : (controllerType == CONTROLLERTYPE_STANDARD ? PSE_PAD_TYPE_STANDARD : PSE_PAD_TYPE_GUNCON));
-
 }
 
 void ScanPADSandReset(u32 dummy) 
