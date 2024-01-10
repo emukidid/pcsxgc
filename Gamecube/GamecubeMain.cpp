@@ -39,6 +39,7 @@
 #include <libpcsxcore/r3000a.h>
 #include <libpcsxcore/sio.h>
 #include <libpcsxcore/cdrom.h>
+#include <libpcsxcore/cdriso.h>
 #include "wiiSXconfig.h"
 #include "menu/MenuContext.h"
 extern "C" {
@@ -434,6 +435,7 @@ int loadISOSwap(fileBrowser_file* file) {
 	
 	SysPrintf("selected file: %s\n", &file->name[0]);
 
+	cdrIsoMultidiskSelect++;
 	CdromId[0] = '\0';
 	CdromLabel[0] = '\0';
 	
