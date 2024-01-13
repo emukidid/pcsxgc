@@ -82,6 +82,9 @@ void CALLBACK SPUwriteRegister(unsigned long reg, unsigned short val, unsigned i
 long CALLBACK SPUopen(void);
 long CALLBACK SPUclose(void);
 long CALLBACK SPUfreeze(uint32_t ulFreezeMode, void * pF, uint32_t cycles);
+void CALLBACK SPUsetCDvol(unsigned char ll, unsigned char lr,
+			  unsigned char rl, unsigned char rr, unsigned int cycle);
+
 
 #define EMPTY_PLUGIN \
 	{ NULL,      \
@@ -150,6 +153,8 @@ long CALLBACK SPUfreeze(uint32_t ulFreezeMode, void * pF, uint32_t cycles);
 	      (void*)SPUplayADPCMchannel}, \
 	    { "SPUfreeze", \
 	      (void*)SPUfreeze}, \
+	    { "SPUsetCDvol", \
+	      (void*)SPUsetCDvol}, \
 	    { "SPUregisterCallback", \
 	      (void*)SPUregisterCallback}, \
 	    { "SPUregisterCDDAVolume", \
