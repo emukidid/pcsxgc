@@ -23,7 +23,6 @@ enum {
 	DKEY_CROSS,
 	DKEY_SQUARE,
 };
-extern int in_state_gun;
 extern int in_type[8];
 extern int multitap1;
 extern int multitap2;
@@ -86,6 +85,7 @@ struct rearmed_cbs {
 		int   enhancement_enable;
 		int   enhancement_no_main;
 		int   allow_dithering;
+		int   enhancement_tex_adj;
 	} gpu_neon;
 	struct {
 		int   iUseDither;

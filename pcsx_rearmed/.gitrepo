@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/libretro/pcsx_rearmed.git
 	branch = master
-	commit = c396a646b9ce3082bc6aee7da35219f6424c99b6
-	parent = 879acaff3bcdd4189e49b9f0bf56dd7539471ebc
+	commit = 5ee1c9269d333936eba3e7e3259956f601ff5edd
+	parent = 942faf909f84e40c01883547ee430416baf5c2f0
 	method = merge
 	cmdver = 0.4.6

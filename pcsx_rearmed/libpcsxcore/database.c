@@ -33,16 +33,16 @@ static const char * const gpu_slow_llist_db[] =
 	"SCES02834", "SCUS94570", "SCUS94616", "SCUS94654",
 	/* Final Fantasy IV */
 	"SCES03840", "SLPM86028", "SLUS01360",
+	/* Point Blank - calibration cursor */
+	"SCED00287", "SCES00886", "SLUS00481",
+	/* Simple 1500 Series Vol. 57: The Meiro */
+	"SLPM86715",
 	/* Spot Goes to Hollywood */
 	"SLES00330", "SLPS00394", "SLUS00014",
+	/* Tiny Tank */
+	"SCES01338", "SCES02072", "SCES02072", "SCES02072", "SCES02072", "SCUS94427",
 	/* Vampire Hunter D */
 	"SLES02731", "SLPS02477", "SLPS03198", "SLUS01138",
-};
-
-static const char * const gpu_busy_hack_db[] =
-{
-	/* ToHeart (Japan) */
-	"SLPS01919", "SLPS01920",
 };
 
 static const char * const gpu_centering_hack_db[] =
@@ -51,6 +51,18 @@ static const char * const gpu_centering_hack_db[] =
 	"SLPM86042", "SLPM86103", "SLPM87323",
 	/* Sexy Parodius */
 	"SLPM86009",
+};
+
+static const char * const dualshock_timing1024_hack_db[] =
+{
+	/* Judge Dredd - could also be poor cdrom+mdec+dma timing */
+	"SLUS00630", "SLES00755",
+};
+
+static const char * const dualshock_init_analog_hack_db[] =
+{
+	/* Formula 1 Championship Edition */
+	"SLUS00546",
 };
 
 #define HACK_ENTRY(var, list) \
@@ -67,46 +79,43 @@ hack_db[] =
 {
 	HACK_ENTRY(cdr_read_timing, cdr_read_hack_db),
 	HACK_ENTRY(gpu_slow_list_walking, gpu_slow_llist_db),
-	HACK_ENTRY(gpu_busy, gpu_busy_hack_db),
 	HACK_ENTRY(gpu_centering, gpu_centering_hack_db),
+	HACK_ENTRY(gpu_timing1024, dualshock_timing1024_hack_db),
+	HACK_ENTRY(dualshock_init_analog, dualshock_init_analog_hack_db),
 };
 
 static const struct
 {
-	const char * const id;
 	int mult;
+	const char * const id[4];
 }
 cycle_multiplier_overrides[] =
 {
 	/* note: values are = (10000 / gui_option) */
 	/* Internal Section - fussy about timings */
-	{ "SLPS01868", 202 },
+	{ 202, { "SLPS01868" } },
 	/* Super Robot Taisen Alpha - on the edge with 175,
 	 * changing memcard settings is enough to break/unbreak it */
-	{ "SLPS02528", 190 },
-	{ "SLPS02636", 190 },
+	{ 190, { "SLPS02528", "SLPS02636" } },
 	/* Brave Fencer Musashi - cd sectors arrive too fast */
-	{ "SLUS00726", 170 },
-	{ "SLPS01490", 170 },
+	{ 170, { "SLUS00726", "SLPS01490" } },
 #if defined(DRC_DISABLE) || defined(LIGHTREC) /* new_dynarec has a hack for this game */
 	/* Parasite Eve II - internal timer checks */
-	{ "SLUS01042", 125 },
-	{ "SLUS01055", 125 },
-	{ "SLES02558", 125 },
-	{ "SLES12558", 125 },
+	{ 125, { "SLUS01042", "SLUS01055", "SLES02558", "SLES12558" } },
 #endif
 	/* Discworld Noir - audio skips if CPU runs too fast */
-	{ "SLES01549", 222 },
-	{ "SLES02063", 222 },
-	{ "SLES02064", 222 },
-	/* Judge Dredd - could also be poor MDEC timing */
-	{ "SLUS00630", 128 },
-	{ "SLES00755", 128 },
+	{ 222, { "SLES01549", "SLES02063", "SLES02064" } },
 	/* Digimon World */
-	{ "SLUS01032", 153 },
-	{ "SLES02914", 153 },
+	{ 153, { "SLUS01032", "SLES02914" } },
 	/* Syphon Filter - reportedly hangs under unknown conditions */
-	{ "SCUS94240", 169 },
+	{ 169, { "SCUS94240" } },
+	/* Psychic Detective - some weird race condition in the game's cdrom code */
+	{ 222, { "SLUS00165", "SLUS00166", "SLUS00167" } },
+	{ 222, { "SLES00070", "SLES10070", "SLES20070" } },
+	/* Vib-Ribbon - cd timing issues (PAL+ari64drc only?) */
+	{ 200, { "SCES02873" } },
+	/* Zero Divide - sometimes too fast */
+	{ 200, { "SLUS00183", "SLES00159", "SLPS00083", "SLPM80008" } },
 };
 
 static const struct
@@ -157,6 +166,12 @@ void Apply_Hacks_Cdrom(void)
 		}
 	}
 
+	if (Config.hacks.dualshock_init_analog) {
+		// assume the default is off, see LoadPAD1plugin()
+		for (i = 0; i < 8; i++)
+			padToggleAnalog(i);
+	}
+
 	/* Apply Memory card hack for Codename Tenka. (The game needs one of the memory card slots to be empty) */
 	for (i = 0; i < ARRAY_SIZE(MemorycardHack_db); i++)
 	{
@@ -176,7 +191,11 @@ void Apply_Hacks_Cdrom(void)
 
 	for (i = 0; i < ARRAY_SIZE(cycle_multiplier_overrides); i++)
 	{
-		if (strcmp(CdromId, cycle_multiplier_overrides[i].id) == 0)
+		const char * const * const ids = cycle_multiplier_overrides[i].id;
+		for (j = 0; j < ARRAY_SIZE(cycle_multiplier_overrides[i].id); j++)
+			if (ids[j] && strcmp(ids[j], CdromId) == 0)
+				break;
+		if (j < ARRAY_SIZE(cycle_multiplier_overrides[i].id))
 		{
 			Config.cycle_multiplier_override = cycle_multiplier_overrides[i].mult;
 			new_dynarec_hacks_pergame |= NDHACK_OVERRIDE_CYCLE_M;

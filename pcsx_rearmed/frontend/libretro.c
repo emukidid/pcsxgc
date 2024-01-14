@@ -76,6 +76,13 @@ static retro_set_rumble_state_t rumble_cb;
 static struct retro_log_callback logging;
 static retro_log_printf_t log_cb;
 
+#define LogWarn(fmt, ...) do { \
+   if (log_cb) log_cb(RETRO_LOG_WARN, fmt, ##__VA_ARGS__); \
+} while (0)
+#define LogErr(fmt, ...) do { \
+   if (log_cb) log_cb(RETRO_LOG_ERROR, fmt, ##__VA_ARGS__); \
+} while (0)
+
 static unsigned msg_interface_version = 0;
 
 static void *vout_buf;
@@ -84,7 +91,6 @@ static int vout_width = 256, vout_height = 240, vout_pitch = 256;
 static int vout_fb_dirty;
 static int psx_w, psx_h;
 static bool vout_can_dupe;
-static bool duping_enable;
 static bool found_bios;
 static bool display_internal_fps = false;
 static unsigned frame_count = 0;
@@ -145,7 +151,9 @@ int in_mouse[8][2];
 int multitap1 = 0;
 int multitap2 = 0;
 int in_enable_vibration = 1;
-int in_enable_crosshair[2] = { 0, 0 };
+static int in_enable_crosshair[2] = { 0, 0 };
+static int in_dualshock_analog_combo = 0;
+static bool in_dualshock_toggling = false;
 
 // NegCon adjustment parameters
 // > The NegCon 'twist' action is somewhat awkward when mapped
@@ -235,10 +243,13 @@ static void set_vout_fb()
    fb.access_flags   = RETRO_MEMORY_ACCESS_WRITE;
 
    vout_pitch = vout_width;
-   if (environ_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb) && fb.format == RETRO_PIXEL_FORMAT_RGB565) {
+   if (environ_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb)
+         && fb.format == RETRO_PIXEL_FORMAT_RGB565
+         && vout_can_dupe)
+   {
       vout_buf_ptr = fb.data;
       if (fb.pitch / 2 != vout_pitch && fb.pitch != vout_width * 2)
-         SysPrintf("got unusual pitch %zd for resolution %dx%d\n", fb.pitch, vout_width, vout_height);
+         LogWarn("got unusual pitch %zd for resolution %dx%d\n", fb.pitch, vout_width, vout_height);
       vout_pitch = fb.pitch / 2;
    }
    else
@@ -407,7 +418,7 @@ void *pl_3ds_mmap(unsigned long addr, size_t size, int is_fixed,
 
             if (svcControlMemory(&tmp, (void *)custom_map->target_map, (void *)ptr_aligned, size, MEMOP_MAP, 0x3) < 0)
             {
-               SysPrintf("could not map memory @0x%08X\n", custom_map->target_map);
+               LogErr("could not map memory @0x%08X\n", custom_map->target_map);
                exit(1);
             }
 
@@ -1080,7 +1091,7 @@ static void save_close(void *file)
       return;
 
    if (fp->pos > r_size)
-      SysPrintf("ERROR: save buffer overflow detected\n");
+      LogErr("ERROR: save buffer overflow detected\n");
    else if (fp->is_write && fp->pos < r_size)
       // make sure we don't save trash in leftover space
       memset(fp->buf + fp->pos, 0, r_size - fp->pos);
@@ -1151,7 +1162,7 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
 
 finish:
    if (ret != 0)
-      SysPrintf("Failed to set cheat %#u\n", index);
+      LogErr("Failed to set cheat %#u\n", index);
    else if (index < NumCheats)
       Cheats[index].Enabled = enabled;
    free(buf);
@@ -1257,7 +1268,7 @@ static bool disk_set_image_index(unsigned int index)
 
    if (disks[index].fname == NULL)
    {
-      SysPrintf("missing disk #%u\n", index);
+      LogErr("missing disk #%u\n", index);
       CDR_shutdown();
 
       // RetroArch specifies "no disk" with index == count,
@@ -1266,19 +1277,19 @@ static bool disk_set_image_index(unsigned int index)
       return true;
    }
 
-   SysPrintf("switching to disk %u: \"%s\" #%d\n", index,
+   LogErr("switching to disk %u: \"%s\" #%d\n", index,
        disks[index].fname, disks[index].internal_index);
 
    cdrIsoMultidiskSelect = disks[index].internal_index;
    set_cd_image(disks[index].fname);
    if (ReloadCdromPlugin() < 0)
    {
-      SysPrintf("failed to load cdr plugin\n");
+      LogErr("failed to load cdr plugin\n");
       return false;
    }
    if (CDR_open() < 0)
    {
-      SysPrintf("failed to open cdr plugin\n");
+      LogErr("failed to open cdr plugin\n");
       return false;
    }
 
@@ -1675,7 +1686,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
    if (info == NULL || info->path == NULL)
    {
-      SysPrintf("info->path required\n");
+      LogErr("info->path required\n");
       return false;
    }
 
@@ -1695,7 +1706,7 @@ bool retro_load_game(const struct retro_game_info *info)
    {
       if (!read_m3u(info->path))
       {
-         log_cb(RETRO_LOG_INFO, "failed to read m3u file\n");
+         LogErr("failed to read m3u file\n");
          return false;
       }
    }
@@ -1728,7 +1739,7 @@ bool retro_load_game(const struct retro_game_info *info)
    /* have to reload after set_cd_image for correct cdr plugin */
    if (LoadPlugins() == -1)
    {
-      log_cb(RETRO_LOG_INFO, "failed to load plugins\n");
+      LogErr("failed to load plugins\n");
       return false;
    }
 
@@ -1737,7 +1748,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
    if (OpenPlugins() == -1)
    {
-      log_cb(RETRO_LOG_INFO, "failed to open plugins\n");
+      LogErr("failed to open plugins\n");
       return false;
    }
 
@@ -1796,12 +1807,12 @@ bool retro_load_game(const struct retro_game_info *info)
 
          if (ReloadCdromPlugin() < 0)
          {
-            log_cb(RETRO_LOG_INFO, "failed to reload cdr plugins\n");
+            LogErr("failed to reload cdr plugins\n");
             return false;
          }
          if (CDR_open() < 0)
          {
-            log_cb(RETRO_LOG_INFO, "failed to open cdr plugin\n");
+            LogErr("failed to open cdr plugin\n");
             return false;
          }
       }
@@ -1816,7 +1827,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
    if (!is_exe && CheckCdrom() == -1)
    {
-      log_cb(RETRO_LOG_INFO, "unsupported/invalid CD image: %s\n", info->path);
+      LogErr("unsupported/invalid CD image: %s\n", info->path);
       return false;
    }
 
@@ -1828,7 +1839,7 @@ bool retro_load_game(const struct retro_game_info *info)
       ret = LoadCdrom();
    if (ret != 0)
    {
-      log_cb(RETRO_LOG_INFO, "could not load %s (%d)\n", is_exe ? "exe" : "CD", ret);
+      LogErr("could not load %s (%d)\n", is_exe ? "exe" : "CD", ret);
       return false;
    }
    emu_on_new_cd(0);
@@ -2012,6 +2023,30 @@ static void update_variables(bool in_flight)
    }
 
    var.value = NULL;
+   var.key = "pcsx_rearmed_analog_combo";
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "l1+r1+select") == 0)
+         in_dualshock_analog_combo = (1 << RETRO_DEVICE_ID_JOYPAD_L) |
+           (1 << RETRO_DEVICE_ID_JOYPAD_R) | (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
+      else if (strcmp(var.value, "l1+r1+start") == 0)
+         in_dualshock_analog_combo = (1 << RETRO_DEVICE_ID_JOYPAD_L) |
+           (1 << RETRO_DEVICE_ID_JOYPAD_R) | (1 << RETRO_DEVICE_ID_JOYPAD_START);
+      else if (strcmp(var.value, "l1+r1+l3") == 0)
+         in_dualshock_analog_combo = (1 << RETRO_DEVICE_ID_JOYPAD_L) |
+           (1 << RETRO_DEVICE_ID_JOYPAD_R) | (1 << RETRO_DEVICE_ID_JOYPAD_L3);
+      else if (strcmp(var.value, "l1+r1+r3") == 0)
+         in_dualshock_analog_combo = (1 << RETRO_DEVICE_ID_JOYPAD_L) |
+           (1 << RETRO_DEVICE_ID_JOYPAD_R) | (1 << RETRO_DEVICE_ID_JOYPAD_R3);
+      else if (strcmp(var.value, "l3+r3") == 0)
+         in_dualshock_analog_combo = (1 << RETRO_DEVICE_ID_JOYPAD_L3) |
+           (1 << RETRO_DEVICE_ID_JOYPAD_R3);
+      else
+         in_dualshock_analog_combo = 0;
+   }
+
+   var.value = NULL;
    var.key = "pcsx_rearmed_dithering";
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -2066,23 +2101,23 @@ static void update_variables(bool in_flight)
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      if (strcmp(var.value, "disabled") == 0)
-         pl_rearmed_cbs.gpu_neon.enhancement_no_main = 0;
-      else if (strcmp(var.value, "enabled") == 0)
+      if (strcmp(var.value, "enabled") == 0)
          pl_rearmed_cbs.gpu_neon.enhancement_no_main = 1;
+      else
+         pl_rearmed_cbs.gpu_neon.enhancement_no_main = 0;
    }
-#endif
 
    var.value = NULL;
-   var.key = "pcsx_rearmed_duping_enable";
+   var.key = "pcsx_rearmed_neon_enhancement_tex_adj";
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      if (strcmp(var.value, "disabled") == 0)
-         duping_enable = false;
-      else if (strcmp(var.value, "enabled") == 0)
-         duping_enable = true;
+      if (strcmp(var.value, "enabled") == 0)
+         pl_rearmed_cbs.gpu_neon.enhancement_tex_adj = 1;
+      else
+         pl_rearmed_cbs.gpu_neon.enhancement_tex_adj = 0;
    }
+#endif
 
    var.value = NULL;
    var.key = "pcsx_rearmed_display_internal_fps";
@@ -2863,13 +2898,13 @@ static void update_input_mouse(int port, int ret)
 
 static void update_input(void)
 {
-   // reset all keystate, query libretro for keystate
    int i;
    int j;
 
+   // reset all keystate, query libretro for keystate
    for (i = 0; i < PORTS_NUMBER; i++)
    {
-      int16_t ret = 0;
+      int32_t ret = 0;
       int type = in_type[i];
 
       in_keystate[i] = 0;
@@ -2878,7 +2913,11 @@ static void update_input(void)
          continue;
 
       if (libretro_supports_bitmasks)
+      {
          ret = input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
+         // undo int16 sign extension (why input_state_cb returns int16 in the first place?)
+         ret &= (1 << (RETRO_DEVICE_ID_JOYPAD_R3 + 1)) - 1;
+      }
       else
       {
          for (j = 0; j < (RETRO_DEVICE_ID_JOYPAD_R3 + 1); j++)
@@ -2903,7 +2942,23 @@ static void update_input(void)
          update_input_mouse(i, ret);
          break;      
       default:
-         // Query digital inputs
+         // dualshock ANALOG toggle?
+         if (type == PSE_PAD_TYPE_ANALOGPAD && in_dualshock_analog_combo != 0
+             && ret == in_dualshock_analog_combo)
+         {
+            if (!in_dualshock_toggling)
+            {
+               int state = padToggleAnalog(i);
+               char msg[32];
+               snprintf(msg, sizeof(msg), "ANALOG %s", state ? "ON" : "OFF");
+               show_notification(msg, 800, 1);
+               in_dualshock_toggling = true;
+            }
+            return;
+         }
+         in_dualshock_toggling = false;
+
+         // Set digital inputs
          for (j = 0; j < RETRO_PSX_MAP_LEN; j++)
             if (ret & (1 << j))
                in_keystate[i] |= retro_psx_map[j];
@@ -3037,7 +3092,7 @@ void retro_run(void)
          frameskip_counter = 0;
    }
 
-   video_cb((vout_fb_dirty || !vout_can_dupe || !duping_enable) ? vout_buf_ptr : NULL,
+   video_cb((vout_fb_dirty || !vout_can_dupe) ? vout_buf_ptr : NULL,
        vout_width, vout_height, vout_pitch * 2);
    vout_fb_dirty = 0;
 }
@@ -3161,7 +3216,7 @@ static int init_memcards(void)
          {
             if (strlen(dir) + strlen(CARD2_FILE) + 2 > sizeof(Config.Mcd2))
             {
-               SysPrintf("Path '%s' is too long. Cannot use memcard 2. Use a shorter path.\n", dir);
+               LogErr("Path '%s' is too long. Cannot use memcard 2. Use a shorter path.\n", dir);
                ret = -1;
             }
             else
@@ -3173,7 +3228,7 @@ static int init_memcards(void)
          }
          else
          {
-            SysPrintf("Could not get save directory! Could not create memcard 2.");
+            LogErr("Could not get save directory! Could not create memcard 2.");
             ret = -1;
          }
       }
@@ -3288,7 +3343,7 @@ void retro_init(void)
    ret |= emu_core_init();
    if (ret != 0)
    {
-      SysPrintf("PCSX init failed.\n");
+      LogErr("PCSX init failed.\n");
       exit(1);
    }
 
@@ -3308,6 +3363,8 @@ void retro_init(void)
    loadPSXBios();
 
    environ_cb(RETRO_ENVIRONMENT_GET_CAN_DUPE, &vout_can_dupe);
+   if (!vout_can_dupe)
+      LogWarn("CAN_DUPE reports false\n");
 
    disk_initial_index = 0;
    disk_initial_path[0] = '\0';

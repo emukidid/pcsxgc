@@ -217,7 +217,7 @@ static int optional_cdimg_filter(struct dirent **namelist, int count,
 	const char *basedir)
 {
 	const char *ext, *p;
-	char buf[256], buf2[256];
+	char buf[256], buf2[257];
 	int i, d, ret, good_cue;
 	struct STAT statf;
 	FILE *f;
@@ -316,14 +316,16 @@ static void menu_sync_config(void)
 
 	switch (in_type_sel1) {
 	case 1:  in_type[0] = PSE_PAD_TYPE_ANALOGPAD; break;
-	case 2:  in_type[0] = PSE_PAD_TYPE_NEGCON;    break;
-	case 3:  in_type[0] = PSE_PAD_TYPE_NONE;      break;
+	case 2:  in_type[0] = PSE_PAD_TYPE_GUNCON;    break;
+	case 3:  in_type[0] = PSE_PAD_TYPE_GUN;       break;
+	case 4:  in_type[0] = PSE_PAD_TYPE_NONE;      break;
 	default: in_type[0] = PSE_PAD_TYPE_STANDARD;
 	}
 	switch (in_type_sel2) {
 	case 1:  in_type[1] = PSE_PAD_TYPE_ANALOGPAD; break;
-	case 2:  in_type[1] = PSE_PAD_TYPE_NEGCON;    break;
-	case 3:  in_type[1] = PSE_PAD_TYPE_NONE;      break;
+	case 2:  in_type[1] = PSE_PAD_TYPE_GUNCON;    break;
+	case 3:  in_type[1] = PSE_PAD_TYPE_GUN;       break;
+	case 4:  in_type[1] = PSE_PAD_TYPE_NONE;      break;
 	default: in_type[1] = PSE_PAD_TYPE_STANDARD;
 	}
 	if (in_evdev_allow_abs_only != allow_abs_only_old) {
@@ -448,6 +450,7 @@ static const struct {
 	CE_INTVAL_P(gpu_neon.allow_interlace),
 	CE_INTVAL_P(gpu_neon.enhancement_enable),
 	CE_INTVAL_P(gpu_neon.enhancement_no_main),
+	CE_INTVAL_P(gpu_neon.enhancement_tex_adj),
 	CE_INTVAL_P(gpu_peopsgl.bDrawDither),
 	CE_INTVAL_P(gpu_peopsgl.iFilterType),
 	CE_INTVAL_P(gpu_peopsgl.iFrameTexType),
@@ -499,6 +502,13 @@ static void make_cfg_fname(char *buf, size_t size, int is_game)
 static void keys_write_all(FILE *f);
 static char *mystrip(char *str);
 
+static void write_u32_value(FILE *f, u32 v)
+{
+	if (v > 7)
+		fprintf(f, "0x");
+	fprintf(f, "%x\n", v);
+}
+
 static int menu_write_config(int is_game)
 {
 	char cfgfile[MAXPATHLEN];
@@ -521,13 +531,13 @@ static int menu_write_config(int is_game)
 			fprintf(f, "%s\n", (char *)config_data[i].val);
 			break;
 		case 1:
-			fprintf(f, "%x\n", *(u8 *)config_data[i].val);
+			write_u32_value(f, *(u8 *)config_data[i].val);
 			break;
 		case 2:
-			fprintf(f, "%x\n", *(u16 *)config_data[i].val);
+			write_u32_value(f, *(u16 *)config_data[i].val);
 			break;
 		case 4:
-			fprintf(f, "%x\n", *(u32 *)config_data[i].val);
+			write_u32_value(f, *(u32 *)config_data[i].val);
 			break;
 		default:
 			printf("menu_write_config: unhandled len %d for %s\n",
@@ -894,6 +904,7 @@ me_bind_action emuctrl_actions[] =
 	{ "Volume Up        ", 1 << SACTION_VOLUME_UP },
 	{ "Volume Down      ", 1 << SACTION_VOLUME_DOWN },
 #endif
+	{ "Analog toggle    ", 1 << SACTION_ANALOG_TOGGLE },
 	{ NULL,                0 }
 };
 
@@ -1210,6 +1221,7 @@ static const char *men_in_type_sel[] = {
 	"Standard (SCPH-1080)",
 	"Analog (SCPH-1150)",
 	"GunCon",
+	"Konami Gun",
 	"None",
 	NULL
 };
@@ -1272,24 +1284,47 @@ static const char h_cscaler[]   = "Displays the scaler layer, you can resize it\
 static const char h_soft_filter[] = "Works only if game uses low resolution modes";
 static const char h_gamma[]     = "Gamma/brightness adjustment (default 100)";
 #ifdef __ARM_NEON__
+static const char *men_scanlines[] = { "OFF", "1", "2", "3", NULL };
 static const char h_scanline_l[]  = "Scanline brightness, 0-100%";
 #endif
 
 static int menu_loop_cscaler(int id, int keys)
 {
+	void *saved_layer = NULL;
+	size_t saved_layer_size = 0;
+	int was_layer_clipped = 0;
 	unsigned int inp;
 
+	if (!pl_vout_buf)
+		return -1;
+
 	g_scaler = SCALE_CUSTOM;
+	saved_layer_size = last_vout_w * last_vout_h * last_vout_bpp / 8;
+	saved_layer = malloc(saved_layer_size);
+	if (saved_layer)
+		memcpy(saved_layer, pl_vout_buf, saved_layer_size);
 
 	plat_gvideo_open(Config.PsxType);
 
+	menu_draw_begin(0, 1);
+	memset(g_menuscreen_ptr, 4, g_menuscreen_w * g_menuscreen_h * 2);
+	menu_draw_end();
+
 	for (;;)
 	{
-		menu_draw_begin(0, 1);
-		memset(g_menuscreen_ptr, 4, g_menuscreen_w * g_menuscreen_h * 2);
-		text_out16(2, 2, "%d,%d", g_layer_x, g_layer_y);
-		text_out16(2, 480 - 18, "%dx%d | d-pad: resize, R+d-pad: move",	g_layer_w, g_layer_h);
-		menu_draw_end();
+		if (saved_layer && last_vout_bpp == 16) {
+			int top_x = max(0, -g_layer_x * last_vout_h / 800) + 1;
+			int top_y = max(0, -g_layer_y * last_vout_h / 480) + 1;
+			char text[128];
+			memcpy(pl_vout_buf, saved_layer, saved_layer_size);
+			snprintf(text, sizeof(text), "%d,%d %dx%d",
+				g_layer_x, g_layer_y, g_layer_w, g_layer_h);
+			basic_text_out16_nf(pl_vout_buf, last_vout_w,
+				top_x, top_y, text);
+			basic_text_out16_nf(pl_vout_buf, last_vout_w, 2,
+				last_vout_h - 20, "d-pad: resize, R+d-pad: move");
+			pl_vout_buf = plat_gvideo_flip();
+		}
 
 		inp = in_menu_wait(PBTN_UP|PBTN_DOWN|PBTN_LEFT|PBTN_RIGHT
 				|PBTN_R|PBTN_MOK|PBTN_MBACK, NULL, 40);
@@ -1307,22 +1342,30 @@ static int menu_loop_cscaler(int id, int keys)
 			break;
 
 		if (inp & (PBTN_UP|PBTN_DOWN|PBTN_LEFT|PBTN_RIGHT)) {
-			if (g_layer_x < 0)   g_layer_x = 0;
-			if (g_layer_x > 640) g_layer_x = 640;
-			if (g_layer_y < 0)   g_layer_y = 0;
-			if (g_layer_y > 420) g_layer_y = 420;
-			if (g_layer_w < 160) g_layer_w = 160;
-			if (g_layer_h < 60)  g_layer_h = 60;
-			if (g_layer_x + g_layer_w > 800)
-				g_layer_w = 800 - g_layer_x;
-			if (g_layer_y + g_layer_h > 480)
-				g_layer_h = 480 - g_layer_y;
+			int layer_clipped = 0;
+			g_layer_x = max(-320, min(g_layer_x, 640));
+			g_layer_y = max(-240, min(g_layer_y, 400));
+			g_layer_w = max(160, g_layer_w);
+			g_layer_h = max( 60, g_layer_h);
+			if (g_layer_x < 0 || g_layer_x + g_layer_w > 800)
+				layer_clipped = 1;
+			if (g_layer_w > 800+400)
+				g_layer_w = 800+400;
+			if (g_layer_y < 0 || g_layer_y + g_layer_h > 480)
+				layer_clipped = 1;
+			if (g_layer_h > 480+360)
+				g_layer_h = 480+360;
 			// resize the layer
 			plat_gvideo_open(Config.PsxType);
+			if (layer_clipped || was_layer_clipped)
+				pl_vout_buf = plat_gvideo_set_mode(&last_vout_w,
+					&last_vout_h, &last_vout_bpp);
+			was_layer_clipped = layer_clipped;
 		}
 	}
 
 	plat_gvideo_close();
+	free(saved_layer);
 
 	return 0;
 }
@@ -1336,7 +1379,7 @@ static menu_entry e_menu_gfx_options[] =
 	mee_enum      ("Hardware Filter",          MA_OPT_HWFILTER, plat_target.hwfilter, men_dummy),
 	mee_enum_h    ("Software Filter",          MA_OPT_SWFILTER, soft_filter, men_soft_filter, h_soft_filter),
 #ifdef __ARM_NEON__
-	mee_onoff     ("Scanlines",                MA_OPT_SCANLINES, scanlines, 1),
+	mee_enum      ("Scanlines",                MA_OPT_SCANLINES, scanlines, men_scanlines),
 	mee_range_h   ("Scanline brightness",      MA_OPT_SCANLINE_LEVEL, scanline_level, 0, 100, h_scanline_l),
 #endif
 	mee_range_h   ("Gamma adjustment",         MA_OPT_GAMMA, g_gamma, 1, 200, h_gamma),
@@ -1372,6 +1415,7 @@ static menu_entry e_menu_plugin_gpu_neon[] =
 	mee_enum      ("Enable interlace mode",      0, pl_rearmed_cbs.gpu_neon.allow_interlace, men_gpu_interlace),
 	mee_onoff_h   ("Enhanced resolution",        0, pl_rearmed_cbs.gpu_neon.enhancement_enable, 1, h_gpu_neon_enhanced),
 	mee_onoff_h   ("Enhanced res. speed hack",   0, pl_rearmed_cbs.gpu_neon.enhancement_no_main, 1, h_gpu_neon_enhanced_hack),
+	mee_onoff     ("Enh. res. texture adjust",   0, pl_rearmed_cbs.gpu_neon.enhancement_tex_adj, 1),
 	mee_end,
 };
 
@@ -1682,6 +1726,7 @@ static const char h_confirm_save[]    = "Ask for confirmation when overwriting s
 static const char h_restore_def[]     = "Switches back to default / recommended\n"
 					"configuration";
 static const char h_frameskip[]       = "Warning: frameskip sometimes causes glitches\n";
+static const char h_sputhr[]          = "Warning: has some known bugs\n";
 
 static menu_entry e_menu_options[] =
 {
@@ -1692,9 +1737,9 @@ static menu_entry e_menu_options[] =
 	mee_enum      ("Region",                   0, region, men_region),
 	mee_range     ("CPU clock",                MA_OPT_CPU_CLOCKS, cpu_clock, 20, 5000),
 #ifdef C64X_DSP
-	mee_onoff     ("Use C64x DSP for sound",   MA_OPT_SPU_THREAD, spu_config.iUseThread, 1),
+	mee_onoff_h   ("Use C64x DSP for sound",   MA_OPT_SPU_THREAD, spu_config.iUseThread, 1, h_sputhr),
 #else
-	mee_onoff     ("Threaded SPU",             MA_OPT_SPU_THREAD, spu_config.iUseThread, 1),
+	mee_onoff_h   ("Threaded SPU",             MA_OPT_SPU_THREAD, spu_config.iUseThread, 1, h_sputhr),
 #endif
 	mee_handler_id("[Display]",                MA_OPT_DISP_OPTS, menu_loop_gfx_options),
 	mee_handler   ("[BIOS/Plugins]",           menu_loop_plugin_options),

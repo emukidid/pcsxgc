@@ -34,6 +34,7 @@
 #include "../libpcsxcore/new_dynarec/new_dynarec.h"
 #include "../libpcsxcore/psxmem_map.h"
 #include "../libpcsxcore/gpu.h"
+#include "../libpcsxcore/r3000a.h"
 
 #define HUD_HEIGHT 10
 
@@ -46,7 +47,6 @@ int in_adev[2] = { -1, -1 }, in_adev_axis[2][2] = {{ 0, 1 }, { 0, 1 }};
 int in_adev_is_nublike[2];
 unsigned short in_keystate[8];
 int in_mouse[8][2];
-int in_state_gun;
 int in_enable_vibration;
 void *tsdev;
 void *pl_vout_buf;
@@ -227,12 +227,12 @@ static void update_layer_size(int w, int h)
 		break;
 	}
 
-	g_layer_x = g_menuscreen_w / 2 - g_layer_w / 2;
-	g_layer_y = g_menuscreen_h / 2 - g_layer_h / 2;
-	if (g_layer_x < 0) g_layer_x = 0;
-	if (g_layer_y < 0) g_layer_y = 0;
-	if (g_layer_w > g_menuscreen_w) g_layer_w = g_menuscreen_w;
-	if (g_layer_h > g_menuscreen_h) g_layer_h = g_menuscreen_h;
+	if (g_scaler != SCALE_CUSTOM) {
+		g_layer_x = g_menuscreen_w / 2 - g_layer_w / 2;
+		g_layer_y = g_menuscreen_h / 2 - g_layer_h / 2;
+	}
+	if (g_layer_w > g_menuscreen_w * 2) g_layer_w = g_menuscreen_w * 2;
+	if (g_layer_h > g_menuscreen_h * 2) g_layer_h = g_menuscreen_h * 2;
 }
 
 // XXX: this is platform specific really
@@ -338,7 +338,7 @@ static void pl_vout_flip(const void *vram, int stride, int bgr24,
 	doffs = xoffs + y * dstride;
 
 	if (dims_changed)
-		flip_clear_counter = 2;
+		flip_clear_counter = 3;
 
 	if (flip_clear_counter > 0) {
 		if (pl_plat_clear)
@@ -391,17 +391,21 @@ static void pl_vout_flip(const void *vram, int stride, int bgr24,
 	}
 	else if (scanlines != 0 && scanline_level != 100)
 	{
-		int l = scanline_level * 2048 / 100;
+		int h2, l = scanline_level * 2048 / 100;
 		int stride_0 = pl_vout_scale_h >= 2 ? 0 : stride;
 
 		h1 *= pl_vout_scale_h;
-		for (; h1 >= 2; h1 -= 2)
+		while (h1 > 0)
 		{
-			bgr555_to_rgb565(dest, src, w * 2);
-			dest += dstride * 2, src += stride_0;
+			for (h2 = scanlines; h2 > 0 && h1 > 0; h2--, h1--) {
+				bgr555_to_rgb565(dest, src, w * 2);
+				dest += dstride * 2, src += stride_0;
+			}
 
-			bgr555_to_rgb565_b(dest, src, w * 2, l);
-			dest += dstride * 2, src += stride;
+			for (h2 = scanlines; h2 > 0 && h1 > 0; h2--, h1--) {
+				bgr555_to_rgb565_b(dest, src, w * 2, l);
+				dest += dstride * 2, src += stride;
+			}
 		}
 	}
 #endif
@@ -609,12 +613,14 @@ static void update_input(void)
 {
 	int actions[IN_BINDTYPE_COUNT] = { 0, };
 	unsigned int emu_act;
+	int in_state_gun;
+	int i;
 
 	in_update(actions);
 	if (in_type[0] == PSE_PAD_TYPE_ANALOGJOY || in_type[0] == PSE_PAD_TYPE_ANALOGPAD)
 		update_analogs();
 	emu_act = actions[IN_BINDTYPE_EMU];
-	in_state_gun = (emu_act & SACTION_GUN_MASK) >> SACTION_GUN_TRIGGER;
+	in_state_gun = emu_act & SACTION_GUN_MASK;
 
 	emu_act &= ~SACTION_GUN_MASK;
 	if (emu_act) {
@@ -625,12 +631,35 @@ static void update_input(void)
 	}
 	emu_set_action(emu_act);
 
-	in_keystate[0] = actions[IN_BINDTYPE_PLAYER12];
+	in_keystate[0] = actions[IN_BINDTYPE_PLAYER12] & 0xffff;
+	in_keystate[1] = (actions[IN_BINDTYPE_PLAYER12] >> 16) & 0xffff;
 
-	// fixme
-	//if (in_type[0] == PSE_PAD_TYPE_GUNCON && tsdev)
-	//	pl_gun_ts_update(tsdev, xn, yn, in);
-	//	in_analog_left[0][0] = xn
+	if (tsdev) for (i = 0; i < 2; i++) {
+		int in = 0, x = 0, y = 0, trigger;;
+		if (in_type[i] != PSE_PAD_TYPE_GUN
+		    && in_type[i] != PSE_PAD_TYPE_GUNCON)
+			continue;
+		trigger = in_type[i] == PSE_PAD_TYPE_GUN
+			? (1 << DKEY_SQUARE) : (1 << DKEY_CIRCLE);
+
+		pl_gun_ts_update(tsdev, &x, &y, &in);
+		in_analog_left[i][0] = 65536;
+		in_analog_left[i][1] = 65536;
+		if (in && !(in_state_gun & (1 << SACTION_GUN_TRIGGER2))) {
+			in_analog_left[i][0] = x;
+			in_analog_left[i][1] = y;
+			if (!(g_opts & OPT_TSGUN_NOTRIGGER))
+				in_state_gun |= (1 << SACTION_GUN_TRIGGER);
+		}
+		in_keystate[i] = 0;
+		if (in_state_gun & ((1 << SACTION_GUN_TRIGGER)
+					| (1 << SACTION_GUN_TRIGGER2)))
+			in_keystate[i] |= trigger;
+		if (in_state_gun & (1 << SACTION_GUN_A))
+			in_keystate[i] |= (1 << DKEY_START);
+		if (in_state_gun & (1 << SACTION_GUN_B))
+			in_keystate[i] |= (1 << DKEY_CROSS);
+	}
 }
 #else /* MAEMO */
 extern void update_input(void);
@@ -638,6 +667,13 @@ extern void update_input(void);
 
 void pl_gun_byte2(int port, unsigned char byte)
 {
+	if (!tsdev || in_type[port] != PSE_PAD_TYPE_GUN || !(byte & 0x10))
+		return;
+	if (in_analog_left[port][0] == 65536)
+		return;
+
+	psxScheduleIrq10(4, in_analog_left[port][0] * 1629 / 1024,
+		in_analog_left[port][1] * psx_h / 1024);
 }
 
 #define MAX_LAG_FRAMES 3

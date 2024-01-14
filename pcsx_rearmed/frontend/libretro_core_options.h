@@ -309,20 +309,6 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       "enabled",
 #endif
    },
-   {
-      "pcsx_rearmed_duping_enable",
-      "Frame Duping (Speedup)",
-      NULL,
-      "When enabled and supported by the libretro frontend, provides a small performance increase by directing the frontend to repeat the previous frame if the core has nothing new to display.",
-      NULL,
-      "video",
-      {
-         { "disabled", NULL },
-         { "enabled",  NULL },
-         { NULL, NULL },
-      },
-      "enabled",
-   },
 #ifdef THREAD_RENDERING
    {
       "pcsx_rearmed_gpu_thread_rendering",
@@ -514,7 +500,21 @@ struct retro_core_option_v2_definition option_defs_us[] = {
       "pcsx_rearmed_neon_enhancement_no_main",
       "(GPU) Enhanced Resolution Speed Hack",
       "Enhanced Resolution Speed Hack",
-      "Improves performance when 'Enhanced Resolution' is enabled, but reduces compatibility and may cause rendering errors.",
+      "('Enhanced Resolution' Hack) Improves performance but reduces compatibility and may cause rendering errors.",
+      NULL,
+      "gpu_neon",
+      {
+         { "disabled", NULL },
+         { "enabled",  NULL },
+         { NULL, NULL },
+      },
+      "disabled",
+   },
+   {
+      "pcsx_rearmed_neon_enhancement_tex_adj",
+      "(GPU) Enhanced Resolution Texture Adjustment",
+      "Enhanced Resolution Texture Adjustment",
+      "('Enhanced Resolution' Hack) Attempts to solve some texturing issues in some games, but causes new ones in others.",
       NULL,
       "gpu_neon",
       {
@@ -852,6 +852,24 @@ struct retro_core_option_v2_definition option_defs_us[] = {
          { NULL, NULL },
       },
       "enabled",
+   },
+   {
+      "pcsx_rearmed_analog_combo",
+      "DualShock Analog Mode Toggle Key Combo",
+      NULL,
+      "When the input device type is DualShock, this option allows the emulated DualShock to be toggled between DIGITAL and ANALOG mode like original hardware. You can select the button combination for this.",
+      NULL,
+      "input",
+      {
+         { "disabled", NULL },
+         { "l1+r1+select",             "L1 + R1 + Select" },
+         { "l1+r1+start",              "L1 + R1 + Start" },
+         { "l1+r1+l3",                 "L1 + R1 + L3" },
+         { "l1+r1+r3",                 "L1 + R1 + R3" },
+         { "l3+r3",                    "L3 + R3" },
+         { NULL, NULL },
+      },
+      "l1+r1+select"
    },
    {
       "pcsx_rearmed_multitap",

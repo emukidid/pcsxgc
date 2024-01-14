@@ -58,11 +58,8 @@ typedef void (CALLBACK* GPUwriteDataMem)(uint32_t *, int);
 typedef uint32_t (CALLBACK* GPUreadStatus)(void);
 typedef uint32_t (CALLBACK* GPUreadData)(void);
 typedef void (CALLBACK* GPUreadDataMem)(uint32_t *, int);
-typedef long (CALLBACK* GPUdmaChain)(uint32_t *,uint32_t, uint32_t *);
+typedef long (CALLBACK* GPUdmaChain)(uint32_t *, uint32_t, uint32_t *, int32_t *);
 typedef void (CALLBACK* GPUupdateLace)(void);
-typedef long (CALLBACK* GPUconfigure)(void);
-typedef long (CALLBACK* GPUtest)(void);
-typedef void (CALLBACK* GPUabout)(void);
 typedef void (CALLBACK* GPUmakeSnapshot)(void);
 typedef void (CALLBACK* GPUkeypressed)(int);
 typedef void (CALLBACK* GPUdisplayText)(char *);
@@ -82,9 +79,6 @@ typedef void (CALLBACK* GPUgetScreenInfo)(int *, int *);
 extern GPUupdateLace    GPU_updateLace;
 extern GPUinit          GPU_init;
 extern GPUshutdown      GPU_shutdown; 
-extern GPUconfigure     GPU_configure;
-extern GPUtest          GPU_test;
-extern GPUabout         GPU_about;
 extern GPUopen          GPU_open;
 extern GPUclose         GPU_close;
 extern GPUreadStatus    GPU_readStatus;
@@ -179,7 +173,7 @@ typedef struct {
 	uint32_t PluginVersion;
 	uint32_t Size;
 } SPUFreezeHdr_t;
-typedef struct {
+typedef struct SPUFreeze {
 	unsigned char PluginName[8];
 	uint32_t PluginVersion;
 	uint32_t Size;
@@ -188,9 +182,10 @@ typedef struct {
 	xa_decode_t xa;
 	unsigned char *unused;
 } SPUFreeze_t;
-typedef long (CALLBACK* SPUfreeze)(uint32_t, SPUFreeze_t *, uint32_t);
-typedef void (CALLBACK* SPUasync)(uint32_t, uint32_t);
+typedef long (CALLBACK* SPUfreeze)(unsigned int, struct SPUFreeze *, unsigned int);
+typedef void (CALLBACK* SPUasync)(unsigned int, unsigned int);
 typedef int  (CALLBACK* SPUplayCDDAchannel)(short *, int, unsigned int, int);
+typedef void (CALLBACK* SPUsetCDvol)(unsigned char, unsigned char, unsigned char, unsigned char, unsigned int);
 
 // SPU function pointers
 extern SPUinit             SPU_init;
@@ -207,6 +202,7 @@ extern SPUregisterCallback SPU_registerCallback;
 extern SPUregisterScheduleCb SPU_registerScheduleCb;
 extern SPUasync            SPU_async;
 extern SPUplayCDDAchannel  SPU_playCDDAchannel;
+extern SPUsetCDvol         SPU_setCDvol;
 
 // PAD Functions
 typedef long (CALLBACK* PADconfigure)(void);
@@ -384,6 +380,7 @@ boolean UsingIso(void);
 void SetCdOpenCaseTime(s64 time);
 
 int padFreeze(void *f, int Mode);
+int padToggleAnalog(unsigned int index);
 
 extern void pl_gun_byte2(int port, unsigned char byte);
 extern void plat_trigger_vibrate(int pad, int low, int high);

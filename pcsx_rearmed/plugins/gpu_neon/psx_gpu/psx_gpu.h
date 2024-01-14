@@ -200,9 +200,12 @@ typedef struct
   u16 enhancement_scanout_eselect;   // eviction selector
   u16 enhancement_current_buf;
 
+  u32 hack_disable_main:1;
+  u32 hack_texture_adj:1;
+
   // Align up to 64 byte boundary to keep the upcoming buffers cache line
   // aligned, also make reachable with single immediate addition
-  u8 reserved_a[188 + 9*4 - 9*sizeof(void *)];
+  u8 reserved_a[184 + 9*4 - 9*sizeof(void *)];
 
   // 8KB
   block_struct blocks[MAX_BLOCKS_PER_ROW];
@@ -245,7 +248,7 @@ void render_block_move(psx_gpu_struct *psx_gpu, u32 source_x, u32 source_y,
 void render_triangle(psx_gpu_struct *psx_gpu, vertex_struct *vertexes,
  u32 flags);
 void render_sprite(psx_gpu_struct *psx_gpu, s32 x, s32 y, u32 u, u32 v,
- s32 width, s32 height, u32 flags, u32 color);
+ s32 *width, s32 *height, u32 flags, u32 color);
 void render_line(psx_gpu_struct *gpu, vertex_struct *vertexes, u32 flags,
  u32 color, int double_resolution);
 
@@ -255,7 +258,8 @@ void update_texture_8bpp_cache(psx_gpu_struct *psx_gpu);
 void flush_render_block_buffer(psx_gpu_struct *psx_gpu);
 
 void initialize_psx_gpu(psx_gpu_struct *psx_gpu, u16 *vram);
-u32 gpu_parse(psx_gpu_struct *psx_gpu, u32 *list, u32 size, u32 *last_command);
+u32 gpu_parse(psx_gpu_struct *psx_gpu, u32 *list, u32 size,
+ s32 *cpu_cycles_sum_out, s32 *cpu_cycles_last, u32 *last_command);
 
 void triangle_benchmark(psx_gpu_struct *psx_gpu);
 
