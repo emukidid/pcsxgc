@@ -67,7 +67,7 @@ void psxDma4(u32 madr, u32 bcr, u32 chcr) { // SPU
 			// This should be much slower, like 12+ cycles/byte, it's like
 			// that because the CPU runs too fast and fifo is not emulated.
 			// See also set_dma_end().
-			set_event(PSXINT_SPUDMA, words * 4);
+			set_event(PSXINT_SPUDMA, words * 4 * 4);
 			return;
 
 		case 0x01000200: //spu to cpu transfer
@@ -78,7 +78,7 @@ void psxDma4(u32 madr, u32 bcr, u32 chcr) { // SPU
 			psxCpu->Clear(madr, words_copy);
 
 			HW_DMA4_MADR = SWAPu32(madr + words_copy * 4);
-			set_event(PSXINT_SPUDMA, words * 4);
+			set_event(PSXINT_SPUDMA, words * 4 * 4);
 			return;
 
 		default:
@@ -90,6 +90,7 @@ void psxDma4(u32 madr, u32 bcr, u32 chcr) { // SPU
 	DMA_INTERRUPT(4);
 }
 
+#if 0
 // Taken from PEOPS SOFTGPU
 static inline boolean CheckForEndlessLoop(u32 laddr, u32 *lUsedAddr) {
 	if (laddr == lUsedAddr[1]) return TRUE;
@@ -130,11 +131,12 @@ static u32 gpuDmaChainSize(u32 addr) {
 
 	return size;
 }
+#endif
 
 void psxDma2(u32 madr, u32 bcr, u32 chcr) { // GPU
-	u32 *ptr, madr_next, *madr_next_p, size;
+	u32 *ptr, madr_next, *madr_next_p;
 	u32 words, words_left, words_max, words_copy;
-	int do_walking;
+	int cycles_sum, cycles_last_cmd = 0, do_walking;
 
 	madr &= ~3;
 	switch (chcr) {
@@ -191,22 +193,23 @@ void psxDma2(u32 madr, u32 bcr, u32 chcr) { // GPU
 			madr_next = 0xffffff;
 
 			do_walking = Config.GpuListWalking;
-			if (do_walking < 0)
+			if (do_walking < 0 || Config.hacks.gpu_timing1024)
 				do_walking = Config.hacks.gpu_slow_list_walking;
 			madr_next_p = do_walking ? &madr_next : NULL;
 
-			size = GPU_dmaChain((u32 *)psxM, madr & 0x1fffff, madr_next_p);
-			if ((int)size <= 0)
-				size = gpuDmaChainSize(madr);
+			cycles_sum = GPU_dmaChain((u32 *)psxM, madr & 0x1fffff,
+					madr_next_p, &cycles_last_cmd);
 
 			HW_DMA2_MADR = SWAPu32(madr_next);
 
-			// Tekken 3 = use 1.0 only (not 1.5x)
+			// a hack for Judge Dredd which is annoyingly sensitive to timing
+			if (Config.hacks.gpu_timing1024)
+				cycles_sum = 1024;
 
-			// Einhander = parse linked list in pieces (todo)
-			// Rebel Assault 2 = parse linked list in pieces (todo)
-			psxRegs.gpuIdleAfter = psxRegs.cycle + size + 16;
-			set_event(PSXINT_GPUDMA, size);
+			psxRegs.gpuIdleAfter = psxRegs.cycle + cycles_sum + cycles_last_cmd;
+			set_event(PSXINT_GPUDMA, cycles_sum);
+			//printf("%u dma2cf: %d,%d %08x\n", psxRegs.cycle, cycles_sum,
+			//	cycles_last_cmd, HW_DMA2_MADR);
 			return;
 
 		default:
@@ -221,11 +224,17 @@ void psxDma2(u32 madr, u32 bcr, u32 chcr) { // GPU
 void gpuInterrupt() {
 	if (HW_DMA2_CHCR == SWAP32(0x01000401) && !(HW_DMA2_MADR & SWAP32(0x800000)))
 	{
-		u32 size, madr_next = 0xffffff, madr = SWAPu32(HW_DMA2_MADR);
-		size = GPU_dmaChain((u32 *)psxM, madr & 0x1fffff, &madr_next);
+		u32 madr_next = 0xffffff, madr = SWAPu32(HW_DMA2_MADR);
+		int cycles_sum, cycles_last_cmd = 0;
+		cycles_sum = GPU_dmaChain((u32 *)psxM, madr & 0x1fffff,
+				&madr_next, &cycles_last_cmd);
 		HW_DMA2_MADR = SWAPu32(madr_next);
-		psxRegs.gpuIdleAfter = psxRegs.cycle + size + 64;
-		set_event(PSXINT_GPUDMA, size);
+		if ((s32)(psxRegs.gpuIdleAfter - psxRegs.cycle) > 0)
+			cycles_sum += psxRegs.gpuIdleAfter - psxRegs.cycle;
+		psxRegs.gpuIdleAfter = psxRegs.cycle + cycles_sum + cycles_last_cmd;
+		set_event(PSXINT_GPUDMA, cycles_sum);
+		//printf("%u dma2cn: %d,%d %08x\n", psxRegs.cycle, cycles_sum,
+		//	cycles_last_cmd, HW_DMA2_MADR);
 		return;
 	}
 	if (HW_DMA2_CHCR & SWAP32(0x01000000))
@@ -242,6 +251,7 @@ void psxDma6(u32 madr, u32 bcr, u32 chcr) {
 	PSXDMA_LOG("*** DMA6 OT *** %x addr = %x size = %x\n", chcr, madr, bcr);
 
 	if (chcr == 0x11000002) {
+		madr &= ~3;
 		mem = getDmaRam(madr, &words_max);
 		if (mem == INVALID_PTR) {
 			log_unhandled("bad6 dma madr %x\n", madr);

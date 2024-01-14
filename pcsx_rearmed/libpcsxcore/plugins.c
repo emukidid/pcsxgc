@@ -31,9 +31,6 @@ static s64 cdOpenCaseTime = 0;
 GPUupdateLace         GPU_updateLace;
 GPUinit               GPU_init;
 GPUshutdown           GPU_shutdown;
-GPUconfigure          GPU_configure;
-GPUtest               GPU_test;
-GPUabout              GPU_about;
 GPUopen               GPU_open;
 GPUclose              GPU_close;
 GPUreadStatus         GPU_readStatus;
@@ -86,6 +83,7 @@ SPUregisterCallback   SPU_registerCallback;
 SPUregisterScheduleCb SPU_registerScheduleCb;
 SPUasync              SPU_async;
 SPUplayCDDAchannel    SPU_playCDDAchannel;
+SPUsetCDvol           SPU_setCDvol;
 
 PADconfigure          PAD1_configure;
 PADabout              PAD1_about;
@@ -179,7 +177,7 @@ static const char *err;
 
 #define LoadSym(dest, src, name, checkerr) { \
 	dest = (src)SysLoadSym(drv, name); \
-	if (checkerr) { CheckErr(name); } else SysLibError(); \
+	if (checkerr) { CheckErr(name); } \
 }
 
 void *hGPUDriver = NULL;
@@ -213,7 +211,6 @@ static int LoadGPUplugin(const char *GPUdll) {
 
 	hGPUDriver = SysLoadLibrary(GPUdll);
 	if (hGPUDriver == NULL) {
-		GPU_configure = NULL;
 		SysMessage (_("Could not load GPU plugin %s!"), GPUdll); return -1;
 	}
 	drv = hGPUDriver;
@@ -237,9 +234,6 @@ static int LoadGPUplugin(const char *GPUdll) {
 	LoadGpuSym0(showScreenPic, "GPUshowScreenPic");
 	LoadGpuSym0(vBlank, "GPUvBlank");
 	LoadGpuSym0(getScreenInfo, "GPUgetScreenInfo");
-	LoadGpuSym0(configure, "GPUconfigure");
-	LoadGpuSym0(test, "GPUtest");
-	LoadGpuSym0(about, "GPUabout");
 
 	return 0;
 }
@@ -313,13 +307,15 @@ static int LoadCDRplugin(const char *CDRdll) {
 
 static void *hSPUDriver = NULL;
 static void CALLBACK SPU__registerScheduleCb(void (CALLBACK *cb)(unsigned int)) {}
+static void CALLBACK SPU__setCDvol(unsigned char ll, unsigned char lr,
+		unsigned char rl, unsigned char rr, unsigned int cycle) {}
 
 #define LoadSpuSym1(dest, name) \
 	LoadSym(SPU_##dest, SPU##dest, name, TRUE);
 
 #define LoadSpuSym0(dest, name) \
 	LoadSym(SPU_##dest, SPU##dest, name, FALSE); \
-	if (SPU_##dest == NULL) SPU_##dest = (SPU##dest) SPU__##dest;
+	if (SPU_##dest == NULL) SPU_##dest = SPU__##dest;
 
 #define LoadSpuSymN(dest, name) \
 	LoadSym(SPU_##dest, SPU##dest, name, FALSE);
@@ -346,6 +342,7 @@ static int LoadSPUplugin(const char *SPUdll) {
 	LoadSpuSym0(registerScheduleCb, "SPUregisterScheduleCb");
 	LoadSpuSymN(async, "SPUasync");
 	LoadSpuSymN(playCDDAchannel, "SPUplayCDDAchannel");
+	LoadSpuSym0(setCDvol, "SPUsetCDvol");
 
 	return 0;
 }
@@ -490,16 +487,28 @@ static void initBufForRequest(int padIndex, char value) {
 		return;
 	}
 
-	// switch to analog mode automatically after the game finishes init
-	if (value == 0x42 && pads[padIndex].ds.padMode == 0)
-		pads[padIndex].ds.digitalModeFrames++;
-	if (pads[padIndex].ds.digitalModeFrames == 60*4) {
-		pads[padIndex].ds.padMode = 1;
-		pads[padIndex].ds.digitalModeFrames = 0;
-	}
-
-	if ((u32)(frame_counter - pads[padIndex].ds.lastUseFrame) > 60u)
+	if ((u32)(frame_counter - pads[padIndex].ds.lastUseFrame) > 2*60u
+	    && pads[padIndex].ds.configModeUsed
+	    && !Config.hacks.dualshock_init_analog)
+	{
+		//SysPrintf("Pad reset\n");
 		pads[padIndex].ds.padMode = 0; // according to nocash
+		pads[padIndex].ds.autoAnalogTried = 0;
+	}
+	else if (pads[padIndex].ds.padMode == 0 && value == CMD_READ_DATA_AND_VIBRATE
+		 && pads[padIndex].ds.configModeUsed
+		 && !pads[padIndex].ds.configMode
+		 && !pads[padIndex].ds.userToggled)
+	{
+		if (pads[padIndex].ds.autoAnalogTried == 16) {
+			// auto-enable for convenience
+			SysPrintf("Auto-enabling dualshock analog mode.\n");
+			pads[padIndex].ds.padMode = 1;
+			pads[padIndex].ds.autoAnalogTried = 255;
+		}
+		else if (pads[padIndex].ds.autoAnalogTried < 16)
+			pads[padIndex].ds.autoAnalogTried++;
+	}
 	pads[padIndex].ds.lastUseFrame = frame_counter;
 
 	switch (value) {
@@ -989,6 +998,17 @@ int padFreeze(void *f, int Mode) {
 	}
 
 	return 0;
+}
+
+int padToggleAnalog(unsigned int index)
+{
+	int r = -1;
+
+	if (index < sizeof(pads) / sizeof(pads[0])) {
+		r = (pads[index].ds.padMode ^= 1);
+		pads[index].ds.userToggled = 1;
+	}
+	return r;
 }
 
 

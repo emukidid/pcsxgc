@@ -128,6 +128,8 @@ int in_type[8] = {
    PSE_PAD_TYPE_NONE, PSE_PAD_TYPE_NONE
 };
 
+unsigned short in_keystate[8];
+
 extern "C" int stop;
 
 static struct {

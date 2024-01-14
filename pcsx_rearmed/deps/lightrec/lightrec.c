@@ -35,6 +35,8 @@ static bool lightrec_block_is_fully_tagged(const struct block *block);
 static void lightrec_mtc2(struct lightrec_state *state, u8 reg, u32 data);
 static u32 lightrec_mfc2(struct lightrec_state *state, u8 reg);
 
+static void lightrec_reap_block(struct lightrec_state *state, void *data);
+
 static void lightrec_default_sb(struct lightrec_state *state, u32 opcode,
 				void *host, u32 addr, u32 data)
 {
@@ -703,9 +705,15 @@ static struct block * lightrec_get_block(struct lightrec_state *state, u32 pc)
 			if (ENABLE_THREADED_COMPILER)
 				lightrec_recompiler_remove(state->rec, block);
 
-			lightrec_unregister_block(state->block_cache, block);
 			remove_from_code_lut(state->block_cache, block);
-			lightrec_free_block(state, block);
+
+			if (ENABLE_THREADED_COMPILER) {
+				lightrec_reaper_add(state->reaper,
+						    lightrec_reap_block, block);
+			} else {
+				lightrec_unregister_block(state->block_cache, block);
+				lightrec_free_block(state, block);
+			}
 		}
 
 		block = NULL;
@@ -1559,6 +1567,8 @@ static void lightrec_reap_opcode_list(struct lightrec_state *state, void *data)
 int lightrec_compile_block(struct lightrec_cstate *cstate,
 			   struct block *block)
 {
+	struct block *dead_blocks[ARRAY_SIZE(cstate->targets)];
+	u32 was_dead[ARRAY_SIZE(cstate->targets) / 8];
 	struct lightrec_state *state = cstate->state;
 	struct lightrec_branch_target *target;
 	bool fully_tagged = false;
@@ -1677,23 +1687,14 @@ int lightrec_compile_block(struct lightrec_cstate *cstate,
 	/* Add compiled function to the LUT */
 	lut_write(state, lut_offset(block->pc), block->function);
 
-	if (ENABLE_THREADED_COMPILER)
-		lightrec_reaper_continue(state->reaper);
-
 	/* Detect old blocks that have been covered by the new one */
-	for (i = 0; i < cstate->nb_targets; i++) {
+	for (i = 0; ENABLE_THREADED_COMPILER && i < cstate->nb_targets; i++) {
 		target = &cstate->targets[i];
 
 		if (!target->offset)
 			continue;
 
 		offset = block->pc + target->offset * sizeof(u32);
-
-		/* Pause the reaper while we search for the block until we set
-		 * the BLOCK_IS_DEAD flag, otherwise the block may be removed
-		 * under our feet. */
-		if (ENABLE_THREADED_COMPILER)
-			lightrec_reaper_pause(state->reaper);
 
 		block2 = lightrec_find_block(state->block_cache, offset);
 		if (block2) {
@@ -1703,17 +1704,26 @@ int lightrec_compile_block(struct lightrec_cstate *cstate,
 			/* Set the "block dead" flag to prevent the dynarec from
 			 * recompiling this block */
 			old_flags = block_set_flags(block2, BLOCK_IS_DEAD);
+
+			if (old_flags & BLOCK_IS_DEAD)
+				was_dead[i / 32] |= BIT(i % 32);
+			else
+				was_dead[i / 32] &= ~BIT(i % 32);
 		}
 
-		if (ENABLE_THREADED_COMPILER) {
-			lightrec_reaper_continue(state->reaper);
+		dead_blocks[i] = block2;
 
-			/* If block2 was pending for compilation, cancel it.
-			 * If it's being compiled right now, wait until it
-			 * finishes. */
-			if (block2)
-				lightrec_recompiler_remove(state->rec, block2);
-		}
+		/* If block2 was pending for compilation, cancel it.
+		 * If it's being compiled right now, wait until it finishes. */
+		if (block2)
+			lightrec_recompiler_remove(state->rec, block2);
+	}
+
+	for (i = 0; i < cstate->nb_targets; i++) {
+		target = &cstate->targets[i];
+
+		if (!target->offset)
+			continue;
 
 		/* We know from now on that block2 (if present) isn't going to
 		 * be compiled. We can override the LUT entry with our new
@@ -1721,6 +1731,12 @@ int lightrec_compile_block(struct lightrec_cstate *cstate,
 		offset = lut_offset(block->pc) + target->offset;
 		lut_write(state, offset, jit_address(target->label));
 
+		if (ENABLE_THREADED_COMPILER) {
+			block2 = dead_blocks[i];
+		} else {
+			offset = block->pc + target->offset * sizeof(u32);
+			block2 = lightrec_find_block(state->block_cache, offset);
+		}
 		if (block2) {
 			pr_debug("Reap block 0x%08x as it's covered by block "
 				 "0x%08x\n", block2->pc, block->pc);
@@ -1729,13 +1745,16 @@ int lightrec_compile_block(struct lightrec_cstate *cstate,
 			if (!ENABLE_THREADED_COMPILER) {
 				lightrec_unregister_block(state->block_cache, block2);
 				lightrec_free_block(state, block2);
-			} else if (!(old_flags & BLOCK_IS_DEAD)) {
+			} else if (!(was_dead[i / 32] & BIT(i % 32))) {
 				lightrec_reaper_add(state->reaper,
 						    lightrec_reap_block,
 						    block2);
 			}
 		}
 	}
+
+	if (ENABLE_THREADED_COMPILER)
+		lightrec_reaper_continue(state->reaper);
 
 	if (ENABLE_DISASSEMBLER) {
 		pr_debug("Compiling block at PC: 0x%08x\n", block->pc);
@@ -1941,7 +1960,7 @@ struct lightrec_state * lightrec_init(char *argv0,
 	else
 		lut_size = CODE_LUT_SIZE * sizeof(void *);
 
-	init_jit(argv0);
+	init_jit_with_debug(argv0, stdout);
 
 	state = calloc(1, sizeof(*state) + lut_size);
 	if (!state)

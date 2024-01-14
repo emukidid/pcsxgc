@@ -27,6 +27,7 @@
 #include "registers.h"
 #include "out.h"
 #include "spu_config.h"
+#include "spu.h"
 
 #ifdef __arm__
 #include "arm_features.h"
@@ -835,7 +836,7 @@ static void do_channels(int ns_to)
     mix_chan(spu.SSumLR, ns_to, s_chan->iLeftVolume, s_chan->iRightVolume);
   }
 
-  MixXA(spu.SSumLR, RVB, ns_to, spu.decode_pos);
+  MixCD(spu.SSumLR, RVB, ns_to, spu.decode_pos);
 
   if (spu.rvb->StartAddr) {
    if (do_rvb)
@@ -1112,7 +1113,7 @@ static void sync_worker_thread(int force)
   work = &worker->i[worker->i_reaped & WORK_I_MASK];
   thread_work_wait_sync(work, force);
 
-  MixXA(work->SSumLR, RVB, work->ns_to, work->decode_pos);
+  MixCD(work->SSumLR, RVB, work->ns_to, work->decode_pos);
   do_samples_finish(work->SSumLR, work->ns_to,
    work->channels_silent, work->decode_pos);
 
@@ -1147,7 +1148,7 @@ void do_samples(unsigned int cycles_to, int do_direct)
  cycle_diff = cycles_to - spu.cycles_played;
  if (cycle_diff < -2*1048576 || cycle_diff > 2*1048576)
   {
-   //xprintf("desync %u %d\n", cycles_to, cycle_diff);
+   log_unhandled("desync %u %d\n", cycles_to, cycle_diff);
    spu.cycles_played = cycles_to;
    return;
   }
@@ -1164,7 +1165,7 @@ void do_samples(unsigned int cycles_to, int do_direct)
  ns_to = (cycle_diff / 768 + 1) & ~1;
  if (ns_to > NSSIZE) {
   // should never happen
-  //xprintf("ns_to oflow %d %d\n", ns_to, NSSIZE);
+  log_unhandled("ns_to oflow %d %d\n", ns_to, NSSIZE);
   ns_to = NSSIZE;
  }
 
@@ -1351,11 +1352,13 @@ void CALLBACK SPUupdate(void)
 
 // XA AUDIO
 
-void CALLBACK SPUplayADPCMchannel(xa_decode_t *xap, unsigned int cycle, int unused)
+void CALLBACK SPUplayADPCMchannel(xa_decode_t *xap, unsigned int cycle, int is_start)
 {
  if(!xap)       return;
  if(!xap->freq) return;                // no xa freq ? bye
 
+ if (is_start)
+  spu.XAPlay = spu.XAFeed = spu.XAStart;
  if (spu.XAPlay == spu.XAFeed)
   do_samples(cycle, 1);                // catch up to prevent source underflows later
 
@@ -1374,6 +1377,17 @@ int CALLBACK SPUplayCDDAchannel(short *pcm, int nbytes, unsigned int cycle, int 
 
  FeedCDDA((unsigned char *)pcm, nbytes);
  return 0;
+}
+
+void CALLBACK SPUsetCDvol(unsigned char ll, unsigned char lr,
+  unsigned char rl, unsigned char rr, unsigned int cycle)
+{
+ if (spu.XAPlay != spu.XAFeed || spu.CDDAPlay != spu.CDDAFeed)
+  do_samples(cycle, 1);
+ spu.cdv.ll = ll;
+ spu.cdv.lr = lr;
+ spu.cdv.rl = rl;
+ spu.cdv.rr = rr;
 }
 
 // to be called after state load
@@ -1476,6 +1490,8 @@ static void init_spu_thread(void)
 {
  int ret;
 
+ spu.sb_thread = spu.sb_thread_;
+
  if (sysconf(_SC_NPROCESSORS_ONLN) <= 1)
   return;
 
@@ -1537,7 +1553,10 @@ long CALLBACK SPUinit(void)
  int i;
 
  memset(&spu, 0, sizeof(spu));
- spu.spuMemC = calloc(1, 512 * 1024);
+ spu.spuMemC = calloc(1, 512 * 1024 + 16);
+ // a guard for runaway channels - End+Mute
+ spu.spuMemC[512 * 1024 + 1] = 1;
+
  InitADSR();
 
  spu.s_chan = calloc(MAXCHAN+1, sizeof(spu.s_chan[0])); // channel + 1 infos (1 is security for fmod handling)

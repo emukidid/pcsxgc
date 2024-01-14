@@ -38,7 +38,8 @@ sync_enhancement_buffers(int x, int y, int w, int h);
 
 static psx_gpu_struct egpu __attribute__((aligned(256)));
 
-int do_cmd_list(uint32_t *list, int count, int *last_cmd)
+int do_cmd_list(uint32_t *list, int count,
+ int *cycles_sum, int *cycles_last, int *last_cmd)
 {
   int ret;
 
@@ -48,9 +49,11 @@ int do_cmd_list(uint32_t *list, int count, int *last_cmd)
 #endif
 
   if (gpu.state.enhancement_active)
-    ret = gpu_parse_enhanced(&egpu, list, count * 4, (u32 *)last_cmd);
+    ret = gpu_parse_enhanced(&egpu, list, count * 4,
+            cycles_sum, cycles_last, (u32 *)last_cmd);
   else
-    ret = gpu_parse(&egpu, list, count * 4, (u32 *)last_cmd);
+    ret = gpu_parse(&egpu, list, count * 4,
+            cycles_sum, cycles_last, (u32 *)last_cmd);
 
 #if defined(__arm__) && defined(NEON_BUILD) && !defined(SIMD_BUILD)
   __asm__ __volatile__("":::"q4","q5","q6","q7");
@@ -128,6 +131,8 @@ sync_enhancement_buffers(int x, int y, int w, int h)
   // due to intersection stuff, see the update_enhancement_buf_scanouts() mess
   int s_w = max(gpu.screen.hres, gpu.screen.w);
   int s_h = gpu.screen.vres;
+  if (gpu.screen.y < 0)
+    s_h -= gpu.screen.y;
   s_w = min(s_w, 512);
   for (i = 0; i < ARRAY_SIZE(egpu.enhancement_scanouts); i++) {
     const struct psx_gpu_scanout *s = &egpu.enhancement_scanouts[i];
@@ -142,6 +147,9 @@ sync_enhancement_buffers(int x, int y, int w, int h)
     x2 = min(right, s->x + s_w);
     y1 = max(y, s->y);
     y2 = min(bottom, s->y + s_h);
+    // 16-byte align for the asm version
+    x2 += x1 & 7;
+    x1 &= ~7;
     scale2x_tiles8(dst + y1 * 1024*2 + x1 * 2,
         src + y1 * 1024 + x1, (x2 - x1 + 7) / 8u, y2 - y1);
   }
@@ -149,7 +157,9 @@ sync_enhancement_buffers(int x, int y, int w, int h)
 
 void renderer_sync_ecmds(uint32_t *ecmds)
 {
-  gpu_parse(&egpu, ecmds + 1, 6 * 4, NULL);
+  s32 dummy0 = 0;
+  u32 dummy1 = 0;
+  gpu_parse(&egpu, ecmds + 1, 6 * 4, &dummy0, &dummy0, &dummy1);
 }
 
 void renderer_update_caches(int x, int y, int w, int h, int state_changed)
@@ -158,10 +168,13 @@ void renderer_update_caches(int x, int y, int w, int h, int state_changed)
 
   if (gpu.state.enhancement_active) {
     if (state_changed) {
+      int vres = gpu.screen.vres;
+      if (gpu.screen.y < 0)
+        vres -= gpu.screen.y;
       memset(egpu.enhancement_scanouts, 0, sizeof(egpu.enhancement_scanouts));
       egpu.enhancement_scanout_eselect = 0;
       update_enhancement_buf_scanouts(&egpu,
-        gpu.screen.src_x, gpu.screen.src_y, gpu.screen.hres, gpu.screen.vres);
+        gpu.screen.src_x, gpu.screen.src_y, gpu.screen.hres, vres);
       return;
     }
     sync_enhancement_buffers(x, y, w, h);
@@ -189,10 +202,13 @@ void renderer_notify_res_change(void)
 
 void renderer_notify_scanout_change(int x, int y)
 {
+  int vres = gpu.screen.vres;
   if (!gpu.state.enhancement_active || !egpu.enhancement_buf_ptr)
     return;
 
-  update_enhancement_buf_scanouts(&egpu, x, y, gpu.screen.hres, gpu.screen.vres);
+  if (gpu.screen.y < 0)
+    vres -= gpu.screen.y;
+  update_enhancement_buf_scanouts(&egpu, x, y, gpu.screen.hres, vres);
 }
 
 #include "../../frontend/plugin_lib.h"
@@ -219,7 +235,8 @@ void renderer_set_config(const struct rearmed_cbs *cbs)
     egpu.dither_table[3] = dither_table_row(3, -1, 2, -2); 
   }
 
-  disable_main_render = cbs->gpu_neon.enhancement_no_main;
+  egpu.hack_disable_main = cbs->gpu_neon.enhancement_no_main;
+  egpu.hack_texture_adj = cbs->gpu_neon.enhancement_tex_adj;
   if (gpu.state.enhancement_enable) {
     if (gpu.mmap != NULL && egpu.enhancement_buf_ptr == NULL)
       map_enhancement_buffer();
