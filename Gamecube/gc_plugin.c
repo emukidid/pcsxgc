@@ -40,6 +40,9 @@
 
 #include <ogc/machine/processor.h>
 
+/* Scale factor of analog sticks / 128 */
+#define ANALOG_SCALE_FACTOR 180
+
 void OnFile_Exit(){}
 
 unsigned long gpuDisp;
@@ -196,6 +199,21 @@ void setCursor(int iPlayer,int x,int y)
  ptCursorPoint[iPlayer].y=y;
 }
 
+static inline u8 clamp(int value)
+{
+	if (value < 0)
+		return 0;
+	if (value > 255)
+		return 255;
+
+	return (u8)value;
+}
+
+static inline u8 analog_scale(u8 val)
+{
+	return clamp((int)val * ANALOG_SCALE_FACTOR / 128 + 128 - ANALOG_SCALE_FACTOR);
+}
+
 long PAD1__readPort1(PadDataS *pad) {
 	int pad_index = pad->requestPadIndex;
 	//SysPrintf("Read port 1 called with %i pad index, in use %s\r\n", pad_index, virtualControllers[pad_index].inUse ? "YES":"NO");
@@ -212,10 +230,10 @@ long PAD1__readPort1(PadDataS *pad) {
 	usCursorActive=0;
 	if (in_type[pad_index] == PSE_PAD_TYPE_ANALOGJOY || in_type[pad_index] == PSE_PAD_TYPE_ANALOGPAD || in_type[pad_index] == PSE_PAD_TYPE_NEGCON || in_type[pad_index] == PSE_PAD_TYPE_GUNCON || in_type[pad_index] == PSE_PAD_TYPE_GUN)
 	{
-		pad->leftJoyX = PAD_Data.leftStickX;
-		pad->leftJoyY = PAD_Data.leftStickY;
-		pad->rightJoyX = PAD_Data.rightStickX;
-		pad->rightJoyY = PAD_Data.rightStickY;
+		pad->leftJoyX = analog_scale(PAD_Data.leftStickX);
+		pad->leftJoyY = analog_scale(PAD_Data.leftStickY);
+		pad->rightJoyX = analog_scale(PAD_Data.rightStickX);
+		pad->rightJoyY = analog_scale(PAD_Data.rightStickY);
 
 		pad->absoluteX = PAD_Data.gunX;
 		pad->absoluteY = PAD_Data.gunY;
@@ -258,10 +276,10 @@ long PAD2__readPort2(PadDataS *pad) {
 	usCursorActive=0;
 	if (in_type[pad_index] == PSE_PAD_TYPE_ANALOGJOY || in_type[pad_index] == PSE_PAD_TYPE_ANALOGPAD || in_type[pad_index] == PSE_PAD_TYPE_NEGCON || in_type[pad_index] == PSE_PAD_TYPE_GUNCON || in_type[pad_index] == PSE_PAD_TYPE_GUN)
 	{
-		pad->leftJoyX = PAD_Data2.leftStickX;
-		pad->leftJoyY = PAD_Data2.leftStickY;
-		pad->rightJoyX = PAD_Data2.rightStickX;
-		pad->rightJoyY = PAD_Data2.rightStickY;
+		pad->leftJoyX = analog_scale(PAD_Data2.leftStickX);
+		pad->leftJoyY = analog_scale(PAD_Data2.leftStickY);
+		pad->rightJoyX = analog_scale(PAD_Data2.rightStickX);
+		pad->rightJoyY = analog_scale(PAD_Data2.rightStickY);
 
 		pad->absoluteX = PAD_Data2.gunX;
 		pad->absoluteY = PAD_Data2.gunY;
