@@ -44,7 +44,7 @@ void GPUwriteDataMem(unsigned long *, int);
 unsigned long GPUreadStatus(void);
 unsigned long GPUreadData(void);
 void GPUreadDataMem(unsigned long *, int);
-long GPUdmaChain(unsigned long *,unsigned long, unsigned long *);
+long GPUdmaChain(unsigned long *,unsigned long, unsigned long *, unsigned long *);
 void GPUupdateLace(void);
 void GPUdisplayText(char *);
 long GPUfreeze(unsigned long,void *);

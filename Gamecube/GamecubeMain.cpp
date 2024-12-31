@@ -112,7 +112,7 @@ char padAssign[4];
 char rumbleEnabled;
 char loadButtonSlot;
 char useDithering;
-char multitap1;	// Multitap in port 1, determined at runtime if we require this based on the number of controllers set.
+int multitap1;	// Multitap in port 1, determined at runtime if we require this based on the number of controllers set.
 
 #define CONFIG_STRING_TYPE 0
 #define CONFIG_STRING_SIZE 256

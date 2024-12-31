@@ -40,18 +40,18 @@
 #ifdef HW_RVL
 #include <sdcard/wiisd_io.h>
 #include <ogc/usbstorage.h>
-const DISC_INTERFACE* frontsd = &__io_wiisd;
-const DISC_INTERFACE* usb = &__io_usbstorage;
-const DISC_INTERFACE* dvd = &__io_wiidvd;
-const DISC_INTERFACE* carda = &__io_gcsda;
-const DISC_INTERFACE* cardb = &__io_gcsdb;
+static DISC_INTERFACE* frontsd = &__io_wiisd;
+static DISC_INTERFACE* usb = &__io_usbstorage;
+static DISC_INTERFACE* dvd = &__io_wiidvd;
+static DISC_INTERFACE* carda = &__io_gcsda;
+static DISC_INTERFACE* cardb = &__io_gcsdb;
 #else
-const DISC_INTERFACE* dvd = &__io_gcdvd;
-const DISC_INTERFACE* carda = &__io_gcsda;
-const DISC_INTERFACE* cardb = &__io_gcsdb;
-const DISC_INTERFACE* sd2sp2 = &__io_gcsd2;
-const DISC_INTERFACE* gcloader = &__io_gcode;
-const DISC_INTERFACE* m2loader = &__io_m2ldr;
+static DISC_INTERFACE* dvd = &__io_gcdvd;
+static DISC_INTERFACE* carda = &__io_gcsda;
+static DISC_INTERFACE* cardb = &__io_gcsdb;
+static DISC_INTERFACE* sd2sp2 = &__io_gcsd2;
+static DISC_INTERFACE* gcloader = &__io_gcode;
+static DISC_INTERFACE* m2loader = &__io_m2ldr;
 #endif
 
 fileBrowser_file topLevel_libfat_Default =
@@ -233,19 +233,19 @@ int fileBrowser_libfat_init(fileBrowser_file* f){
 	return res;
 #else
 	if(f->name[0] == 's') {
-		if(m2loader->startup()) {
+		if(m2loader->startup(m2loader)) {
 			res = fatMountSimple ("sd", m2loader);
 		}
-		if(!res && gcloader->startup()) {
+		if(!res && gcloader->startup(gcloader)) {
 			res = fatMountSimple ("sd", gcloader);
 		}
-		if(!res && sd2sp2->startup()) {
+		if(!res && sd2sp2->startup(sd2sp2)) {
 			res = fatMountSimple ("sd", sd2sp2);
 		}
-		if(!res && carda->startup()) {
+		if(!res && carda->startup(carda)) {
 			res = fatMountSimple ("sd", carda);
 		}
-		if(!res && cardb->startup()) {
+		if(!res && cardb->startup(cardb)) {
 			res = fatMountSimple ("sd", cardb);
 		}
 	}

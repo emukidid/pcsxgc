@@ -21,7 +21,7 @@
 #include "Logo.h"
 #include "GraphicsGX.h"
 #include <math.h>
-#include "ogc/lwp_watchdog.h"
+#include "ogc/timesupp.h"
 
 namespace menu {
 
