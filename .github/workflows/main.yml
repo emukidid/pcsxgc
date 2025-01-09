@@ -9,16 +9,19 @@ jobs:
     container: devkitpro/devkitppc:latest
 
     steps:
+    - name: Install packages
+      run: |
+        sudo dkp-pacman-key --recv-keys C8A2759C315CFBC3429CC2E422B803BA8AA3D7CE --keyserver keyserver.ubuntu.com
+        sudo dkp-pacman-key --lsign-key C8A2759C315CFBC3429CC2E422B803BA8AA3D7CE
+        sudo sed -i '/^\[dkp-libs\]$/,$d' /opt/devkitpro/pacman/etc/pacman.conf
+        sudo echo -e '[extremscorner-devkitpro]\nServer = https://packages.extremscorner.org/devkitpro/linux/$arch' >> /opt/devkitpro/pacman/etc/pacman.conf
+        sudo dkp-pacman -Sy
+        sudo dkp-pacman -S --noconfirm --ask 4 gamecube-tools-git libogc2 libogc2-cmake libogc2-libdvm ppc-zlib-ng-compat
+ 
     - name: Checkout pcsxgc
       uses: actions/checkout@master
       with:
         path: pcsxgc
-
-    - name: Checkout libogc2
-      uses: actions/checkout@main
-      with:
-        repository: emukidid/libogc
-        path: libogc
 
     - name: add ppc gcc to PATH environment variable
       uses: myci-actions/export-env-var@1
@@ -37,20 +40,6 @@ jobs:
       with:
         name: CXXFLAGS
         value: -O3 -fipa-pta -flto -DNDEBUG
-
-    - name: Checkout libfat
-      uses: actions/checkout@main
-      with:
-        repository: extremscorner/libfat
-        path: libfat
-
-    - name: Build libogc2
-      run: make install
-      working-directory: libogc
-
-    - name: Build libfat
-      run: make ogc-install
-      working-directory: libfat
 
     - name: Copy release files
       run: |

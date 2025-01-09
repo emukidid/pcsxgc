@@ -117,7 +117,7 @@ void Focus::updateFocus()
 			u32 currentButtonsDownWii = (wiiPad[i].btns_h ^ previousButtonsWii[i]) & wiiPad[i].btns_h;
 			if (wiiPad[i].exp.type == WPAD_EXP_CLASSIC)
 			{
-				switch (currentButtonsDownWii & 0xc0030000) {
+				switch (currentButtonsDownWii & 0x3c00000) {
 				case WPAD_CLASSIC_BUTTON_LEFT:
 					focusDirection = DIRECTION_LEFT;
 					break;
@@ -136,7 +136,7 @@ void Focus::updateFocus()
 			}
 			else
 			{
-				switch (currentButtonsDownWii & 0xf00) {
+				switch (currentButtonsDownWii & 0xf) {
 				case WPAD_BUTTON_LEFT:
 					focusDirection = DIRECTION_LEFT;
 					break;
