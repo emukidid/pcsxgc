@@ -48,7 +48,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
-#include "opengx/gl.h"
+#include <GL/gl.h>
 #ifndef __GX__
 #include <GL/glx.h>
 #include <X11/cursorfont.h> 
@@ -63,7 +63,7 @@
 #define SHADETEXBIT(x) ((x>>24) & 0x1)
 #define SEMITRANSBIT(x) ((x>>25) & 0x1)
 
-#include "opengx/glext.h"
+#include "GL/glext.h"
 
 #ifndef _WINDOWS
 #ifndef GL_BGRA_EXT

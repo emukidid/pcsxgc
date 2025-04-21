@@ -607,7 +607,7 @@ void SetSemiTransMulti(int Pass)
 // Set several rendering stuff including blending 
 ////////////////////////////////////////////////////////////////////////
 
-__inline void SetZMask3O(void)
+static inline void SetZMask3O(void)
 {
  if(iUseMask && DrawSemiTrans && !iSetMask)
   {
@@ -616,7 +616,7 @@ __inline void SetZMask3O(void)
   }
 }
 
-__inline void SetZMask3(void)
+static inline void SetZMask3(void)
 {
  if(iUseMask)
   {
@@ -630,7 +630,7 @@ __inline void SetZMask3(void)
   }
 }
 
-__inline void SetZMask3NT(void)
+static inline void SetZMask3NT(void)
 {
  if(iUseMask)
   {
@@ -646,7 +646,7 @@ __inline void SetZMask3NT(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline void SetZMask4O(void)
+static inline void SetZMask4O(void)
 {
  if(iUseMask && DrawSemiTrans && !iSetMask)
   {
@@ -655,7 +655,7 @@ __inline void SetZMask4O(void)
   }
 }
 
-__inline void SetZMask4(void)
+static inline void SetZMask4(void)
 {
  if(iUseMask)
   {
@@ -669,7 +669,7 @@ __inline void SetZMask4(void)
   }
 }
 
-__inline void SetZMask4NT(void)
+static inline void SetZMask4NT(void)
 {
  if(iUseMask)
   {
@@ -683,7 +683,7 @@ __inline void SetZMask4NT(void)
   }
 }
 
-__inline void SetZMask4SP(void)
+static inline void SetZMask4SP(void)
 {
  if(iUseMask)
   {
@@ -704,7 +704,7 @@ __inline void SetZMask4SP(void)
 
 ////////////////////////////////////////////////////////////////////////
 
-__inline void SetRenderState(unsigned long DrawAttributes)
+static inline void SetRenderState(unsigned long DrawAttributes)
 {
  bDrawNonShaded = (SHADETEXBIT(DrawAttributes)) ? TRUE : FALSE;
  DrawSemiTrans = (SEMITRANSBIT(DrawAttributes)) ? TRUE : FALSE;
@@ -712,7 +712,7 @@ __inline void SetRenderState(unsigned long DrawAttributes)
 
 ////////////////////////////////////////////////////////////////////////                                          
 
-__inline void SetRenderColor(unsigned long DrawAttributes)
+static inline void SetRenderColor(unsigned long DrawAttributes)
 {
  if(bDrawNonShaded) {g_m1=g_m2=g_m3=128;}
  else

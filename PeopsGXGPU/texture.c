@@ -82,6 +82,7 @@
 #include <malloc.h>
 extern GXRModeObj *vmode;
 extern void SysPrintf(char *fmt, ...);
+extern void print_gecko(const char* fmt, ...);
 #endif
 
 #include "externals.h"
@@ -585,7 +586,7 @@ void CheckTextureMemory(void)
 
  bDetail=malloc(MAXSORTTEX*sizeof(GLboolean));
  memset(bDetail,0,MAXSORTTEX*sizeof(GLboolean));
- b=glAreTexturesResident(MAXSORTTEX,uiStexturePage,bDetail);
+ b=false;//glAreTexturesResident(MAXSORTTEX,uiStexturePage,bDetail);
 
  glDeleteTextures(MAXSORTTEX,uiStexturePage);
 
@@ -2715,13 +2716,13 @@ GLuint Fake15BitTexture(void)
 
  if(bFakeFrontBuffer) glReadBuffer(GL_FRONT);
 
- glCopyTexSubImage2D( GL_TEXTURE_2D, 0, 
+ /*glCopyTexSubImage2D( GL_TEXTURE_2D, 0, 
                       0,
                       iYAdjust,
                       rSrc.left+rRatioRect.left,
                       iResY-rSrc.bottom-rRatioRect.top,
                       x1,y1);
-
+*/
  if(glGetError()) 
   {
    char * p=(char *)malloc(iFTex*iFTex*4);

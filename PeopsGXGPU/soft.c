@@ -1273,7 +1273,7 @@ static int left_B, delta_left_B, right_B, delta_right_B;
 // NASM version (external):
 #define shl10idiv i386_shl10idiv
 xxx
-__inline int shl10idiv(int x, int y);
+static inline int shl10idiv(int x, int y);
 
 #else                            
 
@@ -1281,7 +1281,7 @@ __inline int shl10idiv(int x, int y);
 
 #pragma warning  (disable : 4035)
 
-__inline int shl10idiv(int x, int y)
+static inline int shl10idiv(int x, int y)
 {
  __asm
   {
@@ -7176,7 +7176,7 @@ void drawPoly4TGD_TW(short x1, short y1, short x2, short y2, short x3, short y3,
 
 /*
 // no real rect test, but it does its job the way I need it
-__inline BOOL IsNoRect(void)
+static inline BOOL IsNoRect(void)
 {
  if(lx0==lx1 && lx2==lx3) return FALSE;
  if(lx0==lx2 && lx1==lx3) return FALSE;
@@ -7186,7 +7186,7 @@ __inline BOOL IsNoRect(void)
 */
 
 // real rect test
-__inline BOOL IsNoRect(void)
+static inline BOOL IsNoRect(void)
 {
  if(!(dwActFixes&0x200)) return FALSE;
 

@@ -32,6 +32,7 @@
 #include "../Gamecube/DEBUG.h"
 #include "../Gamecube/wiiSXconfig.h"
 extern char text[DEBUG_TEXT_HEIGHT][DEBUG_TEXT_WIDTH]; /*** DEBUG textbuffer ***/
+extern void print_gecko(const char* fmt, ...);
 #endif //__GX__
 
 #ifdef _WINDOWS
@@ -1151,7 +1152,7 @@ void PaintBlackBorders(void)
 // helper to draw scanlines
 ////////////////////////////////////////////////////////////////////////
 
-__inline void XPRIMdrawTexturedQuad(OGLVertex* vertex1, OGLVertex* vertex2, 
+static inline void XPRIMdrawTexturedQuad(OGLVertex* vertex1, OGLVertex* vertex2, 
                                     OGLVertex* vertex3, OGLVertex* vertex4) 
 {
  glBegin(GL_QUAD_STRIP);
@@ -1281,13 +1282,13 @@ void BlurBackBuffer(void)
 
  gTexName=gTexBlurName;
  glBindTexture(GL_TEXTURE_2D, gTexName);
-
+/*
  glCopyTexSubImage2D( GL_TEXTURE_2D, 0,                // get back buffer in texture
                       0,
                       0,
                       0,
                       0,
-                      iResX,iResY);
+                      iResX,iResY);*/
 
  vertex[0].x=0;
  vertex[0].y=PSXDisplay.DisplayMode.y;
@@ -2340,7 +2341,7 @@ void CALLBACK GPUwriteStatus(unsigned long gdata)      // WRITE STATUS
 
 BOOL bNeedWriteUpload=FALSE;
 
-__inline void FinishedVRAMWrite(void)
+static inline void FinishedVRAMWrite(void)
 {
  if(bNeedWriteUpload)
   {
@@ -2356,7 +2357,7 @@ __inline void FinishedVRAMWrite(void)
  VRAMWrite.RowsRemaining = 0;
 }
 
-__inline void FinishedVRAMRead(void)
+static inline void FinishedVRAMRead(void)
 {
  // set register to NORMAL operation
  iDataReadMode = DR_NORMAL;
@@ -3073,7 +3074,7 @@ void SetFixes(void)
 
 unsigned long lUsedAddr[3];
 
-__inline BOOL CheckForEndlessLoop(unsigned long laddr)
+static inline BOOL CheckForEndlessLoop(unsigned long laddr)
 {
  if(laddr==lUsedAddr[1]) return TRUE;
  if(laddr==lUsedAddr[2]) return TRUE;

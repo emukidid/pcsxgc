@@ -28,21 +28,21 @@
 #define PUTLE16(X, Y) __sthbrx(Y, X, 0)
 #define PUTLE32(X, Y) __stwbrx(Y, X, 0)
 #else
-__inline__ unsigned short GETLE16(register unsigned short *ptr) {
+static inline unsigned short GETLE16(register unsigned short *ptr) {
   register unsigned short ret;
   asm {
     lhbrx ret, r0, ptr;
   }
   return ret;
 }
-__inline__ unsigned long GETLE32(register unsigned long *ptr) {
+static inline unsigned long GETLE32(register unsigned long *ptr) {
   register unsigned long ret;
   asm {
     lwbrx ret, r0, ptr;
   }
   return ret;
 }
-__inline__ unsigned long GETLE16D(register unsigned long *ptr) {
+static inline unsigned long GETLE16D(register unsigned long *ptr) {
   register unsigned short ret;
   asm {
     lwbrx ret, r0, ptr;
@@ -50,12 +50,12 @@ __inline__ unsigned long GETLE16D(register unsigned long *ptr) {
   }
   return ret;
 }
-__inline__ void PUTLE16(register unsigned short *ptr, register unsigned short val) {
+static inline void PUTLE16(register unsigned short *ptr, register unsigned short val) {
   asm {
     sthbrx val, r0, ptr;
   }
 }
-__inline__ void PUTLE32(register unsigned long *ptr, register unsigned long val) {
+static inline void PUTLE32(register unsigned long *ptr, register unsigned long val) {
   asm {
     stwbrx val, r0, ptr;
   }
@@ -63,26 +63,26 @@ __inline__ void PUTLE32(register unsigned long *ptr, register unsigned long val)
 #endif
 #else
 // GCC style
-__inline__ unsigned short GETLE16(unsigned short *ptr) {
+static inline unsigned short GETLE16(unsigned short *ptr) {
     unsigned short ret; __asm__ ("lhbrx %0, 0, %1" : "=r" (ret) : "r" (ptr));
     return ret;
 }
-__inline__ unsigned long GETLE32(unsigned long *ptr) {
+static inline unsigned long GETLE32(unsigned long *ptr) {
     unsigned long ret;
     __asm__ ("lwbrx %0, 0, %1" : "=r" (ret) : "r" (ptr));
     return ret;
 }
-__inline__ unsigned long GETLE16D(unsigned long *ptr) {
+static inline unsigned long GETLE16D(unsigned long *ptr) {
     unsigned long ret;
     __asm__ ("lwbrx %0, 0, %1\n"
              "rlwinm %0, %0, 16, 0, 31" : "=r" (ret) : "r" (ptr));
     return ret;
 }
 
-__inline__ void PUTLE16(unsigned short *ptr, unsigned short val) {
+static inline void PUTLE16(unsigned short *ptr, unsigned short val) {
     __asm__ ("sthbrx %0, 0, %1" : : "r" (val), "r" (ptr) : "memory");
 }
-__inline__ void PUTLE32(unsigned long *ptr, unsigned long val) {
+static inline void PUTLE32(unsigned long *ptr, unsigned long val) {
     __asm__ ("stwbrx %0, 0, %1" : : "r" (val), "r" (ptr) : "memory");
 }
 #endif
