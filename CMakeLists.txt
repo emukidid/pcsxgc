@@ -22,17 +22,19 @@ set(CMAKE_SYSTEM_NAME ${WIISX_TARGET})
 
 if (CMAKE_SYSTEM_NAME STREQUAL NintendoWii)
 	set(OGC_SUBDIR wii)
+	set(OGC_PORTLIBS_DIR wii)
 	set(OGC_COMPILE_OPTIONS -mrvl)
 else()
 	set(OGC_SUBDIR cube)
+	set(OGC_PORTLIBS_DIR gamecube)
 	set(OGC_COMPILE_OPTIONS -mogc)
 endif()
 
 set(OGC_COMPILE_OPTIONS -mcpu=750 -meabi -mhard-float ${OGC_COMPILE_OPTIONS})
-add_compile_options(${OGC_COMPILE_OPTIONS} -ffunction-sections -O3 -fipa-pta -DNDEBUG -DPRINTGECKO -DSHOW_DEBUG)
+add_compile_options(${OGC_COMPILE_OPTIONS} -ffunction-sections -O3 -fipa-pta -DNDEBUG)
 add_link_options(${OGC_COMPILE_OPTIONS} -Wl,--gc-sections)
 
-list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${DEVKITPRO}/libogc2;${DEVKITPRO}/portlibs/ppc;${DEVKITPRO}/portlibs/${OGC_SUBDIR})
+list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${DEVKITPRO}/libogc2;${DEVKITPRO}/portlibs/ppc;${DEVKITPRO}/portlibs/${OGC_PORTLIBS_DIR})
 set(CMAKE_FIND_LIBRARY_CUSTOM_LIB_SUFFIX /${OGC_SUBDIR})
 
 find_library(OGC_LIBRARIES ogc REQUIRED)
@@ -45,7 +47,7 @@ target_include_directories(ogc INTERFACE
 	${DEVKITPRO}/libogc2/include
 	${DEVKITPRO}/libogc2/include/ogc
 	${DEVKITPRO}/portlibs/ppc/include
-	${DEVKITPRO}/portlibs/${OGC_SUBDIR}/include
+	${DEVKITPRO}/portlibs/${OGC_PORTLIBS_DIR}/include
 )
 
 find_library(OPENGX_LIBRARIES opengx REQUIRED)
