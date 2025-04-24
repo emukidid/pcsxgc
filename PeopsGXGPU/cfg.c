@@ -1236,7 +1236,7 @@ void ReadConfig(void)                                  // read config (linux fil
  bFullScreen=FALSE;
  bFullVRam=FALSE;
  iFilterType=0;	// None
- bAdvancedBlend=TRUE;
+ bAdvancedBlend=FALSE;
  bDrawDither=FALSE;
  bUseLines=FALSE;
  if (frameLimit == FRAMELIMIT_AUTO)

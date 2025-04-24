@@ -37,8 +37,8 @@ extern "C" {
 #include <gl/gl.h>
 #include <gl/egl.h>
 #else
-#include <GLES/gl.h>
-#include <GLES/glext.h>
+#include <GL/gl.h>
+#include <GL/glext.h>
 #endif
 
 #ifndef GL_BGRA_EXT
@@ -54,6 +54,90 @@ extern "C" {
 extern  void ( APIENTRY * glPixelStorei )(GLenum pname, GLint param);
 #endif
 
+#include "../gpulib/gpu.h"
+
+#define u8  uint8_t
+#define s8  int8_t
+#define u16 uint16_t
+#define s16 int16_t
+#define u32 uint32_t
+#define s32 int32_t
+#define s64 int64_t
+#define u64 uint64_t
+
+// GCC style
+static inline unsigned short GETLE16(unsigned short *ptr) {
+    unsigned short ret; __asm__ ("lhbrx %0, 0, %1" : "=r" (ret) : "r" (ptr));
+    return ret;
+}
+static inline unsigned long GETLE32(unsigned int *ptr) {
+    unsigned long ret;
+    __asm__ ("lwbrx %0, 0, %1" : "=r" (ret) : "r" (ptr));
+    return ret;
+}
+static inline unsigned long GETLE16D(unsigned int *ptr) {
+    unsigned long ret;
+    __asm__ ("lwbrx %0, 0, %1\n"
+             "rlwinm %0, %0, 16, 0, 31" : "=r" (ret) : "r" (ptr));
+    return ret;
+}
+
+static inline void PUTLE16(unsigned short *ptr, unsigned short val) {
+    __asm__ ("sthbrx %0, 0, %1" : : "r" (val), "r" (ptr) : "memory");
+}
+static inline void PUTLE32(unsigned int *ptr, unsigned long val) {
+    __asm__ ("stwbrx %0, 0, %1" : : "r" (val), "r" (ptr) : "memory");
+}
+#define GETLEs16(X) ((short)GETLE16((unsigned short *)X))
+#define SWAP16(x) (((x)>>8 & 0xff) | ((x)<<8 & 0xff00))
+
+typedef struct {
+        u32 v;
+} le32_t;
+
+typedef struct {
+        u16 v;
+} le16_t;
+
+static inline u32 le32_to_u32(le32_t le)
+{
+        return LE32TOH(le.v);
+}
+
+static inline s32 le32_to_s32(le32_t le)
+{
+        return (int32_t) LE32TOH(le.v);
+}
+
+static inline u32 le32_raw(le32_t le)
+{
+	return le.v;
+}
+
+static inline le32_t u32_to_le32(u32 u)
+{
+	return (le32_t){ .v = HTOLE32(u) };
+}
+
+static inline u16 le16_to_u16(le16_t le)
+{
+        return LE16TOH(le.v);
+}
+
+static inline s16 le16_to_s16(le16_t le)
+{
+        return (int16_t) LE16TOH(le.v);
+}
+
+static inline u16 le16_raw(le16_t le)
+{
+	return le.v;
+}
+
+static inline le16_t u16_to_le16(u16 u)
+{
+	return (le16_t){ .v = HTOLE16(u) };
+}
 
 #define MIRROR_TEST 1
 
@@ -168,7 +252,7 @@ typedef struct VRAMLOADTAG
  short Height;
  short RowsRemaining;
  short ColsRemaining;
- unsigned short *ImagePtr;
+ le16_t *ImagePtr;
 } VRAMLoad_t;
 
 typedef struct PSXPOINTTAG
@@ -384,9 +468,9 @@ extern GLint          giWantedFMT;
 extern GLint          giWantedTYPE;
 extern void           (*LoadSubTexFn) (int,int,short,short);
 extern int            GlobalTexturePage;
-extern unsigned int   (*TCF[]) (unsigned int );
-extern unsigned short (*PTCF[]) (unsigned short);
-extern unsigned int   (*PalTexturedColourFn) (unsigned int);
+extern u32   (*TCF[]) (u32 );
+extern u16 (*PTCF[]) (u16);
+extern u32   (*PalTexturedColourFn) (u32);
 extern BOOL           bUseFastMdec;
 extern BOOL           bUse15bitMdec;
 extern int            iFrameTexType;
@@ -429,7 +513,7 @@ extern short          imageY0,imageY1;
 extern int            lClearOnSwap,lClearOnSwapColor;
 extern unsigned char  * psxVub;
 extern char    * psxVsb;
-extern unsigned short * psxVuw;
+extern le16_t * psxVuw;
 extern signed short   * psxVsw;
 extern unsigned int   * psxVul;
 extern signed int     * psxVsl;

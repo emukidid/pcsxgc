@@ -872,6 +872,8 @@ void go(void) {
 	gc_rearmed_cbs.gpu_peops.iUseDither = useDithering;
 	gc_rearmed_cbs.gpu_peopsgl.bDrawDither = useDithering;
 	gc_rearmed_cbs.frameskip = frameSkip;
+	gc_rearmed_cbs.screen_w = 320;
+	gc_rearmed_cbs.screen_h = 240;
 
 	plugin_call_rearmed_cbs();
 	psxCpu->Execute();
@@ -910,30 +912,3 @@ void ClosePlugins() {
 	}
 }
 
-void ResetPlugins() {
-	int ret;
-
-	CDR_shutdown();
-	GPU_shutdown();
-	SPU_shutdown();
-	PAD1_shutdown();
-	PAD2_shutdown();
-	if (Config.UseNet) NET_shutdown(); 
-
-	ret = CDR_init();
-	if (ret < 0) { SysPrintf("CDRinit error: %d\n", ret); return; }
-	ret = GPU_init();
-	if (ret < 0) { SysPrintf("GPUinit error: %d\n", ret); return; }
-	ret = SPU_init();
-	if (ret < 0) { SysPrintf("SPUinit error: %d\n", ret); return; }
-	ret = PAD1_init(1);
-	if (ret < 0) { SysPrintf("PAD1init error: %d\n", ret); return; }
-	ret = PAD2_init(2);
-	if (ret < 0) { SysPrintf("PAD2init error: %d\n", ret); return; }
-	if (Config.UseNet) {
-		ret = NET_init();
-		if (ret < 0) { SysPrintf("NETinit error: %d\n", ret); return; }
-	}
-
-	NetOpened = 0;
-}

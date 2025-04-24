@@ -35,8 +35,8 @@ extern "C" {
 #include "gpuStdafx.h"
 
 #ifndef _WINDOWS
-extern EGLSurface surface;
-extern EGLDisplay display;
+//extern EGLSurface surface;
+//extern EGLDisplay display;
 #endif
 
 void UploadScreen (int Position);

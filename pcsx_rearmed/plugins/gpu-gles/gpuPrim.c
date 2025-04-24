@@ -993,13 +993,13 @@ void SetRenderMode(unsigned int DrawAttributes,BOOL bSCol)
 
  if(bSCol)                                             // also set color ?
   {
-   if((dwActFixes&4) && ((DrawAttributes&0x00ffffff)==0))
-     DrawAttributes|=0x007f7f7f;
+   if((dwActFixes&4) && ((DrawAttributes&LE32TOH(0x00ffffff))==0))
+     DrawAttributes|=LE32TOH(0x007f7f7f);
 
    if(bDrawNonShaded)                                  // -> non shaded?
     {
 /*     if(bGLBlend)  vertex[0].c.lcol=0x7f7f7f;          // --> solid color...
-     else          */vertex[0].c.lcol=0xffffff;
+     else          */vertex[0].c.lcol=LE32TOH(0xffffff);
     }
    else                                                // -> shaded?
     {
@@ -1028,8 +1028,8 @@ void SetOpaqueColor(unsigned int DrawAttributes)
 {
  if(bDrawNonShaded) return;                            // no shading? bye
   
- DrawAttributes=DoubleBGR2RGB(DrawAttributes);         // multipass is just half color, so double it on opaque pass
- vertex[0].c.lcol=DrawAttributes|0xff000000;
+ DrawAttributes=DoubleBGR2RGB(LE32TOH(DrawAttributes));         // multipass is just half color, so double it on opaque pass
+ vertex[0].c.lcol=DrawAttributes|LE32TOH(0xff000000);
  SETCOL(vertex[0]);                                    // set color
 }
 
@@ -1712,7 +1712,7 @@ BOOL IsInsideNextScreen(short x, short y, short xoff, short yoff)
 
 void cmdSTP(unsigned char * baseAddr)
 {
- unsigned int gdata = ((unsigned int*)baseAddr)[0];
+ unsigned int gdata = le32_to_u32(((le32_t*)baseAddr)[0]);
 
  STATUSREG&=~0x1800;                                   // clear the necessary bits
  STATUSREG|=((gdata & 0x03) << 11);                    // set the current bits
@@ -1745,7 +1745,7 @@ void cmdSTP(unsigned char * baseAddr)
 
 void cmdTexturePage(unsigned char * baseAddr)
 {
- unsigned int gdata = ((unsigned int*)baseAddr)[0];
+ unsigned int gdata = le32_to_u32(((le32_t*)baseAddr)[0]);
  UpdateGlobalTP((unsigned short)gdata);
  GlobalTextREST = (gdata&0x00ffffff)>>9;
 }
@@ -1756,7 +1756,7 @@ void cmdTexturePage(unsigned char * baseAddr)
 
 void cmdTextureWindow(unsigned char *baseAddr)
 {
- unsigned int gdata = ((unsigned int*)baseAddr)[0];
+ unsigned int gdata = le32_to_u32(((le32_t*)baseAddr)[0]);
 
  unsigned int YAlign,XAlign;
 
@@ -1965,7 +1965,7 @@ void ClampToPSXScreenOffset(short *x0, short *y0, short *x1, short *y1)
 
 void cmdDrawAreaStart(unsigned char * baseAddr)
 {
- unsigned int gdata = ((unsigned int*)baseAddr)[0];
+ unsigned int gdata = le32_to_u32(((le32_t*)baseAddr)[0]);
 
  drawX = gdata & 0x3ff;                                // for soft drawing
  if(drawX>=1024) drawX=1023;
@@ -1996,7 +1996,7 @@ void cmdDrawAreaStart(unsigned char * baseAddr)
 
 void cmdDrawAreaEnd(unsigned char * baseAddr)
 {
- unsigned int gdata = ((unsigned int*)baseAddr)[0];
+ unsigned int gdata = le32_to_u32(((le32_t*)baseAddr)[0]);
 
  drawW = gdata & 0x3ff;                                // for soft drawing
  if(drawW>=1024) drawW=1023;
@@ -2031,7 +2031,7 @@ void cmdDrawAreaEnd(unsigned char * baseAddr)
 
 void cmdDrawOffset(unsigned char * baseAddr)
 {
- unsigned int gdata = ((unsigned int*)baseAddr)[0];
+ unsigned int gdata = le32_to_u32(((le32_t*)baseAddr)[0]);
 
  PreviousPSXDisplay.DrawOffset.x = 
   PSXDisplay.DrawOffset.x = (short)(gdata & 0x7ff);
@@ -2062,12 +2062,12 @@ void cmdDrawOffset(unsigned char * baseAddr)
 
 void primLoadImage(unsigned char * baseAddr)
 {
- unsigned short *sgpuData = ((unsigned short *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
- VRAMWrite.x      = sgpuData[2]&0x03ff;
- VRAMWrite.y      = sgpuData[3]&iGPUHeightMask;
- VRAMWrite.Width  = sgpuData[4];
- VRAMWrite.Height = sgpuData[5];
+ VRAMWrite.x      = le16_to_s16(sgpuData[2])&0x03ff;
+ VRAMWrite.y      = le16_to_s16(sgpuData[3])&iGPUHeightMask;
+ VRAMWrite.Width  = le16_to_s16(sgpuData[4]);
+ VRAMWrite.Height = le16_to_s16(sgpuData[5]);
 
  iDataWriteMode = DR_VRAMTRANSFER;
  VRAMWrite.ImagePtr = psxVuw + (VRAMWrite.y<<10) + VRAMWrite.x;
@@ -2219,12 +2219,12 @@ void CheckWriteUpdate()
 
 void primStoreImage(unsigned char * baseAddr)
 {
- unsigned short *sgpuData = ((unsigned short *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
- VRAMRead.x      = sgpuData[2]&0x03ff;
- VRAMRead.y      = sgpuData[3]&iGPUHeightMask;
- VRAMRead.Width  = sgpuData[4];
- VRAMRead.Height = sgpuData[5];
+ VRAMRead.x      = le16_to_s16(sgpuData[2])&0x03ff;
+ VRAMRead.y      = le16_to_s16(sgpuData[3])&iGPUHeightMask;
+ VRAMRead.Width  = le16_to_s16(sgpuData[4]);
+ VRAMRead.Height = le16_to_s16(sgpuData[5]);
 
  VRAMRead.ImagePtr = psxVuw + (VRAMRead.y<<10) + VRAMRead.x;
  VRAMRead.RowsRemaining = VRAMRead.Width;
@@ -2241,15 +2241,15 @@ void primStoreImage(unsigned char * baseAddr)
 
 void primBlkFill(unsigned char * baseAddr)
 {
- unsigned int *gpuData = ((unsigned int *) baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
  iDrawnSomething=1;
 
- sprtX = sgpuData[2];
- sprtY = sgpuData[3];
- sprtW = sgpuData[4] & 0x3ff;
- sprtH = sgpuData[5] & iGPUHeightMask;
+ sprtX = le16_to_s16(sgpuData[2]);
+ sprtY = le16_to_s16(sgpuData[3]);
+ sprtW = le16_to_s16(sgpuData[4]) & 0x3ff;
+ sprtH = le16_to_s16(sgpuData[5]) & iGPUHeightMask;
 
  sprtW = (sprtW+15) & ~15;
 
@@ -2277,16 +2277,16 @@ void primBlkFill(unsigned char * baseAddr)
        (ly2 >= pd->DisplayEnd.y-16))
     {
      GLclampf g,b,r;
-     g=((GLclampf)GREEN(gpuData[0]))/255.0f;
-     b=((GLclampf)BLUE(gpuData[0]))/255.0f;
-     r=((GLclampf)RED(gpuData[0]))/255.0f;
+     g=((GLclampf)GREEN(le32_to_u32(gpuData[0])))/255.0f;
+     b=((GLclampf)BLUE(le32_to_u32(gpuData[0])))/255.0f;
+     r=((GLclampf)RED(le32_to_u32(gpuData[0])))/255.0f;
      
      //glDisable(GL_SCISSOR_TEST); glError();
      glClearColor(r,g,b,1.0f); glError();
      glClear(uiBufferBits); glError();
      gl_z=0.0f;
 
-     if(gpuData[0]!=0x02000000 &&
+     if(le32_to_u32(gpuData[0])!=0x02000000 &&
         (ly0>pd->DisplayPosition.y ||
          ly2<pd->DisplayEnd.y))
       {
@@ -2294,7 +2294,7 @@ void primBlkFill(unsigned char * baseAddr)
        bDrawSmoothShaded = FALSE;
        SetRenderState((unsigned int)0x01000000);
        SetRenderMode((unsigned int)0x01000000, FALSE);
-       vertex[0].c.lcol=0xff000000;
+       vertex[0].c.lcol=LE32TOH(0xff000000);
        SETCOL(vertex[0]); 
        if(ly0>pd->DisplayPosition.y)
         {
@@ -2322,7 +2322,7 @@ void primBlkFill(unsigned char * baseAddr)
      bDrawSmoothShaded = FALSE;
      SetRenderState((unsigned int)0x01000000);
      SetRenderMode((unsigned int)0x01000000, FALSE);
-     vertex[0].c.lcol=gpuData[0]|0xff000000;
+     vertex[0].c.lcol=le32_to_u32(gpuData[0])|LE32TOH(0xff000000);
      SETCOL(vertex[0]); 
      //glDisable(GL_SCISSOR_TEST); glError();
      PRIMdrawQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
@@ -2335,7 +2335,7 @@ void primBlkFill(unsigned char * baseAddr)
  // try this:
  if (IsCompleteInsideNextScreen(sprtX, sprtY, sprtW, sprtH))
   {
-   lClearOnSwapColor = COLOR(gpuData[0]);
+   lClearOnSwapColor = COLOR(le32_to_u32(gpuData[0]));
    lClearOnSwap = 1;
   }
 
@@ -2438,21 +2438,21 @@ void MoveImageWrapped(short imageX0,short imageY0,
 
 void primMoveImage(unsigned char * baseAddr)
 {
- short *sgpuData = ((short *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
  short imageY0,imageX0,imageY1,imageX1,imageSX,imageSY,i,j;
 
- imageX0 = sgpuData[2]&0x03ff;
- imageY0 = sgpuData[3]&iGPUHeightMask;
- imageX1 = sgpuData[4]&0x03ff;
- imageY1 = sgpuData[5]&iGPUHeightMask;
- imageSX = sgpuData[6];
- imageSY = sgpuData[7];
+ imageX0 = le16_to_s16(sgpuData[2])&0x03ff;
+ imageY0 = le16_to_s16(sgpuData[3])&iGPUHeightMask;
+ imageX1 = le16_to_s16(sgpuData[4])&0x03ff;
+ imageY1 = le16_to_s16(sgpuData[5])&iGPUHeightMask;
+ imageSX = le16_to_s16(sgpuData[6]);
+ imageSY = le16_to_s16(sgpuData[7]);
 
  if((imageX0 == imageX1) && (imageY0 == imageY1)) return;  
  if(imageSX<=0) return;
  if(imageSY<=0) return;
 
- if(iGPUHeight==1024 && sgpuData[7]>1024) return;
+ if(iGPUHeight==1024 && le16_to_s16(sgpuData[7])>1024) return;
 
  if((imageY0+imageSY)>iGPUHeight ||
     (imageX0+imageSX)>1024       ||
@@ -2477,8 +2477,8 @@ void primMoveImage(unsigned char * baseAddr)
    unsigned short *SRCPtr, *DSTPtr;
    unsigned short LineOffset;
 
-   SRCPtr = psxVuw + (1024*imageY0) + imageX0;
-   DSTPtr = psxVuw + (1024*imageY1) + imageX1;
+   SRCPtr = (u16 *)(psxVuw + (1024*imageY0) + imageX0);
+   DSTPtr = (u16 *)(psxVuw + (1024*imageY1) + imageX1);
 
    LineOffset = 1024 - imageSX;
 
@@ -2597,13 +2597,13 @@ void primMoveImage(unsigned char * baseAddr)
 
 void primTileS(unsigned char * baseAddr)
 {
- unsigned int *gpuData = ((unsigned int*)baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t*)baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
- sprtX = sgpuData[2];
- sprtY = sgpuData[3];
- sprtW = sgpuData[4] & 0x3ff;
- sprtH = sgpuData[5] & iGPUHeightMask;
+ sprtX = le16_to_s16(sgpuData[2]);
+ sprtY = le16_to_s16(sgpuData[3]);
+ sprtW = le16_to_s16(sgpuData[4]) & 0x3ff;
+ sprtH = le16_to_s16(sgpuData[5]) & iGPUHeightMask;
 
  // x and y of start
 
@@ -2619,7 +2619,7 @@ void primTileS(unsigned char * baseAddr)
  bDrawTextured = FALSE;
  bDrawSmoothShaded = FALSE;
 
- SetRenderState(gpuData[0]);
+ SetRenderState(le32_to_u32(gpuData[0]));
 
 /* if(iOffscreenDrawing)
   {
@@ -2642,12 +2642,12 @@ void primTileS(unsigned char * baseAddr)
     }
   }*/
 
- SetRenderMode(gpuData[0], FALSE);
+ SetRenderMode(le32_to_u32(gpuData[0]), FALSE);
  SetZMask4NT();
 
  if(bIgnoreNextTile) {bIgnoreNextTile=FALSE;return;}
 
- vertex[0].c.lcol=gpuData[0];
+ vertex[0].c.lcol=le32_to_u32(gpuData[0]);
  vertex[0].c.col[3]=ubGloColAlpha;
  SETCOL(vertex[0]); 
  
@@ -2662,11 +2662,11 @@ void primTileS(unsigned char * baseAddr)
 
 void primTile1(unsigned char * baseAddr)
 {
- unsigned int *gpuData = ((unsigned int*)baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t*)baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
- sprtX = sgpuData[2];
- sprtY = sgpuData[3];
+ sprtX = le16_to_s16(sgpuData[2]);
+ sprtY = le16_to_s16(sgpuData[3]);
  sprtW = 1;
  sprtH = 1;
 
@@ -2678,7 +2678,7 @@ void primTile1(unsigned char * baseAddr)
  bDrawTextured = FALSE;
  bDrawSmoothShaded = FALSE;
 
- SetRenderState(gpuData[0]);
+ SetRenderState(le32_to_u32(gpuData[0]));
 
 /* if(iOffscreenDrawing)
   {
@@ -2692,10 +2692,10 @@ void primTile1(unsigned char * baseAddr)
     }
   }
 */
- SetRenderMode(gpuData[0], FALSE);
+ SetRenderMode(le32_to_u32(gpuData[0]), FALSE);
  SetZMask4NT();
 
- vertex[0].c.lcol=gpuData[0];vertex[0].c.col[3]=ubGloColAlpha;
+ vertex[0].c.lcol=le32_to_u32(gpuData[0]);vertex[0].c.col[3]=ubGloColAlpha;
  SETCOL(vertex[0]); 
 
  PRIMdrawQuad(&vertex[0], &vertex[1], &vertex[2], &vertex[3]);
@@ -2709,11 +2709,11 @@ void primTile1(unsigned char * baseAddr)
 
 void primTile8(unsigned char * baseAddr)
 {
- unsigned int *gpuData = ((unsigned int*)baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t*)baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
- sprtX = sgpuData[2];
- sprtY = sgpuData[3];
+ sprtX = le16_to_s16(sgpuData[2]);
+ sprtY = le16_to_s16(sgpuData[3]);
  sprtW = 8;
  sprtH = 8;
 
@@ -2724,7 +2724,7 @@ void primTile8(unsigned char * baseAddr)
 
  bDrawTextured = FALSE;
  bDrawSmoothShaded = FALSE;
- SetRenderState(gpuData[0]);
+ SetRenderState(le32_to_u32(gpuData[0]));
 
 /* if(iOffscreenDrawing)
   {
@@ -2738,10 +2738,10 @@ void primTile8(unsigned char * baseAddr)
     }
   }
 */
- SetRenderMode(gpuData[0], FALSE);
+ SetRenderMode(le32_to_u32(gpuData[0]), FALSE);
  SetZMask4NT();
 
- vertex[0].c.lcol=gpuData[0];
+ vertex[0].c.lcol=le32_to_u32(gpuData[0]);
  vertex[0].c.col[3]=ubGloColAlpha;
  SETCOL(vertex[0]); 
 
@@ -2756,11 +2756,11 @@ void primTile8(unsigned char * baseAddr)
 
 void primTile16(unsigned char * baseAddr)
 {
- unsigned int *gpuData = ((unsigned int*)baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t*)baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
- sprtX = sgpuData[2];
- sprtY = sgpuData[3];
+ sprtX = le16_to_s16(sgpuData[2]);
+ sprtY = le16_to_s16(sgpuData[3]);
  sprtW = 16;
  sprtH = 16;
  // x and y of start
@@ -2771,7 +2771,7 @@ void primTile16(unsigned char * baseAddr)
 
  bDrawTextured = FALSE;
  bDrawSmoothShaded = FALSE;
- SetRenderState(gpuData[0]);
+ SetRenderState(le32_to_u32(gpuData[0]));
 
 /* if(iOffscreenDrawing)
   {
@@ -2785,10 +2785,10 @@ void primTile16(unsigned char * baseAddr)
     }
   }
 */
- SetRenderMode(gpuData[0], FALSE);
+ SetRenderMode(le32_to_u32(gpuData[0]), FALSE);
  SetZMask4NT();
 
- vertex[0].c.lcol=gpuData[0];
+ vertex[0].c.lcol=le32_to_u32(gpuData[0]);
  vertex[0].c.col[3]=ubGloColAlpha;
  SETCOL(vertex[0]); 
 
@@ -2867,14 +2867,14 @@ void DrawMultiFilterSprite(void)
 
 void primSprt8(unsigned char * baseAddr)
 {
- unsigned int *gpuData = ((unsigned int *) baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
  short s;
 
  iSpriteTex=1;
 
- sprtX = sgpuData[2];
- sprtY = sgpuData[3];
+ sprtX = le16_to_s16(sgpuData[2]);
+ sprtY = le16_to_s16(sgpuData[3]);
  sprtW = 8;
  sprtH = 8;
 
@@ -2884,7 +2884,7 @@ void primSprt8(unsigned char * baseAddr)
  offsetST();
 
  // do texture stuff
- gl_ux[0]=gl_ux[3]=baseAddr[8];//gpuData[2]&0xff;
+ gl_ux[0]=gl_ux[3]=le32_to_u32(gpuData[2])&0xff; //baseAddr[8];
 
  if(usMirror & 0x1000) 
   {
@@ -2899,7 +2899,7 @@ void primSprt8(unsigned char * baseAddr)
  if(s>255) s=255;
  gl_ux[1]=gl_ux[2]=s;
  // Y coords
- gl_vy[0]=gl_vy[1]=baseAddr[9];//(gpuData[2]>>8)&0xff;
+ gl_vy[0]=gl_vy[1]=(le32_to_u32(gpuData[2])>>8)&0xff; //baseAddr[9];
 
  if(usMirror & 0x2000) 
   {
@@ -2914,11 +2914,11 @@ void primSprt8(unsigned char * baseAddr)
  if(s>255) s=255;
  gl_vy[2]=gl_vy[3]=s;
 
- ulClutID=(gpuData[2]>>16);
+ ulClutID=(le32_to_u32(gpuData[2])>>16);
 
  bDrawTextured = TRUE;
  bDrawSmoothShaded = FALSE;
- SetRenderState(gpuData[0]);
+ SetRenderState(le32_to_u32(gpuData[0]));
 
 /* if(iOffscreenDrawing)      
   {
@@ -2939,7 +2939,7 @@ void primSprt8(unsigned char * baseAddr)
     }
   }
 */
- SetRenderMode(gpuData[0], TRUE);
+ SetRenderMode(le32_to_u32(gpuData[0]), TRUE);
  SetZMask4SP();
 
  sSprite_ux2=gl_ux[0]+sprtW;
@@ -2961,7 +2961,7 @@ void primSprt8(unsigned char * baseAddr)
  if(ubOpaqueDraw)
   {
    SetZMask4O();
-   if(bUseMultiPass) SetOpaqueColor(gpuData[0]);
+   if(bUseMultiPass) SetOpaqueColor(le32_to_u32(gpuData[0]));
    DEFOPAQUEON
 
 /*   if(bSmallAlpha && iFilterType<=2)
@@ -2988,14 +2988,14 @@ void primSprt8(unsigned char * baseAddr)
 
 void primSprt16(unsigned char * baseAddr)
 {
- unsigned int *gpuData = ((unsigned int *) baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
  short s;
 
  iSpriteTex=1;
 
- sprtX = sgpuData[2];
- sprtY = sgpuData[3];
+ sprtX = le16_to_s16(sgpuData[2]);
+ sprtY = le16_to_s16(sgpuData[3]);
  sprtW = 16;
  sprtH = 16;
 
@@ -3005,7 +3005,7 @@ void primSprt16(unsigned char * baseAddr)
  offsetST();
 
  // do texture stuff
- gl_ux[0]=gl_ux[3]=baseAddr[8];//gpuData[2]&0xff;
+ gl_ux[0]=gl_ux[3]=le32_to_u32(gpuData[2])&0xff; //baseAddr[8];
 
  if(usMirror & 0x1000) 
   {
@@ -3020,7 +3020,7 @@ void primSprt16(unsigned char * baseAddr)
  if(s>255) s=255;
  gl_ux[1]=gl_ux[2]=s; 
  // Y coords
- gl_vy[0]=gl_vy[1]=baseAddr[9];//(gpuData[2]>>8)&0xff;
+ gl_vy[0]=gl_vy[1]=(le32_to_u32(gpuData[2])>>8)&0xff; //baseAddr[9];
 
  if(usMirror & 0x2000) 
   {
@@ -3035,11 +3035,11 @@ void primSprt16(unsigned char * baseAddr)
  if(s>255) s=255;
  gl_vy[2]=gl_vy[3]=s;
 
- ulClutID=(gpuData[2]>>16);
+ ulClutID=(le32_to_u32(gpuData[2])>>16);
 
  bDrawTextured = TRUE;
  bDrawSmoothShaded = FALSE;
- SetRenderState(gpuData[0]);
+ SetRenderState(le32_to_u32(gpuData[0]));
 
 /* if(iOffscreenDrawing)  
   {
@@ -3059,7 +3059,7 @@ void primSprt16(unsigned char * baseAddr)
     }
   }
 */
- SetRenderMode(gpuData[0], TRUE);
+ SetRenderMode(le32_to_u32(gpuData[0]), TRUE);
  SetZMask4SP();
 
  sSprite_ux2=gl_ux[0]+sprtW;
@@ -3081,7 +3081,7 @@ void primSprt16(unsigned char * baseAddr)
  if(ubOpaqueDraw)
   {
    SetZMask4O();
-   if(bUseMultiPass) SetOpaqueColor(gpuData[0]);
+   if(bUseMultiPass) SetOpaqueColor(le32_to_u32(gpuData[0]));
    DEFOPAQUEON
 
 /*   if(bSmallAlpha && iFilterType<=2)
@@ -3108,14 +3108,14 @@ void primSprt16(unsigned char * baseAddr)
  
 void primSprtSRest(unsigned char * baseAddr,unsigned short type)
 {
- unsigned int *gpuData = ((unsigned int *) baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
  short s;unsigned short sTypeRest=0;
 
- sprtX = sgpuData[2];
- sprtY = sgpuData[3];
- sprtW = sgpuData[6] & 0x3ff;
- sprtH = sgpuData[7] & 0x1ff;
+ sprtX = le16_to_s16(sgpuData[2]);
+ sprtY = le16_to_s16(sgpuData[3]);
+ sprtW = le16_to_s16(sgpuData[6]) & 0x3ff;
+ sprtH = le16_to_s16(sgpuData[7]) & 0x1ff;
 
 
  // do texture stuff
@@ -3206,11 +3206,11 @@ void primSprtSRest(unsigned char * baseAddr,unsigned short type)
 
  offsetST();
 
- ulClutID=(gpuData[2]>>16);
+ ulClutID=(le32_to_u32(gpuData[2])>>16);
 
  bDrawTextured = TRUE;
  bDrawSmoothShaded = FALSE;
- SetRenderState(gpuData[0]);
+ SetRenderState(le32_to_u32(gpuData[0]));
 
 /* if(iOffscreenDrawing)
   {
@@ -3230,7 +3230,7 @@ void primSprtSRest(unsigned char * baseAddr,unsigned short type)
     }
   }
 */
- SetRenderMode(gpuData[0], TRUE);
+ SetRenderMode(le32_to_u32(gpuData[0]), TRUE);
  SetZMask4SP();
 
  sSprite_ux2=gl_ux[0]+sprtW;
@@ -3252,7 +3252,7 @@ void primSprtSRest(unsigned char * baseAddr,unsigned short type)
  if(ubOpaqueDraw)
   {
    SetZMask4O();
-   if(bUseMultiPass) SetOpaqueColor(gpuData[0]);
+   if(bUseMultiPass) SetOpaqueColor(le32_to_u32(gpuData[0]));
    DEFOPAQUEON
 
 /*   if(bSmallAlpha && iFilterType<=2)
@@ -3279,15 +3279,15 @@ void primSprtSRest(unsigned char * baseAddr,unsigned short type)
 
 void primSprtS(unsigned char * baseAddr)
 {
- unsigned int *gpuData = ((unsigned int *) baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
  short s;unsigned short sTypeRest=0;
 
- sprtX = sgpuData[2];
- sprtY = sgpuData[3];
- sprtW = sgpuData[6] & 0x3ff;
- sprtH = sgpuData[7] & 0x1ff;
+ sprtX = le16_to_s16(sgpuData[2]);
+ sprtY = le16_to_s16(sgpuData[3]);
+ sprtW = le16_to_s16(sgpuData[6]) & 0x3ff;
+ sprtH = le16_to_s16(sgpuData[7]) & 0x1ff;
 
  if(!sprtH) return;
  if(!sprtW) return;
@@ -3295,8 +3295,8 @@ void primSprtS(unsigned char * baseAddr)
  iSpriteTex=1;
 
  // do texture stuff
- gl_ux[0]=gl_ux[3]=baseAddr[8];//gpuData[2]&0xff;
- gl_vy[0]=gl_vy[1]=baseAddr[9];//(gpuData[2]>>8)&0xff;
+ gl_ux[0]=gl_ux[3]=le32_to_u32(gpuData[2])&0xff;      //baseAddr[8];
+ gl_vy[0]=gl_vy[1]=(le32_to_u32(gpuData[2])>>8)&0xff; //baseAddr[9];
 
  if(usMirror & 0x1000) 
   {
@@ -3335,11 +3335,11 @@ void primSprtS(unsigned char * baseAddr)
 
  offsetST();
 
- ulClutID=(gpuData[2]>>16);
+ ulClutID=(le32_to_u32(gpuData[2])>>16);
 
  bDrawTextured = TRUE;
  bDrawSmoothShaded = FALSE;
- SetRenderState(gpuData[0]);
+ SetRenderState(le32_to_u32(gpuData[0]));
 
 /* if(iOffscreenDrawing)
   {
@@ -3359,7 +3359,7 @@ void primSprtS(unsigned char * baseAddr)
     }
   }
 */
- SetRenderMode(gpuData[0], TRUE);
+ SetRenderMode(le32_to_u32(gpuData[0]), TRUE);
  SetZMask4SP();
 
  if((dwActFixes&1) && gTexFrameName && gTexName==gTexFrameName) 
@@ -3384,7 +3384,7 @@ void primSprtS(unsigned char * baseAddr)
  if(ubOpaqueDraw)
   {
    SetZMask4O();
-   if(bUseMultiPass) SetOpaqueColor(gpuData[0]);
+   if(bUseMultiPass) SetOpaqueColor(le32_to_u32(gpuData[0]));
    DEFOPAQUEON
 
 /*   if(bSmallAlpha && iFilterType<=2)
@@ -3418,23 +3418,23 @@ void primSprtS(unsigned char * baseAddr)
 
 void primPolyF4(unsigned char *baseAddr)
 {
- unsigned int *gpuData = ((unsigned int *) baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
- lx0 = sgpuData[2];
- ly0 = sgpuData[3];
- lx1 = sgpuData[4];
- ly1 = sgpuData[5];
- lx2 = sgpuData[6];
- ly2 = sgpuData[7];
- lx3 = sgpuData[8];
- ly3 = sgpuData[9];
+ lx0 = le16_to_s16(sgpuData[2]);
+ ly0 = le16_to_s16(sgpuData[3]);
+ lx1 = le16_to_s16(sgpuData[4]);
+ ly1 = le16_to_s16(sgpuData[5]);
+ lx2 = le16_to_s16(sgpuData[6]);
+ ly2 = le16_to_s16(sgpuData[7]);
+ lx3 = le16_to_s16(sgpuData[8]);
+ ly3 = le16_to_s16(sgpuData[9]);
 
  if(offset4()) return;
 
  bDrawTextured = FALSE;
  bDrawSmoothShaded = FALSE;
- SetRenderState(gpuData[0]);
+ SetRenderState(le32_to_u32(gpuData[0]));
 
 /* if(iOffscreenDrawing)
   {
@@ -3446,10 +3446,10 @@ void primPolyF4(unsigned char *baseAddr)
     }
   }
 */
- SetRenderMode(gpuData[0], FALSE);
+ SetRenderMode(le32_to_u32(gpuData[0]), FALSE);
  SetZMask4NT();
 
- vertex[0].c.lcol=gpuData[0];vertex[0].c.col[3]=ubGloColAlpha;
+ vertex[0].c.lcol=le32_to_u32(gpuData[0]);vertex[0].c.col[3]=ubGloColAlpha;
  SETCOL(vertex[0]); 
 
  PRIMdrawTri2(&vertex[0], &vertex[1], &vertex[2],&vertex[3]);
@@ -3499,10 +3499,10 @@ BOOL bCheckFF9G4(unsigned char * baseAddr)
        iFF9Fix=2;
        memcpy(pFF9G4Cache,baseAddr,32);
 
-       if(sgpuData[2]==142)
+       if(SWAP16(sgpuData[2])==142)
         {
-         sgpuData[2] +=65;
-         sgpuData[10]+=65;
+         sgpuData[2] +=SWAP16(65);
+         sgpuData[10]+=SWAP16(65);
         }
        return TRUE;
       }
@@ -3527,23 +3527,23 @@ BOOL bCheckFF9G4(unsigned char * baseAddr)
 
 void primPolyG4(unsigned char * baseAddr)
 {
- unsigned int *gpuData = (unsigned int *)baseAddr;
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = (le32_t *)baseAddr;
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
- lx0 = sgpuData[2];
- ly0 = sgpuData[3];
- lx1 = sgpuData[6];
- ly1 = sgpuData[7];
- lx2 = sgpuData[10];
- ly2 = sgpuData[11];
- lx3 = sgpuData[14];
- ly3 = sgpuData[15];
+ lx0 = le16_to_s16(sgpuData[2]);
+ ly0 = le16_to_s16(sgpuData[3]);
+ lx1 = le16_to_s16(sgpuData[6]);
+ ly1 = le16_to_s16(sgpuData[7]);
+ lx2 = le16_to_s16(sgpuData[10]);
+ ly2 = le16_to_s16(sgpuData[11]);
+ lx3 = le16_to_s16(sgpuData[14]);
+ ly3 = le16_to_s16(sgpuData[15]);
 
  if(offset4()) return;
 
  bDrawTextured = FALSE;
  bDrawSmoothShaded = TRUE;
- SetRenderState(gpuData[0]);
+ SetRenderState(le32_to_u32(gpuData[0]));
 
 /* if(iOffscreenDrawing)
   {
@@ -3558,13 +3558,13 @@ void primPolyG4(unsigned char * baseAddr)
     }     
   }
 */
- SetRenderMode(gpuData[0], FALSE);
+ SetRenderMode(le32_to_u32(gpuData[0]), FALSE);
  SetZMask4NT();
 
- vertex[0].c.lcol=gpuData[0];
- vertex[1].c.lcol=gpuData[2];
- vertex[2].c.lcol=gpuData[4];
- vertex[3].c.lcol=gpuData[6];
+ vertex[0].c.lcol=le32_to_u32(gpuData[0]);
+ vertex[1].c.lcol=le32_to_u32(gpuData[2]);
+ vertex[2].c.lcol=le32_to_u32(gpuData[4]);
+ vertex[3].c.lcol=le32_to_u32(gpuData[6]);
 
  vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=vertex[3].c.col[3]=ubGloAlpha;
 
@@ -3578,7 +3578,7 @@ void primPolyG4(unsigned char * baseAddr)
 // cmd: flat shaded Texture3
 ////////////////////////////////////////////////////////////////////////
 
-BOOL DoLineCheck(unsigned int * gpuData)
+BOOL DoLineCheck(le32_t * gpuData)
 {
  BOOL bQuad=FALSE;short dx,dy;
 
@@ -3730,7 +3730,7 @@ BOOL DoLineCheck(unsigned int * gpuData)
  if(ubOpaqueDraw)
   {
    SetZMask4O();
-   if(bUseMultiPass) SetOpaqueColor(gpuData[0]);
+   if(bUseMultiPass) SetOpaqueColor(le32_to_u32(gpuData[0]));
    DEFOPAQUEON
    PRIMdrawTexturedQuad(&vertex[0], &vertex[1], &vertex[3], &vertex[2]);
    DEFOPAQUEOFF
@@ -3745,32 +3745,32 @@ BOOL DoLineCheck(unsigned int * gpuData)
 
 void primPolyFT3(unsigned char * baseAddr)
 {
- unsigned int *gpuData = ((unsigned int *) baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
- lx0 = sgpuData[2];
- ly0 = sgpuData[3];
- lx1 = sgpuData[6];
- ly1 = sgpuData[7];
- lx2 = sgpuData[10];
- ly2 = sgpuData[11];
+ lx0 = le16_to_s16(sgpuData[2]);
+ ly0 = le16_to_s16(sgpuData[3]);
+ lx1 = le16_to_s16(sgpuData[6]);
+ ly1 = le16_to_s16(sgpuData[7]);
+ lx2 = le16_to_s16(sgpuData[10]);
+ ly2 = le16_to_s16(sgpuData[11]);
 
  if(offset3()) return;
     
  // do texture UV coordinates stuff
- gl_ux[0]=gl_ux[3]=baseAddr[8];//gpuData[2]&0xff;
- gl_vy[0]=gl_vy[3]=baseAddr[9];//(gpuData[2]>>8)&0xff;
- gl_ux[1]=baseAddr[16];//gpuData[4]&0xff;
- gl_vy[1]=baseAddr[17];//(gpuData[4]>>8)&0xff;
- gl_ux[2]=baseAddr[24];//gpuData[6]&0xff;
- gl_vy[2]=baseAddr[25];//(gpuData[6]>>8)&0xff;
+ gl_ux[0]=gl_ux[3]=le32_to_u32(gpuData[2])&0xff;	//baseAddr[8];
+ gl_vy[0]=gl_vy[3]=(le32_to_u32(gpuData[2])>>8)&0xff; //baseAddr[9];
+ gl_ux[1]=le32_to_u32(gpuData[4])&0xff;	//baseAddr[16];
+ gl_vy[1]=(le32_to_u32(gpuData[4])>>8)&0xff;	//baseAddr[17];
+ gl_ux[2]=le32_to_u32(gpuData[6])&0xff;	//baseAddr[24];
+ gl_vy[2]=(le32_to_u32(gpuData[6])>>8)&0xff;	//baseAddr[25];
 
- UpdateGlobalTP((unsigned short)(gpuData[4]>>16));
- ulClutID=gpuData[2]>>16;
+ UpdateGlobalTP((unsigned short)(le32_to_u32(gpuData[4])>>16));
+ ulClutID=le32_to_u32(gpuData[2])>>16;
 
  bDrawTextured = TRUE;
  bDrawSmoothShaded = FALSE;
- SetRenderState(gpuData[0]);
+ SetRenderState(le32_to_u32(gpuData[0]));
 
 /* if(iOffscreenDrawing)
   {
@@ -3783,7 +3783,7 @@ void primPolyFT3(unsigned char * baseAddr)
     }
   }
 */
- SetRenderMode(gpuData[0], TRUE);
+ SetRenderMode(le32_to_u32(gpuData[0]), TRUE);
  SetZMask3();
 
  assignTexture3();
@@ -3804,7 +3804,7 @@ void primPolyFT3(unsigned char * baseAddr)
  if(ubOpaqueDraw)
   {
    SetZMask3O();
-   if(bUseMultiPass) SetOpaqueColor(gpuData[0]);
+   if(bUseMultiPass) SetOpaqueColor(le32_to_u32(gpuData[0]));
    DEFOPAQUEON
    PRIMdrawTexturedTri(&vertex[0], &vertex[1], &vertex[2]);
    DEFOPAQUEOFF
@@ -4181,36 +4181,36 @@ void RectTexAlign(void)
 
 void primPolyFT4(unsigned char * baseAddr)
 {
- unsigned int *gpuData = ((unsigned int *) baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
- lx0 = sgpuData[2];
- ly0 = sgpuData[3];
- lx1 = sgpuData[6];
- ly1 = sgpuData[7];
- lx2 = sgpuData[10];
- ly2 = sgpuData[11];
- lx3 = sgpuData[14];
- ly3 = sgpuData[15];
+ lx0 = le16_to_s16(sgpuData[2]);
+ ly0 = le16_to_s16(sgpuData[3]);
+ lx1 = le16_to_s16(sgpuData[6]);
+ ly1 = le16_to_s16(sgpuData[7]);
+ lx2 = le16_to_s16(sgpuData[10]);
+ ly2 = le16_to_s16(sgpuData[11]);
+ lx3 = le16_to_s16(sgpuData[14]);
+ ly3 = le16_to_s16(sgpuData[15]);
 
  if(offset4()) return;
 
- gl_vy[0]=baseAddr[9];//((gpuData[2]>>8)&0xff);
- gl_vy[1]=baseAddr[17];//((gpuData[4]>>8)&0xff);
- gl_vy[2]=baseAddr[25];//((gpuData[6]>>8)&0xff);
- gl_vy[3]=baseAddr[33];//((gpuData[8]>>8)&0xff);
- 
- gl_ux[0]=baseAddr[8];//(gpuData[2]&0xff);
- gl_ux[1]=baseAddr[16];//(gpuData[4]&0xff);
- gl_ux[2]=baseAddr[24];//(gpuData[6]&0xff);
- gl_ux[3]=baseAddr[32];//(gpuData[8]&0xff);
+ gl_vy[0]=((le32_to_u32(gpuData[2])>>8)&0xff); //baseAddr[9]; 
+ gl_vy[1]=((le32_to_u32(gpuData[4])>>8)&0xff); //baseAddr[17];
+ gl_vy[2]=((le32_to_u32(gpuData[6])>>8)&0xff); //baseAddr[25];
+ gl_vy[3]=((le32_to_u32(gpuData[8])>>8)&0xff); //baseAddr[33];
+          
+ gl_ux[0]=(le32_to_u32(gpuData[2])&0xff); //baseAddr[8]; 
+ gl_ux[1]=(le32_to_u32(gpuData[4])&0xff); //baseAddr[16];
+ gl_ux[2]=(le32_to_u32(gpuData[6])&0xff); //baseAddr[24];
+ gl_ux[3]=(le32_to_u32(gpuData[8])&0xff); //baseAddr[32];
 
- UpdateGlobalTP((unsigned short)(gpuData[4]>>16));
- ulClutID=(gpuData[2]>>16);
+ UpdateGlobalTP((unsigned short)(le32_to_u32(gpuData[4])>>16));
+ ulClutID=(le32_to_u32(gpuData[2])>>16);
 
  bDrawTextured = TRUE;
  bDrawSmoothShaded = FALSE;
- SetRenderState(gpuData[0]);
+ SetRenderState(le32_to_u32(gpuData[0]));
 
 /* if(iOffscreenDrawing)
   {
@@ -4223,7 +4223,7 @@ void primPolyFT4(unsigned char * baseAddr)
     }
   }
 */
- SetRenderMode(gpuData[0], TRUE);
+ SetRenderMode(le32_to_u32(gpuData[0]), TRUE);
 
  SetZMask4();
 
@@ -4242,7 +4242,7 @@ void primPolyFT4(unsigned char * baseAddr)
  if(ubOpaqueDraw)
   {
    SetZMask4O();
-   if(bUseMultiPass) SetOpaqueColor(gpuData[0]);
+   if(bUseMultiPass) SetOpaqueColor(le32_to_u32(gpuData[0]));
    DEFOPAQUEON
 
 /*   if(bSmallAlpha && iFilterType<=2)
@@ -4269,32 +4269,32 @@ void primPolyFT4(unsigned char * baseAddr)
 
 void primPolyGT3(unsigned char *baseAddr)
 {    
- unsigned int *gpuData = ((unsigned int *) baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
- lx0 = sgpuData[2];
- ly0 = sgpuData[3];
- lx1 = sgpuData[8];
- ly1 = sgpuData[9];
- lx2 = sgpuData[14];
- ly2 = sgpuData[15];
+ lx0 = le16_to_s16(sgpuData[2]);
+ ly0 = le16_to_s16(sgpuData[3]);
+ lx1 = le16_to_s16(sgpuData[8]);
+ ly1 = le16_to_s16(sgpuData[9]);
+ lx2 = le16_to_s16(sgpuData[14]);
+ ly2 = le16_to_s16(sgpuData[15]);
 
  if(offset3()) return;
 
  // do texture stuff
- gl_ux[0]=gl_ux[3]=baseAddr[8];//gpuData[2]&0xff;
- gl_vy[0]=gl_vy[3]=baseAddr[9];//(gpuData[2]>>8)&0xff;
- gl_ux[1]=baseAddr[20];//gpuData[5]&0xff;
- gl_vy[1]=baseAddr[21];//(gpuData[5]>>8)&0xff;
- gl_ux[2]=baseAddr[32];//gpuData[8]&0xff;
- gl_vy[2]=baseAddr[33];//(gpuData[8]>>8)&0xff;
+ gl_ux[0]=gl_ux[3]=le32_to_u32(gpuData[2])&0xff;      // baseAddr[8];
+ gl_vy[0]=gl_vy[3]=(le32_to_u32(gpuData[2])>>8)&0xff; // baseAddr[9];
+ gl_ux[1]=le32_to_u32(gpuData[5])&0xff;      //baseAddr[20];
+ gl_vy[1]=(le32_to_u32(gpuData[5])>>8)&0xff; //baseAddr[21];
+ gl_ux[2]=le32_to_u32(gpuData[8])&0xff;      //baseAddr[32];
+ gl_vy[2]=(le32_to_u32(gpuData[8])>>8)&0xff; //baseAddr[33];
 
- UpdateGlobalTP((unsigned short)(gpuData[5]>>16));
- ulClutID=(gpuData[2]>>16);
+ UpdateGlobalTP((unsigned short)(le32_to_u32(gpuData[5])>>16));
+ ulClutID=(le32_to_u32(gpuData[2])>>16);
            
  bDrawTextured = TRUE;
  bDrawSmoothShaded = TRUE;
- SetRenderState(gpuData[0]);
+ SetRenderState(le32_to_u32(gpuData[0]));
 
 /* if(iOffscreenDrawing)
   {
@@ -4306,7 +4306,7 @@ void primPolyGT3(unsigned char *baseAddr)
     }
   }
 */
- SetRenderMode(gpuData[0], FALSE);
+ SetRenderMode(le32_to_u32(gpuData[0]), FALSE);
  SetZMask3();
 
  assignTexture3();
@@ -4316,7 +4316,7 @@ void primPolyGT3(unsigned char *baseAddr)
    //if(!bUseMultiPass) vertex[0].lcol=DoubleBGR2RGB(gpuData[0]); else vertex[0].lcol=gpuData[0];
    // eat this...
 /*   if(bGLBlend) vertex[0].c.lcol=0x7f7f7f;
-   else         */vertex[0].c.lcol=0xffffff;
+   else         */vertex[0].c.lcol=LE32TOH(0xffffff);
    vertex[0].c.col[3]=ubGloAlpha;
    SETCOL(vertex[0]); 
 
@@ -4334,9 +4334,9 @@ void primPolyGT3(unsigned char *baseAddr)
 
 /* if(!bUseMultiPass  && !bGLBlend)
   {
-  */ vertex[0].c.lcol=DoubleBGR2RGB(gpuData[0]); 
-   vertex[1].c.lcol=DoubleBGR2RGB(gpuData[3]); 
-   vertex[2].c.lcol=DoubleBGR2RGB(gpuData[6]);
+  */ vertex[0].c.lcol=DoubleBGR2RGB(le32_to_u32(gpuData[0])); 
+   vertex[1].c.lcol=DoubleBGR2RGB(le32_to_u32(gpuData[3])); 
+   vertex[2].c.lcol=DoubleBGR2RGB(le32_to_u32(gpuData[6]));
   /*}
  else
   {
@@ -4359,9 +4359,9 @@ void primPolyGT3(unsigned char *baseAddr)
    SetZMask3O();
    if(bUseMultiPass) 
     {
-     vertex[0].c.lcol=DoubleBGR2RGB(gpuData[0]);
-     vertex[1].c.lcol=DoubleBGR2RGB(gpuData[3]);
-     vertex[2].c.lcol=DoubleBGR2RGB(gpuData[6]);
+     vertex[0].c.lcol=DoubleBGR2RGB(le32_to_u32(gpuData[0]));
+     vertex[1].c.lcol=DoubleBGR2RGB(le32_to_u32(gpuData[3]));
+     vertex[2].c.lcol=DoubleBGR2RGB(le32_to_u32(gpuData[6]));
      vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=ubGloAlpha;
     }
    DEFOPAQUEON
@@ -4378,21 +4378,21 @@ void primPolyGT3(unsigned char *baseAddr)
 
 void primPolyG3(unsigned char *baseAddr)
 {    
- unsigned int *gpuData = ((unsigned int *) baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
- lx0 = sgpuData[2];
- ly0 = sgpuData[3];
- lx1 = sgpuData[6];
- ly1 = sgpuData[7];
- lx2 = sgpuData[10];
- ly2 = sgpuData[11];
+ lx0 = le16_to_s16(sgpuData[2]);
+ ly0 = le16_to_s16(sgpuData[3]);
+ lx1 = le16_to_s16(sgpuData[6]);
+ ly1 = le16_to_s16(sgpuData[7]);
+ lx2 = le16_to_s16(sgpuData[10]);
+ ly2 = le16_to_s16(sgpuData[11]);
 
  if(offset3()) return;
 
  bDrawTextured = FALSE;
  bDrawSmoothShaded = TRUE;
- SetRenderState(gpuData[0]);
+ SetRenderState(le32_to_u32(gpuData[0]));
 
 /* if(iOffscreenDrawing) 
   {
@@ -4404,12 +4404,12 @@ void primPolyG3(unsigned char *baseAddr)
     }
   }
 */
- SetRenderMode(gpuData[0], FALSE);
+ SetRenderMode(le32_to_u32(gpuData[0]), FALSE);
  SetZMask3NT();
 
- vertex[0].c.lcol=gpuData[0];
- vertex[1].c.lcol=gpuData[2];
- vertex[2].c.lcol=gpuData[4];
+ vertex[0].c.lcol=le32_to_u32(gpuData[0]);
+ vertex[1].c.lcol=le32_to_u32(gpuData[2]);
+ vertex[2].c.lcol=le32_to_u32(gpuData[4]);
  vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=ubGloColAlpha; 
 
  PRIMdrawGouraudTriColor(&vertex[0], &vertex[1], &vertex[2]);
@@ -4423,36 +4423,36 @@ void primPolyG3(unsigned char *baseAddr)
 
 void primPolyGT4(unsigned char *baseAddr)
 { 
- unsigned int *gpuData = ((unsigned int *) baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
- lx0 = sgpuData[2];
- ly0 = sgpuData[3];
- lx1 = sgpuData[8];
- ly1 = sgpuData[9];
- lx2 = sgpuData[14];
- ly2 = sgpuData[15];
- lx3 = sgpuData[20];
- ly3 = sgpuData[21];
+ lx0 = le16_to_s16(sgpuData[2]);
+ ly0 = le16_to_s16(sgpuData[3]);
+ lx1 = le16_to_s16(sgpuData[8]);
+ ly1 = le16_to_s16(sgpuData[9]);
+ lx2 = le16_to_s16(sgpuData[14]);
+ ly2 = le16_to_s16(sgpuData[15]);
+ lx3 = le16_to_s16(sgpuData[20]);
+ ly3 = le16_to_s16(sgpuData[21]);
 
  if(offset4()) return;
 
  // do texture stuff
- gl_ux[0]=baseAddr[8];//gpuData[2]&0xff;
- gl_vy[0]=baseAddr[9];//(gpuData[2]>>8)&0xff;
- gl_ux[1]=baseAddr[20];//gpuData[5]&0xff;
- gl_vy[1]=baseAddr[21];//(gpuData[5]>>8)&0xff;
- gl_ux[2]=baseAddr[32];//gpuData[8]&0xff;
- gl_vy[2]=baseAddr[33];//(gpuData[8]>>8)&0xff;
- gl_ux[3]=baseAddr[44];//gpuData[11]&0xff;
- gl_vy[3]=baseAddr[45];//(gpuData[11]>>8)&0xff;
+ gl_ux[0]=le32_to_u32(gpuData[2])&0xff;// baseAddr[8]; 
+ gl_vy[0]=(le32_to_u32(gpuData[2])>>8)&0xff;// baseAddr[9]; 
+ gl_ux[1]=le32_to_u32(gpuData[5])&0xff;// baseAddr[20];
+ gl_vy[1]=(le32_to_u32(gpuData[5])>>8)&0xff;// baseAddr[21];
+ gl_ux[2]=le32_to_u32(gpuData[8])&0xff;// baseAddr[32];
+ gl_vy[2]=(le32_to_u32(gpuData[8])>>8)&0xff;// baseAddr[33];
+ gl_ux[3]=le32_to_u32(gpuData[11])&0xff;// baseAddr[44];
+ gl_vy[3]=(le32_to_u32(gpuData[11])>>8)&0xff;// baseAddr[45];
 
- UpdateGlobalTP((unsigned short)(gpuData[5]>>16));
- ulClutID=(gpuData[2]>>16);
+ UpdateGlobalTP((unsigned short)(le32_to_u32(gpuData[5])>>16));
+ ulClutID=(le32_to_u32(gpuData[2])>>16);
 
  bDrawTextured     = TRUE;
  bDrawSmoothShaded = TRUE;
- SetRenderState(gpuData[0]);
+ SetRenderState(le32_to_u32(gpuData[0]));
 
 /* if(iOffscreenDrawing)
   {
@@ -4464,7 +4464,7 @@ void primPolyGT4(unsigned char *baseAddr)
     }     
   }
 */
- SetRenderMode(gpuData[0], FALSE);
+ SetRenderMode(le32_to_u32(gpuData[0]), FALSE);
  SetZMask4();
 
  assignTexture4();
@@ -4475,7 +4475,7 @@ void primPolyGT4(unsigned char *baseAddr)
   {
    //if(!bUseMultiPass) vertex[0].lcol=DoubleBGR2RGB(gpuData[0]); else vertex[0].lcol=gpuData[0];
 /*   if(bGLBlend) vertex[0].c.lcol=0x7f7f7f;
-   else          */vertex[0].c.lcol=0xffffff;
+   else          */vertex[0].c.lcol=LE32TOH(0xffffff);
    vertex[0].c.col[3]=ubGloAlpha;
    SETCOL(vertex[0]); 
 
@@ -4494,10 +4494,10 @@ void primPolyGT4(unsigned char *baseAddr)
 
 // if(!bUseMultiPass  && !bGLBlend) 
   {
-   vertex[0].c.lcol=DoubleBGR2RGB(gpuData[0]);
-   vertex[1].c.lcol=DoubleBGR2RGB(gpuData[3]);
-   vertex[2].c.lcol=DoubleBGR2RGB(gpuData[6]);
-   vertex[3].c.lcol=DoubleBGR2RGB(gpuData[9]);
+   vertex[0].c.lcol=DoubleBGR2RGB(le32_to_u32(gpuData[0]));
+   vertex[1].c.lcol=DoubleBGR2RGB(le32_to_u32(gpuData[3]));
+   vertex[2].c.lcol=DoubleBGR2RGB(le32_to_u32(gpuData[6]));
+   vertex[3].c.lcol=DoubleBGR2RGB(le32_to_u32(gpuData[9]));
   }
  /*else
   {
@@ -4522,10 +4522,10 @@ void primPolyGT4(unsigned char *baseAddr)
    SetZMask4O();
    if(bUseMultiPass) 
     {
-     vertex[0].c.lcol=DoubleBGR2RGB(gpuData[0]);
-     vertex[1].c.lcol=DoubleBGR2RGB(gpuData[3]);
-     vertex[2].c.lcol=DoubleBGR2RGB(gpuData[6]);
-     vertex[3].c.lcol=DoubleBGR2RGB(gpuData[9]);
+     vertex[0].c.lcol=DoubleBGR2RGB(le32_to_u32(gpuData[0]));
+     vertex[1].c.lcol=DoubleBGR2RGB(le32_to_u32(gpuData[3]));
+     vertex[2].c.lcol=DoubleBGR2RGB(le32_to_u32(gpuData[6]));
+     vertex[3].c.lcol=DoubleBGR2RGB(le32_to_u32(gpuData[9]));
      vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=vertex[3].c.col[3]=ubGloAlpha; 
     }
    ubGloAlpha=ubGloColAlpha=0xff;   
@@ -4543,21 +4543,21 @@ void primPolyGT4(unsigned char *baseAddr)
 
 void primPolyF3(unsigned char *baseAddr)
 {    
- unsigned int *gpuData = ((unsigned int *) baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
- lx0 = sgpuData[2];
- ly0 = sgpuData[3];
- lx1 = sgpuData[4];
- ly1 = sgpuData[5];
- lx2 = sgpuData[6];
- ly2 = sgpuData[7];
+ lx0 = le16_to_s16(sgpuData[2]);
+ ly0 = le16_to_s16(sgpuData[3]);
+ lx1 = le16_to_s16(sgpuData[4]);
+ ly1 = le16_to_s16(sgpuData[5]);
+ lx2 = le16_to_s16(sgpuData[6]);
+ ly2 = le16_to_s16(sgpuData[7]);
 
  if(offset3()) return;
 
  bDrawTextured     = FALSE;
  bDrawSmoothShaded = FALSE;
- SetRenderState(gpuData[0]);
+ SetRenderState(le32_to_u32(gpuData[0]));
 
 /* if(iOffscreenDrawing)
   {
@@ -4569,10 +4569,10 @@ void primPolyF3(unsigned char *baseAddr)
     }
   }
 */
- SetRenderMode(gpuData[0], FALSE);
+ SetRenderMode(le32_to_u32(gpuData[0]), FALSE);
  SetZMask3NT();
 
- vertex[0].c.lcol=gpuData[0];
+ vertex[0].c.lcol=le32_to_u32(gpuData[0]);
  vertex[0].c.col[3]=ubGloColAlpha;
  SETCOL(vertex[0]); 
 
@@ -4587,20 +4587,20 @@ void primPolyF3(unsigned char *baseAddr)
 
 void primLineGSkip(unsigned char *baseAddr)
 {    
- unsigned int *gpuData = ((unsigned int *) baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
  int iMax=255;
  int i=2;
 
- lx1 = sgpuData[2];
- ly1 = sgpuData[3];
+ lx1 = le16_to_s16(sgpuData[2]);
+ ly1 = le16_to_s16(sgpuData[3]);
 
- while(!(((gpuData[i] & 0xF000F000) == 0x50005000) && i>=4))
+ while(!(((le32_raw(gpuData[i]) & HTOLE32(0xF000F000)) == HTOLE32(0x50005000)) && i>=4))
   {
    i++;
 
-   ly1 = (short)((gpuData[i]>>16) & 0xffff);
-   lx1 = (short)(gpuData[i] & 0xffff);
+   ly1 = (short)((le32_to_u32(gpuData[i])>>16) & 0xffff);
+   lx1 = (short)(le32_to_u32(gpuData[i]) & 0xffff);
 
    i++;if(i>iMax) break;
   }
@@ -4612,37 +4612,37 @@ void primLineGSkip(unsigned char *baseAddr)
 
 void primLineGEx(unsigned char *baseAddr)
 {    
- unsigned int *gpuData = ((unsigned int *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
  int iMax=255;
  short cx0,cx1,cy0,cy1;int i;BOOL bDraw=TRUE;
 
  bDrawTextured = FALSE;
  bDrawSmoothShaded = TRUE;
- SetRenderState(gpuData[0]);
- SetRenderMode(gpuData[0], FALSE);
+ SetRenderState(le32_to_u32(gpuData[0]));
+ SetRenderMode(le32_to_u32(gpuData[0]), FALSE);
  SetZMask4NT();
 
- vertex[0].c.lcol=vertex[3].c.lcol=gpuData[0];
+ vertex[0].c.lcol=vertex[3].c.lcol=le32_to_u32(gpuData[0]);
  vertex[0].c.col[3]=vertex[3].c.col[3]=ubGloColAlpha; 
- ly1 = (short)((gpuData[1]>>16) & 0xffff);
- lx1 = (short)(gpuData[1] & 0xffff);
+ ly1 = (short)((le32_to_u32(gpuData[1])>>16) & 0xffff);
+ lx1 = (short)(le32_to_u32(gpuData[1]) & 0xffff);
 
  i=2;
 
  //while((gpuData[i]>>24)!=0x55)
  //while((gpuData[i]&0x50000000)!=0x50000000) 
  // currently best way to check for poly line end:
- while(!(((gpuData[i] & 0xF000F000) == 0x50005000) && i>=4))
+ while(!(((le32_raw(gpuData[i]) & HTOLE32(0xF000F000)) == HTOLE32(0x50005000)) && i>=4))
   {
    ly0 = ly1;lx0=lx1;
    vertex[1].c.lcol=vertex[2].c.lcol=vertex[0].c.lcol;
-   vertex[0].c.lcol=vertex[3].c.lcol=gpuData[i];
+   vertex[0].c.lcol=vertex[3].c.lcol=le32_to_u32(gpuData[i]);
    vertex[0].c.col[3]=vertex[3].c.col[3]=ubGloColAlpha; 
 
    i++;
 
-   ly1 = (short)((gpuData[i]>>16) & 0xffff);
-   lx1 = (short)(gpuData[i] & 0xffff);
+   ly1 = (short)((le32_to_u32(gpuData[i])>>16) & 0xffff);
+   lx1 = (short)(le32_to_u32(gpuData[i]) & 0xffff);
 
    if(offsetline()) bDraw=FALSE; else bDraw=TRUE;
   
@@ -4676,16 +4676,16 @@ void primLineGEx(unsigned char *baseAddr)
 
 void primLineG2(unsigned char *baseAddr)
 {    
- unsigned int *gpuData = ((unsigned int *) baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
- lx0 = sgpuData[2];
- ly0 = sgpuData[3];
- lx1 = sgpuData[6];
- ly1 = sgpuData[7];
+ lx0 = le16_to_s16(sgpuData[2]);
+ ly0 = le16_to_s16(sgpuData[3]);
+ lx1 = le16_to_s16(sgpuData[6]);
+ ly1 = le16_to_s16(sgpuData[7]);
 
- vertex[0].c.lcol=vertex[3].c.lcol=gpuData[0];
- vertex[1].c.lcol=vertex[2].c.lcol=gpuData[2];
+ vertex[0].c.lcol=vertex[3].c.lcol=le32_to_u32(gpuData[0]);
+ vertex[1].c.lcol=vertex[2].c.lcol=le32_to_u32(gpuData[2]);
  vertex[0].c.col[3]=vertex[1].c.col[3]=vertex[2].c.col[3]=vertex[3].c.col[3]=ubGloColAlpha; 
 
  bDrawTextured = FALSE;
@@ -4695,8 +4695,8 @@ void primLineG2(unsigned char *baseAddr)
     
  if(offsetline()) return;
     
- SetRenderState(gpuData[0]);
- SetRenderMode(gpuData[0], FALSE);
+ SetRenderState(le32_to_u32(gpuData[0]));
+ SetRenderMode(le32_to_u32(gpuData[0]), FALSE);
  SetZMask4NT();
 
 /* if(iOffscreenDrawing)
@@ -4721,16 +4721,16 @@ void primLineG2(unsigned char *baseAddr)
 
 void primLineFSkip(unsigned char *baseAddr)
 {
- unsigned int *gpuData = ((unsigned int *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
  int i=2,iMax=255;
 
- ly1 = (short)((gpuData[1]>>16) & 0xffff);
- lx1 = (short)(gpuData[1] & 0xffff);
+ ly1 = (short)((le32_to_u32(gpuData[1])>>16) & 0xffff);
+ lx1 = (short)(le32_to_u32(gpuData[1]) & 0xffff);
 
- while(!(((gpuData[i] & 0xF000F000) == 0x50005000) && i>=3))
+ while(!(((le32_raw(gpuData[i]) & HTOLE32(0xF000F000)) == HTOLE32(0x50005000)) && i>=3))
   {
-   ly1 = (short)((gpuData[i]>>16) & 0xffff);
-   lx1 = (short)(gpuData[i] & 0xffff);
+   ly1 = (short)((le32_to_u32(gpuData[i])>>16) & 0xffff);
+   lx1 = (short)(le32_to_u32(gpuData[i]) & 0xffff);
    i++;if(i>iMax) break;
   }             
 }
@@ -4741,7 +4741,7 @@ void primLineFSkip(unsigned char *baseAddr)
 
 void primLineFEx(unsigned char *baseAddr)
 {
- unsigned int *gpuData = ((unsigned int *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
  int iMax;
  short cx0,cx1,cy0,cy1;int i;
 
@@ -4749,15 +4749,15 @@ void primLineFEx(unsigned char *baseAddr)
 
  bDrawTextured = FALSE;
  bDrawSmoothShaded = FALSE;
- SetRenderState(gpuData[0]);
- SetRenderMode(gpuData[0], FALSE);
+ SetRenderState(le32_to_u32(gpuData[0]));
+ SetRenderMode(le32_to_u32(gpuData[0]), FALSE);
  SetZMask4NT();
 
- vertex[0].c.lcol=gpuData[0];
+ vertex[0].c.lcol=le32_to_u32(gpuData[0]);
  vertex[0].c.col[3]=ubGloColAlpha; 
 
- ly1 = (short)((gpuData[1]>>16) & 0xffff);
- lx1 = (short)(gpuData[1] & 0xffff);
+ ly1 = (short)((le32_to_u32(gpuData[1])>>16) & 0xffff);
+ lx1 = (short)(le32_to_u32(gpuData[1]) & 0xffff);
 
  i=2;
 
@@ -4765,11 +4765,11 @@ void primLineFEx(unsigned char *baseAddr)
 // while((gpuData[i]>>24)!=0x55)
 // while((gpuData[i]&0x50000000)!=0x50000000) 
 // currently best way to check for poly line end:
- while(!(((gpuData[i] & 0xF000F000) == 0x50005000) && i>=3))
+ while(!(((le32_raw(gpuData[i]) & HTOLE32(0xF000F000)) == HTOLE32(0x50005000)) && i>=3))
   {
    ly0 = ly1;lx0=lx1;
-   ly1 = (short)((gpuData[i]>>16) & 0xffff);
-   lx1 = (short)(gpuData[i] & 0xffff);
+   ly1 = (short)((le32_to_u32(gpuData[i])>>16) & 0xffff);
+   lx1 = (short)(le32_to_u32(gpuData[i]) & 0xffff);
 
    if(!offsetline())
     {
@@ -4799,23 +4799,23 @@ void primLineFEx(unsigned char *baseAddr)
 
 void primLineF2(unsigned char *baseAddr)
 {
- unsigned int *gpuData = ((unsigned int *) baseAddr);
- short *sgpuData = ((short *) baseAddr);
+ le32_t *gpuData = ((le32_t *) baseAddr);
+ le16_t *sgpuData = ((le16_t *) baseAddr);
 
- lx0 = sgpuData[2];
- ly0 = sgpuData[3];
- lx1 = sgpuData[4];
- ly1 = sgpuData[5];
+ lx0 = le16_to_s16(sgpuData[2]);
+ ly0 = le16_to_s16(sgpuData[3]);
+ lx1 = le16_to_s16(sgpuData[4]);
+ ly1 = le16_to_s16(sgpuData[5]);
 
  if(offsetline()) return;
 
  bDrawTextured = FALSE;
  bDrawSmoothShaded = FALSE;
- SetRenderState(gpuData[0]);
- SetRenderMode(gpuData[0], FALSE);
+ SetRenderState(le32_to_u32(gpuData[0]));
+ SetRenderMode(le32_to_u32(gpuData[0]), FALSE);
  SetZMask4NT();
 
- vertex[0].c.lcol=gpuData[0];
+ vertex[0].c.lcol=le32_to_u32(gpuData[0]);
  vertex[0].c.col[3]=ubGloColAlpha; 
 
 /* if(iOffscreenDrawing)

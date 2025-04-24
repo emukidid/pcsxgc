@@ -15,12 +15,16 @@
  *   additional informations.                                              *
  *                                                                         *
  ***************************************************************************/
-
+#include <gccore.h>
+#include <opengx.h>
 #include "gpuStdafx.h"
 #include "gpuDraw.c"
 #include "gpuTexture.c"
 #include "gpuPrim.c"
 #include "hud.c"
+extern void SysPrintf(const char *fmt, ...);
+extern u32* xfb[3];			/*** Framebuffers ***/
+static int whichfb;        	/*** Frame buffer toggle ***/
 
 static const short dispWidths[8] = {256,320,512,640,368,384,512,640};
 short g_m1,g_m2,g_m3;
@@ -36,7 +40,7 @@ int           iGPUHeightMask=511;
 int           GlobalTextIL;
 
 unsigned char  *psxVub;
-unsigned short *psxVuw;
+le16_t *psxVuw;
 
 GLfloat         gl_z=0.0f;
 BOOL            bNeedInterlaceUpdate;
@@ -90,6 +94,7 @@ static void fps_update(void);
 
 void updateDisplay(void)
 {
+//	SysPrintf("updateDisplay\r\n");
  bFakeFrontBuffer=FALSE;
  bRenderFrontBuffer=FALSE;
 
@@ -126,8 +131,11 @@ void updateDisplay(void)
  if(iDrawnSomething)
  {
   fps_update();
-  eglSwapBuffers(display, surface);
+  //glSwapBuffers(display, surface);
+  GX_CopyDisp (xfb[whichfb], GX_TRUE);
+  GX_SetDrawSync(whichfb);
   iDrawnSomething=0;
+  SysPrintf("%dKB MEM1 available\r\n", SYS_GetArena1Size()/1024);
  }
 
  if(lClearOnSwap)                                     // clear buffer after swap?
@@ -183,6 +191,7 @@ void updateDisplay(void)
 
 void updateFrontDisplay(void)
 {
+	SysPrintf("updateFrontDisplay\r\n");
  if(PreviousPSXDisplay.Range.x0||
     PreviousPSXDisplay.Range.y0)
   PaintBlackBorders();
@@ -190,12 +199,15 @@ void updateFrontDisplay(void)
  bFakeFrontBuffer=FALSE;
  bRenderFrontBuffer=FALSE;
 
- if(iDrawnSomething)                                  // linux:
-  eglSwapBuffers(display, surface);
+ //if(iDrawnSomething)                                  // linux:
+ // glSwapBuffers(display, surface);
+   GX_CopyDisp (xfb[whichfb], GX_TRUE);
+  GX_SetDrawSync(whichfb);
 }
 
 static void ChangeDispOffsetsX(void)                  // CENTER X
 {
+	SysPrintf("ChangeDispOffsetsX\r\n");
 int lx,l;short sO;
 
 if(!PSXDisplay.Range.x1) return;                      // some range given?
@@ -242,6 +254,7 @@ if(sO!=PreviousPSXDisplay.Range.x0)                   // something changed?
 
 static void ChangeDispOffsetsY(void)                  // CENTER Y
 {
+	SysPrintf("ChangeDispOffsetsY\r\n");
 int iT;short sO;                                      // store previous y size
 
 if(PSXDisplay.PAL) iT=48; else iT=28;                 // different offsets on PAL/NTSC
@@ -267,6 +280,7 @@ if(sO!=PreviousPSXDisplay.Range.y0)                   // something changed?
 
 static void updateDisplayIfChanged(void)
 {
+	SysPrintf("updateDisplayIfChanged\r\n");
 BOOL bUp;
 
 if ((PSXDisplay.DisplayMode.y == PSXDisplay.DisplayModeNew.y) && 
@@ -315,6 +329,7 @@ if(bUp) updateDisplay();                              // yeah, real update (swap
 #define GPUwriteStatus_ext GPUwriteStatus_ext // for gpulib to see this
 void GPUwriteStatus_ext(unsigned int gdata)
 {
+
 switch((gdata>>24)&0xff)
  {
   case 0x00:
@@ -483,7 +498,7 @@ static int is_opened;
 static void set_vram(void *vram)
 {
  psxVub=vram;
- psxVuw=(unsigned short *)psxVub;
+ psxVuw=(le16_t *)psxVub;
 }
 
 int renderer_init(void)
@@ -521,16 +536,18 @@ void renderer_notify_scanout_change(int x, int y)
 extern const unsigned char cmd_lengths[256];
 
 // XXX: mostly dupe code from soft peops
-int do_cmd_list(uint32_t *list, int list_len,
+int do_cmd_list(uint32_t *list_, int list_len,
  int *cycles_sum_out, int *cycles_last, int *last_cmd)
 {
+	//SysPrintf("do_cmd_list\r\n");
   unsigned int cmd, len;
-  unsigned int *list_start = list;
-  unsigned int *list_end = list + list_len;
+  le32_t *list = (le32_t *)list_;
+  le32_t *list_start = list;
+  le32_t *list_end = list + list_len;
 
   for (; list < list_end; list += 1 + len)
   {
-    cmd = *list >> 24;
+    cmd = le32_to_u32(*list) >> 24;
     len = cmd_lengths[cmd];
     if (list + 1 + len > list_end) {
       cmd = -1;
@@ -541,7 +558,7 @@ int do_cmd_list(uint32_t *list, int list_len,
     if (cmd == 0xa0 || cmd == 0xc0)
       break; // image i/o, forward to upper layer
     else if ((cmd & 0xf8) == 0xe0)
-      gpu.ex_regs[cmd & 7] = list[0];
+      gpu.ex_regs[cmd & 7] = le32_to_u32(list[0]);
 #endif
 
     primTableJ[cmd]((void *)list);
@@ -551,7 +568,7 @@ int do_cmd_list(uint32_t *list, int list_len,
       case 0x48 ... 0x4F:
       {
         uint32_t num_vertexes = 2;
-        uint32_t *list_position = &(list[3]);
+        le32_t *list_position = &(list[3]);
 
         while(1)
         {
@@ -560,7 +577,7 @@ int do_cmd_list(uint32_t *list, int list_len,
             goto breakloop;
           }
 
-          if((*list_position & 0xf000f000) == 0x50005000)
+          if((le32_raw(*list_position) & HTOLE32(0xf000f000)) == HTOLE32(0x50005000))
             break;
 
           list_position++;
@@ -574,7 +591,7 @@ int do_cmd_list(uint32_t *list, int list_len,
       case 0x58 ... 0x5F:
       {
         uint32_t num_vertexes = 2;
-        uint32_t *list_position = &(list[4]);
+        le32_t *list_position = &(list[4]);
 
         while(1)
         {
@@ -583,7 +600,7 @@ int do_cmd_list(uint32_t *list, int list_len,
             goto breakloop;
           }
 
-          if((*list_position & 0xf000f000) == 0x50005000)
+          if((le32_raw(*list_position) & HTOLE32(0xf000f000)) == HTOLE32(0x50005000))
             break;
 
           list_position += 2;
@@ -680,12 +697,21 @@ void vout_set_config(const struct rearmed_cbs *cbs)
 
 static struct rearmed_cbs *cbs;
 
+void VI_GX_DrawSyncCallback(u16 token)
+{
+	VIDEO_SetNextFramebuffer(xfb[whichfb]);
+	VIDEO_Flush();
+	//VIDEO_SetPreRetraceCallback(VI_GX_PreRetraceCallback);
+}
+
 long GPUopen(unsigned long *disp, char *cap, char *cfg)
 {
+	SysPrintf("GPUopen\r\n");
  int ret;
-
- iResX = cbs->screen_w;
- iResY = cbs->screen_h;
+ ogx_initialize();
+ iResX = 640;	// TODO fix this to be passed in.
+ iResY = 480;
+ SysPrintf("GPUopen %i %i\r\n", iResX, iResY);
  rRatioRect.left   = rRatioRect.top=0;
  rRatioRect.right  = iResX;
  rRatioRect.bottom = iResY;
@@ -698,6 +724,7 @@ long GPUopen(unsigned long *disp, char *cap, char *cfg)
 
  ret = GLinitialize(cbs->gles_display, cbs->gles_surface);
  MakeDisplayLists();
+ GX_SetDrawSyncCallback(VI_GX_DrawSyncCallback);
 
  is_opened = 1;
  return ret;
@@ -731,6 +758,8 @@ void renderer_set_config(const struct rearmed_cbs *cbs_)
  bAdvancedBlend = cbs->gpu_peopsgl.bAdvancedBlend;
  bUseFastMdec = cbs->gpu_peopsgl.bUseFastMdec;
  iTexGarbageCollection = cbs->gpu_peopsgl.iTexGarbageCollection;
+ SysPrintf("iVramSize: %i\r\n", cbs->gpu_peopsgl.iVRamSize);
+ cbs->gpu_peopsgl.iVRamSize = 8;
  iVRamSize = cbs->gpu_peopsgl.iVRamSize;
 
  if (cbs->pl_set_gpu_caps)

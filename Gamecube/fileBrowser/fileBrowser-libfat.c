@@ -257,8 +257,9 @@ int fileBrowser_libfat_init(fileBrowser_file* f){
 	return res; 				// Already mounted
 #endif
 }
-
+extern void print_gecko(const char* fmt, ...);
 int fileBrowser_libfat_deinit(fileBrowser_file* f){
+	print_gecko("FatUnmount: %s\r\n", f->name);
   	if(f->name[0] == 's') {      //SD
 		fatUnmount("sd");
  	}
@@ -290,13 +291,15 @@ int fileBrowser_libfatROM_deinit(fileBrowser_file* f){
 }
 
 int fileBrowser_libfatROM_readFile(fileBrowser_file* file, void* buffer, unsigned int length){
+	print_gecko("readfile %s [ofs: %08X, len %i]\r\n", file->name, file->offset, length);
     if(!fd) fd = fopen( file->name, "rb");
 
 	fseek(fd, file->offset, SEEK_SET);
 	int bytes_read = fread(buffer, 1, length, fd);
 	if(bytes_read > 0) {
-  	file->offset += bytes_read;
+		file->offset += bytes_read;
 	}
+	print_gecko("read: %i\r\n", bytes_read);
 
 	return bytes_read;
 }

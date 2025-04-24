@@ -152,7 +152,7 @@ void            DefineSubTextureSort(void);
 ////////////////////////////////////////////////////////////////////////
 
 GLint giWantedRGBA=4;
-GLint giWantedFMT=GL_BGRA;
+GLint giWantedFMT=GL_RGBA;
 GLint giWantedTYPE=GL_UNSIGNED_BYTE;
 long  GlobalTexturePage;
 GLint XTexS;
@@ -361,13 +361,22 @@ print_gecko("CP8BGRAEx_0\r\n"); unsigned long l;
 
 unsigned long XP8RGBA_1(unsigned long BGR)
 {
-print_gecko("XP8RGBA_1\r\n");
- //SysPrintf("13\r\n");
- BGR= SWAP16(BGR);
- if(!(BGR&0xffff)) return (0x50000000);
- u32 ret = (((CLUT_RED(BGR) * 255) / 31)<<16)|(((CLUT_GREEN(BGR)* 255) / 31)<<8)|((CLUT_BLUE(BGR)* 255)/31); 
- if(!(BGR&0x8000)) {ubOpaqueDraw=1;return ret;}
- return (ret|0xff000000);
+	// The original little-endian conversion computes the pixel like so:
+	if (!(BGR & 0xffff))
+		return SWAP32(0x50000000);
+
+	uint32_t color = ( (((BGR << 3)  & 0xf8)    |  // Extract and convert blue (5-bit -> 8-bit)
+						((BGR << 6)  & 0xf800)  |  // Extract and convert green
+						((BGR << 9)  & 0xf80000))  // Extract and convert red
+					  & 0xffffff );             // Combine channels into 24 bits
+
+	if (!(BGR & 0x8000)) {
+		ubOpaqueDraw = 1;         // Mark draw as opaque.
+		return SWAP32(color);
+	}
+
+	// If the high bit is set add the alpha value (0xff) in the proper spot.
+	return SWAP32(color | 0xff000000);
 }
 
 unsigned long XP8RGBAEx_1(unsigned long BGR)
@@ -646,10 +655,10 @@ void InitializeTextureStore()
 
  memset(wcWndtexStore,0,sizeof(textureWndCacheEntry)*
                         MAXWNDTEXCACHE);
- texturepart=(GLubyte *)malloc(256*256*4);
+ texturepart=(GLubyte *)malloc_gx(256*256*4);
  memset(texturepart,0,256*256*4);
  if(iHiResTextures)
- texturebuffer=(GLubyte *)malloc(512*512*4);
+ texturebuffer=(GLubyte *)malloc_gx(512*512*4);
  else texturebuffer=NULL;
 
  for(i=0;i<3;i++)                                    // -> info for 32*3
@@ -676,11 +685,11 @@ void CleanupTextureStore()
  //----------------------------------------------------//
  glBindTexture(GL_TEXTURE_2D,0);
  //----------------------------------------------------//
- free(texturepart);                                    // free tex part
+ free_gx(texturepart);                                    // free tex part
  texturepart=0;
  if(texturebuffer)
   {
-   free(texturebuffer);
+   free_gx(texturebuffer);
    texturebuffer=0;
   }
  //----------------------------------------------------//

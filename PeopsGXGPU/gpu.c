@@ -28,6 +28,7 @@
 
 #ifdef __GX__
 #include <gccore.h>
+#include <opengx.h>
 #include "../Gamecube/libgui/IPLFontC.h"
 #include "../Gamecube/DEBUG.h"
 #include "../Gamecube/wiiSXconfig.h"
@@ -497,6 +498,8 @@ void CALLBACK GPUmakeSnapshot(void)
 
 long CALLBACK GPUinit()                                // GPU INIT
 {
+	//setenv("OPENGX_DEBUG", "warning");
+ ogx_initialize();
  memset(ulStatusControl,0,256*sizeof(unsigned long));
 
  // different ways of accessing PSX VRAM
@@ -573,15 +576,15 @@ extern u32* xfb[3];			/*** Framebuffers ***/
 static int whichfb;        	/*** Frame buffer toggle ***/
 void VI_GX_PreRetraceCallback(u32 retraceCnt)
 {
-	whichfb ^= 1;
-	VIDEO_SetPreRetraceCallback(NULL);
+	//whichfb ^= 1;
+	//VIDEO_SetPreRetraceCallback(NULL);
 }
 
 void VI_GX_DrawSyncCallback(u16 token)
 {
-	VIDEO_SetNextFramebuffer(xfb[token & 1]);
+	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();
-	VIDEO_SetPreRetraceCallback(VI_GX_PreRetraceCallback);
+	//VIDEO_SetPreRetraceCallback(VI_GX_PreRetraceCallback);
 }
 #endif
 
@@ -1520,7 +1523,7 @@ void updateDisplay(void)                               // UPDATE DISPLAY
   {
    if(!bSkipNextFrame) 
     {
-    if(iDrawnSomething)
+    if(iDrawnSomething) {
 #ifdef _WINDOWS
       SwapBuffers(wglGetCurrentDC());                  // -> to skip or not to skip
 #else
@@ -1531,6 +1534,7 @@ void updateDisplay(void)                               // UPDATE DISPLAY
 	  GX_SetDrawSync(whichfb);
 #endif
 #endif
+	}
     }
    if(dwActFixes&0x180)                                // -> special old frame skipping: skip max one in a row
     {
@@ -1542,7 +1546,7 @@ void updateDisplay(void)                               // UPDATE DISPLAY
   }
  else                                                  // no skip ?
   {
-   if(iDrawnSomething)
+   if(iDrawnSomething) {
 #ifdef _WINDOWS
     SwapBuffers(wglGetCurrentDC());                    // -> swap
 #else
@@ -1553,6 +1557,7 @@ void updateDisplay(void)                               // UPDATE DISPLAY
 	GX_SetDrawSync(whichfb);
 #endif
 #endif
+   }
   }
 
  iDrawnSomething=0;
@@ -1677,13 +1682,14 @@ void updateFrontDisplay(void)
    ReleaseDC(hWWindow,hdc);                            // -> ! important !
   }
 #else
- if(iDrawnSomething)                                   // linux:
+ if(iDrawnSomething)    {                               // linux:
 #ifndef __GX__
   glXSwapBuffers(display,window);
 #else
   GX_CopyDisp (xfb[whichfb], GX_TRUE);
   GX_SetDrawSync(whichfb);
 #endif
+ }
 #endif
 
  if(iBlurBuffer) UnBlurBackBuffer();

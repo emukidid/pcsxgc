@@ -79,6 +79,24 @@
 #define CLUTCHK   0x00060000
 #define CLUTSHIFT 17
 
+#include <gccore.h>
+#include <ogc/lwp_heap.h>
+#include <malloc.h>
+#include <ogc/machine/processor.h>
+#ifdef HW_RVL
+#include "../../../Gamecube/MEM2.h"
+#else
+#include "../../../Gamecube/ARAM.h"
+#endif
+
+#ifdef WII
+heap_cntrl* GXtexCache;
+#define malloc_gx(size) __lwp_heap_allocate(GXtexCache,size)
+#define free_gx(ptr) __lwp_heap_free(GXtexCache,ptr)
+#else 
+#define malloc_gx(size) malloc(size)
+#define free_gx(ptr) free(ptr)
+#endif
 ////////////////////////////////////////////////////////////////////////
 // texture conversion buffer .. 
 ////////////////////////////////////////////////////////////////////////
@@ -93,7 +111,7 @@ int           iVRamSize=0;
 int           iClampType=GL_CLAMP_TO_EDGE;
 int iFilter = GL_LINEAR;
 void               (*LoadSubTexFn) (int,int,short,short);
-unsigned int       (*PalTexturedColourFn)  (unsigned int);
+u32       (*PalTexturedColourFn)  (u32);
 
 ////////////////////////////////////////////////////////////////////////
 // defines
@@ -147,8 +165,8 @@ BOOL  bUse15bitMdec=FALSE;
 int   iFrameTexType=0;
 int   iFrameReadType=0;
 
-unsigned int  (*TCF[2]) (unsigned int);
-unsigned short (*PTCF[2]) (unsigned short);
+u32  (*TCF[2]) (u32);
+u16 (*PTCF[2]) (u16);
 
 ////////////////////////////////////////////////////////////////////////
 // texture cache implementation
@@ -213,24 +231,21 @@ unsigned short MAXSORTTEX    = 196;
 // porting... and honestly: nowadays the speed gain would be pointless 
 ////////////////////////////////////////////////////////////////////////
 
-unsigned int XP8RGBA(unsigned int BGR)
-{
+u32 XP8RGBA(u32 BGR) {
  if(!(BGR&0xffff)) return 0x50000000;
  if(DrawSemiTrans && !(BGR&0x8000)) 
   {ubOpaqueDraw=1;return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff);}
  return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
 }
 
-unsigned int XP8RGBAEx(unsigned int BGR)
-{
+u32 XP8RGBAEx(u32 BGR) {
  if(!(BGR&0xffff)) return 0x03000000;
  if(DrawSemiTrans && !(BGR&0x8000)) 
   {ubOpaqueDraw=1;return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff);}
  return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
 }
 
-unsigned int CP8RGBA(unsigned int BGR)
-{
+u32 CP8RGBA(u32 BGR) {
  unsigned int l;
  if(!(BGR&0xffff)) return 0x50000000;
  if(DrawSemiTrans && !(BGR&0x8000)) 
@@ -240,8 +255,7 @@ unsigned int CP8RGBA(unsigned int BGR)
  return l;
 }
 
-unsigned int CP8RGBAEx(unsigned int BGR)
-{
+u32 CP8RGBAEx(u32 BGR) {
  unsigned int l;
  if(!(BGR&0xffff)) return 0x03000000;
  if(DrawSemiTrans && !(BGR&0x8000)) 
@@ -251,32 +265,27 @@ unsigned int CP8RGBAEx(unsigned int BGR)
  return l;
 }
 
-unsigned int XP8RGBA_0(unsigned int BGR)
-{
+u32 XP8RGBA_0(u32 BGR) {
  if(!(BGR&0xffff)) return 0x50000000;
  return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
 }
 
-unsigned int XP8RGBAEx_0(unsigned int BGR)
-{
+u32 XP8RGBAEx_0(u32 BGR) {
  if(!(BGR&0xffff)) return 0x03000000;
  return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
 }
 
-unsigned int XP8BGRA_0(unsigned int BGR)
-{
+u32 XP8BGRA_0(u32 BGR) {
  if(!(BGR&0xffff)) return 0x50000000;
  return ((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff)|0xff000000;
 }
 
-unsigned int XP8BGRAEx_0(unsigned int BGR)
-{
+u32 XP8BGRAEx_0(u32 BGR) {
  if(!(BGR&0xffff)) return 0x03000000;
  return ((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff)|0xff000000;
 }
 
-unsigned int CP8RGBA_0(unsigned int BGR)
-{
+u32 CP8RGBA_0(u32 BGR) {
  unsigned int l;
 
  if(!(BGR&0xffff)) return 0x50000000;
@@ -285,8 +294,7 @@ unsigned int CP8RGBA_0(unsigned int BGR)
  return l;
 }
 
-unsigned int CP8RGBAEx_0(unsigned int BGR)
-{
+u32 CP8RGBAEx_0(u32 BGR) {
  unsigned int l;
 
  if(!(BGR&0xffff)) return 0x03000000;
@@ -295,8 +303,7 @@ unsigned int CP8RGBAEx_0(unsigned int BGR)
  return l;
 }
 
-unsigned int CP8BGRA_0(unsigned int BGR)
-{
+u32 CP8BGRA_0(u32 BGR) {
  unsigned int l;
 
  if(!(BGR&0xffff)) return 0x50000000;
@@ -305,8 +312,7 @@ unsigned int CP8BGRA_0(unsigned int BGR)
  return l;
 }
 
-unsigned int CP8BGRAEx_0(unsigned int BGR)
-{
+u32 CP8BGRAEx_0(u32 BGR) {
  unsigned int l;
 
  if(!(BGR&0xffff)) return 0x03000000;
@@ -315,47 +321,41 @@ unsigned int CP8BGRAEx_0(unsigned int BGR)
  return l;
 }
 
-unsigned int XP8RGBA_1(unsigned int BGR)
-{
+u32 XP8RGBA_1(u32 BGR) {
  if(!(BGR&0xffff)) return 0x50000000;
  if(!(BGR&0x8000)) {ubOpaqueDraw=1;return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff);}
  return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
 }
 
-unsigned int XP8RGBAEx_1(unsigned int BGR)
-{
+u32 XP8RGBAEx_1(u32 BGR) {
  if(!(BGR&0xffff)) return 0x03000000;
  if(!(BGR&0x8000)) {ubOpaqueDraw=1;return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff);}
  return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
 }
 
-unsigned int XP8BGRA_1(unsigned int BGR)
-{
+u32 XP8BGRA_1(u32 BGR) {
  if(!(BGR&0xffff)) return 0x50000000;
  if(!(BGR&0x8000)) {ubOpaqueDraw=1;return ((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff);}
  return ((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff)|0xff000000;
 }
 
-unsigned int XP8BGRAEx_1(unsigned int BGR)
-{
+u32 XP8BGRAEx_1(u32 BGR) {
  if(!(BGR&0xffff)) return 0x03000000;
  if(!(BGR&0x8000)) {ubOpaqueDraw=1;return ((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff);}
  return ((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff)|0xff000000;
 }
 
-unsigned int P8RGBA(unsigned int BGR)
-{
+u32 P8RGBA(u32 BGR) {
  if(!(BGR&0xffff)) return 0;
  return ((((BGR<<3)&0xf8)|((BGR<<6)&0xf800)|((BGR<<9)&0xf80000))&0xffffff)|0xff000000;
 }
 
-unsigned int P8BGRA(unsigned int BGR)
-{
+u32 P8BGRA(u32 BGR) {
  if(!(BGR&0xffff)) return 0;
  return ((((BGR>>7)&0xf8)|((BGR<<6)&0xf800)|((BGR<<19)&0xf80000))&0xffffff)|0xff000000;
 }
 
-unsigned short XP5RGBA(unsigned short BGR)
+u16 XP5RGBA(u16 BGR)
 {
  if(!BGR) return 0;
  if(DrawSemiTrans && !(BGR&0x8000)) 
@@ -363,16 +363,16 @@ unsigned short XP5RGBA(unsigned short BGR)
  return ((((BGR<<11))|((BGR>>9)&0x3e)|((BGR<<1)&0x7c0)))|1;
 }
 
-unsigned short XP5RGBA_0 (unsigned short BGR)
+u16 XP5RGBA_0 (u16 BGR)
 {
  if(!BGR) return 0;
 
  return ((((BGR<<11))|((BGR>>9)&0x3e)|((BGR<<1)&0x7c0)))|1;
 }
 
-unsigned short CP5RGBA_0 (unsigned short BGR)
+u16 CP5RGBA_0 (u16 BGR)
 {
- unsigned short s;
+ u16 s;
 
  if(!BGR) return 0;
 
@@ -381,7 +381,7 @@ unsigned short CP5RGBA_0 (unsigned short BGR)
  return s;
 }
 
-unsigned short XP5RGBA_1(unsigned short BGR)
+u16 XP5RGBA_1(u16 BGR)
 {
  if(!BGR) return 0;
  if(!(BGR&0x8000)) 
@@ -389,13 +389,13 @@ unsigned short XP5RGBA_1(unsigned short BGR)
  return ((((BGR<<11))|((BGR>>9)&0x3e)|((BGR<<1)&0x7c0)))|1;
 }
 
-unsigned short P5RGBA(unsigned short BGR)
+u16 P5RGBA(u16 BGR)
 {
  if(!BGR) return 0;
  return ((((BGR<<11))|((BGR>>9)&0x3e)|((BGR<<1)&0x7c0)))|1;
 }
 
-unsigned short XP4RGBA(unsigned short BGR)
+u16 XP4RGBA(u16 BGR)
 {
  if(!BGR) return 6;
  if(DrawSemiTrans && !(BGR&0x8000)) 
@@ -403,22 +403,22 @@ unsigned short XP4RGBA(unsigned short BGR)
  return (((((BGR&0x1e)<<11))|((BGR&0x7800)>>7)|((BGR&0x3c0)<<2)))|0xf;
 }
 
-unsigned short XP4RGBA_0 (unsigned short BGR)
+u16 XP4RGBA_0 (u16 BGR)
 {
  if(!BGR) return 6;
  return (((((BGR&0x1e)<<11))|((BGR&0x7800)>>7)|((BGR&0x3c0)<<2)))|0xf;
 }
 
-unsigned short CP4RGBA_0 (unsigned short BGR)
+u16 CP4RGBA_0 (u16 BGR)
 {
- unsigned short s;
+ u16 s;
  if(!BGR) return 6;
  s=(((((BGR&0x1e)<<11))|((BGR&0x7800)>>7)|((BGR&0x3c0)<<2)))|0xf;
  if(s==0x0fff) s=0x000f;
  return s;
 }
 
-unsigned short XP4RGBA_1(unsigned short BGR)
+u16 XP4RGBA_1(u16 BGR)
 {
  if(!BGR) return 6;
  if(!(BGR&0x8000)) 
@@ -426,7 +426,7 @@ unsigned short XP4RGBA_1(unsigned short BGR)
  return (((((BGR&0x1e)<<11))|((BGR&0x7800)>>7)|((BGR&0x3c0)<<2)))|0xf;
 }
 
-unsigned short P4RGBA(unsigned short BGR)
+u16 P4RGBA(u16 BGR)
 {
  if(!BGR) return 0;
  return (((((BGR&0x1e)<<11))|((BGR&0x7800)>>7)|((BGR&0x3c0)<<2)))|0xf;
@@ -438,7 +438,7 @@ unsigned short P4RGBA(unsigned short BGR)
 
 int iFTexA=512;
 int iFTexB=512;
-
+extern void SysPrintf(const char *fmt, ...);
 void CheckTextureMemory(void)
 {
  GLboolean b;GLboolean * bDetail;
@@ -468,7 +468,7 @@ void CheckTextureMemory(void)
 
    for(i=0;i<MAXSORTTEX;i++)
     uiStexturePage[i]=0;
- 
+	SysPrintf("Texture max: %i\r\n", iSortTexCnt);
    return;
   }
 
@@ -520,6 +520,13 @@ void CheckTextureMemory(void)
 
 void InitializeTextureStore() 
 {
+#ifdef WII
+	if(!GXtexCache)
+	{
+		GXtexCache = (heap_cntrl*)memalign(32, sizeof(heap_cntrl));
+		__lwp_heap_init(GXtexCache, TEXCACHE_LO,TEXCACHE_SIZE, 32);
+	}
+#endif
  int i,j;
 
  if(iGPUHeight==1024)
@@ -547,19 +554,19 @@ void InitializeTextureStore()
 
  memset(wcWndtexStore,0,sizeof(textureWndCacheEntry)*
                         MAXWNDTEXCACHE);
- texturepart=(GLubyte *)malloc(256*256*4);
+ texturepart=(GLubyte *)malloc_gx(256*256*4);
  memset(texturepart,0,256*256*4);
 	 texturebuffer=NULL;
 
  for(i=0;i<3;i++)                                    // -> info for 32*3
   for(j=0;j<MAXTPAGES;j++)
    {                                               
-    pscSubtexStore[i][j]=(textureSubCacheEntryS *)malloc(CSUBSIZES*sizeof(textureSubCacheEntryS));
+    pscSubtexStore[i][j]=(textureSubCacheEntryS *)malloc_gx(CSUBSIZES*sizeof(textureSubCacheEntryS));
     memset(pscSubtexStore[i][j],0,CSUBSIZES*sizeof(textureSubCacheEntryS));
    }
  for(i=0;i<MAXSORTTEX;i++)                           // -> info 0..511
   {
-   pxSsubtexLeft[i]=(EXLong *)malloc(CSUBSIZE*sizeof(EXLong));
+   pxSsubtexLeft[i]=(EXLong *)malloc_gx(CSUBSIZE*sizeof(EXLong));
    memset(pxSsubtexLeft[i],0,CSUBSIZE*sizeof(EXLong));
    uiStexturePage[i]=0;
   }
@@ -576,11 +583,11 @@ void CleanupTextureStore()
  glBindTexture(GL_TEXTURE_2D,0);
  glError();
  //----------------------------------------------------//
- free(texturepart);                                    // free tex part
+ free_gx(texturepart);                                    // free tex part
  texturepart=0;
  if(texturebuffer)
   {
-   free(texturebuffer);
+   free_gx(texturebuffer);
    texturebuffer=0;
   }
  //----------------------------------------------------//
@@ -611,7 +618,7 @@ void CleanupTextureStore()
  for(i=0;i<3;i++)                                    // -> loop
   for(j=0;j<MAXTPAGES;j++)                           // loop tex pages
    {
-    free(pscSubtexStore[i][j]);                      // -> clean mem
+    free_gx(pscSubtexStore[i][j]);                      // -> clean mem
     pscSubtexStore[i][j]=0;
    }
  for(i=0;i<MAXSORTTEX;i++)
@@ -622,7 +629,7 @@ void CleanupTextureStore()
      glError();
      uiStexturePage[i]=0;                            // --> delete it
     }
-   free(pxSsubtexLeft[i]);                           // -> clean mem
+   free_gx(pxSsubtexLeft[i]);                           // -> clean mem
    pxSsubtexLeft[i]=0;
   }
  //----------------------------------------------------//
@@ -924,10 +931,10 @@ void LoadStretchPackedWndTexturePage(int pageid, int mode, short cx, short cy)
  unsigned int   palstart;
  unsigned short *px,*pa,*ta;
  unsigned char  *cSRCPtr,*cOSRCPtr;
- unsigned short *wSRCPtr,*wOSRCPtr;
+ le16_t *wSRCPtr,*wOSRCPtr;
  unsigned int  LineOffset;unsigned short s;
  int pmult=pageid/16;
- unsigned short (*LPTCOL)(unsigned short);
+ u16 (*LPTCOL)(u16);
 
  LPTCOL=PTCF[DrawSemiTrans];
 
@@ -951,7 +958,7 @@ void LoadStretchPackedWndTexturePage(int pageid, int mode, short cx, short cy)
 
       wSRCPtr=psxVuw+palstart;
       for(row=0;row<16;row++)
-       *px++=LPTCOL(*wSRCPtr++);
+       *px++=LPTCOL(le16_to_u16(*wSRCPtr++));
 
       column=g_y2-ldy;
       for(TXV=g_y1;TXV<=column;TXV++)
@@ -962,7 +969,7 @@ void LoadStretchPackedWndTexturePage(int pageid, int mode, short cx, short cy)
   		  n_xi = ( ( TXU >> 2 ) & ~0x3c ) + ( ( TXV << 2 ) & 0x3c );
 		  n_yi = ( TXV & ~0xf ) + ( ( TXU >> 4 ) & 0xf );
 
-          s=*(pa+((*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi ) >> ( ( TXU & 0x03 ) << 2 ) ) & 0x0f ));
+          s=*(pa+((le16_to_u16(*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi )) >> ( ( TXU & 0x03 ) << 2 ) ) & 0x0f ));
           *ta++=s;
 
           if(ldx) {*ta++=s;ldx--;}
@@ -987,7 +994,7 @@ void LoadStretchPackedWndTexturePage(int pageid, int mode, short cx, short cy)
 
     wSRCPtr=psxVuw+palstart;
     for(row=0;row<16;row++)
-     *px++=LPTCOL(*wSRCPtr++);
+     *px++=LPTCOL(le16_to_u16(*wSRCPtr++));
 
     sxm=g_x1&1;sxh=g_x1>>1;
     if(sxm) j=g_x1+1; else j=g_x1;
@@ -1028,7 +1035,7 @@ void LoadStretchPackedWndTexturePage(int pageid, int mode, short cx, short cy)
 
       wSRCPtr=psxVuw+palstart;
       for(row=0;row<256;row++)
-       *px++=LPTCOL(*wSRCPtr++);
+       *px++=LPTCOL(le16_to_u16(*wSRCPtr++));
 
       column=g_y2-ldy;
       for(TXV=g_y1;TXV<=column;TXV++)
@@ -1039,7 +1046,7 @@ void LoadStretchPackedWndTexturePage(int pageid, int mode, short cx, short cy)
   		  n_xi = ( ( TXU >> 1 ) & ~0x78 ) + ( ( TXU << 2 ) & 0x40 ) + ( ( TXV << 3 ) & 0x38 );
 		  n_yi = ( TXV & ~0x7 ) + ( ( TXU >> 5 ) & 0x7 );
 
-          s=*(pa+((*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi ) >> ( ( TXU & 0x01 ) << 3 ) ) & 0xff));
+          s=*(pa+((le16_to_u16(*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi )) >> ( ( TXU & 0x01 ) << 3 ) ) & 0xff));
 
           *ta++=s;
           if(ldx) {*ta++=s;ldx--;}
@@ -1069,7 +1076,7 @@ void LoadStretchPackedWndTexturePage(int pageid, int mode, short cx, short cy)
       cOSRCPtr=cSRCPtr;ldx=ldxo;
       for(row=g_x1;row<=g_x2-ldxo;row++)
        {
-        s=LPTCOL(psxVuw[palstart+ *cSRCPtr++]);
+        s=LPTCOL(le16_to_u16(psxVuw[palstart+ *cSRCPtr++]));
         *ta++=s;
         if(ldx) {*ta++=s;ldx--;}
        }
@@ -1091,7 +1098,7 @@ void LoadStretchPackedWndTexturePage(int pageid, int mode, short cx, short cy)
       wOSRCPtr=wSRCPtr;ldx=ldxo;
       for(row=g_x1;row<=g_x2-ldxo;row++)
        {
-        s=LPTCOL(*wSRCPtr++);
+        s=LPTCOL(le16_to_u16(*wSRCPtr++));
         *ta++=s;
         if(ldx) {*ta++=s;ldx--;}
        }
@@ -1116,10 +1123,10 @@ void LoadStretchWndTexturePage(int pageid, int mode, short cx, short cy)
  unsigned int   palstart;
  unsigned int  *px,*pa,*ta;
  unsigned char  *cSRCPtr,*cOSRCPtr;
- unsigned short *wSRCPtr,*wOSRCPtr;
+ le16_t *wSRCPtr,*wOSRCPtr;
  unsigned int  LineOffset;
  int pmult=pageid/16;
- unsigned int (*LTCOL)(unsigned int);
+ u32 (*LTCOL)(u32);
  
  LTCOL=TCF[DrawSemiTrans];
 
@@ -1147,10 +1154,10 @@ void LoadStretchWndTexturePage(int pageid, int mode, short cx, short cy)
 
       row=4;do
        {
-        *px    =LTCOL(*wSRCPtr);
-        *(px+1)=LTCOL(*(wSRCPtr+1));
-        *(px+2)=LTCOL(*(wSRCPtr+2));
-        *(px+3)=LTCOL(*(wSRCPtr+3));
+        *px    =LTCOL(le16_to_u16(*wSRCPtr));
+        *(px+1)=LTCOL(le16_to_u16(*(wSRCPtr+1)));
+        *(px+2)=LTCOL(le16_to_u16(*(wSRCPtr+2)));
+        *(px+3)=LTCOL(le16_to_u16(*(wSRCPtr+3)));
         row--;px+=4;wSRCPtr+=4;
        }
       while (row);
@@ -1164,7 +1171,7 @@ void LoadStretchWndTexturePage(int pageid, int mode, short cx, short cy)
   		  n_xi = ( ( TXU >> 2 ) & ~0x3c ) + ( ( TXV << 2 ) & 0x3c );
 		  n_yi = ( TXV & ~0xf ) + ( ( TXU >> 4 ) & 0xf );
 
-          s=*(pa+((*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi ) >> ( ( TXU & 0x03 ) << 2 ) ) & 0x0f ));
+          s=*(pa+((le16_to_u16(*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi )) >> ( ( TXU & 0x03 ) << 2 ) ) & 0x0f ));
           *ta++=s;
 
           if(ldx) {*ta++=s;ldx--;}
@@ -1189,7 +1196,7 @@ void LoadStretchWndTexturePage(int pageid, int mode, short cx, short cy)
 
     wSRCPtr=psxVuw+palstart;
     for(row=0;row<16;row++)
-     *px++=LTCOL(*wSRCPtr++);
+     *px++=LTCOL(le16_to_u16(*wSRCPtr++));
 
     sxm=g_x1&1;sxh=g_x1>>1;
     if(sxm) j=g_x1+1; else j=g_x1;
@@ -1232,10 +1239,10 @@ void LoadStretchWndTexturePage(int pageid, int mode, short cx, short cy)
 
       row=64;do
        {
-        *px    =LTCOL(*wSRCPtr);
-        *(px+1)=LTCOL(*(wSRCPtr+1));
-        *(px+2)=LTCOL(*(wSRCPtr+2));
-        *(px+3)=LTCOL(*(wSRCPtr+3));
+        *px    =LTCOL(le16_to_u16(*wSRCPtr));
+        *(px+1)=LTCOL(le16_to_u16(*(wSRCPtr+1)));
+        *(px+2)=LTCOL(le16_to_u16(*(wSRCPtr+2)));
+        *(px+3)=LTCOL(le16_to_u16(*(wSRCPtr+3)));
         row--;px+=4;wSRCPtr+=4;
        }
       while (row);
@@ -1249,7 +1256,7 @@ void LoadStretchWndTexturePage(int pageid, int mode, short cx, short cy)
   		  n_xi = ( ( TXU >> 1 ) & ~0x78 ) + ( ( TXU << 2 ) & 0x40 ) + ( ( TXV << 3 ) & 0x38 );
 		  n_yi = ( TXV & ~0x7 ) + ( ( TXU >> 5 ) & 0x7 );
 
-          s=*(pa+((*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi ) >> ( ( TXU & 0x01 ) << 3 ) ) & 0xff));
+          s=*(pa+((le16_to_u16(*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi )) >> ( ( TXU & 0x01 ) << 3 ) ) & 0xff));
           *ta++=s;
           if(ldx) {*ta++=s;ldx--;}
          }
@@ -1279,7 +1286,7 @@ void LoadStretchWndTexturePage(int pageid, int mode, short cx, short cy)
       cOSRCPtr=cSRCPtr;ldx=ldxo;
       for(row=g_x1;row<=g_x2-ldxo;row++)
        {
-        s=LTCOL(psxVuw[palstart+ *cSRCPtr++]);
+        s=LTCOL(le16_to_u16(psxVuw[palstart+ *cSRCPtr++]));
         *ta++=s;
         if(ldx) {*ta++=s;ldx--;}
        }
@@ -1302,7 +1309,7 @@ void LoadStretchWndTexturePage(int pageid, int mode, short cx, short cy)
       wOSRCPtr=wSRCPtr;ldx=ldxo;
       for(row=g_x1;row<=g_x2-ldxo;row++)
        {
-        s=LTCOL(*wSRCPtr++);
+        s=LTCOL(le16_to_u16(*wSRCPtr++));
         *ta++=s;
         if(ldx) {*ta++=s;ldx--;}
        }
@@ -1327,10 +1334,10 @@ void LoadPackedWndTexturePage(int pageid, int mode, short cx, short cy)
  unsigned int   palstart;
  unsigned short *px,*pa,*ta;
  unsigned char  *cSRCPtr;
- unsigned short *wSRCPtr;
+ le16_t *wSRCPtr;
  unsigned int  LineOffset;
  int pmult=pageid/16;
- unsigned short (*LPTCOL)(unsigned short);
+ u16 (*LPTCOL)(u16);
 
  LPTCOL=PTCF[DrawSemiTrans];
 
@@ -1351,7 +1358,7 @@ void LoadPackedWndTexturePage(int pageid, int mode, short cx, short cy)
 
       wSRCPtr=psxVuw+palstart;
       for(row=0;row<16;row++)
-       *px++=LPTCOL(*wSRCPtr++);
+       *px++=LPTCOL(le16_to_u16(*wSRCPtr++));
 
       for(TXV=g_y1;TXV<=g_y2;TXV++)
        {
@@ -1360,7 +1367,7 @@ void LoadPackedWndTexturePage(int pageid, int mode, short cx, short cy)
   		  n_xi = ( ( TXU >> 2 ) & ~0x3c ) + ( ( TXV << 2 ) & 0x3c );
 		  n_yi = ( TXV & ~0xf ) + ( ( TXU >> 4 ) & 0xf );
 
-          *ta++=*(pa+((*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi ) >> ( ( TXU & 0x03 ) << 2 ) ) & 0x0f ));
+          *ta++=*(pa+((le16_to_u16(*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi )) >> ( ( TXU & 0x03 ) << 2 ) ) & 0x0f ));
          }
        }
 
@@ -1375,7 +1382,7 @@ void LoadPackedWndTexturePage(int pageid, int mode, short cx, short cy)
 
     wSRCPtr=psxVuw+palstart;
     for(row=0;row<16;row++)
-     *px++=LPTCOL(*wSRCPtr++);
+     *px++=LPTCOL(le16_to_u16(*wSRCPtr++));
 
     sxm=g_x1&1;sxh=g_x1>>1;
     if(sxm) j=g_x1+1; else j=g_x1;
@@ -1405,7 +1412,7 @@ void LoadPackedWndTexturePage(int pageid, int mode, short cx, short cy)
 
       wSRCPtr=psxVuw+palstart;
       for(row=0;row<256;row++)
-       *px++=LPTCOL(*wSRCPtr++);
+       *px++=LPTCOL(le16_to_u16(*wSRCPtr++));
 
       for(TXV=g_y1;TXV<=g_y2;TXV++)
        {
@@ -1414,7 +1421,7 @@ void LoadPackedWndTexturePage(int pageid, int mode, short cx, short cy)
   		  n_xi = ( ( TXU >> 1 ) & ~0x78 ) + ( ( TXU << 2 ) & 0x40 ) + ( ( TXV << 3 ) & 0x38 );
 		  n_yi = ( TXV & ~0x7 ) + ( ( TXU >> 5 ) & 0x7 );
 
-          *ta++=*(pa+((*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi ) >> ( ( TXU & 0x01 ) << 3 ) ) & 0xff));
+          *ta++=*(pa+((le16_to_u16(*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi )) >> ( ( TXU & 0x01 ) << 3 ) ) & 0xff));
          }
        }
 
@@ -1432,7 +1439,7 @@ void LoadPackedWndTexturePage(int pageid, int mode, short cx, short cy)
     for(column=g_y1;column<=g_y2;column++)
      {
       for(row=g_x1;row<=g_x2;row++)
-       *ta++=LPTCOL(psxVuw[palstart+ *cSRCPtr++]);
+       *ta++=LPTCOL(le16_to_u16(psxVuw[palstart+ *cSRCPtr++]));
       cSRCPtr+=LineOffset;
      }
 
@@ -1448,7 +1455,7 @@ void LoadPackedWndTexturePage(int pageid, int mode, short cx, short cy)
     for(column=g_y1;column<=g_y2;column++)
      {
       for(row=g_x1;row<=g_x2;row++)
-       *ta++=LPTCOL(*wSRCPtr++);
+       *ta++=LPTCOL(le16_to_u16(*wSRCPtr++));
       wSRCPtr+=LineOffset;
      }
 
@@ -1469,10 +1476,10 @@ void LoadWndTexturePage(int pageid, int mode, short cx, short cy)
  unsigned int   palstart;
  unsigned int  *px,*pa,*ta;
  unsigned char  *cSRCPtr;
- unsigned short *wSRCPtr;
+ le16_t *wSRCPtr;
  unsigned int  LineOffset;
  int pmult=pageid/16;
- unsigned int (*LTCOL)(unsigned int);
+ u32 (*LTCOL)(u32);
  
  LTCOL=TCF[DrawSemiTrans];
 
@@ -1495,10 +1502,10 @@ void LoadWndTexturePage(int pageid, int mode, short cx, short cy)
 
       row=4;do
        {
-        *px    =LTCOL(*wSRCPtr);
-        *(px+1)=LTCOL(*(wSRCPtr+1));
-        *(px+2)=LTCOL(*(wSRCPtr+2));
-        *(px+3)=LTCOL(*(wSRCPtr+3));
+        *px    =LTCOL(le16_to_u16(*wSRCPtr));
+        *(px+1)=LTCOL(le16_to_u16(*(wSRCPtr+1)));
+        *(px+2)=LTCOL(le16_to_u16(*(wSRCPtr+2)));
+        *(px+3)=LTCOL(le16_to_u16(*(wSRCPtr+3)));
         row--;px+=4;wSRCPtr+=4;
        }
       while (row);
@@ -1510,7 +1517,7 @@ void LoadWndTexturePage(int pageid, int mode, short cx, short cy)
   		  n_xi = ( ( TXU >> 2 ) & ~0x3c ) + ( ( TXV << 2 ) & 0x3c );
 		  n_yi = ( TXV & ~0xf ) + ( ( TXU >> 4 ) & 0xf );
 
-          *ta++=*(pa+((*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi ) >> ( ( TXU & 0x03 ) << 2 ) ) & 0x0f ));
+          *ta++=*(pa+((le16_to_u16(*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi )) >> ( ( TXU & 0x03 ) << 2 ) ) & 0x0f ));
          }
        }
 
@@ -1525,7 +1532,7 @@ void LoadWndTexturePage(int pageid, int mode, short cx, short cy)
 
     wSRCPtr=psxVuw+palstart;
     for(row=0;row<16;row++)
-     *px++=LTCOL(*wSRCPtr++);
+     *px++=LTCOL(le16_to_u16(*wSRCPtr++));
 
     sxm=g_x1&1;sxh=g_x1>>1;
     if(sxm) j=g_x1+1; else j=g_x1;
@@ -1557,10 +1564,10 @@ void LoadWndTexturePage(int pageid, int mode, short cx, short cy)
 
       row=64;do
        {
-        *px    =LTCOL(*wSRCPtr);
-        *(px+1)=LTCOL(*(wSRCPtr+1));
-        *(px+2)=LTCOL(*(wSRCPtr+2));
-        *(px+3)=LTCOL(*(wSRCPtr+3));
+        *px    =LTCOL(le16_to_u16(*wSRCPtr));
+        *(px+1)=LTCOL(le16_to_u16(*(wSRCPtr+1)));
+        *(px+2)=LTCOL(le16_to_u16(*(wSRCPtr+2)));
+        *(px+3)=LTCOL(le16_to_u16(*(wSRCPtr+3)));
         row--;px+=4;wSRCPtr+=4;
        }
       while (row);
@@ -1572,7 +1579,7 @@ void LoadWndTexturePage(int pageid, int mode, short cx, short cy)
   		  n_xi = ( ( TXU >> 1 ) & ~0x78 ) + ( ( TXU << 2 ) & 0x40 ) + ( ( TXV << 3 ) & 0x38 );
 		  n_yi = ( TXV & ~0x7 ) + ( ( TXU >> 5 ) & 0x7 );
 
-          *ta++=*(pa+((*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi ) >> ( ( TXU & 0x01 ) << 3 ) ) & 0xff));
+          *ta++=*(pa+((le16_to_u16(*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi )) >> ( ( TXU & 0x01 ) << 3 ) ) & 0xff));
          }
        }
 
@@ -1590,7 +1597,7 @@ void LoadWndTexturePage(int pageid, int mode, short cx, short cy)
     for(column=g_y1;column<=g_y2;column++)
      {
       for(row=g_x1;row<=g_x2;row++)
-       *ta++=LTCOL(psxVuw[palstart+ *cSRCPtr++]);
+       *ta++=LTCOL(le16_to_u16(psxVuw[palstart+ *cSRCPtr++]));
       cSRCPtr+=LineOffset;
      }
 
@@ -1607,7 +1614,7 @@ void LoadWndTexturePage(int pageid, int mode, short cx, short cy)
     for(column=g_y1;column<=g_y2;column++)
      {
       for(row=g_x1;row<=g_x2;row++)
-       *ta++=LTCOL(*wSRCPtr++);
+       *ta++=LTCOL(le16_to_u16(*wSRCPtr++));
       wSRCPtr+=LineOffset;
      }
 
@@ -1626,7 +1633,7 @@ void LoadWndTexturePage(int pageid, int mode, short cx, short cy)
 void UploadTexWndPal(int mode,short cx,short cy)
 {
  unsigned int i,iSize;
- unsigned short * wSrcPtr;
+ le16_t * wSrcPtr;
  unsigned int * ta=(unsigned int *)texturepart;
 
  wSrcPtr=psxVuw+cx+(cy*1024);
@@ -1636,10 +1643,10 @@ void UploadTexWndPal(int mode,short cx,short cy)
 
  do
   {
-   *ta    =PALCOL(*wSrcPtr);
-   *(ta+1)=PALCOL(*(wSrcPtr+1));
-   *(ta+2)=PALCOL(*(wSrcPtr+2));
-   *(ta+3)=PALCOL(*(wSrcPtr+3));
+   *ta    =PALCOL(le16_to_u16(*wSrcPtr));
+   *(ta+1)=PALCOL(le16_to_u16(*(wSrcPtr+1)));
+   *(ta+2)=PALCOL(le16_to_u16(*(wSrcPtr+2)));
+   *(ta+3)=PALCOL(le16_to_u16(*(wSrcPtr+3)));
    ta+=4;wSrcPtr+=4;i--;
   }
  while(i);
@@ -2034,7 +2041,7 @@ unsigned char * LoadDirectMovieFast(void)
   }
  else
   {
-   unsigned int (*LTCOL)(unsigned int);
+   u32 (*LTCOL)(u32);
 
    LTCOL=XP8RGBA_0;//TCF[0];
 
@@ -2044,7 +2051,7 @@ unsigned char * LoadDirectMovieFast(void)
     {
      startxy=((1024)*column)+xrMovieArea.x0;
      for(row=xrMovieArea.x0;row<xrMovieArea.x1;row++)
-      *ta++=LTCOL(psxVuw[startxy++]|0x8000);
+      *ta++=LTCOL(le16_to_u16(psxVuw[startxy++])|0x8000);
     }
   }
  
@@ -2079,7 +2086,7 @@ GLuint LoadTextureMovieFast(void)
     }
    else
     {
-     unsigned int (*LTCOL)(unsigned int);
+     u32 (*LTCOL)(u32);
      unsigned int *ta;
 
      LTCOL=XP8RGBA_0;//TCF[0];
@@ -2091,7 +2098,7 @@ GLuint LoadTextureMovieFast(void)
       {
        startxy=((1024)*column)+xrMovieArea.x0;
        for(row=xrMovieArea.x0;row<xrMovieArea.x1;row++)
-        *ta++=LTCOL(psxVuw[startxy++]|0x8000);
+        *ta++=LTCOL(le16_to_u16(psxVuw[startxy++])|0x8000);
       }
     }
    DefineTextureMovie();
@@ -2163,7 +2170,7 @@ GLuint LoadTextureMovie(void)
     }
    else
     {
-     unsigned int (*LTCOL)(unsigned int);
+     u32 (*LTCOL)(u32);
      unsigned int *ta;
 
      LTCOL=XP8RGBA_0;//TCF[0];
@@ -2177,7 +2184,7 @@ GLuint LoadTextureMovie(void)
         {
          startxy=((1024)*column)+xrMovieArea.x0;
          for(row=xrMovieArea.x0;row<xrMovieArea.x1;row++)
-          *ta++=LTCOL(psxVuw[startxy++]|0x8000);
+          *ta++=LTCOL(le16_to_u16(psxVuw[startxy++])|0x8000);
          *ta++=*(ta-1);
         }
 
@@ -2195,7 +2202,7 @@ GLuint LoadTextureMovie(void)
         {
          startxy=((1024)*column)+xrMovieArea.x0;
          for(row=xrMovieArea.x0;row<xrMovieArea.x1;row++)
-          *ta++=LTCOL(psxVuw[startxy++]|0x8000);
+          *ta++=LTCOL(le16_to_u16(psxVuw[startxy++])|0x8000);
         }
 
        if(b_Y)
@@ -2347,10 +2354,10 @@ GLuint Fake15BitTexture(void)
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, iFilter); glError();
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, iFilter); glError();
 
-   p=(char *)malloc(iFTex*iFTex*4);
+   p=(char *)malloc_gx(iFTex*iFTex*4);
    memset(p,0,iFTex*iFTex*4);
    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, iFTex, iFTex, 0, GL_RGBA, GL_UNSIGNED_BYTE, p); glError();
-   free(p);
+   free_gx(p);
 
    glGetError();
   }
@@ -2425,21 +2432,21 @@ GLuint Fake15BitTexture(void)
  if(y1<=0)             y1=1;
  if(y1+iYAdjust>iFTex) y1=iFTex-iYAdjust;
 
-
+#if 0
  glCopyTexSubImage2D( GL_TEXTURE_2D, 0, 
                       0,
                       iYAdjust,
                       rSrc.left+rRatioRect.left,
                       iResY-rSrc.bottom-rRatioRect.top,
                       x1,y1); glError();
-
+#endif
  if(glGetError()) 
   {
-   char * p=(char *)malloc(iFTex*iFTex*4);
+   char * p=(char *)malloc_gx(iFTex*iFTex*4);
    memset(p,0,iFTex*iFTex*4);
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, iFTex, iFTex,
                    GL_RGBA, GL_UNSIGNED_BYTE, p); glError();
-   free(p);
+   free_gx(p);
   }
 
  
@@ -2470,7 +2477,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
  unsigned int   palstart;
  unsigned int  *px,*pa,*ta;
  unsigned char  *cSRCPtr;
- unsigned short *wSRCPtr;
+ le16_t *wSRCPtr;
  unsigned int  LineOffset;
  unsigned int  x2a,xalign=0;
  unsigned int  x1=gl_ux[7];
@@ -2480,7 +2487,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
  unsigned int  dx=x2-x1+1;
  unsigned int  dy=y2-y1+1;
  int pmult=pageid/16;
- unsigned int (*LTCOL)(unsigned int);
+ u32 (*LTCOL)(u32);
  unsigned int a,r,g,b,cnt,h;
  unsigned int scol[8];
  
@@ -2508,10 +2515,10 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
 
       row=4;do
        {
-        *px    =LTCOL(*wSRCPtr);
-        *(px+1)=LTCOL(*(wSRCPtr+1));
-        *(px+2)=LTCOL(*(wSRCPtr+2));
-        *(px+3)=LTCOL(*(wSRCPtr+3));
+        *px    =LTCOL(le16_to_u16(*wSRCPtr));
+        *(px+1)=LTCOL(le16_to_u16(*(wSRCPtr+1)));
+        *(px+2)=LTCOL(le16_to_u16(*(wSRCPtr+2)));
+        *(px+3)=LTCOL(le16_to_u16(*(wSRCPtr+3)));
         row--;px+=4;wSRCPtr+=4;
        }
       while (row);
@@ -2523,7 +2530,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
   		  n_xi = ( ( TXU >> 2 ) & ~0x3c ) + ( ( TXV << 2 ) & 0x3c );
 		  n_yi = ( TXV & ~0xf ) + ( ( TXU >> 4 ) & 0xf );
 
-          *ta++=*(pa+((*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi ) >> ( ( TXU & 0x03 ) << 2 ) ) & 0x0f ));
+          *ta++=*(pa+((le16_to_u16(*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi )) >> ( ( TXU & 0x03 ) << 2 ) ) & 0x0f ));
          }
         ta+=xalign;
        }
@@ -2537,10 +2544,10 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
 
     row=4;do
      {
-      *px    =LTCOL(*wSRCPtr);
-      *(px+1)=LTCOL(*(wSRCPtr+1));
-      *(px+2)=LTCOL(*(wSRCPtr+2));
-      *(px+3)=LTCOL(*(wSRCPtr+3));
+      *px    =LTCOL(le16_to_u16(*wSRCPtr));
+      *(px+1)=LTCOL(le16_to_u16(*(wSRCPtr+1)));
+      *(px+2)=LTCOL(le16_to_u16(*(wSRCPtr+2)));
+      *(px+3)=LTCOL(le16_to_u16(*(wSRCPtr+3)));
       row--;px+=4;wSRCPtr+=4;
      }
     while (row);
@@ -2582,10 +2589,10 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
 
       row=64;do
        {
-        *px    =LTCOL(*wSRCPtr);
-        *(px+1)=LTCOL(*(wSRCPtr+1));
-        *(px+2)=LTCOL(*(wSRCPtr+2));
-        *(px+3)=LTCOL(*(wSRCPtr+3));
+        *px    =LTCOL(le16_to_u16(*wSRCPtr));
+        *(px+1)=LTCOL(le16_to_u16(*(wSRCPtr+1)));
+        *(px+2)=LTCOL(le16_to_u16(*(wSRCPtr+2)));
+        *(px+3)=LTCOL(le16_to_u16(*(wSRCPtr+3)));
         row--;px+=4;wSRCPtr+=4;
        }
       while (row);
@@ -2597,7 +2604,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
   		  n_xi = ( ( TXU >> 1 ) & ~0x78 ) + ( ( TXU << 2 ) & 0x40 ) + ( ( TXV << 3 ) & 0x38 );
 		  n_yi = ( TXV & ~0x7 ) + ( ( TXU >> 5 ) & 0x7 );
 
-          *ta++=*(pa+((*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi ) >> ( ( TXU & 0x01 ) << 3 ) ) & 0xff));
+          *ta++=*(pa+((le16_to_u16(*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi )) >> ( ( TXU & 0x01 ) << 3 ) ) & 0xff));
          }
         ta+=xalign;
        }
@@ -2616,10 +2623,10 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
 
       row=64;do
        {
-        *px    =LTCOL(*wSRCPtr);
-        *(px+1)=LTCOL(*(wSRCPtr+1));
-        *(px+2)=LTCOL(*(wSRCPtr+2));
-        *(px+3)=LTCOL(*(wSRCPtr+3));
+        *px    =LTCOL(le16_to_u16(*wSRCPtr));
+        *(px+1)=LTCOL(le16_to_u16(*(wSRCPtr+1)));
+        *(px+2)=LTCOL(le16_to_u16(*(wSRCPtr+2)));
+        *(px+3)=LTCOL(le16_to_u16(*(wSRCPtr+3)));
         row--;px+=4;wSRCPtr+=4;
        }
       while (row);
@@ -2640,7 +2647,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
       column=dy;do 
        {
         row=dx;
-        do {*ta++=LTCOL(*(wSRCPtr+*cSRCPtr++));row--;} while(row);
+        do {*ta++=LTCOL(le16_to_u16(*(wSRCPtr+*cSRCPtr++)));row--;} while(row);
         ta+=xalign;
         cSRCPtr+=LineOffset;column--;
        }
@@ -2659,7 +2666,7 @@ void LoadSubTexturePageSort(int pageid, int mode, short cx, short cy)
     column=dy;do 
      {
       row=dx;
-      do {*ta++=LTCOL(*wSRCPtr++);row--;} while(row);
+      do {*ta++=LTCOL(le16_to_u16(*wSRCPtr++));row--;} while(row);
       ta+=xalign;
       wSRCPtr+=LineOffset;column--;
      }
@@ -2798,7 +2805,7 @@ void LoadPackedSubTexturePageSort(int pageid, int mode, short cx, short cy)
  unsigned int   palstart;
  unsigned short *px,*pa,*ta;
  unsigned char  *cSRCPtr;
- unsigned short *wSRCPtr;
+ le16_t *wSRCPtr;
  unsigned int  LineOffset;
  unsigned int  x2a,xalign=0;
  unsigned int  x1=gl_ux[7];
@@ -2808,7 +2815,7 @@ void LoadPackedSubTexturePageSort(int pageid, int mode, short cx, short cy)
  unsigned int  dx=x2-x1+1;
  unsigned int  dy=y2-y1+1;
  int pmult=pageid/16;
- unsigned short (*LPTCOL)(unsigned short);
+ u16 (*LPTCOL)(u16);
  unsigned int a,r,g,b,cnt,h;
  unsigned short scol[8];
 
@@ -2835,10 +2842,10 @@ void LoadPackedSubTexturePageSort(int pageid, int mode, short cx, short cy)
       wSRCPtr=psxVuw+palstart;
       row=4;do
        {
-        *px    =LPTCOL(*wSRCPtr);
-        *(px+1)=LPTCOL(*(wSRCPtr+1));
-        *(px+2)=LPTCOL(*(wSRCPtr+2));
-        *(px+3)=LPTCOL(*(wSRCPtr+3));
+        *px    =LPTCOL(le16_to_u16(*wSRCPtr));
+        *(px+1)=LPTCOL(le16_to_u16(*(wSRCPtr+1)));
+        *(px+2)=LPTCOL(le16_to_u16(*(wSRCPtr+2)));
+        *(px+3)=LPTCOL(le16_to_u16(*(wSRCPtr+3)));
         row--;px+=4;wSRCPtr+=4;
        }
       while (row);
@@ -2850,7 +2857,7 @@ void LoadPackedSubTexturePageSort(int pageid, int mode, short cx, short cy)
   		  n_xi = ( ( TXU >> 2 ) & ~0x3c ) + ( ( TXV << 2 ) & 0x3c );
 		  n_yi = ( TXV & ~0xf ) + ( ( TXU >> 4 ) & 0xf );
 
-          *ta++=*(pa+((*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi ) >> ( ( TXU & 0x03 ) << 2 ) ) & 0x0f ));
+          *ta++=*(pa+((le16_to_u16(*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi )) >> ( ( TXU & 0x03 ) << 2 ) ) & 0x0f ));
          }
         ta+=xalign;
        }
@@ -2862,10 +2869,10 @@ void LoadPackedSubTexturePageSort(int pageid, int mode, short cx, short cy)
     wSRCPtr=psxVuw+palstart;
     row=4;do
      {
-      *px    =LPTCOL(*wSRCPtr);
-      *(px+1)=LPTCOL(*(wSRCPtr+1));
-      *(px+2)=LPTCOL(*(wSRCPtr+2));
-      *(px+3)=LPTCOL(*(wSRCPtr+3));
+      *px    =LPTCOL(le16_to_u16(*wSRCPtr));
+      *(px+1)=LPTCOL(le16_to_u16(*(wSRCPtr+1)));
+      *(px+2)=LPTCOL(le16_to_u16(*(wSRCPtr+2)));
+      *(px+3)=LPTCOL(le16_to_u16(*(wSRCPtr+3)));
       row--;px+=4;wSRCPtr+=4;
      }
     while (row);
@@ -2907,10 +2914,10 @@ void LoadPackedSubTexturePageSort(int pageid, int mode, short cx, short cy)
 
       row=64;do
        {
-        *px    =LPTCOL(*wSRCPtr);
-        *(px+1)=LPTCOL(*(wSRCPtr+1));
-        *(px+2)=LPTCOL(*(wSRCPtr+2));
-        *(px+3)=LPTCOL(*(wSRCPtr+3));
+        *px    =LPTCOL(le16_to_u16(*wSRCPtr));
+        *(px+1)=LPTCOL(le16_to_u16(*(wSRCPtr+1)));
+        *(px+2)=LPTCOL(le16_to_u16(*(wSRCPtr+2)));
+        *(px+3)=LPTCOL(le16_to_u16(*(wSRCPtr+3)));
         row--;px+=4;wSRCPtr+=4;
        }
       while (row);
@@ -2922,7 +2929,7 @@ void LoadPackedSubTexturePageSort(int pageid, int mode, short cx, short cy)
   		  n_xi = ( ( TXU >> 1 ) & ~0x78 ) + ( ( TXU << 2 ) & 0x40 ) + ( ( TXV << 3 ) & 0x38 );
 		  n_yi = ( TXV & ~0x7 ) + ( ( TXU >> 5 ) & 0x7 );
 
-          *ta++=*(pa+((*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi ) >> ( ( TXU & 0x01 ) << 3 ) ) & 0xff));
+          *ta++=*(pa+((le16_to_u16(*( psxVuw + ((GlobalTextAddrY + n_yi)*1024) + GlobalTextAddrX + n_xi )) >> ( ( TXU & 0x01 ) << 3 ) ) & 0xff));
          }
         ta+=xalign;
        }
@@ -2941,10 +2948,10 @@ void LoadPackedSubTexturePageSort(int pageid, int mode, short cx, short cy)
 
       row=64;do
        {
-        *px    =LPTCOL(*wSRCPtr);
-        *(px+1)=LPTCOL(*(wSRCPtr+1));
-        *(px+2)=LPTCOL(*(wSRCPtr+2));
-        *(px+3)=LPTCOL(*(wSRCPtr+3));
+        *px    =LPTCOL(le16_to_u16(*wSRCPtr));
+        *(px+1)=LPTCOL(le16_to_u16(*(wSRCPtr+1)));
+        *(px+2)=LPTCOL(le16_to_u16(*(wSRCPtr+2)));
+        *(px+3)=LPTCOL(le16_to_u16(*(wSRCPtr+3)));
         row--;px+=4;wSRCPtr+=4;
        }
       while (row);
@@ -2967,7 +2974,7 @@ void LoadPackedSubTexturePageSort(int pageid, int mode, short cx, short cy)
       column=dy;do 
        {
         row=dx;
-        do {*ta++=LPTCOL(*(wSRCPtr+*cSRCPtr++));row--;} while(row);
+        do {*ta++=LPTCOL(le16_to_u16(*(wSRCPtr+*cSRCPtr++)));row--;} while(row);
 
         ta+=xalign;
 
@@ -2987,7 +2994,7 @@ void LoadPackedSubTexturePageSort(int pageid, int mode, short cx, short cy)
     column=dy;do 
      {
       row=dx;
-      do {*ta++=LPTCOL(*wSRCPtr++);row--;} while(row);
+      do {*ta++=LPTCOL(le16_to_u16(*wSRCPtr++));row--;} while(row);
 
       ta+=xalign;
 
@@ -4004,7 +4011,7 @@ void CompressTextureSpace(void)
  short sOldDST=DrawSemiTrans,cx,cy;
  int  lOGTP=GlobalTexturePage;
  unsigned int l,row;
- unsigned int * lSRCPtr;
+ le32_t * lSRCPtr;
 
  opos.l=*((unsigned int *)&gl_ux[4]);
 
@@ -4059,9 +4066,9 @@ void CompressTextureSpace(void)
              if(j!=2)
               {
                // palette check sum
-               l=0;lSRCPtr=(unsigned int *)(psxVuw+cx+(cy*1024));
-               if(j==1) for(row=1;row<129;row++) l+=((*lSRCPtr++)-1)*row;
-               else     for(row=1;row<9;row++)   l+=((*lSRCPtr++)-1)<<row;
+               l=0;lSRCPtr=(le32_t *)(psxVuw+cx+(cy*1024));
+               if(j==1) for(row=1;row<129;row++) l+=((le32_to_u32(*lSRCPtr++))-1)*row;
+               else     for(row=1;row<9;row++)   l+=((le32_to_u32(*lSRCPtr++))-1)<<row;
                l=((l+HIWORD(l))&0x3fffL)<<16;
                if(l!=(tsx->ClutID&(0x00003fff<<16)))
                 {
@@ -4176,9 +4183,9 @@ GLuint SelectSubTextureS(int TextureMode, unsigned int GivenClutId)
     {
      unsigned int l=0,row;
 
-     unsigned int * lSRCPtr=(unsigned int *)(psxVuw+cx+(cy*1024));
-     if(TextureMode==1) for(row=1;row<129;row++) l+=((*lSRCPtr++)-1)*row;
-     else               for(row=1;row<9;row++)   l+=((*lSRCPtr++)-1)<<row;
+     le32_t * lSRCPtr=(le32_t *)(psxVuw+cx+(cy*1024));
+     if(TextureMode==1) for(row=1;row<129;row++) l+=((le32_to_u32(*lSRCPtr++))-1)*row;
+     else               for(row=1;row<9;row++)   l+=((le32_to_u32(*lSRCPtr++))-1)<<row;
      l=(l+HIWORD(l))&0x3fffL;
      GivenClutId|=(l<<16);
     }

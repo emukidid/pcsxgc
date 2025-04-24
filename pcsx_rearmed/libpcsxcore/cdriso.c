@@ -1740,6 +1740,7 @@ static long CALLBACK ISOclose(void) {
 	int i;
 
 	if (cdHandle != NULL) {
+		SysPrintf("ISO Close\r\n");
 		fclose(cdHandle);
 		cdHandle = NULL;
 	}

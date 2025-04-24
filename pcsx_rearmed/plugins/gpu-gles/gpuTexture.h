@@ -31,6 +31,7 @@
 extern "C" {
 #endif
 
+#include "gpuExternals.h"
 
 #define TEXTUREPAGESIZE 256*256
 
@@ -50,34 +51,34 @@ void           LoadSubTexturePage(int pageid, int mode, short cx, short cy);
 void           LoadSubTexturePageSort(int pageid, int mode, short cx, short cy);
 void           LoadPackedSubTexturePage(int pageid, int mode, short cx, short cy);
 void           LoadPackedSubTexturePageSort(int pageid, int mode, short cx, short cy);
-unsigned int   XP8RGBA(unsigned int BGR);
-unsigned int   XP8RGBAEx(unsigned int BGR);
-unsigned int   XP8RGBA_0(unsigned int BGR);
-unsigned int   XP8RGBAEx_0(unsigned int BGR);
-unsigned int   XP8BGRA_0(unsigned int BGR);
-unsigned int   XP8BGRAEx_0(unsigned int BGR);
-unsigned int   XP8RGBA_1(unsigned int BGR);
-unsigned int   XP8RGBAEx_1(unsigned int BGR);
-unsigned int   XP8BGRA_1(unsigned int BGR);
-unsigned int   XP8BGRAEx_1(unsigned int BGR);
-unsigned int   P8RGBA(unsigned int BGR);
-unsigned int   P8BGRA(unsigned int BGR);
-unsigned int   CP8RGBA_0(unsigned int BGR);
-unsigned int   CP8RGBAEx_0(unsigned int BGR);
-unsigned int   CP8BGRA_0(unsigned int BGR);
-unsigned int   CP8BGRAEx_0(unsigned int BGR);
-unsigned int   CP8RGBA(unsigned int BGR);
-unsigned int   CP8RGBAEx(unsigned int BGR);
-unsigned short XP5RGBA (unsigned short BGR);
-unsigned short XP5RGBA_0 (unsigned short BGR);
-unsigned short XP5RGBA_1 (unsigned short BGR);
-unsigned short P5RGBA (unsigned short BGR);
-unsigned short CP5RGBA_0 (unsigned short BGR);
-unsigned short XP4RGBA (unsigned short BGR);
-unsigned short XP4RGBA_0 (unsigned short BGR);
-unsigned short XP4RGBA_1 (unsigned short BGR);
-unsigned short P4RGBA (unsigned short BGR);
-unsigned short CP4RGBA_0 (unsigned short BGR);
+u32   XP8RGBA(u32 BGR);
+u32   XP8RGBAEx(u32 BGR);
+u32   XP8RGBA_0(u32 BGR);
+u32   XP8RGBAEx_0(u32 BGR);
+u32   XP8BGRA_0(u32 BGR);
+u32   XP8BGRAEx_0(u32 BGR);
+u32   XP8RGBA_1(u32 BGR);
+u32   XP8RGBAEx_1(u32 BGR);
+u32   XP8BGRA_1(u32 BGR);
+u32   XP8BGRAEx_1(u32 BGR);
+u32   P8RGBA(u32 BGR);
+u32   P8BGRA(u32 BGR);
+u32   CP8RGBA_0(u32 BGR);
+u32   CP8RGBAEx_0(u32 BGR);
+u32   CP8BGRA_0(u32 BGR);
+u32   CP8BGRAEx_0(u32 BGR);
+u32   CP8RGBA(u32 BGR);
+u32   CP8RGBAEx(u32 BGR);
+u16 XP5RGBA (u16 BGR);
+u16 XP5RGBA_0 (u16 BGR);
+u16 XP5RGBA_1 (u16 BGR);
+u16 P5RGBA (u16 BGR);
+u16 CP5RGBA_0 (u16 BGR);
+u16 XP4RGBA (u16 BGR);
+u16 XP4RGBA_0 (u16 BGR);
+u16 XP4RGBA_1 (u16 BGR);
+u16 P4RGBA (u16 BGR);
+u16 CP4RGBA_0 (u16 BGR);
 
 #ifdef __cplusplus
 }

@@ -516,7 +516,6 @@ int loadISO(fileBrowser_file* file)
 		SysPrintf("Memory cards:\r\nMcd1 [%s]\r\nMcd2 [%s]\r\n", Config.Mcd1, Config.Mcd2);
 		LoadMcds(Config.Mcd1, Config.Mcd2);
 		
-		saveFile_deinit(saveFile_dir);
 		
 		switch (nativeSaveDevice)
 		{
@@ -675,7 +674,7 @@ void print_gecko(const char *fmt, ...) {
 
 void SysPrintf(const char *fmt, ...) 
 {
-#if 0
+#if 1
 	va_list list;
 	char msg[512];
 

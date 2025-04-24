@@ -33,18 +33,27 @@
 extern "C" {
 #endif 
 
+#if 0
 #if !defined(_WINDOWS) && !defined(__NANOGL__)
 #define glOrtho(x,y,z,xx,yy,zz) glOrthof(x,y,z,xx,yy,zz)
 #endif
+#endif 
 
 #define PRED(x)   ((x << 3) & 0xF8)
 #define PBLUE(x)  ((x >> 2) & 0xF8)
 #define PGREEN(x) ((x >> 7) & 0xF8)
 
+#ifdef WII
 #define RED(x) (x & 0xff)
 #define BLUE(x) ((x>>16) & 0xff)
 #define GREEN(x) ((x>>8) & 0xff)
 #define COLOR(x) (x & 0xffffff)
+#else
+#define RED(x) ((x>>24) & 0xff)
+#define GREEN(x) ((x>>16) & 0xff)
+#define BLUE(x) ((x>>8) & 0xff)
+#define COLOR(x) ((x>>8) & 0xffffff)
+#endif
 
 
 #include "gpuExternals.h"

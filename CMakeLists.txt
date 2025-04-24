@@ -307,8 +307,6 @@ elseif (GPU_PLUGIN STREQUAL Peops)
 elseif (GPU_PLUGIN STREQUAL Gles)
 	add_library(gpu OBJECT
 		pcsx_rearmed/plugins/gpu-gles/gpulib_if.c
-		pcsx_rearmed/plugins/gpulib/gpu.c
-		pcsx_rearmed/plugins/gpulib/vout_pl.c
 	)
 	set_target_properties(gpu PROPERTIES LINKER_LANGUAGE C)
 else()

@@ -192,14 +192,14 @@ void SetExtGLFuncs(void)
     }
 
    TCF[1]=XP8RGBA_1;
-   glAlphaFuncx(GL_GREATER,0.49f); glError();
+   glAlphaFunc(GL_GREATER,0.49f); glError();
 
   }
  else                                                  // no opaque mode?
   {
    TCF[0]=TCF[1]=P8RGBA;
    PalTexturedColourFn=P8RGBA;                         // -> init col func
-   glAlphaFuncx(GL_NOTEQUAL,0); glError();             // --> set alpha func
+   glAlphaFunc(GL_NOTEQUAL,0); glError();             // --> set alpha func
 
   }
 
@@ -247,10 +247,10 @@ void CreateScanLines(void)
 #define MODE_SDL 2
 int use_fsaa = 0;
 
-EGLDisplay display;
-EGLSurface surface;
-static EGLConfig  config;
-static EGLContext context;
+//EGLDisplay display;
+//EGLSurface surface;
+//static EGLConfig  config;
+//static EGLContext context;
 
 #if defined(USE_X11)
 #include "X11/Xlib.h"
@@ -265,22 +265,23 @@ XVisualInfo*	px11Visual	= 0;
 Colormap        x11Colormap	= 0;
 #endif
 
-EGLint attrib_list_fsaa[] =
-{
-	EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-	EGL_BUFFER_SIZE,    0,
-	EGL_DEPTH_SIZE,     16,
-	EGL_SAMPLE_BUFFERS, 1,
-	EGL_SAMPLES,        4,
-	EGL_NONE
-};
+//EGLint attrib_list_fsaa[] =
+//{
+//	EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+//	EGL_BUFFER_SIZE,    0,
+//	EGL_DEPTH_SIZE,     16,
+//	EGL_SAMPLE_BUFFERS, 1,
+//	EGL_SAMPLES,        4,
+//	EGL_NONE
+//};
+//
+//EGLint attrib_list[] =
+//{
+////	EGL_DEPTH_SIZE,   16,
+//	EGL_NONE
+//};
 
-EGLint attrib_list[] =
-{
-//	EGL_DEPTH_SIZE,   16,
-	EGL_NONE
-};
-
+#if 0
 bool TestEGLError(const char* pszLocation)
 {
 	/*
@@ -300,6 +301,7 @@ bool TestEGLError(const char* pszLocation)
 
 static int initEGL(void)
 {
+
 	NativeWindowType window = 0;
 
 	printf ("GL init\n");
@@ -434,11 +436,13 @@ static int initEGL(void)
 	printf("GLES init ok\n");
 	return 0;
 }
+#endif
 
 static int created_gles_context;
 
 int GLinitialize(void *ext_gles_display, void *ext_gles_surface)
 {
+#if 0
  if(ext_gles_display != NULL && ext_gles_surface != NULL) { 
   display = (EGLDisplay)ext_gles_display;
   surface = (EGLSurface)ext_gles_surface;
@@ -448,10 +452,10 @@ int GLinitialize(void *ext_gles_display, void *ext_gles_surface)
    return -1;
   created_gles_context=1;
  }
-
+#endif
  //----------------------------------------------------// 
 
- glDepthRangef(0.0f, 1.0f);glError();
+ glDepthRange(0.0f, 1.0f);glError();
 
  glViewport(rRatioRect.left,                           // init viewport by ratio rect
             iResY-(rRatioRect.top+rRatioRect.bottom),
@@ -540,7 +544,7 @@ int GLinitialize(void *ext_gles_display, void *ext_gles_surface)
 void GLcleanup() 
 {                                                     
  CleanupTextureStore();                                // bye textures
-
+#if 0
  if(created_gles_context) {
   eglMakeCurrent( display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT );
   eglDestroySurface( display, surface );
@@ -554,6 +558,7 @@ void GLcleanup()
 #endif
   created_gles_context=0;
  }
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////

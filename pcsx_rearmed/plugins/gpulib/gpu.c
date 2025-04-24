@@ -17,6 +17,9 @@
 #include "gpu_timing.h"
 #include "../../libpcsxcore/gpu.h" // meh
 #include "../../frontend/plugin_lib.h"
+#ifdef WII
+#include "../../../GameCube/MEM2.h"
+#endif
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
@@ -256,7 +259,12 @@ static int map_vram(void)
 #if GPULIB_USE_MMAP
   gpu.vram = vram_ptr_orig = gpu.mmap(VRAM_SIZE);
 #else
+#ifdef WII
+  gpu.vram = vram_ptr_orig = (uint16_t*)VSECURE_LO;
+  memset(vram_ptr_orig, 0, VRAM_SIZE);
+#else
   gpu.vram = vram_ptr_orig = calloc(VRAM_SIZE, 1);
+#endif
 #endif
   if (gpu.vram != NULL && gpu.vram != (void *)(intptr_t)-1) {
     // 4kb guard in front
