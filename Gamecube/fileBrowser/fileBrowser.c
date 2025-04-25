@@ -33,7 +33,6 @@ fileBrowser_file* biosFile_dir;
 int (*isoFile_init)(fileBrowser_file*) = NULL;
 int (*isoFile_open)(fileBrowser_file*) = NULL;
 int (*isoFile_readDir)(fileBrowser_file*, fileBrowser_file**) = NULL;
-int (*isoFile_readFile)(fileBrowser_file*, void*, unsigned int) = NULL;
 int (*isoFile_seekFile)(fileBrowser_file*, unsigned int, unsigned int) = NULL;
 int (*isoFile_deinit)(fileBrowser_file*) = NULL;
 

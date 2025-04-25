@@ -278,26 +278,8 @@ int fileBrowser_libfat_deinit(fileBrowser_file* f){
  * - Holds the same fat file handle to avoid fopen/fclose
  */
 
-static FILE* fd;
 
 int fileBrowser_libfatROM_deinit(fileBrowser_file* f){
-	if(fd) {
-		fclose(fd);
-	}
-	
-	fd = NULL;
-	return 0;
 }
 
-int fileBrowser_libfatROM_readFile(fileBrowser_file* file, void* buffer, unsigned int length){
-    if(!fd) fd = fopen( file->name, "rb");
-
-	fseek(fd, file->offset, SEEK_SET);
-	int bytes_read = fread(buffer, 1, length, fd);
-	if(bytes_read > 0) {
-  	file->offset += bytes_read;
-	}
-
-	return bytes_read;
-}
 

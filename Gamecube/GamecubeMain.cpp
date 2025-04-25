@@ -476,9 +476,8 @@ int loadISO(fileBrowser_file* file)
 	
 	char *tempStr = &file->name[0];
 	if((strstr(tempStr,".EXE")!=NULL) || (strstr(tempStr,".exe")!=NULL)) {
-		//TODO
 		SysReset();
-		//Load(file);
+		Load(tempStr);
 	}
 	else {
 		CheckCdrom();
@@ -515,8 +514,6 @@ int loadISO(fileBrowser_file* file)
 		sprintf(Config.Mcd2,"%s/%s-2.mcd",saveFile_dir,CdromId);
 		SysPrintf("Memory cards:\r\nMcd1 [%s]\r\nMcd2 [%s]\r\n", Config.Mcd1, Config.Mcd2);
 		LoadMcds(Config.Mcd1, Config.Mcd2);
-		
-		saveFile_deinit(saveFile_dir);
 		
 		switch (nativeSaveDevice)
 		{

@@ -129,7 +129,6 @@ void Func_LoadFromSD()
 	isoFile_topLevel = &topLevel_libfat_Default;
 	isoFile_readDir  = fileBrowser_libfat_readDir;
 	isoFile_open     = fileBrowser_libfat_open;
-	isoFile_readFile = fileBrowser_libfatROM_readFile;
 	isoFile_seekFile = fileBrowser_libfat_seekFile;
 	isoFile_init     = fileBrowser_libfat_init;
 	isoFile_deinit   = fileBrowser_libfatROM_deinit;
@@ -148,7 +147,6 @@ void Func_LoadFromDVD()
 	isoFile_topLevel = &topLevel_DVD;
 	isoFile_readDir  = fileBrowser_libfat_readDir;
 	isoFile_open     = fileBrowser_libfat_open;
-	isoFile_readFile = fileBrowser_libfat_readFile;
 	isoFile_seekFile = fileBrowser_libfat_seekFile;
 	isoFile_init     = fileBrowser_libfat_init;
 	isoFile_deinit   = fileBrowser_libfat_deinit;
@@ -168,7 +166,6 @@ void Func_LoadFromUSB()
 	isoFile_topLevel = &topLevel_libfat_USB;
 	isoFile_readDir  = fileBrowser_libfat_readDir;
 	isoFile_open     = fileBrowser_libfat_open;
-	isoFile_readFile = fileBrowser_libfatROM_readFile;
 	isoFile_seekFile = fileBrowser_libfat_seekFile;
 	isoFile_init     = fileBrowser_libfat_init;
 	isoFile_deinit   = fileBrowser_libfatROM_deinit;
@@ -191,7 +188,6 @@ void Func_LoadFromSamba()
 	isoFile_topLevel = &topLevel_SMB;
 	isoFile_readDir  = fileBrowser_SMB_readDir;
 	isoFile_open     = fileBrowser_SMB_open;
-	isoFile_readFile = fileBrowser_SMB_readFile;
 	isoFile_seekFile = fileBrowser_SMB_seekFile;
 	isoFile_init     = fileBrowser_SMB_init;
 	isoFile_deinit   = fileBrowser_SMB_deinit;
