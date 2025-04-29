@@ -19,6 +19,7 @@
 **/
 
 #include <math.h>
+#include <unistd.h>
 #include <cstdlib>
 #include "MenuContext.h"
 #include "FileBrowserFrame.h"
@@ -452,6 +453,7 @@ extern char CdromId[10];
 extern char CdromLabel[33];
 extern signed char autoSaveLoaded;
 void Func_SetPlayGame();
+void Func_PlayGame();
 extern "C" {
 void newCD(fileBrowser_file *file);
 }
@@ -472,6 +474,15 @@ void fileBrowserFrame_LoadFile(int i)
 		int ret = loadISO( &dir_entries[i] );
 		
 		if(!ret){	// If the read succeeded.
+			if(Autoboot){
+				// FIX94: after init wpad, wait a bit
+				sleep(5);
+				Func_SetPlayGame();
+				Func_PlayGame();
+				pMenuContext->setActiveFrame(MenuContext::FRAME_MAIN);
+				Autoboot = false;
+				return;
+			}
 			strcpy(feedback_string, "Loaded ");
 			strncat(feedback_string, filenameFromAbsPath(dir_entries[i].name), 36-7);
 
@@ -552,4 +563,13 @@ void fileBrowserFrame_LoadFile(int i)
 	  }
 	  pMenuContext->setActiveFrame(MenuContext::FRAME_MAIN);
 	}
+}
+
+void fileBrowserFrame_AutoBootFile()
+{
+	int i;
+	for(i = 0; i < num_entries - 1; i++)
+		if(strcasestr(dir_entries[i].name, AutobootROM) != NULL)
+			break;
+	fileBrowserFrame_LoadFile(i);
 }

@@ -40,6 +40,7 @@ public:
 	MenuContext(GXRModeObj *vmode);
 	~MenuContext();
 	bool isRunning();
+	void Autoboot();
 	void setActiveFrame(int frameIndex);
 	void setActiveFrame(int frameIndex, int submenu);
 	menu::Frame* getFrame(int frameIndex);
@@ -67,5 +68,9 @@ private:
 	ConfigureButtonsFrame *configureButtonsFrame;
 
 };
+
+extern bool Autoboot;
+extern char AutobootROM[1024];
+extern char AutobootPath[1024];
 
 #endif

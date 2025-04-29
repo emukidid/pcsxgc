@@ -135,8 +135,16 @@ void Func_LoadFromSD()
 	// Make sure the romFile system is ready before we browse the filesystem
 	isoFile_init( isoFile_topLevel );
 
-	pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER,loadRomMode);
-	fileBrowserFrame_OpenDirectory(isoFile_topLevel);
+	if(Autoboot)
+	{
+		strncpy(isoFile_topLevel->name, AutobootPath, sizeof(isoFile_topLevel->name));
+		fileBrowserFrame_OpenDirectory(isoFile_topLevel);
+	}
+	else
+	{
+		pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER,loadRomMode);
+		fileBrowserFrame_OpenDirectory(isoFile_topLevel);
+	}
 }
 
 void Func_LoadFromDVD()
@@ -172,8 +180,16 @@ void Func_LoadFromUSB()
 	// Make sure the romFile system is ready before we browse the filesystem
 	isoFile_init( isoFile_topLevel );
 	
-	pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER,loadRomMode);
-	fileBrowserFrame_OpenDirectory(isoFile_topLevel);
+	if(Autoboot)
+	{
+		strncpy(isoFile_topLevel->name, AutobootPath, sizeof(isoFile_topLevel->name));
+		fileBrowserFrame_OpenDirectory(isoFile_topLevel);
+	}
+	else
+	{
+		pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER,loadRomMode);
+		fileBrowserFrame_OpenDirectory(isoFile_topLevel);
+	}
 #else
 	menu::MessageBox::getInstance().setMessage("Available only for Wii");
 #endif
