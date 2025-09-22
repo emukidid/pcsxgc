@@ -24,10 +24,12 @@ if (CMAKE_SYSTEM_NAME STREQUAL NintendoWii)
 	set(OGC_SUBDIR wii)
 	set(OGC_PORTLIBS_DIR wii)
 	set(OGC_COMPILE_OPTIONS -mrvl)
+	set(LOGO_FILE "wiiSX")
 else()
 	set(OGC_SUBDIR cube)
 	set(OGC_PORTLIBS_DIR gamecube)
 	set(OGC_COMPILE_OPTIONS -mogc)
+	set(LOGO_FILE "cubeSX")
 endif()
 
 set(OGC_COMPILE_OPTIONS -mcpu=750 -meabi -mhard-float ${OGC_COMPILE_OPTIONS})
@@ -232,6 +234,7 @@ file(RELATIVE_PATH MENU_RESOURCES_PATH
 	${CMAKE_BINARY_DIR}
 	${CMAKE_SOURCE_DIR}/Gamecube/menu/resources
 )
+
 configure_file(Gamecube/menu/MenuResources.s.cmakein menu_resources.s @ONLY)
 add_library(menu OBJECT
 	Gamecube/menu/ConfigureButtonsFrame.cpp

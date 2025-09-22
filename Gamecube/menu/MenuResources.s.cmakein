@@ -11,11 +11,7 @@
    .globl LogoTexture
    .balign 32
    LogoTexture:
-#ifdef HW_RVL
-   .incbin	"@MENU_RESOURCES_PATH@/wiiSX.tx"
-#else
-   .incbin	"@MENU_RESOURCES_PATH@/cubeSX.tx"
-#endif
+   .incbin	"@MENU_RESOURCES_PATH@/@LOGO_FILE@.tx"
    .globl LogoTexture_length
    LogoTexture_length:
    .long (LogoTexture_length - LogoTexture)
