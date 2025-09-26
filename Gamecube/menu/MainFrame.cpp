@@ -25,27 +25,20 @@
 #include "../libgui/Gui.h"
 #include "../libgui/InputStatusBar.h"
 #include "../libgui/resources.h"
-//#include "../libgui/InputManager.h"
 #include "../libgui/FocusManager.h"
 #include "../libgui/CursorManager.h"
 #include "../libgui/MessageBox.h"
-//#include "../main/wii64config.h"
 #ifdef DEBUGON
 # include <debug.h>
 #endif
 extern "C" {
 #ifdef WII
 #include <di/di.h>
-#endif 
-/*#include "../gc_memory/memory.h"
-#include "../gc_memory/Saves.h"
-#include "../main/plugin.h"
-#include "../main/savestates.h"*/
+#endif
 #include "../fileBrowser/fileBrowser.h"
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
 #include "../fileBrowser/fileBrowser-SMB.h"
-//#include "../main/gc_dvd.h"
 }
 #include <ogc/dvd.h>
 
@@ -165,9 +158,9 @@ void Func_Credits()
 	char CreditsInfo[512] = "";
 #ifdef HW_RVL
 	int iosversion = IOS_GetVersion();
-	sprintf(CreditsInfo,"WiiSX Beta 4.1 - IOS %i\n", iosversion);
+	sprintf(CreditsInfo,"WiiSX Beta 4.2 - IOS %i\n", iosversion);
 #else
-	sprintf(CreditsInfo,"CubeSX Beta 4.1\n");
+	sprintf(CreditsInfo,"CubeSX Beta 4.2\n");
 #endif
 	strcat(CreditsInfo,"\n");
 	strcat(CreditsInfo,"Wii64 Team:\n");

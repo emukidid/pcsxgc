@@ -32,6 +32,7 @@ extern "C" {
 #include "../fileBrowser/fileBrowser-libfat.h"
 #include "../fileBrowser/fileBrowser-SMB.h"
 #include "../fileBrowser/fileBrowser-CARD.h"
+void LoadingBar_showBar(float percent, const char* string);
 }
 
 void Func_LoadFromSD();
@@ -129,6 +130,7 @@ extern void fileBrowserFrame_OpenDirectory(fileBrowser_file* dir);
 
 void Func_LoadFromSD()
 {
+	LoadingBar_showBar(1.0f, "Reading directory ...");
 	// Deinit any existing romFile state
 	if(isoFile_deinit) isoFile_deinit( &isoFile );
 	// Change all the romFile pointers
@@ -147,6 +149,7 @@ void Func_LoadFromSD()
 
 void Func_LoadFromDVD()
 {
+	LoadingBar_showBar(1.0f, "Reading directory ...");
 	// Deinit any existing romFile state
 	if(isoFile_deinit) isoFile_deinit( &isoFile );
 	// Change all the romFile pointers
@@ -166,6 +169,7 @@ void Func_LoadFromDVD()
 #ifdef WII
 void Func_LoadFromUSB()
 {
+	LoadingBar_showBar(1.0f, "Reading directory ...");
 	// Deinit any existing romFile state
 	if(isoFile_deinit) isoFile_deinit( &isoFile );
 	// Change all the romFile pointers
@@ -186,6 +190,7 @@ void Func_LoadFromUSB()
 #ifdef HW_RVL
 void Func_LoadFromSamba()
 {
+	LoadingBar_showBar(1.0f, "Reading directory ...");
 	// Deinit any existing romFile state
 	if(isoFile_deinit) isoFile_deinit( &isoFile );
 	// Change all the romFile pointers

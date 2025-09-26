@@ -36,6 +36,7 @@ extern "C" {
 #include "../fileBrowser/fileBrowser-CARD.h"
 #include "../fileBrowser/fileBrowser-SMB.h"
 extern long CDR_getTN(unsigned char *buffer);
+void LoadingBar_showBar(float percent, const char* string);
 }
 
 void Func_PrevPage();
@@ -352,7 +353,6 @@ void fileBrowserFrame_OpenDirectory(fileBrowser_file* dir)
 	// Free the old menu stuff
 //	if(menu_items){  free(menu_items);  menu_items  = NULL; }
 	if(dir_entries){ free(dir_entries); dir_entries = NULL; }
-	
 	// Read the directories and return on error
 	num_entries = isoFile_readDir(dir, &dir_entries);
 	if(num_entries <= 0)
@@ -468,6 +468,7 @@ void fileBrowserFrame_LoadFile(int i)
 		free(dir);
 		menu::Focus::getInstance().clearPrimaryFocus();
 	} else if (fileBrowserMode == FileBrowserFrame::FILEBROWSER_LOADISO) {
+		LoadingBar_showBar(1.0f, "Loading ...");
 		// We must select this file
 		int ret = loadISO( &dir_entries[i] );
 		
