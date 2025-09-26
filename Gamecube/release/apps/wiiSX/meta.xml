@@ -2,8 +2,8 @@
  <app version="2">
    <name>WiiSX</name>
    <coder>Wii64 Team</coder>
-   <version>Beta 4.1</version>
-   <release_date>202311080000</release_date>
+   <version>Beta 4.2</version>
+   <release_date>202509260000</release_date>
    <short_description>PSX Emulator for Wii</short_description>
    <long_description>
 
@@ -12,19 +12,20 @@ General Coder - emu_kidid
 Graphics &amp; Menu Coder - sepp256  
 Audio &amp; Core Coder - tehpola  
 
-The Wii64Team proudly presents WiiSX Beta 4.1
+The Wii64Team proudly presents WiiSX Beta 4.2
 WiiSX is a port of PCSX to the Wii which uses the following:
 * pcsx-ReARMed
 * lightrec for dynamic recompilation
 * dfsound for audio via AESND
 * unai soft GPU
 * libgui for UI
+* libogc2
 
 Special Thanks to:
 pcercuei - lightrec
 notaz - pcsx-ReARMed
 drmr - Graphics
-shagkur/WinterMute - libogc/devkitPPC
+Extrems - libogc2
 Team Twiizers for Wii homebrew
 
 WiiSX and the WiiSX logo are trademarks of the Wii64 Team and should not be used in unofficial builds.
