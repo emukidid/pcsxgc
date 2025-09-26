@@ -177,7 +177,7 @@ void Func_Credits()
 	strcat(CreditsInfo,"    drmr - for menu graphics\n");
 	strcat(CreditsInfo,"PCSX/-df/-ReARMed teams\n");
 	strcat(CreditsInfo,"pcercuei - for lightrec/motivation\n");
-	strcat(CreditsInfo,"WinterMute/shagkur - devkitPro/libOGC\n");
+	strcat(CreditsInfo,"Extrems - libogc2\n");
 #ifdef HW_RVL
 	strcat(CreditsInfo,"Team Twiizers - for Wii homebrew\n");
 #endif

@@ -154,6 +154,11 @@ void Graphics::init()
 
 void Graphics::drawInit()
 {
+	vmode->viWidth = 704;
+	vmode->viXOrigin = (VI_MAX_WIDTH_PAL - vmode->viWidth) / 2;
+	VIDEO_Init ();
+	VIDEO_Configure (vmode);
+	VIDEO_Flush ();
 	// Reset various parameters from gfx plugin
 	GX_SetZTexture(GX_ZT_DISABLE,GX_TF_Z16,0);	//GX_ZT_DISABLE or GX_ZT_REPLACE; set in gDP.cpp
 	GX_SetZCompLoc(GX_TRUE);	// Do Z-compare before texturing.
@@ -505,9 +510,12 @@ float Graphics::getCurrentTransparency(int index)
 
 void Graphics::setInGameVMode() {
 	// Set deflicker
+	vmode->viWidth = 640;
+	vmode->viXOrigin = (VI_MAX_WIDTH_PAL - vmode->viWidth) / 2;
+	VIDEO_Init ();
+	VIDEO_Configure (vmode);
+	VIDEO_Flush ();
 	GX_SetCopyFilter(vmode->aa,vmode->sample_pattern,deflicker ? GX_TRUE : GX_FALSE,vmode->vfilter);
-	
-	// TODO: eventually change video mode for sync here too
 }
 
 } //namespace menu 

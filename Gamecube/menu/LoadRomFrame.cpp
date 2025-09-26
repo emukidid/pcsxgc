@@ -40,7 +40,11 @@ void Func_LoadFromUSB();
 void Func_LoadFromSamba();
 void Func_ReturnFromLoadRomFrame();
 
+#ifdef HW_RVL
 #define NUM_FRAME_BUTTONS 4
+#else
+#define NUM_FRAME_BUTTONS 2
+#endif
 #define FRAME_BUTTONS loadRomFrameButtons
 #define FRAME_STRINGS loadRomFrameStrings
 
@@ -69,8 +73,10 @@ struct ButtonInfo
 { //	button	buttonStyle	buttonString		x		y		width	height	Up	Dwn	Lft	Rt	clickFunc			returnFunc
 	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[0],	150.0,	100.0,	340.0,	56.0,	 3,	 1,	-1,	-1,	Func_LoadFromSD,	Func_ReturnFromLoadRomFrame }, // Load From SD
 	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[1],	150.0,	180.0,	340.0,	56.0,	 0,	 2,	-1,	-1,	Func_LoadFromDVD,	Func_ReturnFromLoadRomFrame }, // Load From DVD
+#ifdef HW_RVL
 	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[2],	150.0,	260.0,	340.0,	56.0,	 1,	 3,	-1,	-1,	Func_LoadFromUSB,	Func_ReturnFromLoadRomFrame }, // Load From USB
 	{	NULL,	BTN_A_NRM,	FRAME_STRINGS[3],	150.0,	340.0,	340.0,	56.0,	 2,	 0,	-1,	-1,	Func_LoadFromSamba,	Func_ReturnFromLoadRomFrame }, // Load From Samba
+#endif
 };
 
 LoadRomFrame::LoadRomFrame()
@@ -157,9 +163,9 @@ void Func_LoadFromDVD()
 	fileBrowserFrame_OpenDirectory(isoFile_topLevel);
 }
 
+#ifdef WII
 void Func_LoadFromUSB()
 {
-#ifdef WII
 	// Deinit any existing romFile state
 	if(isoFile_deinit) isoFile_deinit( &isoFile );
 	// Change all the romFile pointers
@@ -174,14 +180,12 @@ void Func_LoadFromUSB()
 	
 	pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER,loadRomMode);
 	fileBrowserFrame_OpenDirectory(isoFile_topLevel);
-#else
-	menu::MessageBox::getInstance().setMessage("Available only for Wii");
-#endif
 }
+#endif
 
+#ifdef HW_RVL
 void Func_LoadFromSamba()
 {
-#ifdef HW_RVL
 	// Deinit any existing romFile state
 	if(isoFile_deinit) isoFile_deinit( &isoFile );
 	// Change all the romFile pointers
@@ -196,10 +200,8 @@ void Func_LoadFromSamba()
 	
 	pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER,loadRomMode);
 	fileBrowserFrame_OpenDirectory(isoFile_topLevel);
-#else
-	menu::MessageBox::getInstance().setMessage("Available only for Wii");
-#endif
 }
+#endif
 
 void Func_ReturnFromLoadRomFrame()
 {
