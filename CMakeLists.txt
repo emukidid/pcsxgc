@@ -21,23 +21,20 @@ unset(CMAKE_SYSTEM_NAME)
 set(CMAKE_SYSTEM_NAME ${WIISX_TARGET})
 
 if (CMAKE_SYSTEM_NAME STREQUAL NintendoWii)
-	set(OGC_SUBDIR wii)
-	set(OGC_PORTLIBS_DIR wii)
+	set(OGC_PLATFORM wii)
 	set(OGC_COMPILE_OPTIONS -mrvl)
 	set(LOGO_FILE "wiiSX")
 else()
-	set(OGC_SUBDIR cube)
-	set(OGC_PORTLIBS_DIR gamecube)
+	set(OGC_PLATFORM gamecube)
 	set(OGC_COMPILE_OPTIONS -mogc)
 	set(LOGO_FILE "cubeSX")
 endif()
 
-set(OGC_COMPILE_OPTIONS -mcpu=750 -meabi -mhard-float ${OGC_COMPILE_OPTIONS})
-add_compile_options(${OGC_COMPILE_OPTIONS} -ffunction-sections -O3 -fipa-pta -DNDEBUG)
+set(OGC_COMPILE_OPTIONS ${OGC_COMPILE_OPTIONS} -mcpu=750 -meabi -mhard-float)
+add_compile_options(${OGC_COMPILE_OPTIONS} -ffunction-sections -fdata-sections -O3 -fipa-pta -DNDEBUG)
 add_link_options(${OGC_COMPILE_OPTIONS} -Wl,--gc-sections)
 
-list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${DEVKITPRO}/libogc2;${DEVKITPRO}/portlibs/ppc;${DEVKITPRO}/portlibs/${OGC_PORTLIBS_DIR})
-set(CMAKE_FIND_LIBRARY_CUSTOM_LIB_SUFFIX /${OGC_SUBDIR})
+list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${DEVKITPRO}/libogc2/${OGC_PLATFORM};${DEVKITPRO}/portlibs/${OGC_PLATFORM};${DEVKITPRO}/portlibs/ppc)
 
 find_library(OGC_LIBRARIES ogc REQUIRED)
 add_library(ogc STATIC IMPORTED)
@@ -46,10 +43,9 @@ set_target_properties(ogc PROPERTIES
 	INTERFACE_COMPILE_DEFINITIONS $<$<PLATFORM_ID:NintendoWii>:WII>
 )
 target_include_directories(ogc INTERFACE
-	${DEVKITPRO}/libogc2/include
-	${DEVKITPRO}/libogc2/include/ogc
+	${DEVKITPRO}/libogc2/${OGC_PLATFORM}/include
+	${DEVKITPRO}/portlibs/${OGC_PLATFORM}/include
 	${DEVKITPRO}/portlibs/ppc/include
-	${DEVKITPRO}/portlibs/${OGC_PORTLIBS_DIR}/include
 )
 
 find_library(OPENGX_LIBRARIES opengx REQUIRED)
