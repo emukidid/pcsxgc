@@ -36,6 +36,7 @@ class Button : public Component
 {
 public:
 	Button(int style, const char** label, float x, float y, float width, float height);
+	Button(int style, const char** label, float x, float y, float width, float height, const char** focusText);
 	~Button();
 	void setActive(bool active);
 	bool getActive();
@@ -45,6 +46,7 @@ public:
 	void setClicked(ButtonFunc clickedFn);
 	void doClicked();
 	void setText(const char** strPtr);
+	void setFocusText(const char** strPtr);
 	void setFontSize(float size);
 	void setLabelMode(int mode);
 	void setLabelScissor(int scissor);
@@ -84,7 +86,8 @@ private:
 	unsigned long StartTime;
 	GXColor	focusColor, inactiveColor, activeColor, selectedColor, labelColor;
 	ButtonFunc clickedFunc, returnFunc;
-
+	const char** focusText;
+	void init(int style, const char** label, float x, float y, float width, float height, const char** focusText);
 };
 
 } //namespace menu 

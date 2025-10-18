@@ -28,26 +28,27 @@
 
 namespace menu {
 
-Button::Button(int style, const char** label, float x, float y, float width, float height)
-		: active(false),
-		  selected(false),
-		  normalImage(0),
-		  focusImage(0),
-		  selectedImage(0),
-		  selectedFocusImage(0),
-		  buttonText(label),
-		  buttonStyle(style),
-		  labelMode(LABEL_CENTER),
-		  labelScissor(0),
-		  StartTime(0),
-		  x(x),
-		  y(y),
-		  width(width),
-		  height(height),
-		  fontSize(1.0),
-		  clickedFunc(0),
-		  returnFunc(0)
-{
+void Button::init(int style, const char** label, float x, float y, float width, float height, const char** focusText) {
+	active = false;
+	selected = false;
+	normalImage = 0;
+	focusImage = 0;
+	selectedImage = 0;
+	selectedFocusImage = 0;
+	buttonText = label;
+	buttonStyle = style;
+	labelMode = LABEL_CENTER;
+	labelScissor = 0;
+	StartTime = 0;
+	this->x = x;
+	this->y = y;
+	this->width = width;
+	this->height = height;
+	fontSize = 1.0;
+	clickedFunc = 0;
+	returnFunc = 0;
+	this->focusText = focusText;
+
 						//Focus color			Inactive color		  Active color			Selected color		  Label color
 	GXColor colors[5] = {{255, 100, 100, 255}, {255, 255, 255,  70}, {255, 255, 255, 130}, {255, 255, 255, 255}, {255, 255, 255, 255}};
 
@@ -80,6 +81,14 @@ Button::Button(int style, const char** label, float x, float y, float width, flo
 	}
 
 	setButtonColors(colors);
+}
+
+Button::Button(int style, const char** label, float x, float y, float width, float height, const char** focusText) {
+	init(style, label, x, y, width, height, focusText);
+}
+
+Button::Button(int style, const char** label, float x, float y, float width, float height) {
+	init(style, label, x, y, width, height, NULL);
 }
 
 Button::~Button()
@@ -285,6 +294,64 @@ void Button::drawComponent(Graphics& gfx)
 				break;
 		}
 		gfx.disableScissor();
+	}
+	
+	if (focusText && getFocus())
+	{
+		IplFont::getInstance().drawInit(labelColor);
+
+		// Count number of lines
+		int numLines = 1;
+		for (const char *p = *focusText; *p; ++p)
+			if (*p == '\n') numLines++;
+
+		// Smallest font scale
+		float smallestFontScale = 0.8f;
+
+		// First pass: determine smallest scale
+		const char *lineStart = *focusText;
+		for (int i = 0; i < numLines; ++i) {
+			const char *lineEnd = strchr(lineStart, '\n');
+			int len = lineEnd ? (lineEnd - lineStart) : strlen(lineStart);
+
+			char lineBuf[1024];
+			memset(&lineBuf, 0, 1024);
+			strncpy(lineBuf, lineStart, len);
+			lineBuf[len] = '\0';
+
+			float scale = 0.8f;
+			int strWidth = IplFont::getInstance().getStringWidth(lineBuf, scale);
+			if (strWidth > 450) {
+				scale = 450.0f / (float)strWidth;
+				if (scale < smallestFontScale)
+					smallestFontScale = scale;
+			}
+
+			lineStart = lineEnd ? lineEnd + 1 : nullptr;
+			if (!lineStart) break;
+		}
+		
+		int strHeight = IplFont::getInstance().getStringHeight(*focusText, smallestFontScale);
+	
+		// Second pass: draw each line
+		lineStart = *focusText;
+		for (int i = 0; i < numLines; ++i) {
+			const char *lineEnd = strchr(lineStart, '\n');
+			int len = lineEnd ? (lineEnd - lineStart) : strlen(lineStart);
+
+			char lineBuf[1024];
+			memset(&lineBuf, 0, 1024);
+			strncpy(lineBuf, lineStart, len);
+			lineBuf[len] = '\0';
+
+			int strWidth = IplFont::getInstance().getStringWidth(lineBuf, smallestFontScale);
+			IplFont::getInstance().drawString(640/2, 415 + (strHeight * i), lineBuf, smallestFontScale, true);
+
+			lineStart = lineEnd ? lineEnd + 1 : nullptr;
+			if (!lineStart) break;
+		}
+
+			
 	}
 
 }

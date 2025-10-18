@@ -23,6 +23,7 @@
 #include "MenuContext.h"
 #include "FileBrowserFrame.h"
 #include "../libgui/Button.h"
+#include "../libgui/TextBox.h"
 #include "../libgui/resources.h"
 #include "../libgui/MessageBox.h"
 #include "../libgui/FocusManager.h"
@@ -63,7 +64,7 @@ static const char FRAME_STRINGS[3][5] =
 	  "Next",
 	  ""};
 
-
+const char *loadPath = "FAT";
 struct ButtonInfo
 {
 	menu::Button	*button;
@@ -126,7 +127,8 @@ FileBrowserFrame::FileBrowserFrame()
 	setDefaultFocus(FRAME_BUTTONS[2].button);
 	setBackFunc(Func_ReturnFromFileBrowserFrame);
 	setEnabled(true);
-
+	menu::TextBox *textBox = new menu::TextBox(&loadPath, 320.0f, 20.0f, 1.0f, true);
+	add(textBox);
 }
 
 FileBrowserFrame::~FileBrowserFrame()
@@ -367,6 +369,9 @@ void fileBrowserFrame_OpenDirectory(fileBrowser_file* dir)
 
 	current_page = 0;
 	max_page = (int)ceil((float)num_entries/NUM_FILE_SLOTS);
+	if(isoFile_topLevel->deviceName) {
+		loadPath = &isoFile_topLevel->deviceName[0];
+	}
 	fileBrowserFrame_FillPage();
 }
 

@@ -48,6 +48,7 @@ typedef struct {
 	unsigned int offset; // Keep track of our offset in the file
 	unsigned int size;
 	unsigned int attr;
+	char *deviceName;
 } fileBrowser_file;
 
 // When you invoke a fileBrowser for ISOs, it should be invoked with this

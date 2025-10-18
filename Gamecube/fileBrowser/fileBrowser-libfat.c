@@ -59,7 +59,8 @@ fileBrowser_file topLevel_libfat_Default =
 	  0, // sector
 	  0, // offset
 	  0, // size
-	  FILE_BROWSER_ATTR_DIR
+	  FILE_BROWSER_ATTR_DIR,
+	  NULL
 	 };
 
 fileBrowser_file topLevel_libfat_USB =
@@ -67,7 +68,8 @@ fileBrowser_file topLevel_libfat_USB =
 	  0, // sector
 	  0, // offset
 	  0, // size
-	  FILE_BROWSER_ATTR_DIR
+	  FILE_BROWSER_ATTR_DIR,
+	  NULL
 	 };
 
 fileBrowser_file topLevel_DVD =
@@ -75,7 +77,8 @@ fileBrowser_file topLevel_DVD =
 	  0, // sector
 	  0, // offset
 	  0, // size
-	  FILE_BROWSER_ATTR_DIR
+	  FILE_BROWSER_ATTR_DIR,
+	  NULL
 	 };
 
 fileBrowser_file saveDir_libfat_Default =
@@ -83,7 +86,8 @@ fileBrowser_file saveDir_libfat_Default =
 	  0,
 	  0,
 	  0,
-	  FILE_BROWSER_ATTR_DIR
+	  FILE_BROWSER_ATTR_DIR,
+	  NULL
 	 };
 
 fileBrowser_file saveDir_libfat_USB =
@@ -91,7 +95,8 @@ fileBrowser_file saveDir_libfat_USB =
 	  0,
 	  0,
 	  0,
-	  FILE_BROWSER_ATTR_DIR
+	  FILE_BROWSER_ATTR_DIR,
+	  NULL
 	 };
 	  
 fileBrowser_file biosDir_libfat_Default =
@@ -99,7 +104,8 @@ fileBrowser_file biosDir_libfat_Default =
 	  0,
 	  0,
 	  0,
-	  FILE_BROWSER_ATTR_DIR
+	  FILE_BROWSER_ATTR_DIR,
+	  NULL
 	 };
 
 fileBrowser_file biosDir_libfat_USB =
@@ -107,7 +113,8 @@ fileBrowser_file biosDir_libfat_USB =
 	  0,
 	  0,
 	  0,
-	  FILE_BROWSER_ATTR_DIR
+	  FILE_BROWSER_ATTR_DIR,
+	  NULL
 	 };
 	 
 fileBrowser_file biosDir_DVD =
@@ -115,7 +122,8 @@ fileBrowser_file biosDir_DVD =
 	  0,
 	  0,
 	  0,
-	  FILE_BROWSER_ATTR_DIR
+	  FILE_BROWSER_ATTR_DIR,
+	  NULL
 	 };
 
 
@@ -205,12 +213,15 @@ int fileBrowser_libfat_init(fileBrowser_file* f){
   	if(f->name[0] == 's') {      //SD
 		if((res = fatMountSimple ("sd", frontsd))) {
 				res = 1;
+				f->deviceName = "SD (Front Slot)";
 		}
 		else if(!res && fatMountSimple ("sd", carda)) {
 			res = 1;
+			f->deviceName = "SD (Slot A)";
 		}
 		else if(!res && fatMountSimple ("sd", cardb)) {
 			res = 1;
+			f->deviceName = "SD (Slot B)";
 		}
  	}
 	else if(f->name[0] == 'u') {	// USB
@@ -224,10 +235,12 @@ int fileBrowser_libfat_init(fileBrowser_file* f){
 			sleep(1);
 			if(res) break;
 		}
+		if(res) f->deviceName = "USB";
 	}
 	else if(f->name[0] == 'd') {	// DVD
 		if(ISO9660_Mount("dvd", dvd)) {
 			res = 1;
+			f->deviceName = "DVD (ISO9660)";
 		}
 	}
 	return res;
@@ -235,23 +248,29 @@ int fileBrowser_libfat_init(fileBrowser_file* f){
 	if(f->name[0] == 's') {
 		if(m2loader->startup(m2loader)) {
 			res = fatMountSimple ("sd", m2loader);
+			if(res) f->deviceName = "M2Loader";
 		}
 		if(!res && gcloader->startup(gcloader)) {
 			res = fatMountSimple ("sd", gcloader);
+			if(res) f->deviceName = "GCLoader";
 		}
 		if(!res && sd2sp2->startup(sd2sp2)) {
 			res = fatMountSimple ("sd", sd2sp2);
+			if(res) f->deviceName = "SD (Serial Port 2)";
 		}
 		if(!res && carda->startup(carda)) {
 			res = fatMountSimple ("sd", carda);
+			if(res) f->deviceName = "SD (Slot A)";
 		}
 		if(!res && cardb->startup(cardb)) {
 			res = fatMountSimple ("sd", cardb);
+			if(res) f->deviceName = "SD (Slot B)";
 		}
 	}
 	else if(f->name[0] == 'd') {	// DVD
 		if(ISO9660_Mount("dvd", dvd)) {
 			res = 1;
+			f->deviceName = "DVD (ISO9660)";
 		}
 	}
 	return res; 				// Already mounted

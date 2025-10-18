@@ -37,7 +37,8 @@ fileBrowser_file topLevel_CARD_SlotA =
 	  CARD_SLOTA, // slot
 	  0, // offset
 	  0, // size
-	  FILE_BROWSER_ATTR_DIR
+	  FILE_BROWSER_ATTR_DIR,
+	  "Memory Card (Slot A)"
 	 };
 
 fileBrowser_file topLevel_CARD_SlotB =
@@ -45,7 +46,8 @@ fileBrowser_file topLevel_CARD_SlotB =
 	  CARD_SLOTB, // slot
 	  0, // offset
 	  0, // size
-	  FILE_BROWSER_ATTR_DIR
+	  FILE_BROWSER_ATTR_DIR,
+	  "Memory Card (Slot B)"
 	 };
 	 
 int mount_card(int slot) {

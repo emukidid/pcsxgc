@@ -51,7 +51,8 @@ fileBrowser_file topLevel_SMB =
 	  0ULL,      // discoffset (u64)
 	  0,         // offset
 	  0,         // size
-	  FILE_BROWSER_ATTR_DIR
+	  FILE_BROWSER_ATTR_DIR,
+	  "SMB"
 	};
  
 void resume_netinit_thread() {
