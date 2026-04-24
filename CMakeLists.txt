@@ -48,7 +48,6 @@ target_include_directories(ogc INTERFACE
 	${DEVKITPRO}/portlibs/ppc/include
 )
 
-find_library(OPENGX_LIBRARIES opengx REQUIRED)
 find_library(AESND_LIBRARIES aesnd REQUIRED)
 find_library(FAT_LIBRARIES fat REQUIRED)
 find_library(ISO9660_LIBRARIES iso9660 REQUIRED)
@@ -353,7 +352,7 @@ set_target_properties(wiisx PROPERTIES
 
 target_link_libraries(wiisx PRIVATE
 	menu libgui filebrowser dfsound libpcsxcore libchdr lzma lightrec lightning gpu
-	${AESND_LIBRARIES} ${FAT_LIBRARIES} ${ISO9660_LIBRARIES} ${OPENGX_LIBRARIES}
+	${AESND_LIBRARIES} ${FAT_LIBRARIES} ${ISO9660_LIBRARIES}
 	${TINYSMB_LIBRARIES} ${LIBDI_LIBRARIES} ${LIBWIIUSE_LIBRARIES} ${LIBBTE_LIBRARIES}
 )
 target_compile_definitions(wiisx PRIVATE GEKKO)
