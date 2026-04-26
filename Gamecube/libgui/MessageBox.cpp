@@ -120,13 +120,29 @@ void MessageBox::setMessage(const char* string)
 {
 	if (messageFade > 0.0f) messageFade = 0.0f;
 	messageBoxActive = true;
-	FRAME_BUTTONS[0].button->setVisible(true);
-	FRAME_BUTTONS[0].button->setActive(true);
-	FRAME_BUTTONS[1].button->setVisible(false);
-	FRAME_BUTTONS[1].button->setActive(false);
-	FRAME_BUTTONS[2].button->setVisible(false);
-	FRAME_BUTTONS[2].button->setActive(false);
-	setDefaultFocus(FRAME_BUTTONS[0].button);
+
+  if(strstr(string, "Autobooting"))
+  {
+	  messageFade = 1.0f;
+
+	  FRAME_BUTTONS[0].button->setVisible(false);
+	  FRAME_BUTTONS[0].button->setActive(false);
+	  FRAME_BUTTONS[1].button->setVisible(false);
+	  FRAME_BUTTONS[1].button->setActive(false);
+	  FRAME_BUTTONS[2].button->setVisible(false);
+	  FRAME_BUTTONS[2].button->setActive(false);
+	  setDefaultFocus(this);
+  }
+  else
+  {
+	  FRAME_BUTTONS[0].button->setVisible(true);
+	  FRAME_BUTTONS[0].button->setActive(true);
+	  FRAME_BUTTONS[1].button->setVisible(false);
+	  FRAME_BUTTONS[1].button->setActive(false);
+	  FRAME_BUTTONS[2].button->setVisible(false);
+	  FRAME_BUTTONS[2].button->setActive(false);
+	  setDefaultFocus(FRAME_BUTTONS[0].button);
+  }
 
 	currentCursorFrame = Cursor::getInstance().getCurrentFrame();
 	Cursor::getInstance().setCurrentFrame(this);
