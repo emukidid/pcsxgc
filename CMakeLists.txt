@@ -331,6 +331,7 @@ add_executable(wiisx
 	Gamecube/sysconf.c
 	Gamecube/xxhash.c
 	Gamecube/GamecubeMain.cpp
+	Gamecube/Autoboot.cpp
 	Gamecube/GamecubePlugins.c
 	Gamecube/vm/vm.c
 	Gamecube/vm/dsihandler.s

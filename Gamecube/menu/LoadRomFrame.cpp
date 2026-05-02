@@ -21,6 +21,7 @@
 #include "MenuContext.h"
 #include "LoadRomFrame.h"
 #include "FileBrowserFrame.h"
+#include "../Autoboot.h"
 #include "../libgui/Button.h"
 #include "../libgui/resources.h"
 #include "../libgui/FocusManager.h"
@@ -90,8 +91,56 @@ struct ButtonInfoWithHint
 #endif
 };
 
+extern MenuContext *pMenuContext;
+int loadISO(fileBrowser_file*);
+void Func_SetPlayGame();
+void Func_PlayGame();
+extern "C" void print_gecko(const char* fmt, ...);
+
+void setupFatDevice(fileBrowser_file* topLevel) 
+{
+	// Deinit any existing romFile state
+	if(isoFile_deinit) isoFile_deinit( &isoFile );
+	// Change all the romFile pointers
+	isoFile_topLevel = topLevel;
+	isoFile_readDir  = fileBrowser_libfat_readDir;
+	isoFile_open     = fileBrowser_libfat_open;
+	isoFile_seekFile = fileBrowser_libfat_seekFile;
+	isoFile_init     = fileBrowser_libfat_init;
+	isoFile_deinit   = fileBrowser_libfatROM_deinit;
+	// Make sure the romFile system is ready before we browse the filesystem
+	isoFile_init( isoFile_topLevel );
+}
+
 LoadRomFrame::LoadRomFrame()
 {
+	// argv is only setup if we detect argv[0] sd:/ or usb:/
+	// Yes this happens early, before we've actually run the menu for any frames.
+	if (Autoboot::hasPath())
+    {
+        const char* path = Autoboot::getPath();
+        //print_gecko("Autoboot path: %s\n", path);
+
+        fileBrowser_file* autoBoot = (fileBrowser_file*)calloc(1, sizeof(fileBrowser_file));
+        strncpy(autoBoot->name, path, 191);
+		autoBoot->name[191] = '\0';
+		
+		setupFatDevice(strncmp(path, "sd:/", 4) == 0 ? &topLevel_libfat_Default : &topLevel_libfat_USB);
+        int ret = loadISO(autoBoot);
+		menu::Gui::getInstance().draw();	
+
+        if (ret)
+        {
+            menu::MessageBox::getInstance().setMessage("Autoboot failed");
+        }
+        else
+        {
+            Func_SetPlayGame();
+            pMenuContext->setActiveFrame(MenuContext::FRAME_MAIN);
+            Func_PlayGame();
+        }
+		Autoboot::setPath(NULL);
+    }
 	for (int i = 0; i < NUM_FRAME_BUTTONS; i++)
 		FRAME_BUTTONS[i].button = new menu::Button(FRAME_BUTTONS[i].buttonStyle, &FRAME_BUTTONS[i].buttonString, 
 										FRAME_BUTTONS[i].x, FRAME_BUTTONS[i].y, 
@@ -114,7 +163,6 @@ LoadRomFrame::LoadRomFrame()
 	setDefaultFocus(FRAME_BUTTONS[0].button);
 	setBackFunc(Func_ReturnFromLoadRomFrame);
 	setEnabled(true);
-
 }
 
 LoadRomFrame::~LoadRomFrame()
@@ -135,23 +183,12 @@ void LoadRomFrame::activateSubmenu(int submenu)
 }
 
 
-extern MenuContext *pMenuContext;
 extern void fileBrowserFrame_OpenDirectory(fileBrowser_file* dir);
 
 void Func_LoadFromSD()
 {
 	LoadingBar_showBar(1.0f, "Reading directory ...");
-	// Deinit any existing romFile state
-	if(isoFile_deinit) isoFile_deinit( &isoFile );
-	// Change all the romFile pointers
-	isoFile_topLevel = &topLevel_libfat_Default;
-	isoFile_readDir  = fileBrowser_libfat_readDir;
-	isoFile_open     = fileBrowser_libfat_open;
-	isoFile_seekFile = fileBrowser_libfat_seekFile;
-	isoFile_init     = fileBrowser_libfat_init;
-	isoFile_deinit   = fileBrowser_libfatROM_deinit;
-	// Make sure the romFile system is ready before we browse the filesystem
-	isoFile_init( isoFile_topLevel );
+	setupFatDevice(&topLevel_libfat_Default);
 
 	pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER,loadRomMode);
 	fileBrowserFrame_OpenDirectory(isoFile_topLevel);
@@ -160,17 +197,7 @@ void Func_LoadFromSD()
 void Func_LoadFromDVD()
 {
 	LoadingBar_showBar(1.0f, "Reading directory ...");
-	// Deinit any existing romFile state
-	if(isoFile_deinit) isoFile_deinit( &isoFile );
-	// Change all the romFile pointers
-	isoFile_topLevel = &topLevel_DVD;
-	isoFile_readDir  = fileBrowser_libfat_readDir;
-	isoFile_open     = fileBrowser_libfat_open;
-	isoFile_seekFile = fileBrowser_libfat_seekFile;
-	isoFile_init     = fileBrowser_libfat_init;
-	isoFile_deinit   = fileBrowser_libfat_deinit;
-	// Make sure the romFile system is ready before we browse the filesystem
-	isoFile_init( isoFile_topLevel );
+	setupFatDevice(&topLevel_DVD);
 
 	pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER,loadRomMode);
 	fileBrowserFrame_OpenDirectory(isoFile_topLevel);
@@ -180,18 +207,8 @@ void Func_LoadFromDVD()
 void Func_LoadFromUSB()
 {
 	LoadingBar_showBar(1.0f, "Reading directory ...");
-	// Deinit any existing romFile state
-	if(isoFile_deinit) isoFile_deinit( &isoFile );
-	// Change all the romFile pointers
-	isoFile_topLevel = &topLevel_libfat_USB;
-	isoFile_readDir  = fileBrowser_libfat_readDir;
-	isoFile_open     = fileBrowser_libfat_open;
-	isoFile_seekFile = fileBrowser_libfat_seekFile;
-	isoFile_init     = fileBrowser_libfat_init;
-	isoFile_deinit   = fileBrowser_libfatROM_deinit;
-	// Make sure the romFile system is ready before we browse the filesystem
-	isoFile_init( isoFile_topLevel );
-	
+	setupFatDevice(&topLevel_libfat_USB);
+		
 	pMenuContext->setActiveFrame(MenuContext::FRAME_FILEBROWSER,loadRomMode);
 	fileBrowserFrame_OpenDirectory(isoFile_topLevel);
 }

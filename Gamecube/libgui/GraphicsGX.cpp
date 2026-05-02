@@ -22,6 +22,7 @@
 #include "GraphicsGX.h"
 #include "../wiiSXconfig.h"
 
+extern "C" void ScanPADSandReset(u32 _);
 extern "C" unsigned int usleep(unsigned int us);
 void video_mode_init(GXRModeObj *rmode, u32 *fb1, u32 *fb2, u32 *fb3);
 
@@ -44,6 +45,7 @@ Graphics::Graphics(GXRModeObj *rmode)
 	CONF_Init();
 #endif
 	VIDEO_Init();
+	VIDEO_SetPostRetraceCallback (ScanPADSandReset);
 	switch (videoMode)
 	{
 	case VIDEOMODE_AUTO:
@@ -157,6 +159,7 @@ void Graphics::drawInit()
 	vmode->viWidth = 704;
 	vmode->viXOrigin = (VI_MAX_WIDTH_PAL - vmode->viWidth) / 2;
 	VIDEO_Init ();
+	VIDEO_SetPostRetraceCallback (ScanPADSandReset);
 	VIDEO_Configure (vmode);
 	VIDEO_Flush ();
 	// Reset various parameters from gfx plugin
@@ -513,6 +516,7 @@ void Graphics::setInGameVMode() {
 	vmode->viWidth = 640;
 	vmode->viXOrigin = (VI_MAX_WIDTH_PAL - vmode->viWidth) / 2;
 	VIDEO_Init ();
+	VIDEO_SetPostRetraceCallback (ScanPADSandReset);
 	VIDEO_Configure (vmode);
 	VIDEO_Flush ();
 	GX_SetCopyFilter(vmode->aa,vmode->sample_pattern,deflicker ? GX_TRUE : GX_FALSE,vmode->vfilter);

@@ -66,6 +66,7 @@ extern "C" {
 extern u32 __di_check_ahbprot(void);
 }
 #endif //WII
+#include "Autoboot.h"
 
 u32* xfb[3] = { NULL, NULL, NULL };	/*** Framebuffers ***/
 GXRModeObj *vmode;				/*** Graphics Mode Object ***/
@@ -343,9 +344,8 @@ void loadSettings(int argc, char *argv[])
 	spu_config.iUseReverb = reverb;
 }
 
-void ScanPADSandReset(u32 dummy) 
+extern "C" void ScanPADSandReset(u32 _) 
 {
-//	PAD_ScanPads();
 	padNeedScan = wpadNeedScan = 1;
 	if(!((*(u32*)0xCC003000)>>16))
 	stop = 1;
@@ -385,29 +385,30 @@ int main(int argc, char *argv[])
 #else
 	VM_Init(ARAM_SIZE, MRAM_BACKING);		// Setup Virtual Memory with the entire ARAM
 #endif
-	
-	loadSettings(argc, argv);
-	MenuContext *menu = new MenuContext(vmode);
-	VIDEO_SetPostRetraceCallback (ScanPADSandReset);
 
 #ifndef WII
 	DVD_Init();
 #endif
 
+#ifdef PRINTGECKO
+	CON_EnableGecko(EXI_CHANNEL_1, TRUE);
+#endif
+	// Start up AESND (inited here because its used in SPU and CD)
+	AESND_Init();
+	
+	if (argc > 0)
+        Autoboot::setPath(argv[0]);
+	loadSettings(argc, argv);
+
 #ifdef DEBUGON
+#ifndef PRINTGECKO
 	//DEBUG_Init(GDBSTUB_DEVICE_TCP,GDBSTUB_DEF_TCPPORT); //Default port is 2828
 	DEBUG_Init(GDBSTUB_DEVICE_USB, 1);
 	_break();
-#else
-#ifdef PRINTGECKO
-	CON_EnableGecko(EXI_CHANNEL_1, TRUE);
 #endif
 #endif
 
 	control_info_init(); //Perform controller auto assignment at least once at startup.
-
-	// Start up AESND (inited here because its used in SPU and CD)
-	AESND_Init();
 
 #ifdef HW_RVL
 	// Initialize the network if the user has specified something in their SMB settings
@@ -415,7 +416,10 @@ int main(int argc, char *argv[])
 	  init_network_thread();
   }
 #endif
-	
+
+	MenuContext *menu = new MenuContext(vmode);
+	VIDEO_SetPostRetraceCallback (ScanPADSandReset);
+
 	while (menu->isRunning()) {}
 	
 	// Shut down AESND
@@ -658,7 +662,7 @@ void SysClose()
 #endif
 }
 
-void print_gecko(const char *fmt, ...) {
+extern "C" void print_gecko(const char *fmt, ...) {
 	va_list list;
 	char msg[512];
 
