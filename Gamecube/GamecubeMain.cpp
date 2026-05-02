@@ -396,8 +396,8 @@ int main(int argc, char *argv[])
 	// Start up AESND (inited here because its used in SPU and CD)
 	AESND_Init();
 	
-	if (argc > 0)
-        Autoboot::setPath(argv[0]);
+	if (argc > 1)
+        Autoboot::setPath(argv[1]);
 	loadSettings(argc, argv);
 
 #ifdef DEBUGON

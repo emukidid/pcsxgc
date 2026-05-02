@@ -1,7 +1,8 @@
 #include "Autoboot.h"
 #include <string.h>
+#include <cstdlib>
 
-static const char* autobootPath = NULL;
+static char* autobootPath = NULL;
 
 namespace Autoboot
 {
@@ -12,11 +13,17 @@ namespace Autoboot
             return;
 		}
 
-        if (strncmp(path, "sd:/", 4) == 0 ||
-            strncmp(path, "usb:/", 5) == 0)
+        if (strncmp(path, "sd:/", 4) != 0 &&
+            strncmp(path, "usb:/", 5) != 0)
         {
-            autobootPath = path;
+			return;
         }
+		size_t len = strlen(path);
+		autobootPath = (char*)malloc(len + 1);
+
+		if (!autobootPath)
+			return;
+		memcpy(autobootPath, path, len + 1);
     }
 
     const char* getPath()
