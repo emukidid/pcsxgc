@@ -18,6 +18,7 @@
  *
 **/
 
+#include <unistd.h>
 #include "MenuContext.h"
 #include "LoadRomFrame.h"
 #include "FileBrowserFrame.h"
@@ -95,6 +96,7 @@ extern MenuContext *pMenuContext;
 int loadISO(fileBrowser_file*);
 void Func_SetPlayGame();
 void Func_PlayGame();
+extern "C" void control_info_init(void);
 extern "C" void print_gecko(const char* fmt, ...);
 
 void setupFatDevice(fileBrowser_file* topLevel) 
@@ -137,6 +139,9 @@ LoadRomFrame::LoadRomFrame()
         {
             Func_SetPlayGame();
             pMenuContext->setActiveFrame(MenuContext::FRAME_MAIN);
+			LoadingBar_showBar(1.0f, "Loading ...");
+			sleep(3);
+			control_info_init(); // by now a Wii remote should've re-sync'd.
             Func_PlayGame();
         }
 		Autoboot::setPath(NULL);
