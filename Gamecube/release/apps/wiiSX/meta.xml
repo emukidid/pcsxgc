@@ -2,8 +2,8 @@
  <app version="2">
    <name>WiiSX</name>
    <coder>Wii64 Team</coder>
-   <version>Beta 4.2</version>
-   <release_date>202509260000</release_date>
+   <version>Beta 4.2.1</version>
+   <release_date>202605290000</release_date>
    <short_description>PSX Emulator for Wii</short_description>
    <long_description>
 
