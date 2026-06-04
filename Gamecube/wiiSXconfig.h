@@ -46,6 +46,13 @@ enum ConfigDeflicker
 	DEFLICKER_ENABLE
 };
 
+extern char nativeOutput;
+enum ConfigNativeOutput
+{
+	NATIVEOUT_DISABLE=0,
+	NATIVEOUT_ENABLE
+};
+
 extern char volume;
 enum iVolume
 {

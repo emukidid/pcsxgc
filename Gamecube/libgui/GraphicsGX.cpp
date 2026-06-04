@@ -19,6 +19,7 @@
 **/
 
 #include <math.h>
+#include "Gui.h"
 #include "GraphicsGX.h"
 #include "../wiiSXconfig.h"
 
@@ -154,6 +155,20 @@ void Graphics::init()
 	loadOrthographic();
 }
 
+void Graphics::resetCopyParamsForMenu(bool applyDeflicker)
+{
+    f32 yscale = GX_GetYScaleFactor(vmode->efbHeight, vmode->xfbHeight);
+    u32 xfbHeight = GX_SetDispCopyYScale(yscale);
+    u32 xfbWidth  = VIDEO_PadFramebufferWidth(vmode->fbWidth);
+
+    GX_SetViewport(0, 0, vmode->fbWidth, vmode->efbHeight, 0.0f, 1.0f);
+    GX_SetScissor(0, 0, vmode->fbWidth, vmode->efbHeight);
+    GX_SetDispCopySrc(0, 0, vmode->fbWidth, vmode->efbHeight);
+    GX_SetDispCopyDst(xfbWidth, xfbHeight);
+	GX_SetCopyFilter(vmode->aa,vmode->sample_pattern, applyDeflicker && deflicker ? GX_TRUE : GX_FALSE,vmode->vfilter);
+}
+
+
 void Graphics::drawInit()
 {
 	vmode->viWidth = 704;
@@ -196,6 +211,8 @@ void Graphics::drawInit()
 	GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
 	GX_SetVtxDesc(GX_VA_CLR0, GX_DIRECT);
 	GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+
+	resetCopyParamsForMenu(false);
 
 	setTEV(GX_PASSCLR);
 	newModelView();
@@ -512,14 +529,52 @@ float Graphics::getCurrentTransparency(int index)
 }
 
 void Graphics::setInGameVMode() {
-	// Set deflicker
 	vmode->viWidth = 640;
 	vmode->viXOrigin = (VI_MAX_WIDTH_PAL - vmode->viWidth) / 2;
 	VIDEO_Init ();
 	VIDEO_SetPostRetraceCallback (ScanPADSandReset);
 	VIDEO_Configure (vmode);
 	VIDEO_Flush ();
+	// Set deflicker
 	GX_SetCopyFilter(vmode->aa,vmode->sample_pattern,deflicker ? GX_TRUE : GX_FALSE,vmode->vfilter);
 }
+
+extern "C" void switchToNormalVideo()
+{
+    Gui::getInstance().gfx->setInGameVMode();
+	Gui::getInstance().gfx->resetCopyParamsForMenu(true);
+}
+
+extern "C" void switchTo240p(bool is_pal)
+{
+    GXRModeObj* m = &TVEurgb60Hz240Ds;
+	if(is_pal) {
+		m = &TVPal264Ds;
+	}
+	GX_SetCopyFilter(m->aa,m->sample_pattern,deflicker ? GX_TRUE : GX_FALSE,m->vfilter);
+    VIDEO_Configure(m);
+    VIDEO_Flush();
+    VIDEO_WaitVSync();
+    VIDEO_WaitVSync();
+
+    GX_SetCopyClear((GXColor){0,0,0,255}, 0xFFFFFF);
+    GX_SetViewport(0, 0, m->fbWidth, m->efbHeight, 0.0f, 1.0f);
+
+    f32 yscale = GX_GetYScaleFactor(m->efbHeight, m->xfbHeight);
+    u32 xfbHeight = GX_SetDispCopyYScale(yscale);
+    u32 xfbWidth  = VIDEO_PadFramebufferWidth(m->fbWidth);
+
+    GX_SetDispCopySrc(0, 0, m->fbWidth, m->efbHeight);
+    GX_SetDispCopyDst(xfbWidth, xfbHeight);
+
+    GX_SetScissor(0, 0, m->fbWidth, m->efbHeight);
+    GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
+	GX_SetFieldMode(m->field_rendering,((m->viHeight==2*m->xfbHeight)?GX_ENABLE:GX_DISABLE));
+
+    Mtx44 proj;
+    guOrtho(proj, 0, m->efbHeight, 0, m->fbWidth, 0, 300);
+    GX_LoadProjectionMtx(proj, GX_ORTHOGRAPHIC);
+}
+
 
 } //namespace menu 

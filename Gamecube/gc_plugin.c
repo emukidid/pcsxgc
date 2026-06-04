@@ -392,6 +392,7 @@ int _OpenPlugins() {
 ///
 // GX stuff
 ///
+static int is_pal, frame_interval, frame_interval1024;
 #define FB_MAX_SIZE (640 * 528 * 4)
 static unsigned char	GXtexture[FB_MAX_SIZE] __attribute__((aligned(32)));
 extern u32* xfb[3];	/*** Framebuffers ***/
@@ -399,6 +400,11 @@ extern char text[DEBUG_TEXT_HEIGHT][DEBUG_TEXT_WIDTH]; /*** DEBUG textbuffer ***
 extern char menuActive;
 extern char screenMode;
 static char fpsInfo[32];
+static char using_240p = 0;
+static char oldNativeOutputSetting = NATIVEOUT_DISABLE;
+extern void switchTo240p(bool is_pal);
+extern void switchToNormalVideo();
+static char last_ps1_height = 0;
 // Lightgun vars
 static unsigned long crCursorColor32[8][3]={{0xff,0x00,0x00},{0x00,0xff,0x00},{0x00,0x00,0xff},{0xff,0x00,0xff},{0xff,0xff,0x00},{0x00,0xff,0xff},{0xff,0xff,0xff},{0x7f,0x7f,0x7f}};
 
@@ -723,6 +729,26 @@ static void gc_vout_flip(const void *vram, int stride, int bgr24,
 	//reset swap table from GUI/DEBUG
 	GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_BLUE, GX_CH_GREEN, GX_CH_RED ,GX_CH_ALPHA);
 	GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+	
+	// Detect resolution change
+	if (dims_changed || (oldNativeOutputSetting != nativeOutput)) {
+		int new_h = h;
+
+		// Decide if we should be in 240p
+		bool want_240p = (nativeOutput == NATIVEOUT_ENABLE) && (new_h <= 288);
+
+		if (want_240p && !using_240p) {
+			switchTo240p(is_pal);
+			using_240p = true;
+		}
+		else if (!want_240p && using_240p) {
+			switchToNormalVideo();
+			using_240p = false;
+		}
+		oldNativeOutputSetting = nativeOutput;
+		last_ps1_height = new_h;
+	}
+
 
 	GX_Flip(vram, stride * 2, bgr24 ? GX_TF_RGBA8 : GX_TF_RGB5A3, x, y, w, h);
 }
@@ -756,7 +782,6 @@ static struct rearmed_cbs gc_rearmed_cbs = {
 // Frame limiting/calculation routines, taken from plugin_lib.c, adapted for Wii/GC.
 extern int g_emu_resetting;
 static int vsync_cnt;
-static int is_pal, frame_interval, frame_interval1024;
 static int vsync_usec_time;
 #define MAX_LAG_FRAMES 3
 

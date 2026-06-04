@@ -32,6 +32,7 @@ public:
 	Graphics(GXRModeObj *vmode);
 	~Graphics();
 	void init();
+	void resetCopyParamsForMenu(bool applyDeflicker);
 	void drawInit();
 	void swapBuffers();
 	void clearEFB(GXColor color, u32 zvalue);

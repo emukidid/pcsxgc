@@ -75,6 +75,8 @@ void Func_DitheringDefault();
 void Func_DitheringAlways();
 void Func_DeflickerOff();
 void Func_DeflickerOn();
+void Func_NativeOutOff();
+void Func_NativeOutOn();
 
 void Func_ConfigureInput();
 void Func_ConfigureButtons();
@@ -133,7 +135,7 @@ void resumeAudio(void); void resumeInput(void);
 }
 
 #define NUM_TAB_BUTTONS 5
-#define NUM_FRAME_TEXTBOXES 24
+#define NUM_FRAME_TEXTBOXES 26
 #define TAB_Y_POS 30
 #define TAB_Y_LABEL_PAD 28.0
 #define TAB_Y_LABEL_PAD_SML 22.0
@@ -212,6 +214,8 @@ enum BUTTON_IDS {
 	BTN_DITHER_ALWAYS,
 	BTN_DEFLICKER_ON,
 	BTN_DEFLICKER_OFF,
+	BTN_NATIVEOUT_ON,
+	BTN_NATIVEOUT_OFF,
 	
 	BTN_CONF_INPUT,
 	BTN_CONF_BTN_MAP,
@@ -292,6 +296,8 @@ struct LabelResources
 	{BTN_DITHER_ALWAYS, "Always"},
 	{BTN_DEFLICKER_ON, "On"},
 	{BTN_DEFLICKER_OFF, "Off"},
+	{BTN_NATIVEOUT_ON, "On"},
+	{BTN_NATIVEOUT_OFF, "Off"},
 	
 	{BTN_CONF_INPUT, "Assign"},
 	{BTN_CONF_BTN_MAP, "Map"},
@@ -357,6 +363,7 @@ enum LABEL_IDS {
 	LBL_VIDEO_SCREENMODE,
 	LBL_VIDEO_DITHER,
 	LBL_VIDEO_DEFLICKER,
+	LBL_VIDEO_NATIVEOUT,
 	// Input
 	LBL_INPUT_CONF_INPUT,
 	LBL_INPUT_CONT1_TYPE,
@@ -392,6 +399,8 @@ LabelResources RES_LBL[LABEL_GROUPS_END] =
 	{LBL_VIDEO_SCREENMODE, "Screen Mode"},
 	{LBL_VIDEO_DITHER, "Dithering"},
 	{LBL_VIDEO_DEFLICKER, "Deflicker"},
+	{LBL_VIDEO_NATIVEOUT, "Native Output"},
+
 	// Input
 	{LBL_INPUT_CONF_INPUT, "Configure Input"},
 	{LBL_INPUT_CONT1_TYPE, "PAD1"},
@@ -456,8 +465,10 @@ struct SettingsButtonInfo
 	{	NULL,	BTN_A_SEL,	230.0,	 75.0,	BTN_SM_4_3,	 BTN_DEFLICKER_ON,	BTN_DITHER_ALWAYS,	BTN_DITHER_DEFAULT,	Func_DitheringNone,		TAB_VIDEO, LBL_VIDEO_DITHER, BTN_DITHER_NONE }, // Dithering: None
 	{	NULL,	BTN_A_SEL,	325.0,	110.0,	BTN_SM_16_9,	 BTN_DEFLICKER_ON,	BTN_DITHER_NONE,	BTN_DITHER_ALWAYS,	Func_DitheringDefault,	TAB_VIDEO, LBL_VIDEO_DITHER, BTN_DITHER_DEFAULT }, // Dithering: Game Dependent
 	{	NULL,	BTN_A_SEL,	455.0,	110.0,	BTN_SM_F_16_9,	 BTN_DEFLICKER_OFF,	BTN_DITHER_DEFAULT,	BTN_DITHER_NONE,	Func_DitheringAlways,	TAB_VIDEO, LBL_VIDEO_DITHER, BTN_DITHER_ALWAYS }, // Dithering: Always
-	{	NULL,	BTN_A_SEL,	325.0,	75.0,	BTN_DITHER_DEFAULT,	 BTN_TAB_VIDEO,	BTN_DEFLICKER_OFF,	BTN_DEFLICKER_OFF,	Func_DeflickerOn,	TAB_VIDEO, LBL_VIDEO_DEFLICKER, BTN_DEFLICKER_ON }, // Deflicker: On
-	{	NULL,	BTN_A_SEL,	420.0,	75.0,	BTN_DITHER_DEFAULT,	 BTN_TAB_VIDEO,	BTN_DEFLICKER_ON,	BTN_DEFLICKER_ON,	Func_DeflickerOff,	TAB_VIDEO, LBL_VIDEO_DEFLICKER, BTN_DEFLICKER_OFF }, // Deflicker: Off
+	{	NULL,	BTN_A_SEL,	325.0,	75.0,	BTN_DITHER_DEFAULT,	 BTN_NATIVEOUT_ON,	BTN_DEFLICKER_OFF,	BTN_DEFLICKER_OFF,	Func_DeflickerOn,	TAB_VIDEO, LBL_VIDEO_DEFLICKER, BTN_DEFLICKER_ON }, // Deflicker: On
+	{	NULL,	BTN_A_SEL,	420.0,	75.0,	BTN_DITHER_DEFAULT,	 BTN_NATIVEOUT_OFF,	BTN_DEFLICKER_ON,	BTN_DEFLICKER_ON,	Func_DeflickerOff,	TAB_VIDEO, LBL_VIDEO_DEFLICKER, BTN_DEFLICKER_OFF }, // Deflicker: Off
+	{	NULL,	BTN_A_SEL,	325.0,	75.0,	BTN_DEFLICKER_ON,	 BTN_TAB_VIDEO,	BTN_NATIVEOUT_OFF,	BTN_NATIVEOUT_OFF,	Func_NativeOutOn,	TAB_VIDEO, LBL_VIDEO_NATIVEOUT, BTN_NATIVEOUT_ON }, // Native Output: On
+	{	NULL,	BTN_A_SEL,	420.0,	75.0,	BTN_DEFLICKER_OFF,	 BTN_TAB_VIDEO,	BTN_NATIVEOUT_ON,	BTN_NATIVEOUT_ON,	Func_NativeOutOff,	TAB_VIDEO, LBL_VIDEO_NATIVEOUT, BTN_NATIVEOUT_OFF }, // Native Output: Off
 	//Buttons for Input Tab	
 	{	NULL,	BTN_A_NRM,	285.0,	140.0,	BTN_TAB_INPUT,		BTN_PAD1_STANDARD,	BTN_CONF_BTN_MAP,	BTN_CONF_BTN_MAP,	Func_ConfigureInput,	TAB_INPUT, LBL_INPUT_CONF_INPUT, BTN_CONF_INPUT }, // Configure Input Assignment
 	{	NULL,	BTN_A_NRM,	435.0,	110.0,	BTN_TAB_INPUT,		BTN_PAD1_GUN,	BTN_CONF_INPUT,	BTN_CONF_INPUT,		Func_ConfigureButtons,	TAB_INPUT, LBL_INPUT_CONF_INPUT, BTN_CONF_BTN_MAP }, // Configure Button Mappings
@@ -520,6 +531,7 @@ struct SettingsTextBoxInfo
 	{	NULL,	130.0,	TAB_VIDEO,		LBL_VIDEO_SCREENMODE }, // ScreenMode: 4x3/16x9/Force16x9
 	{	NULL,	130.0,	TAB_VIDEO,		LBL_VIDEO_DITHER }, // Dithering: None/Game Dependent/Always
 	{	NULL,	190.0,	TAB_VIDEO,		LBL_VIDEO_DEFLICKER }, // Deflicker: On/Off
+	{	NULL,	190.0, 	TAB_VIDEO, 		LBL_VIDEO_NATIVEOUT }, // Native Output: On/Off
 	//TextBoxes for Input Tab 	
 	{	NULL,	145.0,	TAB_INPUT,		LBL_INPUT_CONF_INPUT }, // blank.
 	{	NULL,	115.0,	TAB_INPUT,		LBL_INPUT_CONT1_TYPE }, // PAD1 Type: Analog/Digital/Gun/Mouse
@@ -593,7 +605,7 @@ SettingsFrame::SettingsFrame()
 	int lastLblGrpId = -1;
 	// Create buttons from the struct above.
 	for (int i = 0; i < BTNS_END; i++) {
-		bool useSmallSizes = (FRAME_BUTTONS[i].tabGrpId == TAB_INPUT);
+		bool useSmallSizes = (FRAME_BUTTONS[i].tabGrpId == TAB_INPUT || FRAME_BUTTONS[i].tabGrpId == TAB_VIDEO);
 		
 		// tab button, give it the top y pos.
 		if(FRAME_BUTTONS[i].tabGrpId == TAB_NONE) {
@@ -619,7 +631,7 @@ SettingsFrame::SettingsFrame()
 	// Configure buttons (focus, functions)
 	for (int i = 0; i < BTNS_END; i++)
 	{
-		bool useSmallSizes = (FRAME_BUTTONS[i].tabGrpId == TAB_INPUT);
+		bool useSmallSizes = (FRAME_BUTTONS[i].tabGrpId == TAB_INPUT || FRAME_BUTTONS[i].tabGrpId == TAB_VIDEO);
 		if (FRAME_BUTTONS[i].focusUp != -1) FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, GetButtonById(FRAME_BUTTONS[i].focusUp));
 		if (FRAME_BUTTONS[i].focusDown != -1) FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, GetButtonById(FRAME_BUTTONS[i].focusDown));
 		if (FRAME_BUTTONS[i].focusLeft != -1) FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_LEFT, GetButtonById(FRAME_BUTTONS[i].focusLeft));
@@ -639,7 +651,7 @@ SettingsFrame::SettingsFrame()
 	// Create labels from the struct above.
 	for (int i = 0; i < NUM_FRAME_TEXTBOXES; i++)
 	{
-		bool useSmallSizes = (FRAME_TEXTBOXES[i].tabGrpId == TAB_INPUT);
+		bool useSmallSizes = (FRAME_TEXTBOXES[i].tabGrpId == TAB_INPUT || FRAME_TEXTBOXES[i].tabGrpId == TAB_VIDEO);
 		// label y pos.
 		y_pos = FRAME_TEXTBOXES[i].tabGrpId != lastTabId ? (TAB_Y_ENTRY_START+(useSmallSizes ? TAB_Y_LABEL_PAD_SML : TAB_Y_LABEL_PAD)) : (FRAME_TEXTBOXES[i].lblGrpId != lastLblGrpId ? (y_pos + (useSmallSizes ? TAB_Y_ENTRY_INC_SML : TAB_Y_ENTRY_INC)) : y_pos);
 		
@@ -716,7 +728,7 @@ void SettingsFrame::activateSubmenu(int submenu)
 			{
 				FRAME_BUTTONS[i].button->setVisible(true);
 				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_DOWN, GetButtonById(BTN_SHOW_FPS_ON));
-				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, GetButtonById(BTN_DEFLICKER_ON));
+				FRAME_BUTTONS[i].button->setNextFocus(menu::Focus::DIRECTION_UP, GetButtonById(BTN_NATIVEOUT_ON));
 				FRAME_BUTTONS[i].button->setActive(true);
 			}
 			SetVisibleLabelsForTab(TAB_VIDEO);
@@ -729,6 +741,7 @@ void SettingsFrame::activateSubmenu(int submenu)
 			SelectBtnInGroup((screenMode == SCREENMODE_4x3) ? BTN_SM_4_3 : ((screenMode == SCREENMODE_16x9) ? BTN_SM_16_9 : BTN_SM_F_16_9), LBL_VIDEO_SCREENMODE);
 			SelectBtnInGroup((useDithering == USEDITHER_NONE) ? BTN_DITHER_NONE : ((useDithering == USEDITHER_DEFAULT) ? BTN_DITHER_DEFAULT : BTN_DITHER_ALWAYS), LBL_VIDEO_DITHER);
 			SelectBtnInGroup((deflicker == DEFLICKER_DISABLE) ? BTN_DEFLICKER_OFF : BTN_DEFLICKER_ON, LBL_VIDEO_DEFLICKER);
+			SelectBtnInGroup((nativeOutput == NATIVEOUT_DISABLE) ? BTN_NATIVEOUT_OFF : BTN_NATIVEOUT_ON, LBL_VIDEO_NATIVEOUT);
 			break;
 		case SUBMENU_INPUT:
 			setDefaultFocus(FRAME_BUTTONS[2].button);
@@ -1212,6 +1225,16 @@ void Func_DeflickerOn()
 {
 	SelectBtnInGroup(BTN_DEFLICKER_ON, LBL_VIDEO_DEFLICKER);
 	deflicker = DEFLICKER_ENABLE;
+}
+
+void Func_NativeOutOff() {
+	SelectBtnInGroup(BTN_NATIVEOUT_OFF, LBL_VIDEO_NATIVEOUT);
+	nativeOutput = NATIVEOUT_DISABLE;
+}
+
+void Func_NativeOutOn() {
+	SelectBtnInGroup(BTN_NATIVEOUT_ON, LBL_VIDEO_NATIVEOUT);
+	nativeOutput = NATIVEOUT_ENABLE;
 }
 
 void Func_ConfigureInput()
