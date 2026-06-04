@@ -78,6 +78,7 @@ Graphics::Graphics(GXRModeObj *rmode)
 	//vmode->efbHeight = viewportHeight; // Note: all possible modes have efbHeight of 480
 
 	VIDEO_Configure(vmode);
+	curVmode = vmode;
 
 	xfb[0] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
 	xfb[1] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(vmode));
@@ -176,6 +177,7 @@ void Graphics::drawInit()
 	VIDEO_Init ();
 	VIDEO_SetPostRetraceCallback (ScanPADSandReset);
 	VIDEO_Configure (vmode);
+	curVmode = vmode;
 	VIDEO_Flush ();
 	// Reset various parameters from gfx plugin
 	GX_SetZTexture(GX_ZT_DISABLE,GX_TF_Z16,0);	//GX_ZT_DISABLE or GX_ZT_REPLACE; set in gDP.cpp
@@ -534,25 +536,24 @@ void Graphics::setInGameVMode() {
 	VIDEO_Init ();
 	VIDEO_SetPostRetraceCallback (ScanPADSandReset);
 	VIDEO_Configure (vmode);
+	curVmode = vmode;
 	VIDEO_Flush ();
 	// Set deflicker
 	GX_SetCopyFilter(vmode->aa,vmode->sample_pattern,deflicker ? GX_TRUE : GX_FALSE,vmode->vfilter);
 }
 
-extern "C" void switchToNormalVideo()
-{
-    Gui::getInstance().gfx->setInGameVMode();
-	Gui::getInstance().gfx->resetCopyParamsForMenu(true);
+GXRModeObj* Graphics::getVmode() {
+	return curVmode;
 }
 
-extern "C" void switchTo240p(bool is_pal)
-{
-    GXRModeObj* m = &TVEurgb60Hz240Ds;
+void Graphics::setNativeOut(bool is_pal) {
+	GXRModeObj* m = &TVEurgb60Hz240Ds;
 	if(is_pal) {
 		m = &TVPal264Ds;
 	}
 	GX_SetCopyFilter(m->aa,m->sample_pattern,deflicker ? GX_TRUE : GX_FALSE,m->vfilter);
     VIDEO_Configure(m);
+	curVmode = m;
     VIDEO_Flush();
     VIDEO_WaitVSync();
     VIDEO_WaitVSync();
@@ -574,6 +575,22 @@ extern "C" void switchTo240p(bool is_pal)
     Mtx44 proj;
     guOrtho(proj, 0, m->efbHeight, 0, m->fbWidth, 0, 300);
     GX_LoadProjectionMtx(proj, GX_ORTHOGRAPHIC);
+}
+
+extern "C" void switchToNormalVideo()
+{
+    Gui::getInstance().gfx->setInGameVMode();
+	Gui::getInstance().gfx->resetCopyParamsForMenu(true);
+}
+
+extern "C" void switchTo240p(bool is_pal)
+{
+    Gui::getInstance().gfx->setNativeOut(is_pal);
+}
+
+extern "C" int getXfbHeight() {
+	GXRModeObj* vmode = Gui::getInstance().gfx->getVmode();
+	return vmode->xfbHeight;
 }
 
 

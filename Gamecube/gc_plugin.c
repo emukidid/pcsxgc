@@ -404,6 +404,7 @@ static char using_240p = 0;
 static char oldNativeOutputSetting = NATIVEOUT_DISABLE;
 extern void switchTo240p(bool is_pal);
 extern void switchToNormalVideo();
+extern int getXfbHeight();
 static char last_ps1_height = 0;
 // Lightgun vars
 static unsigned long crCursorColor32[8][3]={{0xff,0x00,0x00},{0x00,0xff,0x00},{0x00,0x00,0xff},{0xff,0x00,0xff},{0xff,0xff,0x00},{0x00,0xff,0xff},{0xff,0xff,0xff},{0x7f,0x7f,0x7f}};
@@ -730,7 +731,13 @@ static void gc_vout_flip(const void *vram, int stride, int bgr24,
 	GX_SetTevSwapModeTable(GX_TEV_SWAP0, GX_CH_BLUE, GX_CH_GREEN, GX_CH_RED ,GX_CH_ALPHA);
 	GX_SetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
 	
-	// Detect resolution change
+	// Detect resolution change (if we'd gone back to the menu)
+	int xfbHeight = getXfbHeight();
+	if((using_240p && xfbHeight > 264) || (!using_240p && xfbHeight <= 264)) {
+		using_240p = xfbHeight <= 264;
+		dims_changed = 1;
+	}
+	// Detect internal res change or setting change.
 	if (dims_changed || (oldNativeOutputSetting != nativeOutput)) {
 		int new_h = h;
 
