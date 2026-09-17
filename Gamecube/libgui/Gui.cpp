@@ -124,7 +124,7 @@ void Gui::draw()
 		{
 			VIDEO_SetBlack(true);
 			VIDEO_Flush();
-		 	VIDEO_WaitVSync();
+		 	VIDEO_WaitForFlush();
 #ifdef WII
 			// If this is a Wii U, restore the original aspect ratio
 			if(isWiiU) {
@@ -133,32 +133,13 @@ void Gui::draw()
 			}
 #endif
 			if(shutdown==1)	//Power off System
-				SYS_ResetSystem(SYS_POWEROFF, 0, 0);
+				SYS_ResetSystem(SYS_POWEROFF, 0, FALSE);
 			else			//Return to Loader
 			{
 #ifdef WII
 				DI_Close();
 #endif
-				void (*rld)() = (void (*)()) 0x80001800;
-#ifdef HW_DOL
-				#define PSOSDLOADID 0x7c6000a6
-				// try to reload
-				if(*(volatile unsigned int*)0x80001800 == PSOSDLOADID) {
-					rld();
-				}
-				else {
-					*(volatile unsigned int*)0xCC003024 = 0;  //reboot
-			  }
-#else
-				#define HBC_STUB 0x53545542
-				#define HBC_HAXX 0x48415858
-				//Load HBC Stub if STUBAXX signature is present
-				if(*(volatile unsigned int*)0x80001804 == HBC_STUB &&
-					*(volatile unsigned int*)0x80001808 == HBC_HAXX)
-					rld();
-				else // Wii channel support
-					SYS_ResetSystem(SYS_RETURNTOMENU, 0, 0); // Return to the Wii System Menu
-#endif
+				exit(0);
 			}
 		}
 

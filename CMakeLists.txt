@@ -30,11 +30,11 @@ else()
 	set(LOGO_FILE "cubeSX")
 endif()
 
-set(OGC_COMPILE_OPTIONS ${OGC_COMPILE_OPTIONS} -mcpu=750 -meabi -mhard-float)
+set(OGC_COMPILE_OPTIONS ${OGC_COMPILE_OPTIONS} -mcpu=750 -meabi -msdata=sysv -mhard-float)
 add_compile_options(${OGC_COMPILE_OPTIONS} -ffunction-sections -fdata-sections -O3 -fipa-pta -DNDEBUG)
 add_link_options(${OGC_COMPILE_OPTIONS} -Wl,--gc-sections)
 
-list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${DEVKITPRO}/libogc2/${OGC_PLATFORM};${DEVKITPRO}/portlibs/${OGC_PLATFORM};${DEVKITPRO}/portlibs/ppc)
+list(APPEND CMAKE_SYSTEM_PREFIX_PATH ${DEVKITPRO}/libogc2/${OGC_PLATFORM};${DEVKITPRO}/portlibs/ppc)
 
 find_library(OGC_LIBRARIES ogc REQUIRED)
 add_library(ogc STATIC IMPORTED)
@@ -44,7 +44,6 @@ set_target_properties(ogc PROPERTIES
 )
 target_include_directories(ogc INTERFACE
 	${DEVKITPRO}/libogc2/${OGC_PLATFORM}/include
-	${DEVKITPRO}/portlibs/${OGC_PLATFORM}/include
 	${DEVKITPRO}/portlibs/ppc/include
 )
 

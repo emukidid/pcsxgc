@@ -60,7 +60,7 @@ extern "C" {
 
 #ifdef WII
 #include "MEM2.h"
-unsigned int MALLOC_MEM2 = 0;
+u32 MALLOC_MEM2 = 0;
 extern "C" {
 #include <di/di.h>
 extern u32 __di_check_ahbprot(void);
@@ -394,7 +394,7 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef PRINTGECKO
-	CON_EnableGecko(EXI_CHANNEL_1, TRUE);
+	CON_EnableGecko(EXI_CHANNEL_1, true);
 #endif
 	// Start up AESND (inited here because its used in SPU and CD)
 	AESND_Init();

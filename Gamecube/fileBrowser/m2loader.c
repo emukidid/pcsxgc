@@ -7,6 +7,7 @@
  * Based loosely on code written by Dampro
  * Re-written by emu_kidid, Extrems, webhdx
  **/
+
 #ifndef HW_RVL
 
 #include <stdio.h>
@@ -623,6 +624,11 @@ static bool __m2ldr_writeSectors(DISC_INTERFACE *disc, sec_t sector, sec_t numSe
     return !_M2Loader_WriteSectors((u64)sector, numSectors, buffer);
 }
 
+static bool __m2ldr_eraseSectors(DISC_INTERFACE *disc, sec_t sector, sec_t numSectors)
+{
+    return false;
+}
+
 static bool __m2ldr_flush(DISC_INTERFACE *disc)
 {
     return true;
@@ -633,31 +639,18 @@ static bool __m2ldr_shutdown(DISC_INTERFACE *disc)
     return true;
 }
 
-static bool __m2ldr_eraseSectors(DISC_INTERFACE *disc, sec_t sector, sec_t numSectors)
-{
-	u8* empty = calloc(1, 512);
-	for(int i = 0; i < numSectors; i++) {
-		bool error = _M2Loader_WriteSectors((u64)sector + i, 1, empty);
-		if(error) {
-			free(empty);
-			return false;
-		}
-	}
-	free(empty);
-	return true;
-}
-
 DISC_INTERFACE __io_m2ldr = {
     DEVICE_TYPE_GC_M2LOADER,
-    FEATURE_MEDIUM_CANREAD | FEATURE_MEDIUM_CANWRITE | FEATURE_GAMECUBE_PORT2,
+    FEATURE_MEDIUM_CANREAD | FEATURE_MEDIUM_CANWRITE | FEATURE_GAMECUBE_PORT1,
     (FN_MEDIUM_STARTUP)&__m2ldr_startup,
     (FN_MEDIUM_ISINSERTED)&__m2ldr_isInserted,
     (FN_MEDIUM_READSECTORS)&__m2ldr_readSectors,
     (FN_MEDIUM_WRITESECTORS)&__m2ldr_writeSectors,
-	(FN_MEDIUM_ERASESECTORS)&__m2ldr_eraseSectors,
+    (FN_MEDIUM_ERASESECTORS)&__m2ldr_eraseSectors,
     (FN_MEDIUM_FLUSH)&__m2ldr_flush,
     (FN_MEDIUM_SHUTDOWN)&__m2ldr_shutdown,
-    0x1000000000000,
+    ~0,
+    1,
     512};
 
 #endif

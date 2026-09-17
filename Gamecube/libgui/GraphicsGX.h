@@ -32,7 +32,7 @@ public:
 	Graphics(GXRModeObj *vmode);
 	~Graphics();
 	void init();
-	void resetCopyParamsForMenu(bool applyDeflicker);
+	void resetCopyParamsForMenu();
 	GXRModeObj* getVmode();
 	void setNativeOut(bool is_pal);
 	void drawInit();

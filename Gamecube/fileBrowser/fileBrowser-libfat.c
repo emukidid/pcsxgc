@@ -143,12 +143,11 @@ int fileBrowser_libfat_readDir(fileBrowser_file* file, fileBrowser_file** dir){
 			++num_entries;
 			*dir = realloc( *dir, num_entries * sizeof(fileBrowser_file) ); 
 		}
-		snprintf((*dir)[i].name, 255, "%s/%s", file->name, entry->d_name);
+		snprintf((*dir)[i].name, FILE_BROWSER_MAX_PATH_LEN, "%s/%s", file->name, entry->d_name);
 		stat((*dir)[i].name,&fstat);
 		(*dir)[i].offset = 0;
 		(*dir)[i].size   = fstat.st_size;
-		(*dir)[i].attr   = (fstat.st_mode & _IFDIR) ?
-		                     FILE_BROWSER_ATTR_DIR : 0;
+		(*dir)[i].attr   = S_ISDIR(fstat.st_mode) ? FILE_BROWSER_ATTR_DIR : 0;
 		++i;
 	}
 	
